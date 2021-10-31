@@ -872,7 +872,10 @@ class TestKDEPlotUnivariate(SharedAxesLevelTests):
         for label, level in zip(legend_labels, order):
             assert label.get_text() == level
 
-        legend_artists = ax.legend_.findobj(mpl.lines.Line2D)[::2]
+        legend_artists = ax.legend_.findobj(mpl.lines.Line2D)
+        if Version(mpl.__version__) < Version("3.5.0b0"):
+            # https://github.com/matplotlib/matplotlib/pull/20699
+            legend_artists = legend_artists[::2]
         palette = color_palette()
         for artist, color in zip(legend_artists, palette):
             assert_colors_equal(artist.get_color(), color)
