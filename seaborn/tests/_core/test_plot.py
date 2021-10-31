@@ -226,72 +226,65 @@ class TestAxisScaling:
         for col, scale_type in zip("zat", ["numeric", "categorical", "datetime"]):
             p = Plot(long_df, x=col, y=col).add(MockMark()).plot()
             for var in "xy":
-                assert p._scales[var].type == scale_type
+                assert p._scales[var].scale_type == scale_type
+
+    def test_inference_from_layer_data(self):
+
+        p = Plot().add(MockMark(), x=["a", "b", "c"]).plot()
+        assert p._scales["x"].scale_type == "categorical"
 
     def test_inference_concatenates(self):
 
         p = Plot(x=[1, 2, 3]).add(MockMark(), x=["a", "b", "c"]).plot()
-        assert p._scales["x"].type == "categorical"
+        assert p._scales["x"].scale_type == "categorical"
 
-    def test_categorical_explicit_order(self):
+    def test_inferred_categorical_converter(self):
 
-        p = Plot(x=["b", "c", "a"]).scale_categorical("x", order=["c", "a", "b"])
-        scl = p._scales["x"]
-        assert scl.type == "categorical"
-        assert scl.cast(pd.Series(["c", "a", "b"])).cat.codes.to_list() == [0, 1, 2]
+        p = Plot(x=["b", "c", "a"]).add(MockMark()).plot()
+        ax = p._figure.axes[0]
+        assert ax.xaxis.convert_units("c") == 1
 
-    def test_numeric_as_categorical(self):
+    def test_explicit_categorical_converter(self):
 
-        p = Plot(x=[2, 1, 3]).scale_categorical("x")
-        scl = p._scales["x"]
-        assert scl.type == "categorical"
-        assert scl.cast(pd.Series([1, 2, 3])).cat.codes.to_list() == [0, 1, 2]
+        p = Plot(y=[2, 1, 3]).scale_categorical("y").add(MockMark()).plot()
+        ax = p._figure.axes[0]
+        assert ax.yaxis.convert_units("3") == 2
 
-    def test_numeric_as_categorical_explicit_order(self):
-
-        p = Plot(x=[1, 2, 3]).scale_categorical("x", order=[2, 1, 3])
-        scl = p._scales["x"]
-        assert scl.type == "categorical"
-        assert scl.cast(pd.Series([2, 1, 3])).cat.codes.to_list() == [0, 1, 2]
-
-    def test_numeric_as_datetime(self):
-
-        p = Plot(x=[1, 2, 3]).scale_datetime("x")
-        scl = p._scales["x"]
-        assert scl.type == "datetime"
-
-        numbers = [2, 1, 3]
-        dates = ["1970-01-03", "1970-01-02", "1970-01-04"]
-        assert_series_equal(
-            scl.cast(pd.Series(numbers)),
-            pd.Series(dates, dtype="datetime64[ns]")
-        )
-
-    @pytest.mark.xfail
     def test_categorical_as_numeric(self):
 
         # TODO marked as expected fail because we have not implemented this yet
         # see notes in ScaleWrapper.cast
 
-        strings = ["2", "1", "3"]
-        p = Plot(x=strings).scale_numeric("x")
-        scl = p._scales["x"]
-        assert scl.type == "numeric"
-        assert_series_equal(
-            scl.cast(pd.Series(strings)),
-            pd.Series(strings).astype(float)
-        )
+        p = Plot(x=["2", "1", "3"]).scale_numeric("x").add(MockMark()).plot()
+        ax = p._figure.axes[0]
+        assert ax.xaxis.converter is None
 
     def test_categorical_as_datetime(self):
 
         dates = ["1970-01-03", "1970-01-02", "1970-01-04"]
-        p = Plot(x=dates).scale_datetime("x")
-        scl = p._scales["x"]
-        assert scl.type == "datetime"
-        assert_series_equal(
-            scl.cast(pd.Series(dates, dtype=object)),
-            pd.Series(dates, dtype="datetime64[ns]")
-        )
+        p = Plot(x=dates).scale_datetime("x").add(MockMark()).plot()
+        ax = p._figure.axes[0]
+        assert ax.xaxis.converter
+
+    def test_faceted_log_scale(self):
+
+        p = Plot(y=[1, 10]).facet(col=["a", "b"]).scale_numeric("y", "log").plot()
+        for ax in p._figure.axes:
+            assert ax.get_yscale() == "log"
+
+    def test_faceted_log_scale_without_data(self):
+
+        p = Plot(y=[1, 10]).facet(col=["a", "b"]).scale_numeric("y", "log").plot()
+        for ax in p._figure.axes:
+            assert ax.get_yscale() == "log"
+
+    def test_paired_single_log_scale(self):
+
+        x0, x1 = [1, 2, 3], [1, 10, 100]
+        p = Plot().pair(x=[x0, x1]).scale_numeric("x1", "log").plot()
+        ax0, ax1 = p._figure.axes
+        assert ax0.get_xscale() == "linear"
+        assert ax1.get_xscale() == "log"
 
     def test_mark_data_log_transform(self, long_df):
 
@@ -339,7 +332,95 @@ class TestAxisScaling:
         m = MockMark()
         Plot(long_df, x=col).add(m).plot()
 
-        assert_vector_equal(m.passed_data[0]["x"], long_df[col].map(mpl.dates.date2num))
+        expected = long_df[col].map(mpl.dates.date2num)
+        if LooseVersion(mpl.__version__) < "3.3":
+            expected = expected + mpl.dates.date2num(np.datetime64('0000-12-31'))
+
+        assert_vector_equal(m.passed_data[0]["x"], expected)
+
+    def test_facet_categories(self):
+
+        m = MockMark()
+        p = Plot(x=["a", "b", "a", "c"], col=["x", "x", "y", "y"]).add(m).plot()
+        ax1, ax2 = p._figure.axes
+        assert len(ax1.get_xticks()) == 3
+        assert len(ax2.get_xticks()) == 3
+        assert_vector_equal(m.passed_data[0]["x"], pd.Series([0., 1.], [0, 1]))
+        assert_vector_equal(m.passed_data[1]["x"], pd.Series([0., 2.], [2, 3]))
+
+    def test_facet_categories_unshared(self):
+
+        m = MockMark()
+        p = (
+            Plot(x=["a", "b", "a", "c"], col=["x", "x", "y", "y"])
+            .configure(sharex=False)
+            .add(m)
+            .plot()
+        )
+        ax1, ax2 = p._figure.axes
+        assert len(ax1.get_xticks()) == 2
+        assert len(ax2.get_xticks()) == 2
+        assert_vector_equal(m.passed_data[0]["x"], pd.Series([0., 1.], [0, 1]))
+        assert_vector_equal(m.passed_data[1]["x"], pd.Series([0., 1.], [2, 3]))
+
+    def test_facet_categories_single_dim_shared(self):
+
+        data = [
+            ("a", 1, 1), ("b", 1, 1),
+            ("a", 1, 2), ("c", 1, 2),
+            ("b", 2, 1), ("d", 2, 1),
+            ("e", 2, 2), ("e", 2, 1),
+        ]
+        df = pd.DataFrame(data, columns=["x", "row", "col"]).assign(y=1)
+        variables = {k: k for k in df}
+
+        m = MockMark()
+        p = Plot(df, **variables).add(m).configure(sharex="row").plot()
+
+        axs = p._figure.axes
+        for ax in axs:
+            assert ax.get_xticks() == [0, 1, 2]
+
+        assert_vector_equal(m.passed_data[0]["x"], pd.Series([0., 1.], [0, 1]))
+        assert_vector_equal(m.passed_data[1]["x"], pd.Series([0., 2.], [2, 3]))
+        assert_vector_equal(m.passed_data[2]["x"], pd.Series([0., 1., 2.], [4, 5, 7]))
+        assert_vector_equal(m.passed_data[3]["x"], pd.Series([2.], [6]))
+
+    def test_pair_categories(self):
+
+        data = [("a", "a"), ("b", "c")]
+        df = pd.DataFrame(data, columns=["x1", "x2"]).assign(y=1)
+        m = MockMark()
+        p = Plot(df, y="y").pair(x=["x1", "x2"]).add(m).plot()
+
+        ax1, ax2 = p._figure.axes
+        assert ax1.get_xticks() == [0, 1]
+        assert ax2.get_xticks() == [0, 1]
+        assert_vector_equal(m.passed_data[0]["x"], pd.Series([0., 1.], [0, 1]))
+        assert_vector_equal(m.passed_data[1]["x"], pd.Series([0., 1.], [0, 1]))
+
+    @pytest.mark.xfail(
+        LooseVersion(mpl.__version__) < "3.4.0",
+        reason="Sharing paired categorical axes requires matplotlib>3.4.0"
+    )
+    def test_pair_categories_shared(self):
+
+        data = [("a", "a"), ("b", "c")]
+        df = pd.DataFrame(data, columns=["x1", "x2"]).assign(y=1)
+        m = MockMark()
+        p = Plot(df, y="y").pair(x=["x1", "x2"]).add(m).configure(sharex=True).plot()
+
+        for ax in p._figure.axes:
+            assert ax.get_xticks() == [0, 1, 2]
+        assert_vector_equal(m.passed_data[0]["x"], pd.Series([0., 1.], [0, 1]))
+        assert_vector_equal(m.passed_data[1]["x"], pd.Series([0., 2.], [0, 1]))
+
+    def test_undefined_variable_raises(self):
+
+        p = Plot(x=[1, 2, 3], color=["a", "b", "c"]).scale_numeric("y")
+        err = r"No data found for variable\(s\) with explicit scale: {'y'}"
+        with pytest.raises(RuntimeError, match=err):
+            p.plot()
 
 
 class TestPlotting:
@@ -1301,5 +1382,4 @@ class TestLabelVisibility:
 
 # TODO Current untested includes:
 # - anything having to do with semantic mapping
-# - interaction with existing matplotlib objects
 # - any important corner cases in the original test_core suite
