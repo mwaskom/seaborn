@@ -7,12 +7,13 @@ if TYPE_CHECKING:
 
 class Stat:
 
-    orient: Literal["x", "y"]
     grouping_vars: list[str] = []
 
-    def setup(self, data: DataFrame):
+    def setup(self, data: DataFrame, orient: Literal["x", "y"]) -> Stat:
         """The default setup operation is to store a reference to the full data."""
+        # TODO make this non-mutating
         self._full_data = data
+        self.orient = orient
         return self
 
     def __call__(self, data: DataFrame):

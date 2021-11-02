@@ -17,7 +17,6 @@ class Mark:
     # TODO where to define vars we always group by (col, row, group)
     default_stat: Type[Stat] | None = None
     grouping_vars: list[str] = []
-    orient: Literal["x", "y"]
     requires: list[str]  # List of variabes that must be defined
     supports: list[str]  # List of variables that will be used
 
@@ -25,7 +24,12 @@ class Mark:
 
         self._kwargs = kwargs
 
-    def _adjust(self, df: DataFrame, mappings: dict) -> DataFrame:
+    def _adjust(
+        self,
+        df: DataFrame,
+        mappings: dict,
+        orient: Literal["x", "y"],
+    ) -> DataFrame:
 
         return df
 
@@ -56,12 +60,15 @@ class Mark:
             return "x"
 
     def _plot(
-        self, generate_splits: Callable[[], Generator], mappings: MappingDict,
+        self,
+        split_generator: Callable[[], Generator],
+        mappings: MappingDict,
+        orient: Literal["x", "y"],
     ) -> None:
         """Main interface for creating a plot."""
-        for keys, data, ax in generate_splits():
+        for keys, data, ax in split_generator():
             kws = self._kwargs.copy()
-            self._plot_split(keys, data, ax, mappings, kws)
+            self._plot_split(keys, data, ax, mappings, orient, kws)
 
         self._finish_plot()
 
@@ -71,6 +78,7 @@ class Mark:
         data: DataFrame,
         ax: Axes,
         mappings: MappingDict,
+        orient: Literal["x", "y"],
         kws: dict,
     ) -> None:
         """Method that plots specific subsets of data. Must be defined by subclass."""

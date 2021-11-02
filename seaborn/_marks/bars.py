@@ -42,10 +42,10 @@ class Bar(Mark):
 
         self._multiple = multiple
 
-    def _adjust(self, df, mappings):
+    def _adjust(self, df, mappings, orient):
 
         # Abstract out the pos/val axes based on orientation
-        if self.orient == "y":
+        if orient == "y":
             pos, val = "yx"
         else:
             pos, val = "xy"
@@ -120,7 +120,7 @@ class Bar(Mark):
 
         return df
 
-    def _plot_split(self, keys, data, ax, mappings, kws):
+    def _plot_split(self, keys, data, ax, mappings, orient, kws):
 
         kws.update({
             k: v for k, v in self._mappable_attributes.items() if v is not None
@@ -131,7 +131,7 @@ class Bar(Mark):
         else:
             kws.setdefault("color", "C0")  # FIXME:default attributes
 
-        if self.orient == "y":
+        if orient == "y":
             func = ax.barh
             varmap = dict(y="y", width="x", height="width")
         else:

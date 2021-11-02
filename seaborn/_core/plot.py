@@ -64,17 +64,14 @@ SEMANTICS = {  # TODO should this be pluggable?
 class Plot:
 
     _data: PlotData
-    _layers: list[Layer]
+    _layers: list[dict]
     _semantics: dict[str, Semantic]
-    _mappings: dict[str, SemanticMapping]  # TODO keys as Literal, or use TypedDict?
     _scales: dict[str, Scale]
 
     # TODO use TypedDict here
     _subplotspec: dict[str, Any]
     _facetspec: dict[str, Any]
     _pairspec: dict[str, Any]
-
-    _figure: Figure
 
     def __init__(
         self,
@@ -93,6 +90,12 @@ class Plot:
         self._pairspec = {}
 
         self._target = None
+
+    def _repr_png_(self) -> bytes:
+
+        return self.plot()._repr_png_()
+
+    # TODO _repr_svg_?
 
     def on(self, target: Axes | SubFigure | Figure) -> Plot:
 
@@ -147,10 +150,13 @@ class Plot:
             # stat with non-default params, it should use functools.partial
             stat = mark.default_stat()
 
-        orient_norm: Literal["x", "y"] | None
-        orient_norm = {"v": "x", "h": "y"}.get(orient, orient)  # type: ignore
-
-        self._layers.append(Layer(mark, stat, orient_norm, data, variables))
+        self._layers.append({
+            "mark": mark,
+            "stat": stat,
+            "source": data,
+            "variables": variables,
+            "orient": {"v": "x", "h": "y"}.get(orient, orient),  # type: ignore
+        })
 
         return self
 
@@ -242,6 +248,9 @@ class Plot:
         wrap: int | None = None,
         data: DataSource = None,
     ) -> Plot:
+
+        # TODO remove data= from this API. There is good reason to pass layer-specific
+        # data, but no reason to use separate global data sources.
 
         # Can't pass `None` here or it will disinherit the `Plot()` def
         variables = {}
@@ -367,6 +376,8 @@ class Plot:
     # This could be used to add another color-like dimension
     # and also the basis for what mappings like stat.density -> rgba do
 
+    # TODO map_saturation/map_chroma as a binary semantic?
+
     # TODO originally we had planned to have a scale_native option that would default
     # to matplotlib. I don't fully remember why. Is this still something we need?
 
@@ -468,13 +479,6 @@ class Plot:
 
         raise NotImplementedError("TODO")
 
-    def theme(self) -> Plot:
-
-        # TODO Plot-specific themes using the seaborn theming system
-        # TODO should this also be where custom figure size goes?
-        raise NotImplementedError
-        return self
-
     def configure(
         self,
         figsize: tuple[float, float] | None = None,
@@ -497,42 +501,49 @@ class Plot:
 
         return self
 
-    def resize(self, val):
+    # TODO def legend (ugh)
 
-        # TODO I don't think this is the interface we ultimately want to use, but
-        # I want to be able to do this for demonstration now. If we do want this
-        # could think about how to have "auto" sizing based on number of subplots
-        self._figsize = val
+    def theme(self) -> Plot:
+
+        # TODO Plot-specific themes using the seaborn theming system
+        # TODO should this also be where custom figure size goes?
+        raise NotImplementedError
         return self
 
-    def plot(self, pyplot=False) -> Plot:
-
-        self._setup_data()
-        self._setup_figure(pyplot)
-        self._setup_scales()
-        self._setup_mappings()
-
-        for layer in self._layers:
-            layer_mappings = {k: v for k, v in self._mappings.items() if k in layer}
-            self._plot_layer(layer, layer_mappings)
-
-        # TODO this should be configurable
-        if not self._figure.get_constrained_layout():
-            self._figure.set_tight_layout(True)
-
-        # TODO many methods will (confusingly) have no effect if invoked after
-        # Plot.plot is (manually) called. We should have some way of raising from
-        # within those methods to provide more useful feedback.
-
-        return self
+    # TODO decorate? (or similar, for various texts) alt names: label?
 
     def clone(self) -> Plot:
 
-        if hasattr(self, "_figure"):
-            raise RuntimeError("Cannot clone after calling `Plot.plot`.")
-        elif self._target is not None:
+        if self._target is not None:
+            # TODO think about whether this restriction is needed with immutable Plot
             raise RuntimeError("Cannot clone after calling `Plot.on`.")
+        # TODO we are moving towards non-mutatable Plot so we don't need deep copy here
         return deepcopy(self)
+
+    def save(self, fname, **kwargs) -> Plot:
+        # TODO kws?
+        self.plot().save(fname, **kwargs)
+        return self
+
+    def plot(self, pyplot=False) -> Plotter:
+
+        # TODO if we have _target object, pyplot should be determined by whether it
+        # is hooked into the pyplot state machine (how do we check?)
+
+        plotter = Plotter(pyplot=pyplot)
+        plotter._setup_data(self)
+        plotter._setup_figure(self)
+        plotter._setup_scales(self)
+        plotter._setup_mappings(self)
+
+        for layer in plotter._layers:
+            plotter._plot_layer(self, layer, plotter._mappings)
+
+        # TODO this should be configurable
+        if not plotter._figure.get_constrained_layout():
+            plotter._figure.set_tight_layout(True)
+
+        return plotter
 
     def show(self, **kwargs) -> None:
 
@@ -544,53 +555,165 @@ class Plot:
             self.plot(pyplot=True)
         plt.show(**kwargs)
 
-    def save(self) -> Plot:  # TODO perhaps this should not return self?
 
-        raise NotImplementedError()
+class Plotter:
+
+    def __init__(self, pyplot=False):
+
+        self.pyplot = pyplot
+
+    def save(self, fname, **kwargs) -> Plotter:
+        # TODO type fname as string or path; handle Path objects if matplotlib can't
+        self._figure.savefig(fname, **kwargs)
         return self
 
-    # ================================================================================ #
-    # End of public API
-    # ================================================================================ #
+    def show(self, **kwargs) -> None:
+        # TODO if we did not create the Plotter with pyplot, is it possible to do this?
+        # If not we should clearly raise.
+        plt.show(**kwargs)
 
-    def _setup_data(self):
+    # TODO API for accessing the underlying matplotlib objects
+    # TODO what else is useful in the public API for this class?
+
+    # def draw?
+
+    def _repr_png_(self) -> bytes:
+
+        # TODO better to do this through a Jupyter hook? e.g.
+        # ipy = IPython.core.formatters.get_ipython()
+        # fmt = ipy.display_formatter.formatters["text/html"]
+        # fmt.for_type(Plot, ...)
+
+        # TODO use matplotlib backend directly instead of going through savefig?
+
+        # TODO Would like to allow for svg too ... how to configure?
+
+        # TODO perhaps have self.show() flip a switch to disable this, so that
+        # user does not end up with two versions of the figure in the output
+
+        # TODO detect HiDPI and generate a retina png by default?
+        buffer = io.BytesIO()
+        # TODO use bbox_inches="tight" like the inline backend?
+        # pro: better results,  con: (sometimes) confusing results
+        # Better solution would be to default (with option to change)
+        # to using constrained/tight layout.
+        self._figure.savefig(buffer, format="png", bbox_inches="tight")
+        return buffer.getvalue()
+
+    def _setup_data(self, p: Plot) -> None:
 
         self._data = (
-            self._data
+            p._data
             .concat(
-                self._facetspec.get("source"),
-                self._facetspec.get("variables"),
+                p._facetspec.get("source"),
+                p._facetspec.get("variables"),
             )
             .concat(
-                self._pairspec.get("source"),
-                self._pairspec.get("variables"),
+                p._pairspec.get("source"),
+                p._pairspec.get("variables"),
             )
         )
 
         # TODO concat with mapping spec
+        self._layers = []
+        for layer in p._layers:
+            self._layers.append({
+                "data": self._data.concat(layer.get("source"), layer.get("variables")),
+                **layer,
+            })
 
-        for layer in self._layers:
-            # TODO FIXME:mutable we need to make this not modify the existing object
-            # TODO one idea is add() inserts a dict into _layerspec or something
-            layer.data = self._data.concat(layer.source, layer.variables)
+    def _setup_figure(self, p: Plot) -> None:
 
-    def _setup_scales(self) -> None:
+        # --- Parsing the faceting/pairing parameterization to specify figure grid
+
+        # TODO use context manager with theme that has been set
+        # TODO (maybe wrap THIS function with context manager; would be cleaner)
+
+        self._subplots = subplots = Subplots(
+            p._subplotspec, p._facetspec, p._pairspec, self._data,
+        )
+
+        # --- Figure initialization
+        figure_kws = {"figsize": getattr(p, "_figsize", None)}  # TODO fix
+        self._figure = subplots.init_figure(self.pyplot, figure_kws, p._target)
+
+        # --- Figure annotation
+        for sub in subplots:
+            ax = sub["ax"]
+            for axis in "xy":
+                axis_key = sub[axis]
+                # TODO Should we make it possible to use only one x/y label for
+                # all rows/columns in a faceted plot? Maybe using sub{axis}label,
+                # although the alignments of the labels from that method leaves
+                # something to be desired (in terms of how it defines 'centered').
+                names = [
+                    self._data.names.get(axis_key),
+                    *[layer["data"].names.get(axis_key) for layer in self._layers],
+                ]
+                label = next((name for name in names if name is not None), None)
+                ax.set(**{f"{axis}label": label})
+
+                axis_obj = getattr(ax, f"{axis}axis")
+                visible_side = {"x": "bottom", "y": "left"}.get(axis)
+                show_axis_label = (
+                    sub[visible_side]
+                    or axis in p._pairspec and bool(p._pairspec.get("wrap"))
+                    or not p._pairspec.get("cartesian", True)
+                )
+                axis_obj.get_label().set_visible(show_axis_label)
+                show_tick_labels = (
+                    show_axis_label
+                    or p._subplotspec.get(f"share{axis}") not in (
+                        True, "all", {"x": "col", "y": "row"}[axis]
+                    )
+                )
+                plt.setp(axis_obj.get_majorticklabels(), visible=show_tick_labels)
+                plt.setp(axis_obj.get_minorticklabels(), visible=show_tick_labels)
+
+            # TODO title template should be configurable
+            # TODO Also we want right-side titles for row facets in most cases
+            # TODO should configure() accept a title= kwarg (for single subplot plots)?
+            # Let's have what we currently call "margin titles" but properly using the
+            # ax.set_title interface (see my gist)
+            title_parts = []
+            for dim in ["row", "col"]:
+                if sub[dim] is not None:
+                    name = self._data.names.get(dim, f"_{dim}_")
+                    title_parts.append(f"{name} = {sub[dim]}")
+
+            has_col = sub["col"] is not None
+            has_row = sub["row"] is not None
+            show_title = (
+                has_col and has_row
+                or (has_col or has_row) and p._facetspec.get("wrap")
+                or (has_col and sub["top"])
+                # TODO or has_row and sub["right"] and <right titles>
+                or has_row  # TODO and not <right titles>
+            )
+            if title_parts:
+                title = " | ".join(title_parts)
+                title_text = ax.set_title(title)
+                title_text.set_visible(show_title)
+
+    def _setup_scales(self, p: Plot) -> None:
 
         # Identify all of the variables that will be used at some point in the plot
         df = self._data.frame
         variables = list(df)
         for layer in self._layers:
-            variables.extend(c for c in layer.data.frame if c not in variables)
+            variables.extend(c for c in layer["data"].frame if c not in variables)
 
         # Catch cases where a variable is explicitly scaled but has no data,
         # which is *likely* to be a user error (i.e. a typo or mis-specified plot).
         # It's possible we'd want to allow the coordinate axes to be scaled without
         # data, which would let the Plot interface be used to set up an empty figure.
         # So we could revisit this if that seems useful.
-        undefined = set(self._scales) - set(variables)
+        undefined = set(p._scales) - set(variables)
         if undefined:
             err = f"No data found for variable(s) with explicit scale: {undefined}"
             raise RuntimeError(err)  # FIXME:PlotSpecError
+
+        self._scales = {}
 
         for var in variables:
 
@@ -598,7 +721,8 @@ class Plot:
             var_data = pd.concat([
                 df.get(var),
                 # Only use variables that are *added* at the layer-level
-                *(y.data.frame.get(var) for y in self._layers if var in y.variables)
+                *(x["data"].frame.get(var)
+                  for x in self._layers if var in x["variables"])
             ], axis=1)
 
             # Determine whether this is an coordinate variable
@@ -612,8 +736,8 @@ class Plot:
 
             # Get the scale object, tracking whether it was explicitly set
             var_values = var_data.stack()
-            if var in self._scales:
-                scale = self._scales[var]
+            if var in p._scales:
+                scale = p._scales[var]
                 scale.type_declared = True
             else:
                 scale = get_default_scale(var_values)
@@ -639,7 +763,7 @@ class Plot:
             # While it would be possible to hack a workaround together,
             # this is a novel/niche behavior, so we will just raise.
             if LooseVersion(mpl.__version__) < "3.4.0":
-                paired_axis = axis in self._pairspec
+                paired_axis = axis in p._pairspec
                 cat_scale = self._scales[var].scale_type == "categorical"
                 ok_dim = {"x": "col", "y": "row"}[axis]
                 shared_axes = share_state not in [False, "none", ok_dim]
@@ -690,23 +814,23 @@ class Plot:
                     # TODO should we also infer categories / datetime units?
                     subplot[key] = NumericScale(default_scale, None)
 
-    def _setup_mappings(self) -> None:
+    def _setup_mappings(self, p: Plot) -> None:
 
-        variables = set(self._data.frame)  # TODO abstract this?
+        variables = list(self._data.frame)  # TODO abstract this?
         for layer in self._layers:
-            variables |= set(layer.data.frame)
-        semantic_vars = variables & set(SEMANTICS)
+            variables.extend(c for c in layer["data"].frame if c not in variables)
+        semantic_vars = [v for v in variables if v in SEMANTICS]
 
         self._mappings = {}
         for var in semantic_vars:
 
-            semantic = self._semantics.get(var) or SEMANTICS[var]
+            semantic = p._semantics.get(var) or SEMANTICS[var]
 
             all_values = pd.concat([
                 self._data.frame.get(var),
-                # TODO important to check for var in x.variables, not just in x
-                # Because we only want to concat if a variable was *added* here
-                *(x.data.frame.get(var) for x in self._layers if var in x.variables)
+                # Only use variables that are *added* at the layer-level
+                *(x["data"].frame.get(var)
+                  for x in self._layers if var in x["variables"])
             ], axis=1).stack()
 
             if var in self._scales:
@@ -718,131 +842,54 @@ class Plot:
 
             self._mappings[var] = semantic.setup(all_values, scale.setup(all_values))
 
-    def _setup_figure(self, pyplot: bool = False) -> None:
-
-        # --- Parsing the faceting/pairing parameterization to specify figure grid
-
-        # TODO use context manager with theme that has been set
-        # TODO (maybe wrap THIS function with context manager; would be cleaner)
-
-        # Get the full set of assigned variables, whether from constructor or methods
-        setup_data = (
-            self._data
-            .concat(
-                self._facetspec.get("source"),
-                self._facetspec.get("variables"),
-            ).concat(
-                self._pairspec.get("source"),  # Currently always None
-                self._pairspec.get("variables"),
-            )
-        )
-
-        self._subplots = subplots = Subplots(
-            self._subplotspec, self._facetspec, self._pairspec, setup_data
-        )
-
-        # --- Figure initialization
-        figure_kws = {"figsize": getattr(self, "_figsize", None)}  # TODO fix
-        self._figure = subplots.init_figure(pyplot, figure_kws, self._target)
-
-        # --- Figure annotation
-        for sub in subplots:
-            ax = sub["ax"]
-            for axis in "xy":
-                axis_key = sub[axis]
-                # TODO Should we make it possible to use only one x/y label for
-                # all rows/columns in a faceted plot? Maybe using sub{axis}label,
-                # although the alignments of the labels from that method leaves
-                # something to be desired (in terms of how it defines 'centered').
-                names = [
-                    setup_data.names.get(axis_key),
-                    *[layer.data.names.get(axis_key) for layer in self._layers],
-                ]
-                label = next((name for name in names if name is not None), None)
-                ax.set(**{f"{axis}label": label})
-
-                axis_obj = getattr(ax, f"{axis}axis")
-                visible_side = {"x": "bottom", "y": "left"}.get(axis)
-                show_axis_label = (
-                    sub[visible_side]
-                    or axis in self._pairspec and bool(self._pairspec.get("wrap"))
-                    or not self._pairspec.get("cartesian", True)
-                )
-                axis_obj.get_label().set_visible(show_axis_label)
-                show_tick_labels = (
-                    show_axis_label
-                    or self._subplotspec.get(f"share{axis}") not in (
-                        True, "all", {"x": "col", "y": "row"}[axis]
-                    )
-                )
-                plt.setp(axis_obj.get_majorticklabels(), visible=show_tick_labels)
-                plt.setp(axis_obj.get_minorticklabels(), visible=show_tick_labels)
-
-            # TODO title template should be configurable
-            # TODO Also we want right-side titles for row facets in most cases
-            # TODO should configure() accept a title= kwarg (for single subplot plots)?
-            # Let's have what we currently call "margin titles" but properly using the
-            # ax.set_title interface (see my gist)
-            title_parts = []
-            for dim in ["row", "col"]:
-                if sub[dim] is not None:
-                    name = setup_data.names.get(dim, f"_{dim}_")
-                    title_parts.append(f"{name} = {sub[dim]}")
-
-            has_col = sub["col"] is not None
-            has_row = sub["row"] is not None
-            show_title = (
-                has_col and has_row
-                or (has_col or has_row) and self._facetspec.get("wrap")
-                or (has_col and sub["top"])
-                # TODO or has_row and sub["right"] and <right titles>
-                or has_row  # TODO and not <right titles>
-            )
-            if title_parts:
-                title = " | ".join(title_parts)
-                title_text = ax.set_title(title)
-                title_text.set_visible(show_title)
-
-    def _plot_layer(self, layer: Layer, mappings: dict[str, SemanticMapping]) -> None:
+    def _plot_layer(
+        self,
+        p: Plot,
+        layer: dict[str, Any],  # TODO Type
+        mappings: dict[str, SemanticMapping]
+    ) -> None:
 
         default_grouping_vars = ["col", "row", "group"]  # TODO where best to define?
 
-        data = layer.data
-        mark = layer.mark
-        stat = layer.stat
+        data = layer["data"]
+        mark = layer["mark"]
+        stat = layer["stat"]
+
+        pair_variables = p._pairspec.get("structure", {})
 
         full_df = data.frame
-        for subplots, df, scales in self._generate_pairings(full_df):
+        for subplots, df, scales in self._generate_pairings(full_df, pair_variables):
 
-            orient = layer.orient or mark._infer_orient(scales)
-            mark.orient = orient  # type: ignore  # mypy false positive?
-            if stat is not None:  # FIXME:IdentityStat
-                stat.orient = orient  # type: ignore  # mypy false positive?
+            orient = layer["orient"] or mark._infer_orient(scales)
 
             df = self._scale_coords(subplots, df)
 
             if stat is not None:
                 grouping_vars = stat.grouping_vars + default_grouping_vars
-                df = self._apply_stat(df, grouping_vars, stat)
+                df = self._apply_stat(df, grouping_vars, stat, orient)
 
-            df = mark._adjust(df, mappings)
+            df = mark._adjust(df, mappings, orient)
 
             # Our statistics happen on the scale we want, but then matplotlib is going
             # to re-handle the scaling, so we need to invert before handing off
             df = self._unscale_coords(subplots, df)
 
             grouping_vars = mark.grouping_vars + default_grouping_vars
-            generate_splits = self._setup_split_generator(
+            split_generator = self._setup_split_generator(
                 grouping_vars, df, mappings, subplots
             )
 
-            layer.mark._plot(generate_splits, mappings)
+            mark._plot(split_generator, mappings, orient)
 
     def _apply_stat(
-        self, df: DataFrame, grouping_vars: list[str], stat: Stat
+        self,
+        df: DataFrame,
+        grouping_vars: list[str],
+        stat: Stat,
+        orient: Literal["x", "y"],
     ) -> DataFrame:
 
-        stat.setup(df)  # TODO pass scales here?
+        stat.setup(df, orient)  # TODO pass scales here?
 
         # TODO how can we special-case fast aggregations? (i.e. mean, std, etc.)
         # IDEA: have Stat identify as an aggregator? (Through Mixin or attribute)
@@ -850,8 +897,8 @@ class Plot:
         stat_grouping_vars = [var for var in grouping_vars if var in df]
         # TODO I don't think we always want to group by the default orient axis?
         # Better to have the Stat declare when it wants that to happen
-        if stat.orient not in stat_grouping_vars:
-            stat_grouping_vars.append(stat.orient)
+        if orient not in stat_grouping_vars:
+            stat_grouping_vars.append(orient)
 
         # TODO rewrite this whole thing, I think we just need to avoid groupby/apply
         df = (
@@ -920,14 +967,12 @@ class Plot:
 
     def _generate_pairings(
         self,
-        df: DataFrame
+        df: DataFrame,
+        pair_variables: dict,
     ) -> Generator[
         tuple[list[dict], DataFrame, dict[str, Scale]], None, None
     ]:
         # TODO retype return with SubplotSpec or similar
-        # TODO also maybe abstract the whole thing somewhere, it's way too verbose
-
-        pair_variables = self._pairspec.get("structure", {})
 
         if not pair_variables:
             # TODO casting to list because subplots below is a list
@@ -991,7 +1036,7 @@ class Plot:
                 order = categorical_order(df[var])
             grouping_keys.append(order)
 
-        def generate_splits() -> Generator:
+        def split_generator() -> Generator:
 
             for subplot in subplots:
 
@@ -1031,62 +1076,4 @@ class Plot:
 
                     yield sub_vars, df_subset.copy(), subplot["ax"]
 
-        return generate_splits
-
-    def _repr_png_(self) -> bytes:
-
-        # TODO better to do this through a Jupyter hook? e.g.
-        # ipy = IPython.core.formatters.get_ipython()
-        # fmt = ipy.display_formatter.formatters["text/html"]
-        # fmt.for_type(Plot, ...)
-
-        # TODO Would like to allow for svg too ... how to configure?
-
-        # TODO perhaps have self.show() flip a switch to disable this, so that
-        # user does not end up with two versions of the figure in the output
-
-        # TODO detect HiDPI and generate a retina png by default?
-
-        # Preferred behavior is to clone self so that showing a Plot in the REPL
-        # does not interfere with adding further layers onto it in the next cell.
-        # But we can still show a Plot where the user has manually invoked .plot()
-        if hasattr(self, "_figure"):
-            figure = self._figure
-        elif self._target is None:
-            figure = self.clone().plot()._figure
-        else:
-            figure = self.plot()._figure
-
-        buffer = io.BytesIO()
-
-        # TODO use bbox_inches="tight" like the inline backend?
-        # pro: better results,  con: (sometimes) confusing results
-        # Better solution would be to default (with option to change)
-        # to using constrained/tight layout.
-        figure.savefig(buffer, format="png", bbox_inches="tight")
-        return buffer.getvalue()
-
-
-class Layer:
-
-    data: PlotData
-
-    def __init__(
-        self,
-        mark: Mark,
-        stat: Stat | None,
-        orient: Literal["x", "y"] | None,
-        source: DataSource | None,
-        variables: dict[str, VariableSpec],
-    ):
-
-        self.mark = mark
-        self.stat = stat
-        self.orient = orient
-        self.source = source
-        self.variables = variables
-
-    def __contains__(self, key: str) -> bool:
-        if hasattr(self, "data"):
-            return key in self.data
-        return False
+        return split_generator
