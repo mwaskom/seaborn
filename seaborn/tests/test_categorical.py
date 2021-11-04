@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 import matplotlib as mpl
 import matplotlib.pyplot as plt
-from matplotlib.colors import rgb2hex, to_rgb, to_rgba
+from matplotlib.colors import rgb2hex, same_color, to_rgb, to_rgba
 
 import pytest
 from pytest import approx
@@ -876,15 +876,15 @@ class TestBoxPlotter(CategoricalFixture):
 
         ax = cat.boxplot(x="g", y="y", data=self.df, saturation=1)
         pal = palettes.color_palette(n_colors=3)
-        for patch, color in zip(self.get_box_artists(ax), pal):
-            assert patch.get_facecolor()[:3] == color
+        assert same_color([patch.get_facecolor() for patch in self.get_box_artists(ax)],
+                          pal)
 
         plt.close("all")
 
         ax = cat.boxplot(x="g", y="y", hue="h", data=self.df, saturation=1)
         pal = palettes.color_palette(n_colors=2)
-        for patch, color in zip(self.get_box_artists(ax), pal * 2):
-            assert patch.get_facecolor()[:3] == color
+        assert same_color([patch.get_facecolor() for patch in self.get_box_artists(ax)],
+                          pal * 3)
 
         plt.close("all")
 
@@ -3143,17 +3143,19 @@ class TestBoxenPlotter(CategoricalFixture):
 
     def test_box_colors(self):
 
+        fig = plt.figure()
         ax = cat.boxenplot(x="g", y="y", data=self.df, saturation=1)
+        fig.canvas.draw()
         pal = palettes.color_palette(n_colors=3)
-        for patch, color in zip(self.get_box_artists(ax), pal):
-            assert patch.get_facecolor()[:3] == color
+        patches = filter(self.ispatch, ax.collections)
+        assert same_color([patch.get_facecolor()[0] for patch in patches], pal)
 
-        plt.close("all")
-
+        fig = plt.figure()
         ax = cat.boxenplot(x="g", y="y", hue="h", data=self.df, saturation=1)
+        fig.canvas.draw()
         pal = palettes.color_palette(n_colors=2)
-        for patch, color in zip(self.get_box_artists(ax), pal * 2):
-            assert patch.get_facecolor()[:3] == color
+        patches = filter(self.ispatch, ax.collections)
+        assert same_color([patch.get_facecolor()[0] for patch in patches], pal * 3)
 
         plt.close("all")
 
