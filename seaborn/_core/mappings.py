@@ -15,7 +15,7 @@ from seaborn.palettes import QUAL_PALETTES, color_palette
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from typing import Any, Callable, Optional, Tuple
+    from typing import Any, Iterable, Callable, Tuple, Optional
     from numpy.typing import ArrayLike
     from pandas import Series
     from matplotlib.colors import Colormap
@@ -24,12 +24,6 @@ if TYPE_CHECKING:
 
     DashPattern = Tuple[float, ...]
     DashPatternWithOffset = Tuple[float, Optional[DashPattern]]
-
-
-class IdentityTransform:
-
-    def __call__(self, x: Any) -> Any:
-        return x
 
 
 class RangeTransform:
@@ -48,7 +42,6 @@ class RGBTransform:
         self.cmap = cmap
 
     def __call__(self, x: ArrayLike) -> ArrayLike:
-        # TODO should implement a general vectorized to_rgb(a)
         rgba = mpl.colors.to_rgba_array(self.cmap(x))
         return rgba[..., :3].squeeze()
 
@@ -64,8 +57,17 @@ class Semantic:
     # (e.g., convert marker values into MarkerStyle object, or raise nicely)
     # (e.g., raise if requested alpha values are outside of [0, 1])
     # (what's the right name for this function?)
-    def _homogenize_values(self, values):
-        return values
+    def _standardize_value(self, value: Any) -> Any:
+        return value
+
+    def _standardize_values(self, values: Iterable) -> Iterable:
+
+        if isinstance(values, dict):
+            return {k: self._standardize_value(v) for k, v in values.items()}
+        elif isinstance(values, pd.Series):
+            return values.map(self._standardize_value)
+        else:
+            return [self._standardize_value(x) for x in values]
 
     def setup(
         self,
@@ -107,6 +109,15 @@ class DiscreteSemantic(Semantic):
         self._values = values
         self.variable = variable
 
+    def _standardize_values(self, values: Series | list | dict | None):
+
+        if values is None:
+            return values
+        elif isinstance(values, pd.Series):
+            return values.map(self._standardize_value)
+        else:
+            return super()._standardize_values(values)
+
     def _default_values(self, n: int) -> list:
         """Return n unique values."""
         raise NotImplementedError
@@ -134,6 +145,24 @@ class DiscreteSemantic(Semantic):
 
 
 class BooleanSemantic(DiscreteSemantic):
+
+    def _standardize_values(self, values: Series | list | dict | None):
+
+        # TODO Require that values are in [1, 0, True, False]?
+        # (Equivalently, test for equality with 0/1)
+
+        if isinstance(values, Series):
+            # TODO What's best here? If we simply cast to bool, np.nan -> False, bad!
+            # "boolean"/BooleanDType, is described as experimental/subject to change
+            # But if we don't require any particular behavior, is that ok?
+            # See https://github.com/pandas-dev/pandas/issues/44293
+            return values.astype("boolean")
+        if isinstance(values, list):
+            return [bool(x) for x in values]
+        if isinstance(values, dict):
+            return {k: bool(v) for k, v in values.items()}
+        if values is None:
+            return None
 
     def _default_values(self, n: int) -> list:
         if n > 2:
@@ -230,16 +259,14 @@ class ContinuousSemantic(Semantic):
 
         elif map_type == "datetime":
 
+            # TODO delegate all this logic to the DateTime scale
+
             if scale is not None:
-                # TODO should this happen upstream, or alternatively inside the norm?
                 data = scale.cast(data)
             data = mpl.dates.date2num(data.dropna())
 
             def prepare(x):
                 return mpl.dates.date2num(pd.to_datetime(x))
-
-            # TODO if norm is tuple, convert to datetime and then to numbers?
-            # (Or handle that upstream within the DateTimeScale? Probably do this.)
 
         transform = RangeTransform(values)
 
@@ -260,6 +287,13 @@ class ColorSemantic(Semantic):
 
         self._palette = palette
         self.variable = variable
+
+    def _standardize_values(self, values: Series | list | dict):
+
+        if isinstance(values, (pd.Series, list)):
+            return mpl.colors.to_rgba_array(values)[:, :3]
+        else:
+            return {k: mpl.colors.to_rgb(v) for k, v in values.items()}
 
     def setup(
         self,
@@ -420,13 +454,12 @@ class MarkerSemantic(DiscreteSemantic):
     # TODO full types
     def __init__(self, shapes: list | dict | None = None, variable: str = "marker"):
 
-        if isinstance(shapes, list):
-            shapes = [MarkerStyle(s) for s in shapes]
-        elif isinstance(shapes, dict):
-            shapes = {k: MarkerStyle(v) for k, v in shapes.items()}
-
-        self._values = shapes
+        self._values = self._standardize_values(shapes)
         self.variable = variable
+
+    def _standardize_value(self, value: str | tuple | MarkerStyle) -> MarkerStyle:
+        # TODO more clear error handling?
+        return MarkerStyle(value)
 
     def _default_values(self, n: int) -> list[MarkerStyle]:
         """Build an arbitrarily long list of unique marker styles for points.
@@ -482,14 +515,12 @@ class LineStyleSemantic(DiscreteSemantic):
         variable: str = "linestyle"
     ):
         # TODO full types
-
-        if isinstance(styles, list):
-            styles = [self._get_dash_pattern(s) for s in styles]
-        elif isinstance(styles, dict):
-            styles = {k: self._get_dash_pattern(v) for k, v in styles.items()}
-
-        self._values = styles
+        self._values = self._standardize_values(styles)
         self.variable = variable
+
+    def _standardize_value(self, value: str | DashPattern) -> DashPatternWithOffset:
+
+        return self._get_dash_pattern(value)
 
     def _default_values(self, n: int) -> list[DashPatternWithOffset]:
         """Build an arbitrarily long list of unique dash styles for lines.
@@ -615,7 +646,16 @@ class EdgeWidthSemantic(ContinuousSemantic):
 # ==================================================================================== #
 
 class SemanticMapping:
-    ...
+    pass
+
+
+class IdentityMapping(SemanticMapping):
+
+    def __init__(self, func: Callable[[Any], Any]):
+        self._standardization_func = func
+
+    def __call__(self, x: Any) -> Any:
+        return self._standardization_func(x)
 
 
 class LookupMapping(SemanticMapping):

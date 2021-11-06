@@ -15,6 +15,7 @@ from seaborn._core.scales import (
     NumericScale,
     CategoricalScale,
     DateTimeScale,
+    IdentityScale,
     get_default_scale,
 )
 
@@ -295,6 +296,19 @@ class TestDateTime:
         expected = pd.Series(mpl.dates.datestr2num(x))
         ax = mpl.figure.Figure().subplots()
         assert_series_equal(s.convert(x, ax.xaxis), expected)
+
+
+class TestIdentity:
+
+    def test_identity_scale(self):
+
+        x = pd.Series([1, 3, 2])
+        scale = IdentityScale()
+        assert_series_equal(scale.cast(x), x)
+        assert_series_equal(scale.normalize(x), x)
+        assert_series_equal(scale.forward(x), x)
+        assert_series_equal(scale.reverse(x), x)
+        assert_series_equal(scale.convert(x), x)
 
 
 class TestDefaultScale:

@@ -27,6 +27,9 @@ def norm_from_scale(scale, norm):
     if isinstance(norm, mpl.colors.Normalize):
         return norm
 
+    if scale is None:
+        return None
+
     if norm is None:
         vmin = vmax = None
     else:

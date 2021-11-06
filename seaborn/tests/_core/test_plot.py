@@ -11,6 +11,7 @@ import matplotlib.pyplot as plt
 
 import pytest
 from pandas.testing import assert_frame_equal, assert_series_equal
+from numpy.testing import assert_array_equal
 
 from seaborn._core.plot import Plot
 from seaborn._core.rules import categorical_order
@@ -50,6 +51,7 @@ class MockMark(Mark):
         self.passed_keys = []
         self.passed_data = []
         self.passed_axes = []
+        self.passed_mappings = []
         self.n_splits = 0
 
     def _plot_split(self, keys, data, ax, mappings, orient, kws):
@@ -58,6 +60,7 @@ class MockMark(Mark):
         self.passed_keys.append(keys)
         self.passed_data.append(data)
         self.passed_axes.append(ax)
+        self.passed_mappings.append(mappings)
 
 
 class TestInit:
@@ -407,6 +410,35 @@ class TestAxisScaling:
             assert ax.get_xticks() == [0, 1, 2]
         assert_vector_equal(m.passed_data[0]["x"], pd.Series([0., 1.], [0, 1]))
         assert_vector_equal(m.passed_data[1]["x"], pd.Series([0., 2.], [0, 1]))
+
+    def test_identity_mapping_linewidth(self):
+
+        m = MockMark()
+        x = y = [1, 2, 3, 4, 5]
+        lw = pd.Series([.5, .1, .1, .9, 3])
+        Plot(x=x, y=y, linewidth=lw).scale_identity("linewidth").add(m).plot()
+        for mapping in m.passed_mappings:
+            assert_vector_equal(mapping["linewidth"](lw), lw)
+
+    def test_identity_mapping_color_strings(self):
+
+        m = MockMark()
+        x = y = [1, 2, 3]
+        c = ["C0", "C2", "C1"]
+        Plot(x=x, y=y, color=c).scale_identity("color").add(m).plot()
+        expected = mpl.colors.to_rgba_array(c)[:, :3]
+        for mapping in m.passed_mappings:
+            assert_array_equal(mapping["color"](c), expected)
+
+    def test_identity_mapping_color_tuples(self):
+
+        m = MockMark()
+        x = y = [1, 2, 3]
+        c = [(1, 0, 0), (0, 1, 0), (1, 0, 0)]
+        Plot(x=x, y=y, color=c).scale_identity("color").add(m).plot()
+        expected = mpl.colors.to_rgba_array(c)[:, :3]
+        for mapping in m.passed_mappings:
+            assert_array_equal(mapping["color"](c), expected)
 
     def test_undefined_variable_raises(self):
 

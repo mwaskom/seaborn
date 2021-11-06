@@ -142,8 +142,6 @@ class CategoricalScale(Scale):
         if axis is None:
             axis = self.axis
 
-        # axis.update_units(self._units_seed(data).to_numpy())  TODO
-
         # Matplotlib "string" unit handling can't handle missing data
         strings = self.cast(data)
         mask = strings.notna().to_numpy()
@@ -168,7 +166,7 @@ class DateTimeScale(Scale):
 
         super().__init__(scale_obj, norm)
 
-    def cast(self, data: pd.Series) -> Series:
+    def cast(self, data: Series) -> Series:
 
         if variable_type(data) == "datetime":
             return data
@@ -176,6 +174,27 @@ class DateTimeScale(Scale):
             return pd.to_datetime(data, unit="D")  # TODO kwargs...
         else:
             return pd.to_datetime(data)  # TODO kwargs...
+
+
+class IdentityScale(Scale):
+
+    def __init__(self):
+        super().__init__(None, None)
+
+    def cast(self, data: Series) -> Series:
+        return data
+
+    def normalize(self, data: Series) -> Series:
+        return data
+
+    def convert(self, data: Series, axis: Axis | None = None) -> Series:
+        return data
+
+    def forward(self, data: Series, axis: Axis | None = None) -> Series:
+        return data
+
+    def reverse(self, data: Series) -> Series:
+        return data
 
 
 class DummyAxis:

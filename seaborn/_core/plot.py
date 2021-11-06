@@ -20,12 +20,14 @@ from seaborn._core.mappings import (
     MarkerSemantic,
     LineStyleSemantic,
     LineWidthSemantic,
+    IdentityMapping,
 )
 from seaborn._core.scales import (
     Scale,
     NumericScale,
     CategoricalScale,
     DateTimeScale,
+    IdentityScale,
     get_default_scale,
 )
 
@@ -475,9 +477,10 @@ class Plot:
 
         return self
 
-    def scale_identity(self, var) -> Plot:
+    def scale_identity(self, var: str) -> Plot:
 
-        raise NotImplementedError("TODO")
+        self._scales[var] = IdentityScale()
+        return self
 
     def configure(
         self,
@@ -557,6 +560,8 @@ class Plot:
 
 
 class Plotter:
+
+    _mappings: dict[str, SemanticMapping]
 
     def __init__(self, pyplot=False):
 
@@ -816,6 +821,9 @@ class Plotter:
 
     def _setup_mappings(self, p: Plot) -> None:
 
+        semantic_vars: list[str]
+        mapping: SemanticMapping
+
         variables = list(self._data.frame)  # TODO abstract this?
         for layer in self._layers:
             variables.extend(c for c in layer["data"].frame if c not in variables)
@@ -823,7 +831,6 @@ class Plotter:
 
         self._mappings = {}
         for var in semantic_vars:
-
             semantic = p._semantics.get(var) or SEMANTICS[var]
 
             all_values = pd.concat([
@@ -840,12 +847,16 @@ class Plotter:
                 scale = get_default_scale(all_values)
                 scale.type_declared = False
 
-            self._mappings[var] = semantic.setup(all_values, scale.setup(all_values))
+            if isinstance(scale, IdentityScale):
+                mapping = IdentityMapping(semantic._standardize_values)
+            else:
+                mapping = semantic.setup(all_values, scale.setup(all_values))
+            self._mappings[var] = mapping
 
     def _plot_layer(
         self,
         p: Plot,
-        layer: dict[str, Any],  # TODO Type
+        layer: dict[str, Any],  # TODO layer should be a TypedDict
         mappings: dict[str, SemanticMapping]
     ) -> None:
 
