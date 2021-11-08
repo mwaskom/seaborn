@@ -281,23 +281,26 @@ class TestColor:
 
         m = ColorSemantic().setup(num_vector, num_scale)
         expected_cmap = color_palette("ch:", as_cmap=True)
+        norm = num_scale.setup(num_vector).norm
         for level in num_order:
-            assert same_color(m(level), expected_cmap(num_scale.norm(level)))
+            assert same_color(m(level), expected_cmap(norm(level)))
 
     def test_numeric_named_palette(self, num_vector, num_order, num_scale):
 
         palette = "viridis"
         m = ColorSemantic(palette=palette).setup(num_vector, num_scale)
         expected_cmap = color_palette(palette, as_cmap=True)
+        norm = num_scale.setup(num_vector).norm
         for level in num_order:
-            assert same_color(m(level), expected_cmap(num_scale.norm(level)))
+            assert same_color(m(level), expected_cmap(norm(level)))
 
     def test_numeric_colormap_palette(self, num_vector, num_order, num_scale):
 
         cmap = color_palette("rocket", as_cmap=True)
         m = ColorSemantic(palette=cmap).setup(num_vector, num_scale)
+        norm = num_scale.setup(num_vector).norm
         for level in num_order:
-            assert same_color(m(level), cmap(num_scale.norm(level)))
+            assert same_color(m(level), cmap(norm(level)))
 
     def test_numeric_norm_limits(self, num_vector, num_order):
 
@@ -330,8 +333,9 @@ class TestColor:
 
         cmap = color_palette("mako", as_cmap=True)
         m = ColorSemantic(palette=cmap).setup(num_vector, num_scale)
-        expected_colors = cmap(num_scale.norm(num_vector.to_numpy()))[:, :3]
-        assert_array_equal(m(num_vector.to_numpy()), expected_colors)
+        norm = num_scale.setup(num_vector).norm
+        expected_colors = cmap(norm(num_vector.to_numpy()))[:, :3]
+        assert_array_equal(m(num_vector), expected_colors)
 
     def test_datetime_default_palette(self, dt_num_vector):
 
@@ -366,7 +370,6 @@ class TestColor:
         for have, want in zip(mapped, expected):
             assert same_color(have, want)
 
-    @pytest.mark.xfail(reason="No support for norms in datetime scale yet")
     def test_datetime_norm_limits(self, dt_num_vector):
 
         norm = (
@@ -380,7 +383,7 @@ class TestColor:
         mapped = m(dt_num_vector)
 
         tmp = dt_num_vector - norm[0]
-        normed = tmp / norm[1]
+        normed = tmp / (norm[1] - norm[0])
 
         expected_cmap = color_palette(palette, as_cmap=True)
         expected = expected_cmap(normed)
@@ -540,14 +543,14 @@ class TestBoolean:
 
         x = pd.Series(["a", "b"])
         scale = get_default_scale(x)
-        m = BooleanSemantic().setup(x, scale)
+        m = BooleanSemantic(values=None, variable="").setup(x, scale)
         assert m("a") is True
         assert m("b") is False
 
     def test_default_warns(self):
 
         x = pd.Series(["a", "b", "c"])
-        s = BooleanSemantic(variable="fill")
+        s = BooleanSemantic(values=None, variable="fill")
         msg = "There are only two possible fill values, so they will cycle"
         scale = get_default_scale(x)
         with pytest.warns(UserWarning, match=msg):
@@ -561,7 +564,7 @@ class TestBoolean:
         x = pd.Series(["a", "b", "c"])
         values = [True, True, False]
         scale = get_default_scale(x)
-        m = BooleanSemantic(values).setup(x, scale)
+        m = BooleanSemantic(values, variable="").setup(x, scale)
         for k, v in zip(x, values):
             assert m(k) is v
 
@@ -668,17 +671,6 @@ class ContinuousBase:
         x = np.asarray(x)  # matplotlib<3.4.3 compatability
         expected = self.transform(norm(x), *self.semantic().default_range)
         assert_array_equal(y, expected)
-
-    @pytest.mark.xfail(reason="Needs decision about behavior")
-    def test_norm_categorical(self):
-
-        # TODO is it right to raise here or should that happen upstream?
-        # Or is there some reasonable way to actually use the norm?
-        x = pd.Series(["a", "c", "b", "c"])
-        norm = mpl.colors.LogNorm(1, 100)
-        scale = NumericScale(LinearScale("x"), norm=norm)
-        with pytest.raises(ValueError):
-            self.semantic().setup(x, scale)
 
     def test_default_datetime(self):
 
