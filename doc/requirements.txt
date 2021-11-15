@@ -1,6 +1,6 @@
-docutils<=0.17  # https://sourceforge.net/p/docutils/bugs/431/
-sphinx==3.3.1
-sphinx_bootstrap_theme==0.7.1
+docutils<0.18  # https://sourceforge.net/p/docutils/bugs/431/
+sphinx>=3.3.1
+sphinx_bootstrap_theme>=0.7.1
 numpydoc
 nbconvert
 ipykernel
