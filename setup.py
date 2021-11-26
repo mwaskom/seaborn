@@ -68,8 +68,8 @@ if __name__ == "__main__":
     from setuptools import setup
 
     import sys
-    if sys.version_info[:2] < (3, 6):
-        raise RuntimeError("seaborn requires python >= 3.6.")
+    if sys.version_info[:2] < (3, 7):
+        raise RuntimeError("seaborn requires python >= 3.7.")
 
     setup(
         name=DISTNAME,
