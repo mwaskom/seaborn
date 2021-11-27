@@ -50,12 +50,12 @@ class Feature:
 
     def __repr__(self):
         """Nice formatting for when object appears in Mark init signature."""
-        if self.val is not None:
-            s = f"<{repr(self.val)}>"
-        elif self.depend is not None:
-            s = f"<depend:{self.depend}>"
-        elif self.rc is not None:
-            s = f"<rc:{self.rc}>"
+        if self._val is not None:
+            s = f"<{repr(self._val)}>"
+        elif self._depend is not None:
+            s = f"<depend:{self._depend}>"
+        elif self._rc is not None:
+            s = f"<rc:{self._rc}>"
         else:
             s = "<undefined>"
         return s
