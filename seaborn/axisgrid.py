@@ -495,6 +495,8 @@ class FacetGrid(Grid):
                 ax.yaxis.offsetText.set_visible(False)
                 ax.yaxis.label.set_visible(False)
 
+        self.set_titles()
+
     __init__.__doc__ = dedent("""\
         Initialize the matplotlib figure and FacetGrid object.
 
@@ -806,7 +808,6 @@ class FacetGrid(Grid):
     def _finalize_grid(self, axlabels):
         """Finalize the annotations and layout."""
         self.set_axis_labels(*axlabels)
-        self.set_titles()
         self.tight_layout()
 
     def facet_axis(self, row_i, col_j, modify_state=True):
