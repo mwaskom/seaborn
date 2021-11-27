@@ -477,7 +477,9 @@ class FacetGrid(Grid):
 
         # --- Make the axes look good
 
+        self.set_titles()
         self.tight_layout()
+
         if despine:
             self.despine()
 
@@ -806,7 +808,6 @@ class FacetGrid(Grid):
     def _finalize_grid(self, axlabels):
         """Finalize the annotations and layout."""
         self.set_axis_labels(*axlabels)
-        self.set_titles()
         self.tight_layout()
 
     def facet_axis(self, row_i, col_j, modify_state=True):
