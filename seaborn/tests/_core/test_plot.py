@@ -54,13 +54,15 @@ class MockMark(Mark):
         self.passed_mappings = []
         self.n_splits = 0
 
-    def _plot_split(self, keys, data, ax, mappings, orient, kws):
+    def _plot_split(self, keys, data, ax, kws):
 
         self.n_splits += 1
         self.passed_keys.append(keys)
         self.passed_data.append(data)
         self.passed_axes.append(ax)
-        self.passed_mappings.append(mappings)
+
+        # TODO update the test that uses this
+        self.passed_mappings.append(self.mappings)
 
 
 class TestInit:
@@ -197,8 +199,8 @@ class TestLayerAddition:
     def test_orient(self, arg, expected):
 
         class MockMarkTrackOrient(MockMark):
-            def _adjust(self, data, mappings, orient):
-                self.orient_at_adjust = orient
+            def _adjust(self, data):
+                self.orient_at_adjust = self.orient
                 return data
 
         class MockStatTrackOrient(MockStat):
@@ -662,7 +664,7 @@ class TestPlotting:
         orig_df = long_df.copy(deep=True)
 
         class AdjustableMockMark(MockMark):
-            def _adjust(self, data, mappings, orient):
+            def _adjust(self, data):
                 data["x"] = data["x"] + 1
                 return data
 
@@ -676,7 +678,7 @@ class TestPlotting:
     def test_adjustments_log_scale(self, long_df):
 
         class AdjustableMockMark(MockMark):
-            def _adjust(self, data, mappings, orient):
+            def _adjust(self, data):
                 data["x"] = data["x"] - 1
                 return data
 

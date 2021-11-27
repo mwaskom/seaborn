@@ -2,11 +2,10 @@ import numpy as np
 import pandas as pd
 import matplotlib as mpl
 from matplotlib.scale import LinearScale
-from matplotlib.colors import Normalize, same_color
+from matplotlib.colors import Normalize, same_color, to_rgba, to_rgb
 
 import pytest
 from numpy.testing import assert_array_equal
-from pandas.testing import assert_series_equal
 
 from seaborn._compat import MarkerStyle
 from seaborn._core.rules import categorical_order
@@ -117,7 +116,7 @@ class TestColor:
         palette = dict(zip(cat_order, color_palette("Greens")))
         scale = get_default_scale(cat_vector)
         m = ColorSemantic(palette=palette).setup(cat_vector, scale)
-        assert m.mapping == palette
+        assert m.mapping == {k: to_rgb(v) for k, v in palette.items()}
 
         for level, color in palette.items():
             assert same_color(m(level), color)
@@ -127,7 +126,7 @@ class TestColor:
         palette = dict(zip(num_order, color_palette("Greens")))
         scale = get_default_scale(num_vector)
         m = ColorSemantic(palette=palette).setup(num_vector, scale)
-        assert m.mapping == palette
+        assert m.mapping == {k: to_rgb(v) for k, v in palette.items()}
 
         for level, color in palette.items():
             assert same_color(m(level), color)
@@ -267,7 +266,7 @@ class TestColor:
         colors = color_palette(n_colors=len(x))
         scale = get_default_scale(x)
         m = ColorSemantic().setup(x, scale)
-        assert_series_equal(m(x), pd.Series(colors))
+        assert m(x) == [to_rgb(c) for c in colors]
 
     def test_categorical_multi_lookup_categorical(self):
 
@@ -275,7 +274,15 @@ class TestColor:
         colors = color_palette(n_colors=len(x))
         scale = get_default_scale(x)
         m = ColorSemantic().setup(x, scale)
-        assert_series_equal(m(x), pd.Series(colors))
+        assert m(x) == [to_rgb(c) for c in colors]
+
+    def test_alpha_in_palette(self):
+
+        x = pd.Series(["a", "b", "c"])
+        colors = [(.2, .2, .3, .5), (.1, .2, .3, 1), (.5, .6, .2, 0)]
+        scale = get_default_scale(x)
+        m = ColorSemantic(colors).setup(x, scale)
+        assert m(x) == [to_rgba(c) for c in colors]
 
     def test_numeric_default_palette(self, num_vector, num_order, num_scale):
 
@@ -334,7 +341,7 @@ class TestColor:
         cmap = color_palette("mako", as_cmap=True)
         m = ColorSemantic(palette=cmap).setup(num_vector, num_scale)
         norm = num_scale.setup(num_vector).norm
-        expected_colors = cmap(norm(num_vector.to_numpy()))[:, :3]
+        expected_colors = cmap(norm(num_vector.to_numpy()))
         assert_array_equal(m(num_vector), expected_colors)
 
     def test_datetime_default_palette(self, dt_num_vector):
@@ -392,10 +399,22 @@ class TestColor:
         for have, want in zip(mapped, expected):
             assert same_color(have, want)
 
-    def test_bad_palette(self, num_vector, num_scale):
+    def test_nonexistent_palette(self, num_vector, num_scale):
 
-        with pytest.raises(ValueError):
-            ColorSemantic(palette="not_a_palette").setup(num_vector, num_scale)
+        pal = "not_a_palette"
+        err = f"{pal} is not a valid palette name"
+        with pytest.raises(ValueError, match=err):
+            ColorSemantic(palette=pal).setup(num_vector, num_scale)
+
+    def test_mixture_of_alpha_nonalpha(self):
+
+        x = pd.Series(["a", "b"])
+        scale = get_default_scale(x)
+        palette = [(1, 0, .5), (.5, .5, .5, .5)]
+
+        err = "Palette cannot mix colors defined with and without alpha channel."
+        with pytest.raises(ValueError, match=err):
+            ColorSemantic(palette=palette).setup(x, scale)
 
 
 class DiscreteBase:

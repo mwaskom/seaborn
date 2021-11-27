@@ -21,4 +21,6 @@ if TYPE_CHECKING:
     # TODO for discrete mappings, it would be ideal to use a parameterized type
     # as the dict values / list entries should be of specific type(s) for each method
     DiscreteValueSpec = Union[dict, list, None]
-    ContinuousValueSpec = Union[Tuple[float, float], List[float], Dict[Any, float]]
+    ContinuousValueSpec = Union[
+        Tuple[float, float], List[float], Dict[Any, float], None,
+    ]

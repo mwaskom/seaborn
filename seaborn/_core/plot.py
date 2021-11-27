@@ -20,6 +20,8 @@ from seaborn._core.mappings import (
     MarkerSemantic,
     LineStyleSemantic,
     LineWidthSemantic,
+    AlphaSemantic,
+    PointSizeSemantic,
     IdentityMapping,
 )
 from seaborn._core.scales import (
@@ -56,12 +58,15 @@ if TYPE_CHECKING:
 
 SEMANTICS = {  # TODO should this be pluggable?
     "color": ColorSemantic(),
-    "facecolor": ColorSemantic(variable="facecolor"),
+    "fillcolor": ColorSemantic(variable="fillcolor"),
+    "alpha": AlphaSemantic(),
+    "fillalpha": AlphaSemantic(variable="fillalpha"),
     "edgecolor": ColorSemantic(variable="edgecolor"),
+    "fill": BooleanSemantic(values=None, variable="fill"),
     "marker": MarkerSemantic(),
     "linestyle": LineStyleSemantic(),
-    "fill": BooleanSemantic(values=None, variable="fill"),
     "linewidth": LineWidthSemantic(),
+    "pointsize": PointSizeSemantic(),
 }
 
 
@@ -82,6 +87,8 @@ class Plot:
         data: DataSource = None,
         **variables: VariableSpec,
     ):
+
+        # TODO accept *args that can be one or two as x, y?
 
         self._data = PlotData(data, variables)
         self._layers = []
@@ -297,26 +304,37 @@ class Plot:
         self._scale_from_map("facecolor", palette, order)
         return self
 
-    def map_facecolor(
+    def map_alpha(
         self,
-        palette: PaletteSpec = None,
-        order: OrderSpec = None,
-        norm: NormSpec = None,
+        values: ContinuousValueSpec = None,
+        order: OrderSpec | None = None,
+        norm: Normalize | None = None,
     ) -> Plot:
 
-        self._semantics["facecolor"] = ColorSemantic(palette, variable="facecolor")
-        self._scale_from_map("facecolor", palette, order)
+        self._semantics["alpha"] = AlphaSemantic(values, variable="alpha")
+        self._scale_from_map("alpha", values, order, norm)
         return self
 
-    def map_edgecolor(
+    def map_fillcolor(
         self,
         palette: PaletteSpec = None,
         order: OrderSpec = None,
         norm: NormSpec = None,
     ) -> Plot:
 
-        self._semantics["edgecolor"] = ColorSemantic(palette, variable="edgecolor")
-        self._scale_from_map("edgecolor", palette, order)
+        self._semantics["fillcolor"] = ColorSemantic(palette, variable="fillcolor")
+        self._scale_from_map("fillcolor", palette, order)
+        return self
+
+    def map_fillalpha(
+        self,
+        values: ContinuousValueSpec = None,
+        order: OrderSpec | None = None,
+        norm: Normalize | None = None,
+    ) -> Plot:
+
+        self._semantics["fillalpha"] = AlphaSemantic(values, variable="fillalpha")
+        self._scale_from_map("fillalpha", values, order, norm)
         return self
 
     def map_fill(
@@ -470,6 +488,10 @@ class Plot:
         scale = mpl.scale.LinearScale(var)
         self._scales[var] = DateTimeScale(scale, norm)
 
+        # TODO I think rather than dealing with the question of "should we follow
+        # pandas or matplotlib conventions with float -> date conversion, we should
+        # force the user to provide a unit when calling this with a numeric variable.
+
         # TODO what else should this do?
         # We should pass kwargs to the DateTime cast probably.
         # Should we also explicitly expose more of the pd.to_datetime interface?
@@ -542,7 +564,7 @@ class Plot:
         plotter._setup_mappings(self)
 
         for layer in plotter._layers:
-            plotter._plot_layer(self, layer, plotter._mappings)
+            plotter._plot_layer(self, layer)
 
         # TODO this should be configurable
         if not plotter._figure.get_constrained_layout():
@@ -859,7 +881,6 @@ class Plotter:
         self,
         p: Plot,
         layer: dict[str, Any],  # TODO layer should be a TypedDict
-        mappings: dict[str, SemanticMapping]
     ) -> None:
 
         default_grouping_vars = ["col", "row", "group"]  # TODO where best to define?
@@ -875,24 +896,28 @@ class Plotter:
 
             orient = layer["orient"] or mark._infer_orient(scales)
 
-            df = self._scale_coords(subplots, df)
+            with (
+                mark.use(self._mappings, orient)
+                # TODO this doesn't work if stat is None
+                # stat.use(mappings=self._mappings, orient=orient),
+            ):
 
-            if stat is not None:
-                grouping_vars = stat.grouping_vars + default_grouping_vars
-                df = self._apply_stat(df, grouping_vars, stat, orient)
+                df = self._scale_coords(subplots, df)
 
-            df = mark._adjust(df, mappings, orient)
+                if stat is not None:
+                    grouping_vars = stat.grouping_vars + default_grouping_vars
+                    df = self._apply_stat(df, grouping_vars, stat, orient)
 
-            # Our statistics happen on the scale we want, but then matplotlib is going
-            # to re-handle the scaling, so we need to invert before handing off
-            df = self._unscale_coords(subplots, df)
+                df = mark._adjust(df)
 
-            grouping_vars = mark.grouping_vars + default_grouping_vars
-            split_generator = self._setup_split_generator(
-                grouping_vars, df, mappings, subplots
-            )
+                df = self._unscale_coords(subplots, df)
 
-            mark._plot(split_generator, mappings, orient)
+                grouping_vars = mark.grouping_vars + default_grouping_vars
+                split_generator = self._setup_split_generator(
+                    grouping_vars, df, subplots
+                )
+
+                mark._plot(split_generator)
 
     def _apply_stat(
         self,
@@ -1033,7 +1058,6 @@ class Plotter:
         self,
         grouping_vars: list[str],
         df: DataFrame,
-        mappings: dict[str, SemanticMapping],
         subplots: list[dict[str, Any]],
     ) -> Callable[[], Generator]:
 

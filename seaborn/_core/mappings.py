@@ -1,7 +1,7 @@
 """
 Classes that, together with the scales module, implement semantic mapping logic.
 
-Semantic mappings in seaborn transform data values into visual properties.
+Semantic mappings in seaborn transform data values into visual features.
 The implementations in this module output values that are suitable arguments for
 matplotlib artists or plotting functions.
 
@@ -9,7 +9,7 @@ There are two main class hierarchies here: Semantic classes and SemanticMapping
 classes. One way to think of the relationship is that a Semantic is a partial
 initialization of a SemanticMapping. Semantics hold the parameters specified by
 the user through the Plot interface and contain methods relevant to defining
-default values for specific visual parameters (e.g. generating arbitrarily-large
+default values for specific visual features (e.g. generating arbitrarily-large
 sets of distinct marker shapes) or standardizing user-provided values. The
 user-specified (or default) parameters are then used in combination with the
 data values to setup the SemanticMapping objects that are used to actually
@@ -53,6 +53,8 @@ if TYPE_CHECKING:
     from seaborn._core.typing import PaletteSpec, DiscreteValueSpec, ContinuousValueSpec
 
     RGBTuple = Tuple[float, float, float]
+    RGBATuple = Tuple[float, float, float, float]
+    ColorSpec = Union[RGBTuple, RGBATuple, str]
 
     DashPattern = Tuple[float, ...]
     DashPatternWithOffset = Tuple[float, Optional[DashPattern]]
@@ -75,7 +77,7 @@ class Semantic:
         raise NotImplementedError
 
     def _standardize_value(self, value: Any) -> Any:
-        """Convert value to a standardize representation."""
+        """Convert value to a standardized representation."""
         return value
 
     def _standardize_values(
@@ -154,6 +156,9 @@ class DiscreteSemantic(Semantic):
 
 class BooleanSemantic(DiscreteSemantic):
     """Semantic mapping where only possible output values are True or False."""
+    def _standardize_value(self, value: Any) -> bool:
+        return bool(value)
+
     def _standardize_values(
         self, values: DiscreteValueSpec | Series
     ) -> DiscreteValueSpec | Series:
@@ -189,15 +194,27 @@ class ContinuousSemantic(Semantic):
     _default_range: tuple[float, float] = (0, 1)
 
     def __init__(self, values: ContinuousValueSpec = None, variable: str = ""):
+
         if values is None:
             values = self.default_range
-        self.values = values
+        self.values = self._standardize_values(values)
         self.variable = variable
 
     @property
     def default_range(self) -> tuple[float, float]:
         """Default output range; implemented as a property so rcParams can be used."""
         return self._default_range
+
+    def _standardize_value(self, value: Any) -> float:
+        """Convert value to float for numeric operations."""
+        return float(value)
+
+    def _standardize_values(self, values: ContinuousValueSpec) -> ContinuousValueSpec:
+
+        if isinstance(values, tuple):
+            lo, hi = values
+            return self._standardize_value(lo), self._standardize_value(hi)
+        return super()._standardize_values(values)
 
     def _infer_map_type(
         self,
@@ -255,16 +272,28 @@ class ColorSemantic(Semantic):
         self.palette = palette
         self.variable = variable
 
+    def _standardize_value(
+        self, value: str | RGBTuple | RGBATuple
+    ) -> RGBTuple | RGBATuple:
+
+        has_alpha = (
+            (isinstance(value, str) and value.startswith("#") and len(value) in [5, 9])
+            or (isinstance(value, tuple) and len(value) == 4)
+        )
+        rgb_func = mpl.colors.to_rgba if has_alpha else mpl.colors.to_rgb
+
+        return rgb_func(value)
+
     def _standardize_values(
         self, values: DiscreteValueSpec | Series
-    ) -> ArrayLike | dict[Any, tuple[float, ...]] | None:
+    ) -> list[RGBTuple | RGBATuple] | dict[Any, RGBTuple | RGBATuple] | None:
         """Standardize colors as an RGB tuple or n x 3 RGB array."""
         if values is None:
             return None
-        elif isinstance(values, (pd.Series, list)):
-            return mpl.colors.to_rgba_array(values)[:, :3]
+        elif isinstance(values, dict):
+            return {k: self._standardize_value(v) for k, v in values.items()}
         else:
-            return {k: mpl.colors.to_rgb(v) for k, v in values.items()}
+            return list(map(self._standardize_value, values))
 
     def setup(self, data: Series, scale: Scale) -> SemanticMapping:
         """Define the mapping using data values."""
@@ -284,7 +313,6 @@ class ColorSemantic(Semantic):
         map_type = self._infer_map_type(scale, self.palette, data)
 
         if map_type == "categorical":
-
             return LookupMapping(
                 self._setup_categorical(data, self.palette, scale.order)
             )
@@ -301,7 +329,7 @@ class ColorSemantic(Semantic):
         data: Series,
         palette: PaletteSpec,
         order: list | None,
-    ) -> dict[Any, tuple[float, float, float]]:
+    ) -> dict[Any, RGBTuple | RGBATuple]:
         """Determine colors when the mapping is categorical."""
         levels = categorical_order(data, order)
         n_colors = len(levels)
@@ -323,13 +351,21 @@ class ColorSemantic(Semantic):
                 colors = color_palette(palette, n_colors)
             mapping = dict(zip(levels, colors))
 
+        # It would be cleaner to have this check in standardize_values, but that
+        # makes the typing a little tricky. The right solution is to properly type
+        # the function so that we know the return type matches the input type.
+        mapping = {k: self._standardize_value(v) for k, v in mapping.items()}
+        if len(set(len(v) for v in mapping.values())) > 1:
+            err = "Palette cannot mix colors defined with and without alpha channel."
+            raise ValueError(err)
+
         return mapping
 
     def _setup_numeric(
         self,
         data: Series,
         palette: PaletteSpec,
-    ) -> tuple[dict[Any, tuple[float, float, float]], Callable[[Series], Any]]:
+    ) -> tuple[dict[Any, tuple[float, float, float, float]], Callable[[Series], Any]]:
         """Determine colors when the variable is quantitative."""
         cmap: Colormap
         if isinstance(palette, dict):
@@ -546,9 +582,8 @@ class HatchSemantic(DiscreteSemantic):
     ...
 
 
-# TODO markersize? pointsize? How to specify diameter but scale area?
-class AreaSemantic(ContinuousSemantic):
-    ...
+class PointSizeSemantic(ContinuousSemantic):
+    _default_range = 2, 8
 
 
 class WidthSemantic(ContinuousSemantic):
@@ -557,7 +592,7 @@ class WidthSemantic(ContinuousSemantic):
 
 # TODO or opacity?
 class AlphaSemantic(ContinuousSemantic):
-    _default_range = .3, 1
+    _default_range = .2, 1
 
 
 class LineWidthSemantic(ContinuousSemantic):
@@ -600,10 +635,7 @@ class LookupMapping(SemanticMapping):
 
     def __call__(self, x: Any) -> Any:
         if isinstance(x, pd.Series):
-            if x.dtype.name == "category":
-                # https://github.com/pandas-dev/pandas/issues/41669
-                x = x.astype(object)
-            return x.map(self.mapping)
+            return [self.mapping.get(x_i) for x_i in x]
         else:
             return self.mapping[x]
 
@@ -641,4 +673,4 @@ class RGBTransform:
 
     def __call__(self, x: ArrayLike) -> ArrayLike:
         rgba = mpl.colors.to_rgba_array(self.cmap(x))
-        return rgba[..., :3].squeeze()
+        return rgba.squeeze()
