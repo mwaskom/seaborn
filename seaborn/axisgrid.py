@@ -477,7 +477,9 @@ class FacetGrid(Grid):
 
         # --- Make the axes look good
 
+        self.set_titles()
         self.tight_layout()
+
         if despine:
             self.despine()
 
@@ -494,8 +496,6 @@ class FacetGrid(Grid):
                     label.set_visible(False)
                 ax.yaxis.offsetText.set_visible(False)
                 ax.yaxis.label.set_visible(False)
-
-        self.set_titles()
 
     __init__.__doc__ = dedent("""\
         Initialize the matplotlib figure and FacetGrid object.
