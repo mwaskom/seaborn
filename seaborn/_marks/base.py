@@ -128,15 +128,23 @@ class Mark:
         feature = self.features[name]
         standardize = SEMANTICS[name]._standardize_value
         directly_specified = not isinstance(feature, Feature)
+        return_array = isinstance(data, pd.DataFrame)
 
         if directly_specified:
             feature = standardize(feature)
-            if isinstance(data, pd.DataFrame):
+            if return_array:
                 feature = np.array([feature] * len(data))
             return feature
 
         if name in data:
-            return np.asarray(self.mappings[name](data[name]))
+            if name in self.mappings:
+                feature = self.mappings[name](data[name])
+            else:
+                # TODO Might this obviate the identity scale? Just don't add a mapping?
+                feature = data[name]
+            if return_array:
+                feature = np.asarray(feature)
+            return feature
 
         if feature.depend is not None:
             # TODO add source_func or similar to transform the source value?
@@ -144,7 +152,7 @@ class Mark:
             return self._resolve(data, feature.depend)
 
         default = standardize(feature.default)
-        if isinstance(data, pd.DataFrame):
+        if return_array:
             default = np.array([default] * len(data))
         return default
 
@@ -153,7 +161,8 @@ class Mark:
         data: DataFrame | dict,
         prefix: str = "",
     ) -> RGBATuple | ndarray:
-        """Obtain a default, specified, or mapped value for a color feature.
+        """
+        Obtain a default, specified, or mapped value for a color feature.
 
         This method exists separately to support the relationship between a
         color and its corresponding alpha. We want to respect alpha values that
@@ -223,9 +232,16 @@ class Mark:
         split_generator: Callable[[], Generator],
     ) -> None:
         """Main interface for creating a plot."""
+        axes_cache = set()
         for keys, data, ax in split_generator():
             kws = self._kwargs.copy()
             self._plot_split(keys, data, ax, kws)
+            axes_cache.add(ax)
+
+        # TODO what is the best way to do this a minimal number of times?
+        # Probably can be moved out to Plot?
+        for ax in axes_cache:
+            ax.autoscale_view()
 
         self._finish_plot()
 

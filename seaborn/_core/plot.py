@@ -22,6 +22,7 @@ from seaborn._core.mappings import (
     LineWidthSemantic,
     AlphaSemantic,
     PointSizeSemantic,
+    WidthSemantic,
     IdentityMapping,
 )
 from seaborn._core.scales import (
@@ -67,6 +68,12 @@ SEMANTICS = {  # TODO should this be pluggable?
     "linestyle": LineStyleSemantic(),
     "linewidth": LineWidthSemantic(),
     "pointsize": PointSizeSemantic(),
+
+    # TODO we use this dictionary to access the standardize_value method
+    # in Mark.resolve, even though these are not really "semantics" as such
+    # (or are they?); we might want to introduce a different concept?
+    # Maybe call this VARIABLES and have e.g. ColorSemantic, BaselineVariable?
+    "width": WidthSemantic(),
 }
 
 
@@ -519,6 +526,7 @@ class Plot:
         # with figsize when only one is defined?
 
         # TODO figsize has no actual effect here
+        self._figsize = figsize
 
         subplot_keys = ["sharex", "sharey"]
         for key in subplot_keys:
@@ -573,6 +581,9 @@ class Plot:
         return plotter
 
     def show(self, **kwargs) -> None:
+
+        # TODO make pyplot configurable at the class level, and when not using,
+        # import IPython.display and call on self to populate cell output?
 
         # Keep an eye on whether matplotlib implements "attaching" an existing
         # figure to pyplot: https://github.com/matplotlib/matplotlib/pull/14024
@@ -872,6 +883,9 @@ class Plotter:
                 scale.type_declared = False
 
             if isinstance(scale, IdentityScale):
+                # We may not need this dummy mapping, if we can consistently
+                # use Mark.resolve to pull values out of data if not defined in mappings
+                # Not doing that now because it breaks some tests, but seems to work.
                 mapping = IdentityMapping(semantic._standardize_values)
             else:
                 mapping = semantic.setup(all_values, scale)

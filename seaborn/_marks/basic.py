@@ -68,6 +68,8 @@ class Point(Mark):  # TODO types
     def _plot_split(self, keys, data, ax, kws):
 
         # TODO Not backcompat with allowed (but nonfunctional) univariate plots
+        # (That should be solved upstream by defaulting to "" for unset x/y?)
+        # (Be mindful of xmin/xmax, etc!)
 
         kws = kws.copy()
 
@@ -103,28 +105,54 @@ class Point(Mark):  # TODO types
             transform=mpl.transforms.IdentityTransform(),
         )
         ax.add_collection(points)
-        ax.autoscale_view()  # TODO or do in self.finish_plot?
 
 
 class Line(Mark):
 
-    # TODO how to handle distinction between stat groupers and plot groupers?
-    # i.e. Line needs to aggregate by x, but not plot by it
-    # also how will this get parametrized to support orient=?
-    # TODO will this sort by the orient dimension like lineplot currently does?
     grouping_vars = ["color", "marker", "linestyle", "linewidth"]
     supports = ["color", "marker", "linestyle", "linewidth"]
 
+    def __init__(
+        self,
+        *,
+        color=Feature("C0"),
+        alpha=Feature(1),
+        linestyle=Feature(rc="lines.linestyle"),
+        linewidth=Feature(rc="lines.linewidth"),
+        marker=Feature(rc="lines.marker"),
+        # ... other features
+        sort=True,
+        **kwargs,  # TODO needed? Probably, but rather have artist_kws dict?
+    ):
+
+        super().__init__(**kwargs)
+
+        # TODO should this use SEMANTICS as the source of possible features?
+        self.features = dict(
+            color=color,
+            alpha=alpha,
+            linewidth=linewidth,
+            linestyle=linestyle,
+            marker=marker,
+        )
+
+        self.sort = sort
+
     def _plot_split(self, keys, data, ax, kws):
 
-        if "color" in keys:
-            kws["color"] = self.mappings["color"](keys["color"])
-        if "linestyle" in keys:
-            kws["linestyle"] = self.mappings["linestyle"](keys["linestyle"])
-        if "linewidth" in keys:
-            kws["linewidth"] = self.mappings["linewidth"](keys["linewidth"])
+        if self.sort:
+            data = data.sort_values(self.orient)
 
-        ax.plot(data["x"], data["y"], **kws)
+        line = mpl.lines.Line2D(
+            data["x"].to_numpy(),
+            data["y"].to_numpy(),
+            color=self._resolve_color(keys),
+            linewidth=self._resolve(keys, "linewidth"),
+            linestyle=self._resolve(keys, "linestyle"),
+            marker=self._resolve(keys, "marker"),
+            **kws
+        )
+        ax.add_line(line)
 
 
 class Area(Mark):

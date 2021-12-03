@@ -1,46 +1,43 @@
 from __future__ import annotations
-from seaborn._marks.base import Mark
+import numpy as np
+import matplotlib as mpl
+from seaborn._marks.base import Mark, Feature
 
 
 class Bar(Mark):
 
-    supports = ["color", "facecolor", "edgecolor", "fill"]
+    supports = ["color", "color", "fillcolor", "fill", "width"]
 
     def __init__(
         self,
-        # parameters that will be mappable?
-        width=.8,
-        color=None,  # should this have different default?
-        alpha=None,
-        facecolor=None,
-        edgecolor=None,
-        edgewidth=None,
-        pattern=None,
-        fill=None,
-        # other parameters?
+        color=Feature("C0"),
+        alpha=Feature(1),
+        fill=Feature(True),
+        pattern=Feature(),
+        width=Feature(.8),
+        baseline=0,
         multiple=None,
         **kwargs,  # specify mpl kwargs? Not be a catchall?
     ):
 
         super().__init__(**kwargs)
 
-        # TODO can we abstract this somehow, e.g. with a decorator?
-        # I think it would be better to programatically generate.
-        # The decorator would need to know what mappables are
-        # added/removed from the parent class. And then what other
-        # kwargs there are. But maybe there should not be other kwargs?
-        self._mappable_attributes = dict(  # TODO better name!
-            width=width,
+        self.features = dict(
             color=color,
             alpha=alpha,
-            facecolor=facecolor,
-            edgecolor=edgecolor,
-            edgewidth=edgewidth,
-            pattern=pattern,
             fill=fill,
+            pattern=pattern,
+            width=width,
         )
 
-        self._multiple = multiple
+        # Unclear whether baseline should be a Feature, and hence make it possible
+        # to pass a different baseline for each bar. The produces a kind of plot one
+        # can make ... but maybe it should be a different plot? The main reason to
+        # avoid is that it is unclear whether we want to introduce a "BaselineSemantic".
+        # Revisit this question if we have need for other Feature variables that do not
+        # really make sense as "semantics".
+        self.baseline = baseline
+        self.multiple = multiple
 
     def _adjust(self, df):
 
@@ -50,30 +47,22 @@ class Bar(Mark):
         else:
             pos, val = "xy"
 
-        # First augment the df with the other mappings we need: width and baseline
-        # Question: do we want "ymin/ymax" or "baseline/y"? Or "ymin/y"?
-        # Also note that these could be
-        # a) mappings
-        # b) "scalar" mappings
-        # c) Bar constructor kws?
-        defaults = {"baseline": 0, "width": .8}
-        df = df.assign(**{k: v for k, v in defaults.items() if k not in df})
-        # TODO should the above stuff happen somewhere else?
+        # Initialize vales for bar shape/location parameterization
+        df = df.assign(
+            width=self._resolve(df, "width"),
+            baseline=self.baseline,
+        )
 
-        # Bail here if we don't actually need to adjust anything?
-        # TODO filter mappings externally?
-        # TODO disablings second condition until we figure out what to do with group
-        if self._multiple is None:  # or not mappings:
+        if self.multiple is None:
             return df
 
         # Now we need to know the levels of the grouping variables, hmmm.
         # Should `_plot_layer` pass that in here?
-        # TODO prototyping with color, this needs some real thinking!
         # TODO maybe instead of that we have the dataframe sorted by categorical order?
 
         # Adjust as appropriate
         # TODO currently this does not check that it is necessary to adjust!
-        if self._multiple.startswith("dodge"):
+        if self.multiple.startswith("dodge"):
 
             # TODO this is pretty general so probably doesn't need to be in Bar.
             # but it will require a lot of work to fix up, especially related to
@@ -87,7 +76,7 @@ class Bar(Mark):
             # The dodge/dodgefill thing is a provisional idea
 
             width_by_pos = df.groupby(pos, sort=False)["width"]
-            if self._multiple == "dodgefill":  # Not great name given other "fill"
+            if self.multiple == "dodgefill":  # Not great name given other "fill"
                 # TODO e.g. what should we do here with empty categories?
                 # is it too confusing if we appear to ignore "dodgefill",
                 # or is it inconsistent with behavior elsewhere?
@@ -122,21 +111,33 @@ class Bar(Mark):
 
     def _plot_split(self, keys, data, ax, kws):
 
-        kws.update({
-            k: v for k, v in self._mappable_attributes.items() if v is not None
-        })
+        x, y = data[["x", "y"]].to_numpy().T
+        b = data["baseline"]
+        w = data["width"]
 
-        if "color" in data:
-            kws.setdefault("color", self.mappings["color"](data["color"]))
+        if self.orient == "x":
+            w, h = w, y - b
+            xy = np.column_stack([x - w / 2, b])
         else:
-            kws.setdefault("color", "C0")  # FIXME:default attributes
+            w, h = w, x - b
+            xy = np.column_stack([b, y - h / 2])
 
-        if self.orient == "y":
-            func = ax.barh
-            varmap = dict(y="y", width="x", height="width")
-        else:
-            func = ax.bar
-            varmap = dict(x="x", height="y", width="width")
+        geometry = xy, w, h
+        features = [
+            self._resolve_color(data),  # facecolor
+        ]
 
-        kws.update({k: data[v] for k, v in varmap.items()})
-        func(**kws)
+        bars = []
+        for xy, w, h, fc in zip(*geometry, *features):
+            bar = mpl.patches.Rectangle(
+                xy=xy,
+                width=w,
+                height=h,
+                facecolor=fc,
+                # TODO leaving this incomplete for now
+                # Need decision about the best way to parametrize color
+            )
+            ax.add_patch(bar)
+            bars.append(bar)
+
+        # TODO add container object to ax, line ax.bar does
