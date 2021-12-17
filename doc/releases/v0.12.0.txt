@@ -27,3 +27,5 @@ A paper describing seaborn was published in the `Journal of Open Source Software
 - Removed several previously-deprecated utility functions (`iqr`, `percentiles`, `pmf_hist`, and `sort_df`).
 
 - FacetGrid subplot titles will no longer be reset when calling `FacetGrid.map()` or `FacetGrid.map_dataframe()` after `FacetGrid.set_titles()` (:pr:`2705`).
+
+- :func:`lineplot` no longer throws an error when `data` contains an index with duplicates (:pr:`2714`)

@@ -1259,6 +1259,9 @@ class TestLinePlotter(SharedAxesLevelTests, Helpers):
             lineplot(data=long_df, x="x", y="y", ci="sd", ax=axs[1])
         assert_plots_equal(*axs)
 
+    def test_duplicate_index(self, long_df):
+        lineplot(data=long_df.set_index("a"), x="x", y="y")
+
 
 class TestScatterPlotter(SharedAxesLevelTests, Helpers):
 

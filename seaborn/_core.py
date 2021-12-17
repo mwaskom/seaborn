@@ -1099,7 +1099,7 @@ class VectorPlotter:
                     comp = pd.to_numeric(converter.convert_units(orig))
                     if converter.get_scale() == "log":
                         comp = np.log10(comp)
-                    comp_col.loc[orig.index] = comp
+                    comp_col.update(comp)
 
                 comp_data.insert(0, var, comp_col)
 
