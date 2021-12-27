@@ -749,11 +749,13 @@ class TestPlotting:
     def test_png_representation(self):
 
         p = Plot()
-        out = p._repr_png_()
+        data, metadata = p._repr_png_()
 
         assert not hasattr(p, "_figure")
-        assert isinstance(out, bytes)
-        assert imghdr.what("", out) == "png"
+        assert isinstance(data, bytes)
+        assert imghdr.what("", data) == "png"
+        assert sorted(metadata) == ["height", "width"]
+        # TODO test retina scaling
 
     @pytest.mark.xfail(reason="Plot.save not yet implemented")
     def test_save(self):

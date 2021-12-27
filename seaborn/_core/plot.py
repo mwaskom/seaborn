@@ -110,7 +110,7 @@ class Plot:
 
         self._target = None
 
-    def _repr_png_(self) -> bytes:
+    def _repr_png_(self) -> tuple[bytes, dict[str, float]]:
 
         return self.plot()._repr_png_()
 
@@ -615,6 +615,7 @@ class Plotter:
 
     def save(self, fname, **kwargs) -> Plotter:
         # TODO type fname as string or path; handle Path objects if matplotlib can't
+        kwargs.setdefault("dpi", 96)
         self._figure.savefig(fname, **kwargs)
         return self
 
@@ -628,28 +629,39 @@ class Plotter:
 
     # def draw?
 
-    def _repr_png_(self) -> bytes:
+    def _repr_png_(self) -> tuple[bytes, dict[str, float]]:
 
         # TODO better to do this through a Jupyter hook? e.g.
         # ipy = IPython.core.formatters.get_ipython()
         # fmt = ipy.display_formatter.formatters["text/html"]
         # fmt.for_type(Plot, ...)
+        # Would like to have a svg option too, not sure how to make that flexible
 
         # TODO use matplotlib backend directly instead of going through savefig?
-
-        # TODO Would like to allow for svg too ... how to configure?
 
         # TODO perhaps have self.show() flip a switch to disable this, so that
         # user does not end up with two versions of the figure in the output
 
-        # TODO detect HiDPI and generate a retina png by default?
-        buffer = io.BytesIO()
         # TODO use bbox_inches="tight" like the inline backend?
         # pro: better results,  con: (sometimes) confusing results
         # Better solution would be to default (with option to change)
         # to using constrained/tight layout.
-        self._figure.savefig(buffer, format="png", bbox_inches="tight")
-        return buffer.getvalue()
+
+        # TODO need to decide what the right default behavior here is:
+        # - Use dpi=72 to match default InlineBackend figure size?
+        # - Accept a generic "scaling" somewhere and scale DPI from that,
+        #   either with 1x -> 72 or 1x -> 96 and the default scaling be .75?
+        # - Listen to rcParams? InlineBackend behavior makes that so complicated :(
+        # - Do we ever want to *not* use retina mode at this point?
+        dpi = 96
+        buffer = io.BytesIO()
+        self._figure.savefig(buffer, dpi=dpi * 2, format="png", bbox_inches="tight")
+        data = buffer.getvalue()
+
+        scaling = .85
+        w, h = self._figure.get_size_inches()
+        metadata = {"width": w * dpi * scaling, "height": h * dpi * scaling}
+        return data, metadata
 
     def _setup_data(self, p: Plot) -> None:
 
