@@ -259,14 +259,9 @@ class Plot:
         # TODO require kwargs?
         col: VariableSpec = None,
         row: VariableSpec = None,
-        col_order: OrderSpec = None,  # TODO single order param
-        row_order: OrderSpec = None,
+        order: OrderSpec | dict[Literal["col", "row"], OrderSpec] = None,
         wrap: int | None = None,
-        data: DataSource = None,
     ) -> Plot:
-
-        # TODO remove data= from this API. There is good reason to pass layer-specific
-        # data, but no reason to use separate global data sources.
 
         # Can't pass `None` here or it will disinherit the `Plot()` def
         variables = {}
@@ -275,16 +270,26 @@ class Plot:
         if row is not None:
             variables["row"] = row
 
-        # TODO Alternately use the following parameterization for order
-        # `order: list[Hashable] | dict[Literal['col', 'row'], list[Hashable]]
-        # this is more convenient for the (dominant?) case where there is one
-        # faceting variable
+        col_order = row_order = None
+        if isinstance(order, dict):
+            col_order = order.get("col")
+            if col_order is not None:
+                col_order = list(col_order)
+            row_order = order.get("row")
+            if row_order is not None:
+                row_order = list(row_order)
+        elif order is not None:
+            # TODO Allow order: list here when single facet var defined in constructor?
+            if col is not None:
+                col_order = list(order)
+            if row is not None:
+                row_order = list(order)
 
         self._facetspec.update({
-            "source": data,
+            "source": None,
             "variables": variables,
-            "col_order": None if col_order is None else list(col_order),
-            "row_order": None if row_order is None else list(row_order),
+            "col_order": col_order,
+            "row_order": row_order,
             "wrap": wrap,
         })
 

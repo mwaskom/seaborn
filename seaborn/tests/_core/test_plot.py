@@ -909,14 +909,14 @@ class TestFacetInterface:
 
         key = "a"
         order = reorder(categorical_order(long_df[key]))
-        p = Plot(long_df, **{dim: key}).facet(**{f"{dim}_order": order})
+        p = Plot(long_df, **{dim: key}).facet(order={dim: order})
         self.check_facet_results_1d(p, long_df, dim, key, order)
 
     def test_1d_from_facet_with_order(self, long_df, dim, reorder):
 
         key = "a"
         order = reorder(categorical_order(long_df[key]))
-        p = Plot(long_df).facet(**{dim: key, f"{dim}_order": order})
+        p = Plot(long_df).facet(**{dim: key, "order": order})
         self.check_facet_results_1d(p, long_df, dim, key, order)
 
     def check_facet_results_2d(self, p, df, variables, order=None):
@@ -957,12 +957,6 @@ class TestFacetInterface:
         p = Plot(long_df, row=variables["row"]).facet(col=variables["col"])
         self.check_facet_results_2d(p, long_df, variables)
 
-    def test_2d_from_facet_with_data(self, long_df):
-
-        variables = {"row": "a", "col": "c"}
-        p = Plot().facet(**variables, data=long_df)
-        self.check_facet_results_2d(p, long_df, variables)
-
     def test_2d_from_facet_with_order(self, long_df, reorder):
 
         variables = {"row": "a", "col": "c"}
@@ -971,8 +965,7 @@ class TestFacetInterface:
             for dim, key in variables.items()
         }
 
-        order_kws = {"row_order": order["row"], "col_order": order["col"]}
-        p = Plot(long_df).facet(**variables, **order_kws)
+        p = Plot(long_df).facet(**variables, order=order)
         self.check_facet_results_2d(p, long_df, variables, order)
 
     def test_axis_sharing(self, long_df):
