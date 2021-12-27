@@ -37,10 +37,13 @@ class PlotData:
         Data table with column names having defined plot variables.
     names
         Dictionary mapping plot variable names to names in source data structure(s).
+    ids
+        Dictionary mapping plot variable names to unique variable identifiers.
 
     """
     frame: DataFrame
     names: dict[str, str | None]
+    ids: dict[str, str | int]
     _source: DataSource
 
     def __init__(
@@ -49,10 +52,11 @@ class PlotData:
         variables: dict[str, VariableSpec],
     ):
 
-        frame, names = self._assign_variables(data, variables)
+        frame, names, ids = self._assign_variables(data, variables)
 
         self.frame = frame
         self.names = names
+        self.ids = ids
 
         self._source_data = data
         self._source_vars = variables
@@ -90,8 +94,12 @@ class PlotData:
         names = {k: v for k, v in self.names.items() if k not in disinherit}
         names.update(new.names)
 
+        ids = {k: v for k, v in self.ids.items() if k not in disinherit}
+        ids.update(new.ids)
+
         new.frame = frame
         new.names = names
+        new.ids = ids
 
         # Multiple chained operations should always inherit from the original object
         new._source_data = self._source_data
@@ -103,7 +111,7 @@ class PlotData:
         self,
         data: DataSource,
         variables: dict[str, VariableSpec],
-    ) -> tuple[DataFrame, dict[str, str | None]]:
+    ) -> tuple[DataFrame, dict[str, str | None], dict[str, str | int]]:
         """
         Assign values for plot variables given long-form data and/or vector inputs.
 
@@ -124,6 +132,9 @@ class PlotData:
         names
             Keys are defined seaborn variables; values are names inferred from
             the inputs (or None when no name can be determined).
+        ids
+            Like the `names` dict, but `None` values are replaced by the `id()`
+            of the data object that defined the variable.
 
         Raises
         ------
@@ -135,9 +146,11 @@ class PlotData:
         source_data: dict | DataFrame
         frame: DataFrame
         names: dict[str, str | None]
+        ids: dict[str, str | int]
 
         plot_data = {}
         names = {}
+        ids = {}
 
         given_data = data is not None
         if given_data:
@@ -189,7 +202,7 @@ class PlotData:
                     plot_data[key] = source_data[val]
                 elif val in index:
                     plot_data[key] = index[val]
-                names[key] = str(val)
+                names[key] = ids[key] = str(val)
 
             elif isinstance(val, str):
 
@@ -225,13 +238,14 @@ class PlotData:
 
                 # Try to infer the original name using pandas-like metadata
                 if hasattr(val, "name"):
-                    names[key] = str(val.name)  # type: ignore  # mypy/1424
+                    names[key] = ids[key] = str(val.name)  # type: ignore  # mypy/1424
                 else:
                     names[key] = None
+                    ids[key] = id(val)
 
         # Construct a tidy plot DataFrame. This will convert a number of
         # types automatically, aligning on index in case of pandas objects
         # TODO Note: this fails when variable specs *only* have scalars!
         frame = pd.DataFrame(plot_data)
 
-        return frame, names
+        return frame, names, ids

@@ -43,13 +43,17 @@ class TestPlotData:
         assert p.names["y"] == "b"
         assert p.names["size"] is None
 
+        assert p.ids["color"] == long_variables["color"]
+        assert p.ids["y"] == "b"
+        assert p.ids["size"] == id(long_variables["size"])
+
     def test_index_as_variable(self, long_df, long_variables):
 
         index = pd.Int64Index(np.arange(len(long_df)) * 2 + 10, name="i")
         long_variables["x"] = "i"
         p = PlotData(long_df.set_index(index), long_variables)
 
-        assert p.names["x"] == "i"
+        assert p.names["x"] == p.ids["x"] == "i"
         assert_vector_equal(p.frame["x"], pd.Series(index, index))
 
     def test_multiindex_as_variables(self, long_df, long_variables):
@@ -72,13 +76,14 @@ class TestPlotData:
 
         p = PlotData(df, {var: key})
         assert_vector_equal(p.frame[var], df[key])
-        assert p.names[var] == str(key)
+        assert p.names[var] == p.ids[var] == str(key)
 
     def test_int_as_variable_value(self, long_df):
 
         p = PlotData(long_df, {"x": 0, "y": "y"})
         assert (p.frame["x"] == 0).all()
         assert p.names["x"] is None
+        assert p.ids["x"] == id(0)
 
     def test_tuple_as_variable_key(self, rng):
 
@@ -89,7 +94,7 @@ class TestPlotData:
         key = ("b", "y")
         p = PlotData(df, {var: key})
         assert_vector_equal(p.frame[var], df[key])
-        assert p.names[var] == str(key)
+        assert p.names[var] == p.ids[var] == str(key)
 
     def test_dict_as_data(self, long_dict, long_variables):
 
@@ -115,9 +120,10 @@ class TestPlotData:
         assert list(p.names) == list(long_variables)
         if vector_type == "series":
             assert p._source_vars is variables
-            assert p.names == {key: val.name for key, val in variables.items()}
+            assert p.names == p.ids == {key: val.name for key, val in variables.items()}
         else:
             assert p.names == {key: None for key in variables}
+            assert p.ids == {key: id(val) for key, val in variables.items()}
 
         for key, val in long_variables.items():
             if vector_type == "series":
@@ -129,7 +135,7 @@ class TestPlotData:
 
         p = PlotData(long_df, {"x": "z", "y": None})
         assert list(p.frame.columns) == ["x"]
-        assert p.names == {"x": "z"}
+        assert p.names == p.ids == {"x": "z"}
 
     def test_frame_and_vector_mismatched_lengths(self, long_df):
 

@@ -14,6 +14,7 @@ if TYPE_CHECKING:
     from numpy import ndarray
     from pandas import DataFrame
     from matplotlib.axes import Axes
+    from matplotlib.artist import Artist
     from seaborn._core.mappings import SemanticMapping, RGBATuple
     from seaborn._stats.base import Stat
 
@@ -253,8 +254,11 @@ class Mark:
         kws: dict,
     ) -> None:
         """Method that plots specific subsets of data. Must be defined by subclass."""
-        raise NotImplementedError()
+        raise NotImplementedError
 
     def _finish_plot(self) -> None:
         """Method that is called after each data subset has been plotted."""
         pass
+
+    def _legend_artist(self, variables: list[str], value: Any) -> Artist:
+        raise NotImplementedError

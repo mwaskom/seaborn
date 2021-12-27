@@ -151,7 +151,7 @@ class DiscreteSemantic(Semantic):
             values = self._ensure_list_not_too_short(levels, self.values)
             mapping = dict(zip(levels, values))
 
-        return LookupMapping(mapping)
+        return LookupMapping(mapping, scale, scale.legend(levels))
 
 
 class BooleanSemantic(DiscreteSemantic):
@@ -250,7 +250,7 @@ class ContinuousSemantic(Semantic):
                 # TODO check list not too long as well?
                 mapping_dict = dict(zip(levels, values))
 
-            return LookupMapping(mapping_dict)
+            return LookupMapping(mapping_dict, scale, scale.legend(levels))
 
         if not isinstance(self.values, tuple):
             # We shouldn't actually get here through the Plot interface (there is a
@@ -260,7 +260,8 @@ class ContinuousSemantic(Semantic):
                 f"Using continuous {self.variable} mapping, but values provided as {t}."
             )
         transform = RangeTransform(self.values)
-        return NormedMapping(scale, transform)
+        # TODO need to allow parameterized legend
+        return NormedMapping(transform, scale, scale.legend())
 
 
 # ==================================================================================== #
@@ -313,23 +314,23 @@ class ColorSemantic(Semantic):
         map_type = self._infer_map_type(scale, self.palette, data)
 
         if map_type == "categorical":
-            return LookupMapping(
-                self._setup_categorical(data, self.palette, scale.order)
-            )
+            mapping, levels = self._setup_categorical(data, self.palette, scale.order)
+            return LookupMapping(mapping, scale, scale.legend(levels))
 
         lookup, transform = self._setup_numeric(data, self.palette)
         if lookup:
             # TODO See comments in _setup_numeric about deprecation of this
-            return LookupMapping(lookup)
+            return LookupMapping(lookup, scale, scale.legend())
         else:
-            return NormedMapping(scale, transform)
+            # TODO will need to allow "full" legend with numerical mapping
+            return NormedMapping(transform, scale, scale.legend())
 
     def _setup_categorical(
         self,
         data: Series,
         palette: PaletteSpec,
         order: list | None,
-    ) -> dict[Any, RGBTuple | RGBATuple]:
+    ) -> tuple[dict[Any, RGBTuple | RGBATuple], list]:
         """Determine colors when the mapping is categorical."""
         levels = categorical_order(data, order)
         n_colors = len(levels)
@@ -359,7 +360,7 @@ class ColorSemantic(Semantic):
             err = "Palette cannot mix colors defined with and without alpha channel."
             raise ValueError(err)
 
-        return mapping
+        return mapping, levels
 
     def _setup_numeric(
         self,
@@ -615,6 +616,8 @@ class EdgeWidthSemantic(ContinuousSemantic):
 
 class SemanticMapping:
     """Stateful and callable object that maps data values to matplotlib arguments."""
+    legend: tuple[list, list[str]] | None
+
     def __call__(self, x: Any) -> Any:
         raise NotImplementedError
 
@@ -623,6 +626,7 @@ class IdentityMapping(SemanticMapping):
     """Return input value, possibly after converting to standardized representation."""
     def __init__(self, func: Callable[[Any], Any]):
         self._standardization_func = func
+        self.legend = None
 
     def __call__(self, x: Any) -> Any:
         return self._standardization_func(x)
@@ -630,8 +634,14 @@ class IdentityMapping(SemanticMapping):
 
 class LookupMapping(SemanticMapping):
     """Discrete mapping defined by dictionary lookup."""
-    def __init__(self, mapping: dict):
+    def __init__(self, mapping: dict, scale: Scale, legend: tuple[list, list[str]]):
         self.mapping = mapping
+        self.scale = scale
+
+        # TODO one option: accept a tuple for legend
+        # Other option: accept legend parameterization (including list of values)
+        # and call scale.legend() internally
+        self.legend = legend
 
     def __call__(self, x: Any) -> Any:
         if isinstance(x, pd.Series):
@@ -642,10 +652,15 @@ class LookupMapping(SemanticMapping):
 
 class NormedMapping(SemanticMapping):
     """Continuous mapping defined by domain normalization and range transform."""
-    def __init__(self, scale: Scale, transform: Callable[[Series], Any]):
-
-        self.scale = scale
+    def __init__(
+        self,
+        transform: Callable[[Series], Any],
+        scale: Scale,
+        legend: tuple[list, list[str]]
+    ):
         self.transform = transform
+        self.scale = scale
+        self.legend = legend
 
     def __call__(self, x: Series | Number) -> Series | Number:
 
@@ -673,4 +688,6 @@ class RGBTransform:
 
     def __call__(self, x: ArrayLike) -> ArrayLike:
         rgba = mpl.colors.to_rgba_array(self.cmap(x))
-        return rgba.squeeze()
+        # TODO would we ever have a colormap that modulates alpha channel?
+        # How could we detect this and use the alpha channel in that case?
+        return rgba[:, :3]

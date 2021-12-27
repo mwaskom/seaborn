@@ -27,7 +27,13 @@ from seaborn._core.mappings import (
 from seaborn.palettes import color_palette
 
 
-class TestColor:
+class MappingsBase:
+
+    def default_scale(self, data):
+        return get_default_scale(data).setup(data)
+
+
+class TestColor(MappingsBase):
 
     @pytest.fixture
     def num_vector(self, long_df):
@@ -63,7 +69,7 @@ class TestColor:
     def test_categorical_default_palette(self, cat_vector, cat_order):
 
         expected = dict(zip(cat_order, color_palette()))
-        scale = get_default_scale(cat_vector)
+        scale = self.default_scale(cat_vector)
         m = ColorSemantic().setup(cat_vector, scale)
 
         for level, color in expected.items():
@@ -72,7 +78,7 @@ class TestColor:
     def test_categorical_default_palette_large(self):
 
         vector = pd.Series(list("abcdefghijklmnopqrstuvwxyz"))
-        scale = get_default_scale(vector)
+        scale = self.default_scale(vector)
         n_colors = len(vector)
         expected = dict(zip(vector, color_palette("husl", n_colors)))
         m = ColorSemantic().setup(vector, scale)
@@ -83,7 +89,7 @@ class TestColor:
     def test_categorical_named_palette(self, cat_vector, cat_order):
 
         palette = "Blues"
-        scale = get_default_scale(cat_vector)
+        scale = self.default_scale(cat_vector)
         m = ColorSemantic(palette=palette).setup(cat_vector, scale)
 
         colors = color_palette(palette, len(cat_order))
@@ -94,7 +100,7 @@ class TestColor:
     def test_categorical_list_palette(self, cat_vector, cat_order):
 
         palette = color_palette("Reds", len(cat_order))
-        scale = get_default_scale(cat_vector)
+        scale = self.default_scale(cat_vector)
         m = ColorSemantic(palette=palette).setup(cat_vector, scale)
 
         expected = dict(zip(cat_order, palette))
@@ -104,7 +110,7 @@ class TestColor:
     def test_categorical_implied_by_list_palette(self, num_vector, num_order):
 
         palette = color_palette("Reds", len(num_order))
-        scale = get_default_scale(num_vector)
+        scale = self.default_scale(num_vector)
         m = ColorSemantic(palette=palette).setup(num_vector, scale)
 
         expected = dict(zip(num_order, palette))
@@ -114,7 +120,7 @@ class TestColor:
     def test_categorical_dict_palette(self, cat_vector, cat_order):
 
         palette = dict(zip(cat_order, color_palette("Greens")))
-        scale = get_default_scale(cat_vector)
+        scale = self.default_scale(cat_vector)
         m = ColorSemantic(palette=palette).setup(cat_vector, scale)
         assert m.mapping == {k: to_rgb(v) for k, v in palette.items()}
 
@@ -124,7 +130,7 @@ class TestColor:
     def test_categorical_implied_by_dict_palette(self, num_vector, num_order):
 
         palette = dict(zip(num_order, color_palette("Greens")))
-        scale = get_default_scale(num_vector)
+        scale = self.default_scale(num_vector)
         m = ColorSemantic(palette=palette).setup(num_vector, scale)
         assert m.mapping == {k: to_rgb(v) for k, v in palette.items()}
 
@@ -134,7 +140,7 @@ class TestColor:
     def test_categorical_dict_with_missing_keys(self, cat_vector, cat_order):
 
         palette = dict(zip(cat_order[1:], color_palette("Purples")))
-        scale = get_default_scale(cat_vector)
+        scale = self.default_scale(cat_vector)
         with pytest.raises(ValueError):
             ColorSemantic(palette=palette).setup(cat_vector, scale)
 
@@ -144,7 +150,7 @@ class TestColor:
         palette = color_palette("Oranges", n)
         msg = rf"The edgecolor list has fewer values \({n}\) than needed \({n + 1}\)"
         m = ColorSemantic(palette=palette, variable="edgecolor")
-        scale = get_default_scale(cat_vector)
+        scale = self.default_scale(cat_vector)
         with pytest.warns(UserWarning, match=msg):
             m.setup(cat_vector, scale)
 
@@ -211,7 +217,7 @@ class TestColor:
 
         new_order = list(reversed(cat_order))
         new_vector = cat_vector.astype("category").cat.set_categories(new_order)
-        scale = get_default_scale(new_vector)
+        scale = self.default_scale(new_vector)
 
         expected = dict(zip(new_order, color_palette()))
 
@@ -224,7 +230,7 @@ class TestColor:
 
         new_vector = num_vector.astype("category")
         new_order = categorical_order(new_vector)
-        scale = get_default_scale(new_vector)
+        scale = self.default_scale(new_vector)
 
         expected = dict(zip(new_order, color_palette()))
 
@@ -237,7 +243,7 @@ class TestColor:
 
         palette = "bright"
         expected = dict(zip(num_order, color_palette(palette)))
-        scale = get_default_scale(num_vector)
+        scale = self.default_scale(num_vector)
         m = ColorSemantic(palette=palette).setup(num_vector, scale)
         for level, color in expected.items():
             assert same_color(m(level), color)
@@ -245,7 +251,7 @@ class TestColor:
     def test_categorical_from_binary_data(self):
 
         vector = pd.Series([1, 0, 0, 0, 1, 1, 1])
-        scale = get_default_scale(vector)
+        scale = self.default_scale(vector)
         expected_palette = dict(zip([0, 1], color_palette()))
         m = ColorSemantic().setup(vector, scale)
 
@@ -256,7 +262,7 @@ class TestColor:
 
         for val in [0, 1]:
             x = pd.Series([val] * 4)
-            scale = get_default_scale(x)
+            scale = self.default_scale(x)
             m = ColorSemantic().setup(x, scale)
             assert same_color(m(val), first_color)
 
@@ -264,7 +270,7 @@ class TestColor:
 
         x = pd.Series(["a", "b", "c"])
         colors = color_palette(n_colors=len(x))
-        scale = get_default_scale(x)
+        scale = self.default_scale(x)
         m = ColorSemantic().setup(x, scale)
         assert m(x) == [to_rgb(c) for c in colors]
 
@@ -272,7 +278,7 @@ class TestColor:
 
         x = pd.Series(["a", "b", "c"]).astype("category")
         colors = color_palette(n_colors=len(x))
-        scale = get_default_scale(x)
+        scale = self.default_scale(x)
         m = ColorSemantic().setup(x, scale)
         assert m(x) == [to_rgb(c) for c in colors]
 
@@ -280,7 +286,7 @@ class TestColor:
 
         x = pd.Series(["a", "b", "c"])
         colors = [(.2, .2, .3, .5), (.1, .2, .3, 1), (.5, .6, .2, 0)]
-        scale = get_default_scale(x)
+        scale = self.default_scale(x)
         m = ColorSemantic(colors).setup(x, scale)
         assert m(x) == [to_rgba(c) for c in colors]
 
@@ -341,12 +347,12 @@ class TestColor:
         cmap = color_palette("mako", as_cmap=True)
         m = ColorSemantic(palette=cmap).setup(num_vector, num_scale)
         norm = num_scale.setup(num_vector).norm
-        expected_colors = cmap(norm(num_vector.to_numpy()))
+        expected_colors = cmap(norm(num_vector.to_numpy()))[:, :3]
         assert_array_equal(m(num_vector), expected_colors)
 
     def test_datetime_default_palette(self, dt_num_vector):
 
-        scale = get_default_scale(dt_num_vector)
+        scale = self.default_scale(dt_num_vector)
         m = ColorSemantic().setup(dt_num_vector, scale)
         mapped = m(dt_num_vector)
 
@@ -363,7 +369,7 @@ class TestColor:
     def test_datetime_specified_palette(self, dt_num_vector):
 
         palette = "mako"
-        scale = get_default_scale(dt_num_vector)
+        scale = self.default_scale(dt_num_vector)
         m = ColorSemantic(palette=palette).setup(dt_num_vector, scale)
         mapped = m(dt_num_vector)
 
@@ -409,7 +415,7 @@ class TestColor:
     def test_mixture_of_alpha_nonalpha(self):
 
         x = pd.Series(["a", "b"])
-        scale = get_default_scale(x)
+        scale = self.default_scale(x)
         palette = [(1, 0, .5), (.5, .5, .5, .5)]
 
         err = "Palette cannot mix colors defined with and without alpha channel."
@@ -417,12 +423,12 @@ class TestColor:
             ColorSemantic(palette=palette).setup(x, scale)
 
 
-class DiscreteBase:
+class DiscreteBase(MappingsBase):
 
     def test_none_provided(self):
 
         keys = pd.Series(["a", "b", "c"])
-        scale = get_default_scale(keys)
+        scale = self.default_scale(keys)
         m = self.semantic().setup(keys, scale)
 
         defaults = self.semantic()._default_values(len(keys))
@@ -438,7 +444,7 @@ class DiscreteBase:
     def _test_provided_list(self, values):
 
         keys = pd.Series(["a", "b", "c", "d"])
-        scale = get_default_scale(keys)
+        scale = self.default_scale(keys)
         m = self.semantic(values).setup(keys, scale)
 
         for key, want in zip(keys, values):
@@ -452,7 +458,7 @@ class DiscreteBase:
     def _test_provided_dict(self, values):
 
         keys = pd.Series(["a", "b", "c", "d"])
-        scale = get_default_scale(keys)
+        scale = self.default_scale(keys)
         mapping = dict(zip(keys, values))
         m = self.semantic(mapping).setup(keys, scale)
 
@@ -503,7 +509,7 @@ class TestLineStyle(DiscreteBase):
 
         m = self.semantic({})
         keys = pd.Series(["a", 1])
-        scale = get_default_scale(keys)
+        scale = self.default_scale(keys)
         err = r"Missing linestyle for following value\(s\): 1, 'a'"
         with pytest.raises(ValueError, match=err):
             m.setup(keys, scale)
@@ -550,18 +556,18 @@ class TestMarker(DiscreteBase):
 
         m = MarkerSemantic({})
         keys = pd.Series(["a", 1])
-        scale = get_default_scale(keys)
+        scale = self.default_scale(keys)
         err = r"Missing marker for following value\(s\): 1, 'a'"
         with pytest.raises(ValueError, match=err):
             m.setup(keys, scale)
 
 
-class TestBoolean:
+class TestBoolean(MappingsBase):
 
     def test_default(self):
 
         x = pd.Series(["a", "b"])
-        scale = get_default_scale(x)
+        scale = self.default_scale(x)
         m = BooleanSemantic(values=None, variable="").setup(x, scale)
         assert m("a") is True
         assert m("b") is False
@@ -571,7 +577,7 @@ class TestBoolean:
         x = pd.Series(["a", "b", "c"])
         s = BooleanSemantic(values=None, variable="fill")
         msg = "There are only two possible fill values, so they will cycle"
-        scale = get_default_scale(x)
+        scale = self.default_scale(x)
         with pytest.warns(UserWarning, match=msg):
             m = s.setup(x, scale)
         assert m("a") is True
@@ -582,13 +588,13 @@ class TestBoolean:
 
         x = pd.Series(["a", "b", "c"])
         values = [True, True, False]
-        scale = get_default_scale(x)
+        scale = self.default_scale(x)
         m = BooleanSemantic(values, variable="").setup(x, scale)
         for k, v in zip(x, values):
             assert m(k) is v
 
 
-class ContinuousBase:
+class ContinuousBase(MappingsBase):
 
     @staticmethod
     def norm(x, vmin, vmax):
@@ -603,7 +609,7 @@ class ContinuousBase:
     def test_default_numeric(self):
 
         x = pd.Series([-1, .4, 2, 1.2])
-        scale = get_default_scale(x)
+        scale = self.default_scale(x)
         y = self.semantic().setup(x, scale)(x)
         normed = self.norm(x, x.min(), x.max())
         expected = self.transform(normed, *self.semantic().default_range)
@@ -612,7 +618,7 @@ class ContinuousBase:
     def test_default_categorical(self):
 
         x = pd.Series(["a", "c", "b", "c"])
-        scale = get_default_scale(x)
+        scale = self.default_scale(x)
         y = self.semantic().setup(x, scale)(x)
         normed = np.array([1, .5, 0, .5])
         expected = self.transform(normed, *self.semantic().default_range)
@@ -622,7 +628,7 @@ class ContinuousBase:
 
         values = (1, 5)
         x = pd.Series([-1, .4, 2, 1.2])
-        scale = get_default_scale(x)
+        scale = self.default_scale(x)
         y = self.semantic(values).setup(x, scale)(x)
         normed = self.norm(x, x.min(), x.max())
         expected = self.transform(normed, *values)
@@ -632,7 +638,7 @@ class ContinuousBase:
 
         values = (1, 5)
         x = pd.Series(["a", "c", "b", "c"])
-        scale = get_default_scale(x)
+        scale = self.default_scale(x)
         y = self.semantic(values).setup(x, scale)(x)
         normed = np.array([1, .5, 0, .5])
         expected = self.transform(normed, *values)
@@ -643,7 +649,7 @@ class ContinuousBase:
         values = [.3, .8, .5]
         x = pd.Series([2, 500, 10, 500])
         expected = [.3, .5, .8, .5]
-        scale = get_default_scale(x)
+        scale = self.default_scale(x)
         y = self.semantic(values).setup(x, scale)(x)
         assert_array_equal(y, expected)
 
@@ -652,7 +658,7 @@ class ContinuousBase:
         values = [.2, .6, .4]
         x = pd.Series(["a", "c", "b", "c"])
         expected = [.2, .6, .4, .6]
-        scale = get_default_scale(x)
+        scale = self.default_scale(x)
         y = self.semantic(values).setup(x, scale)(x)
         assert_array_equal(y, expected)
 
@@ -661,7 +667,7 @@ class ContinuousBase:
         x = pd.Series([2, 500, 10, 500])
         values = [.2, .6, .4]
         expected = [.2, .4, .6, .4]
-        scale = get_default_scale(x)
+        scale = self.default_scale(x)
         y = self.semantic(values).setup(x, scale)(x)
         assert_array_equal(y, expected)
 
@@ -669,7 +675,7 @@ class ContinuousBase:
 
         x = pd.Series([2, 500, 10, 500])
         values = {2: .3, 500: .5, 10: .8}
-        scale = get_default_scale(x)
+        scale = self.default_scale(x)
         y = self.semantic(values).setup(x, scale)(x)
         assert_array_equal(y, x.map(values))
 
@@ -677,7 +683,7 @@ class ContinuousBase:
 
         x = pd.Series(["a", "c", "b", "c"])
         values = {"a": .3, "b": .5, "c": .8}
-        scale = get_default_scale(x)
+        scale = self.default_scale(x)
         y = self.semantic(values).setup(x, scale)(x)
         assert_array_equal(y, x.map(values))
 
@@ -694,7 +700,7 @@ class ContinuousBase:
     def test_default_datetime(self):
 
         x = pd.Series(np.array([10000, 10100, 10101], dtype="datetime64[D]"))
-        scale = get_default_scale(x)
+        scale = self.default_scale(x)
         y = self.semantic().setup(x, scale)(x)
         tmp = x - x.min()
         normed = tmp / tmp.max()
@@ -705,7 +711,7 @@ class ContinuousBase:
 
         values = .2, .9
         x = pd.Series(np.array([10000, 10100, 10101], dtype="datetime64[D]"))
-        scale = get_default_scale(x)
+        scale = self.default_scale(x)
         y = self.semantic(values).setup(x, scale)(x)
         tmp = x - x.min()
         normed = tmp / tmp.max()

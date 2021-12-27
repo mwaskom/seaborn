@@ -64,6 +64,13 @@ class MockMark(Mark):
         # TODO update the test that uses this
         self.passed_mappings.append(self.mappings)
 
+    def _legend_artist(self, variables, value):
+
+        a = mpl.lines.Line2D([], [])
+        a.variables = variables
+        a.value = value
+        return a
+
 
 class TestInit:
 
@@ -1400,6 +1407,140 @@ class TestLabelVisibility:
             assert all(t.get_visible() for t in ax.get_yticklabels())
 
 
-# TODO Current untested includes:
-# - anything having to do with semantic mapping
-# - any important corner cases in the original test_core suite
+class TestLegend:
+
+    @pytest.fixture
+    def xy(self):
+        return dict(x=[1, 2, 3, 4], y=[1, 2, 3, 4])
+
+    def test_single_layer_single_variable(self, xy):
+
+        s = pd.Series(["a", "b", "a", "c"], name="s")
+        p = Plot(**xy).add(MockMark(), color=s).plot()
+        e, = p._legend_contents
+
+        labels = categorical_order(s)
+
+        assert e[0] == (s.name, s.name)
+        assert e[-1] == labels
+
+        artists = e[1]
+        assert len(artists) == len(labels)
+        for a, label in zip(artists, labels):
+            assert isinstance(a, mpl.artist.Artist)
+            assert a.value == label
+            assert a.variables == ["color"]
+
+    def test_single_layer_common_variable(self, xy):
+
+        s = pd.Series(["a", "b", "a", "c"], name="s")
+        sem = dict(color=s, marker=s)
+        p = Plot(**xy).add(MockMark(), **sem).plot()
+        e, = p._legend_contents
+
+        labels = categorical_order(s)
+
+        assert e[0] == (s.name, s.name)
+        assert e[-1] == labels
+
+        artists = e[1]
+        assert len(artists) == len(labels)
+        for a, label in zip(artists, labels):
+            assert isinstance(a, mpl.artist.Artist)
+            assert a.value == label
+            assert a.variables == list(sem)
+
+    def test_single_layer_common_unnamed_variable(self, xy):
+
+        s = np.array(["a", "b", "a", "c"])
+        sem = dict(color=s, marker=s)
+        p = Plot(**xy).add(MockMark(), **sem).plot()
+
+        e, = p._legend_contents
+
+        labels = list(np.unique(s))  # assumes sorted order
+
+        assert e[0] == (None, id(s))
+        assert e[-1] == labels
+
+        artists = e[1]
+        assert len(artists) == len(labels)
+        for a, label in zip(artists, labels):
+            assert isinstance(a, mpl.artist.Artist)
+            assert a.value == label
+            assert a.variables == list(sem)
+
+    def test_single_layer_multi_variable(self, xy):
+
+        s1 = pd.Series(["a", "b", "a", "c"], name="s1")
+        s2 = pd.Series(["m", "m", "p", "m"], name="s2")
+        sem = dict(color=s1, marker=s2)
+        p = Plot(**xy).add(MockMark(), **sem).plot()
+        e1, e2 = p._legend_contents
+
+        variables = {v.name: k for k, v in sem.items()}
+
+        for e, s in zip([e1, e2], [s1, s2]):
+            assert e[0] == (s.name, s.name)
+
+            labels = categorical_order(s)
+            assert e[-1] == labels
+
+            artists = e[1]
+            assert len(artists) == len(labels)
+            for a, label in zip(artists, labels):
+                assert isinstance(a, mpl.artist.Artist)
+                assert a.value == label
+                assert a.variables == [variables[s.name]]
+
+    def test_multi_layer_single_variable(self, xy):
+
+        s = pd.Series(["a", "b", "a", "c"], name="s")
+        p = Plot(**xy, color=s).add(MockMark()).add(MockMark()).plot()
+        e1, e2 = p._legend_contents
+
+        labels = categorical_order(s)
+
+        for e in [e1, e2]:
+            assert e[0] == (s.name, s.name)
+
+            labels = categorical_order(s)
+            assert e[-1] == labels
+
+            artists = e[1]
+            assert len(artists) == len(labels)
+            for a, label in zip(artists, labels):
+                assert isinstance(a, mpl.artist.Artist)
+                assert a.value == label
+                assert a.variables == ["color"]
+
+    def test_multi_layer_multi_variable(self, xy):
+
+        s1 = pd.Series(["a", "b", "a", "c"], name="s1")
+        s2 = pd.Series(["m", "m", "p", "m"], name="s2")
+        sem = dict(color=s1), dict(marker=s2)
+        variables = {"s1": "color", "s2": "marker"}
+        p = Plot(**xy).add(MockMark(), **sem[0]).add(MockMark(), **sem[1]).plot()
+        e1, e2 = p._legend_contents
+
+        for e, s in zip([e1, e2], [s1, s2]):
+            assert e[0] == (s.name, s.name)
+
+            labels = categorical_order(s)
+            assert e[-1] == labels
+
+            artists = e[1]
+            assert len(artists) == len(labels)
+            for a, label in zip(artists, labels):
+                assert isinstance(a, mpl.artist.Artist)
+                assert a.value == label
+                assert a.variables == [variables[s.name]]
+
+    def test_identity_scale_ignored(self, xy):
+
+        s = pd.Series(["r", "g", "b", "g"])
+        p = Plot(**xy).add(MockMark(), color=s).scale_identity("color").plot()
+        assert not p._legend_contents
+
+    # TODO test actually legend content? But wait until we decide
+    # how we want to actually create the legend ...

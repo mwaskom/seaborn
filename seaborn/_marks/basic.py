@@ -4,6 +4,11 @@ import matplotlib as mpl
 
 from seaborn._marks.base import Mark, Feature
 
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from typing import Any
+    from matplotlib.artist import Artist
+
 
 class Point(Mark):  # TODO types
 
@@ -106,6 +111,34 @@ class Point(Mark):  # TODO types
         )
         ax.add_collection(points)
 
+    def _legend_artist(self, variables: list[str], value: Any) -> Artist:
+
+        key = {v: value for v in variables}
+
+        # TODO do we need to abstract "get feature kwargs"?
+        marker = self._resolve(key, "marker")
+        path = marker.get_path().transformed(marker.get_transform())
+
+        edgecolor = self._resolve_color(key)
+        facecolor = self._resolve_color(key, "fill")
+
+        fill = self._resolve(key, "fill") and marker.is_filled()
+        if not fill:
+            facecolor = facecolor[0], facecolor[1], facecolor[2], 0
+
+        linewidth = self._resolve(key, "linewidth")
+        pointsize = self._resolve(key, "pointsize")
+        size = pointsize ** 2
+
+        return mpl.collections.PathCollection(
+            paths=[path],
+            sizes=[size],
+            facecolors=[facecolor],
+            edgecolors=[edgecolor],
+            linewidths=[linewidth],
+            transform=mpl.transforms.IdentityTransform(),
+        )
+
 
 class Line(Mark):
 
@@ -153,6 +186,18 @@ class Line(Mark):
             **kws
         )
         ax.add_line(line)
+
+    def _legend_artist(self, variables, value):
+
+        key = {v: value for v in variables}
+
+        return mpl.lines.Line2D(
+            [], [],
+            color=self._resolve_color(key),
+            linewidth=self._resolve(key, "linewidth"),
+            linestyle=self._resolve(key, "linestyle"),
+            marker=self._resolve(key, "marker"),
+        )
 
 
 class Area(Mark):

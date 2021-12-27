@@ -95,10 +95,19 @@ class Scale:
         out = copy(self)
         out.norm = copy(self.norm)
         if axis is None:
-            axis = DummyAxis()
+            axis = DummyAxis(self)
         axis.update_units(self._units_seed(data).to_numpy())
         out.axis = axis
         out.normalize(data)  # Autoscale norm if unset
+        if isinstance(axis, DummyAxis):
+            # TODO This is a little awkward but I think we want to avoid doing this
+            # to an actual Axis (unclear whether using Axis machinery in bits and
+            # pieces is a good design, though)
+            num_data = out.convert(data)
+            vmin, vmax = num_data.min(), num_data.max()
+            axis.set_data_interval(vmin, vmax)
+            margin = .05 * (vmax - vmin)  # TODO configure?
+            axis.set_view_interval(vmin - margin, vmax + margin)
         return out
 
     def cast(self, data: Series) -> Series:
@@ -131,6 +140,27 @@ class Scale:
         transform = self.scale_obj.get_transform().inverted().transform
         array = transform(data.to_numpy())
         return pd.Series(array, data.index, name=data.name)
+
+    def legend(self, values: list | None = None) -> tuple[list[Any], list[str]]:
+
+        # TODO decide how we want to allow more control over the legend
+        # (e.g., how we could accept a Locator object, or specified number of ticks)
+        # If we move towards a gradient legend for continuous mappings (as I'd like),
+        # it will complicate the value -> label mapping that this assumes.
+
+        # TODO also, decide whether it would be cleaner to define a more structured
+        # class for the return value; the type signatures for the components of the
+        # legend pipeline end up extremely complicated.
+
+        vmin, vmax = self.axis.get_view_interval()
+        if values is None:
+            locs = np.array(self.axis.major.locator())
+            locs = locs[(vmin <= locs) & (locs <= vmax)]
+            values = list(locs)
+        else:
+            locs = self.convert(pd.Series(values)).to_numpy()
+        labels = list(self.axis.major.formatter.format_ticks(locs))
+        return values, labels
 
 
 class NumericScale(Scale):
@@ -165,6 +195,7 @@ class CategoricalScale(Scale):
         super().__init__(scale_obj, None)
         self.order = order
         self.formatter = formatter
+        # TODO use axis Formatter for nice batched formatting? Requires reorg
 
     def _units_seed(self, data: Series) -> Series:
         """Representative values passed to matplotlib's update_units method."""
@@ -247,6 +278,9 @@ class IdentityScale(Scale):
     def __init__(self):
         super().__init__(None, None)
 
+    def setup(self, data: Series, axis: Axis | None = None) -> Scale:
+        return self
+
     def cast(self, data: Series) -> Series:
         """Return input data."""
         return data
@@ -278,9 +312,56 @@ class DummyAxis:
     code, this object acts like an Axis and can be used to scale other variables.
 
     """
-    def __init__(self):
+    axis_name = ""  # TODO Needs real value? Just used for x/y logic in matplotlib
+
+    def __init__(self, scale):
+
         self.converter = None
         self.units = None
+        self.major = mpl.axis.Ticker()
+        self.scale = scale
+
+        scale.scale_obj.set_default_locators_and_formatters(self)
+        # self.set_default_intervals()  TODO mock?
+
+    def set_view_interval(self, vmin, vmax):
+        # TODO this gets called when setting DateTime units,
+        # but we may not need it to do anything
+        self._view_interval = vmin, vmax
+
+    def get_view_interval(self):
+        return self._view_interval
+
+    # TODO do we want to distinguish view/data intervals? e.g. for a legend
+    # we probably want to represent the full range of the data values, but
+    # still norm the colormap. If so, we'll need to track data range separately
+    # from the norm, which we currently don't do.
+
+    def set_data_interval(self, vmin, vmax):
+        self._data_interval = vmin, vmax
+
+    def get_data_interval(self):
+        return self._data_interval
+
+    def get_tick_space(self):
+        # TODO how to do this in a configurable / auto way?
+        # Would be cool to have legend density adapt to figure size, etc.
+        return 5
+
+    def set_major_locator(self, locator):
+        self.major.locator = locator
+        locator.set_axis(self)
+
+    def set_major_formatter(self, formatter):
+        # TODO matplotlib method does more handling (e.g. to set w/format str)
+        self.major.formatter = formatter
+        formatter.set_axis(self)
+
+    def set_minor_locator(self, locator):
+        pass
+
+    def set_minor_formatter(self, formatter):
+        pass
 
     def set_units(self, units):
         self.units = units
@@ -290,6 +371,19 @@ class DummyAxis:
         self.converter = mpl.units.registry.get_converter(x)
         if self.converter is not None:
             self.converter.default_units(x, self)
+
+            info = self.converter.axisinfo(self.units, self)
+
+            if info is None:
+                return
+            if info.majloc is not None:
+                # TODO matplotlib method has more conditions here; are they needed?
+                self.set_major_locator(info.majloc)
+            if info.majfmt is not None:
+                self.set_major_formatter(info.majfmt)
+
+            # TODO this is in matplotlib method; do we need this?
+            # self.set_default_intervals()
 
     def convert_units(self, x):
         """Return a numeric representation of the input data."""

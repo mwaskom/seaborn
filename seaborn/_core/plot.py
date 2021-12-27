@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-import re
 import io
+import re
 import itertools
 from copy import deepcopy
 from distutils.version import LooseVersion
@@ -40,6 +40,7 @@ if TYPE_CHECKING:
     from collections.abc import Callable, Generator, Iterable, Hashable
     from pandas import DataFrame, Series, Index
     from matplotlib.axes import Axes
+    from matplotlib.artist import Artist
     from matplotlib.color import Normalize
     from matplotlib.figure import Figure, SubFigure
     from matplotlib.scale import ScaleBase
@@ -95,7 +96,7 @@ class Plot:
         **variables: VariableSpec,
     ):
 
-        # TODO accept *args that can be one or two as x, y?
+        # TODO accept x, y as args?
 
         self._data = PlotData(data, variables)
         self._layers = []
@@ -308,7 +309,7 @@ class Plot:
         # TODO if we define default semantics, we can use that
         # for initialization and make this more abstract (assuming kwargs match?)
         self._semantics["color"] = ColorSemantic(palette)
-        self._scale_from_map("facecolor", palette, order)
+        self._scale_from_map("color", palette, order)
         return self
 
     def map_alpha(
@@ -503,8 +504,12 @@ class Plot:
         # We should pass kwargs to the DateTime cast probably.
         # Should we also explicitly expose more of the pd.to_datetime interface?
 
-        # It will be nice to have more control over the formatting of the ticks
-        # which is pretty annoying in standard matplotlib.
+        # TODO also we should be able to set the formatter here
+        # (well, and also in the other scale methods)
+        # But it's especially important here because the default matplotlib formatter
+        # is not very nice, and we don't need to be bound by that, so we should probably
+        # (1) use fewer minticks
+        # (2) use the concise dateformatter by default
 
         return self
 
@@ -574,6 +579,9 @@ class Plot:
         for layer in plotter._layers:
             plotter._plot_layer(self, layer)
 
+        # TODO should this go here?
+        plotter._make_legend()  # TODO does this return?
+
         # TODO this should be configurable
         if not plotter._figure.get_constrained_layout():
             plotter._figure.set_tight_layout(True)
@@ -601,6 +609,9 @@ class Plotter:
     def __init__(self, pyplot=False):
 
         self.pyplot = pyplot
+        self._legend_contents: list[
+            tuple[str, str | int], list[Artist], list[str],
+        ] = []
 
     def save(self, fname, **kwargs) -> Plotter:
         # TODO type fname as string or path; handle Path objects if matplotlib can't
@@ -933,6 +944,9 @@ class Plotter:
 
                 mark._plot(split_generator)
 
+        with mark.use(self._mappings, None):  # TODO will we ever need orient?
+            self._update_legend_contents(mark, data)
+
     def _apply_stat(
         self,
         df: DataFrame,
@@ -1128,3 +1142,81 @@ class Plotter:
                     yield sub_vars, df_subset.copy(), subplot["ax"]
 
         return split_generator
+
+    def _update_legend_contents(self, mark: Mark, data: PlotData) -> None:
+        """Add legend artists / labels for one layer in the plot."""
+        legend_vars = data.frame.columns.intersection(self._mappings)
+
+        # First pass: Identify the values that will be shown for each variable
+        schema: list[tuple[
+            tuple[str | None, str | int], list[str], tuple[list, list[str]]
+        ]] = []
+        schema = []
+        for var in legend_vars:
+            var_legend = self._mappings[var].legend
+            if var_legend is not None:
+                values, labels = var_legend
+                for (_, part_id), part_vars, _ in schema:
+                    if data.ids[var] == part_id:
+                        # Allow multiple plot semantics to represent same data variable
+                        part_vars.append(var)
+                        break
+                else:
+                    entry = (data.names[var], data.ids[var]), [var], (values, labels)
+                    schema.append(entry)
+
+        # Second pass, generate an artist corresponding to each value
+        contents = []
+        for key, variables, (values, labels) in schema:
+            artists = []
+            for val in values:
+                artists.append(mark._legend_artist(variables, val))
+            contents.append((key, artists, labels))
+
+        self._legend_contents.extend(contents)
+
+    def _make_legend(self) -> None:
+        """Create the legend artist(s) and add onto the figure."""
+        # Combine artists representing same information across layers
+        # Input list has an entry for each distinct variable in each layer
+        # Output dict has an entry for each distinct variable
+        merged_contents: dict[
+            tuple[str | None, str | int], tuple[list[Artist], list[str]],
+        ] = {}
+        for key, artists, labels in self._legend_contents:
+            # Key is (name, id); we need the id to resolve variable uniqueness,
+            # but will need the name in the next step to title the legend
+            if key in merged_contents:
+                # Copy so inplace updates don't propagate back to legend_contents
+                existing_artists = merged_contents[key][0].copy()
+                for i, artist in enumerate(existing_artists):
+                    # Matplotlib accepts a tuple of artists and will overlay them
+                    if isinstance(artist, tuple):
+                        artist += artist[i],
+                    else:
+                        artist = artist, artists[i]
+                    # Update list that is a value in the merged_contents dict in place
+                    existing_artists[i] = artist
+            else:
+                merged_contents[key] = artists, labels
+
+        base_legend = None
+        for (name, _), (handles, labels) in merged_contents.items():
+
+            legend = mpl.legend.Legend(
+                self._figure,
+                handles,
+                labels,
+                title=name,  # TODO don't show "None" as title
+                loc="upper right",
+                # bbox_to_anchor=(.98, .98),
+            )
+
+            # TODO: This is an illegal hack accessing private attributes on the legend
+            # We need to sort out how we are going to handle this given that lack of a
+            # proper API to do things like position legends relative to each other
+            if base_legend:
+                base_legend._legend_box._children.extend(legend._legend_box._children)
+            else:
+                base_legend = legend
+                self._figure.legends.append(legend)
