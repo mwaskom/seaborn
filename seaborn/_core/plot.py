@@ -10,7 +10,7 @@ import pandas as pd
 import matplotlib as mpl
 import matplotlib.pyplot as plt  # TODO defer import into Plot.show()
 
-from seaborn._compat import norm_from_scale, scale_factory, set_scale_obj
+from seaborn._compat import scale_factory, set_scale_obj
 from seaborn._core.rules import categorical_order
 from seaborn._core.data import PlotData
 from seaborn._core.subplots import Subplots
@@ -149,9 +149,6 @@ class Plot:
         data: DataSource = None,
         **variables: VariableSpec,
     ) -> Plot:
-
-        # TODO FIXME:layer change the layer object to a simple dictionary,
-        # there's almost no logic in the class and it will make copy/update less awkward
 
         # TODO do a check here that mark has been initialized,
         # otherwise errors will be inscrutable
@@ -416,41 +413,25 @@ class Plot:
         var: str,
         scale: str | ScaleBase = "linear",
         norm: NormSpec = None,
-        # TODO Add dtype as a parameter? Seemed like a good idea ... but why?
         # TODO add clip? Useful for e.g., making sure lines don't get too thick.
         # (If we add clip, should we make the legend say like ``> value`)?
         **kwargs  # Needed? Or expose what we need?
     ) -> Plot:
 
-        # TODO XXX FIXME matplotlib scales sometimes default to
-        # filling invalid outputs with large out of scale numbers
-        # (e.g. default behavior for LogScale is 0 -> -10000)
-        # This will cause MAJOR PROBLEMS for statistical transformations
-        # Solution? I think it's fine to special-case scale="log" in
-        # Plot.scale_numeric and force `nonpositive="mask"` and remove
-        # NAs after scaling (cf GH2454).
-        # And then add a warning in the docstring that the users must
-        # ensure that ScaleBase derivatives mask out of bounds data
-
         # TODO use norm for setting axis limits? Or otherwise share an interface?
-
-        # TODO or separate norm as a Normalize object and limits as a tuple?
+        # Or separate norm as a Normalize object and limits as a tuple?
         # (If we have one we can create the other)
 
-        # TODO expose parameter for internal dtype achieved during scale.cast?
+        # TODO Do we want to be able to call this on numbers-as-strings data and
+        # have it work sensibly?
 
-        # TODO we want to be able to call this on numbers-as-strings data and
-        # have it work the way you would expect.
+        if scale == "log":
+            # TODO document that passing a LogNorm without this set can cause issues
+            # (It's not a public attribute on the scale/transform)
+            kwargs.setdefault("nonpositive", "mask")
 
-        scale = scale_factory(scale, var, **kwargs)
-
-        if norm is None:
-            # TODO what about when we want to infer the scale from the norm?
-            # e.g. currently you pass LogNorm to get a log normalization...
-            # Answer: probably special-case LogNorm at the function layer?
-            # TODO do we need this given that we own normalization logic?
-            norm = norm_from_scale(scale, norm)
-
+        if not isinstance(scale, mpl.scale.ScaleBase):
+            scale = scale_factory(scale, var, **kwargs)
         self._scales[var] = NumericScale(scale, norm)
 
         return self

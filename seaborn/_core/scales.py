@@ -98,7 +98,9 @@ class Scale:
             axis = DummyAxis(self)
         axis.update_units(self._units_seed(data).to_numpy())
         out.axis = axis
-        out.normalize(data)  # Autoscale norm if unset
+        # Autoscale norm if unset, nulling out values that will be nulled by transform
+        # (e.g., if log scale, set negative values to na so vmin is always positive)
+        out.normalize(data.where(out.forward(data).notna()))
         if isinstance(axis, DummyAxis):
             # TODO This is a little awkward but I think we want to avoid doing this
             # to an actual Axis (unclear whether using Axis machinery in bits and

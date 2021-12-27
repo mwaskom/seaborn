@@ -95,6 +95,13 @@ class TestNumeric:
         s = NumericScale(scale, None).setup(x)
         assert_series_equal(s.normalize(x), pd.Series([0, .5, 1]))
 
+    def test_norm_nonpositive_log(self):
+
+        x = pd.Series([1, -5, 10, 100])
+        scale = scale_factory("log", "x", nonpositive="mask")
+        s = NumericScale(scale, None).setup(x)
+        assert_series_equal(s.normalize(x), pd.Series([0, np.nan, .5, 1]))
+
     def test_forward(self):
 
         x = pd.Series([1., 10., 100.])

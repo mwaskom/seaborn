@@ -62,7 +62,6 @@ def norm_from_scale(scale, norm):
             return t_value[0] if is_scalar else t_value
 
     new_norm = ScaledNorm(vmin, vmax)
-
     new_norm.transform = scale.get_transform().transform
 
     return new_norm
@@ -76,11 +75,34 @@ def scale_factory(scale, axis, **kwargs):
     But the axis is not used, aside from extraction of the axis_name in LogScale.
 
     """
+    modify_transform = False
+    if LooseVersion(mpl.__version__) < "3.4":
+        if axis[0] in "xy":
+            modify_transform = True
+            axis = axis[0]
+            base = kwargs.pop("base", None)
+            if base is not None:
+                kwargs[f"base{axis}"] = base
+            nonpos = kwargs.pop("nonpositive", None)
+            if nonpos is not None:
+                kwargs[f"nonpos{axis}"] = nonpos
+
     if isinstance(scale, str):
         class Axis:
             axis_name = axis
         axis = Axis()
-    return mpl.scale.scale_factory(scale, axis, **kwargs)
+
+    scale = mpl.scale.scale_factory(scale, axis, **kwargs)
+
+    if modify_transform:
+        transform = scale.get_transform()
+        transform.base = kwargs.get("base", 10)
+        if kwargs.get("nonpositive") == "mask":
+            # Setting a private attribute, but we only get here
+            # on an old matplotlib, so this won't break going forwards
+            transform._clip = False
+
+    return scale
 
 
 def set_scale_obj(ax, axis, scale):
