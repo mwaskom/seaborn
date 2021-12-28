@@ -4,6 +4,7 @@ import io
 import re
 import itertools
 from copy import deepcopy
+from collections import abc
 from distutils.version import LooseVersion
 
 import pandas as pd
@@ -92,11 +93,20 @@ class Plot:
 
     def __init__(
         self,
+        # TODO rewrite with overload to clarify possible signatures?
+        *args: DataSource | VariableSpec,
         data: DataSource = None,
+        x: VariableSpec = None,
+        y: VariableSpec = None,
         **variables: VariableSpec,
     ):
 
-        # TODO accept x, y as args?
+        if args:
+            data, x, y = self._resolve_positionals(args, data, x, y)
+        if x is not None:
+            variables["x"] = x
+        if y is not None:
+            variables["y"] = y
 
         self._data = PlotData(data, variables)
         self._layers = []
@@ -109,6 +119,51 @@ class Plot:
         self._pairspec = {}
 
         self._target = None
+
+    def _resolve_positionals(
+        self,
+        args: tuple[DataSource | VariableSpec, ...],
+        data: DataSource, x: VariableSpec, y: VariableSpec,
+    ) -> tuple[DataSource, VariableSpec, VariableSpec]:
+
+        if len(args) > 3:
+            err = "Plot accepts no more than 3 positional arguments (data, x, y)"
+            raise TypeError(err)  # TODO PlotSpecError?
+        elif len(args) == 3:
+            data_, x_, y_ = args
+        else:
+            # TODO need some clearer way to differentiate data / vector here
+            # Alternatively, could decide this is too flexible for its own good,
+            # and require data to be in positional signature. I'm conflicted.
+            have_data = isinstance(args[0], (abc.Mapping, pd.DataFrame))
+            if len(args) == 2:
+                if have_data:
+                    data_, x_ = args
+                    y_ = None
+                else:
+                    data_ = None
+                    x_, y_ = args
+            else:
+                y_ = None
+                if have_data:
+                    data_ = args[0]
+                    x_ = None
+                else:
+                    data_ = None
+                    x_ = args[0]
+
+        out = []
+        for var, named, pos in zip(["data", "x", "y"], [data, x, y], [data_, x_, y_]):
+            if pos is None:
+                val = named
+            else:
+                if named is not None:
+                    raise TypeError(f"`{var}` given by both name and position")
+                val = pos
+            out.append(val)
+        data, x, y = out
+
+        return data, x, y
 
     def _repr_png_(self) -> tuple[bytes, dict[str, float]]:
 

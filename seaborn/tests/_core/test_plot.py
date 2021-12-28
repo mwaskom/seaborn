@@ -126,6 +126,55 @@ class TestInit:
         assert p._data.source_data is None
         assert p._data.source_vars.keys() == variables.keys()
 
+    def test_data_only_named(self, long_df):
+
+        p = Plot(data=long_df)
+        assert p._data.source_data is long_df
+        assert p._data.source_vars == {}
+
+    def test_positional_and_named_data(self, long_df):
+
+        err = "`data` given by both name and position"
+        with pytest.raises(TypeError, match=err):
+            Plot(long_df, data=long_df)
+
+    @pytest.mark.parametrize("var", ["x", "y"])
+    def test_positional_and_named_xy(self, long_df, var):
+
+        err = f"`{var}` given by both name and position"
+        with pytest.raises(TypeError, match=err):
+            Plot(long_df, "a", "b", **{var: "c"})
+
+    def test_positional_data_x_y(self, long_df):
+
+        p = Plot(long_df, "a", "b")
+        assert p._data.source_data is long_df
+        assert list(p._data.source_vars) == ["x", "y"]
+
+    def test_positional_x_y(self, long_df):
+
+        p = Plot(long_df["a"], long_df["b"])
+        assert p._data.source_data is None
+        assert list(p._data.source_vars) == ["x", "y"]
+
+    def test_positional_data_x(self, long_df):
+
+        p = Plot(long_df, "a")
+        assert p._data.source_data is long_df
+        assert list(p._data.source_vars) == ["x"]
+
+    def test_positional_x(self, long_df):
+
+        p = Plot(long_df["a"])
+        assert p._data.source_data is None
+        assert list(p._data.source_vars) == ["x"]
+
+    def test_positional_too_many(self, long_df):
+
+        err = r"Plot accepts no more than 3 positional arguments \(data, x, y\)"
+        with pytest.raises(TypeError, match=err):
+            Plot(long_df, "x", "y", "z")
+
 
 class TestLayerAddition:
 
