@@ -77,14 +77,14 @@ class TestInit:
     def test_empty(self):
 
         p = Plot()
-        assert p._data._source_data is None
-        assert p._data._source_vars == {}
+        assert p._data.source_data is None
+        assert p._data.source_vars == {}
 
     def test_data_only(self, long_df):
 
         p = Plot(long_df)
-        assert p._data._source_data is long_df
-        assert p._data._source_vars == {}
+        assert p._data.source_data is long_df
+        assert p._data.source_vars == {}
 
     def test_df_and_named_variables(self, long_df):
 
@@ -92,8 +92,8 @@ class TestInit:
         p = Plot(long_df, **variables)
         for var, col in variables.items():
             assert_vector_equal(p._data.frame[var], long_df[col])
-        assert p._data._source_data is long_df
-        assert p._data._source_vars.keys() == variables.keys()
+        assert p._data.source_data is long_df
+        assert p._data.source_vars.keys() == variables.keys()
 
     def test_df_and_mixed_variables(self, long_df):
 
@@ -104,8 +104,8 @@ class TestInit:
                 assert_vector_equal(p._data.frame[var], long_df[col])
             else:
                 assert_vector_equal(p._data.frame[var], col)
-        assert p._data._source_data is long_df
-        assert p._data._source_vars.keys() == variables.keys()
+        assert p._data.source_data is long_df
+        assert p._data.source_vars.keys() == variables.keys()
 
     def test_vector_variables_only(self, long_df):
 
@@ -113,8 +113,8 @@ class TestInit:
         p = Plot(**variables)
         for var, col in variables.items():
             assert_vector_equal(p._data.frame[var], col)
-        assert p._data._source_data is None
-        assert p._data._source_vars.keys() == variables.keys()
+        assert p._data.source_data is None
+        assert p._data.source_vars.keys() == variables.keys()
 
     def test_vector_variables_no_index(self, long_df):
 
@@ -123,8 +123,8 @@ class TestInit:
         for var, col in variables.items():
             assert_vector_equal(p._data.frame[var], pd.Series(col))
             assert p._data.names[var] is None
-        assert p._data._source_data is None
-        assert p._data._source_vars.keys() == variables.keys()
+        assert p._data.source_data is None
+        assert p._data.source_vars.keys() == variables.keys()
 
 
 class TestLayerAddition:
@@ -699,7 +699,7 @@ class TestPlotting:
         p2 = p1.clone()
         assert isinstance(p2, Plot)
         assert p1 is not p2
-        assert p1._data._source_data is not p2._data._source_data
+        assert p1._data.source_data is not p2._data.source_data
 
         p2.add(MockMark())
         assert not p1._layers

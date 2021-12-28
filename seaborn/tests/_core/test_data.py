@@ -22,8 +22,8 @@ class TestPlotData:
     def test_named_vectors(self, long_df, long_variables):
 
         p = PlotData(long_df, long_variables)
-        assert p._source_data is long_df
-        assert p._source_vars is long_variables
+        assert p.source_data is long_df
+        assert p.source_vars is long_variables
         for key, val in long_variables.items():
             assert p.names[key] == val
             assert_vector_equal(p.frame[key], long_df[val])
@@ -99,7 +99,7 @@ class TestPlotData:
     def test_dict_as_data(self, long_dict, long_variables):
 
         p = PlotData(long_dict, long_variables)
-        assert p._source_data is long_dict
+        assert p.source_data is long_dict
         for key, val in long_variables.items():
             assert_vector_equal(p.frame[key], pd.Series(long_dict[val]))
 
@@ -119,7 +119,7 @@ class TestPlotData:
 
         assert list(p.names) == list(long_variables)
         if vector_type == "series":
-            assert p._source_vars is variables
+            assert p.source_vars is variables
             assert p.names == p.ids == {key: val.name for key, val in variables.items()}
         else:
             assert p.names == {key: None for key in variables}
@@ -233,26 +233,26 @@ class TestPlotData:
         assert "y" not in p
         assert "color" in p
 
-    def test_concat_add_variable(self, long_df):
+    def test_join_add_variable(self, long_df):
 
         v1 = {"x": "x", "y": "f"}
         v2 = {"color": "a"}
 
         p1 = PlotData(long_df, v1)
-        p2 = p1.concat(None, v2)
+        p2 = p1.join(None, v2)
 
         for var, key in dict(**v1, **v2).items():
             assert var in p2
             assert p2.names[var] == key
             assert_vector_equal(p2.frame[var], long_df[key])
 
-    def test_concat_replace_variable(self, long_df):
+    def test_join_replace_variable(self, long_df):
 
         v1 = {"x": "x", "y": "y"}
         v2 = {"y": "s"}
 
         p1 = PlotData(long_df, v1)
-        p2 = p1.concat(None, v2)
+        p2 = p1.join(None, v2)
 
         variables = v1.copy()
         variables.update(v2)
@@ -262,26 +262,26 @@ class TestPlotData:
             assert p2.names[var] == key
             assert_vector_equal(p2.frame[var], long_df[key])
 
-    def test_concat_remove_variable(self, long_df):
+    def test_join_remove_variable(self, long_df):
 
         variables = {"x": "x", "y": "f"}
         drop_var = "y"
 
         p1 = PlotData(long_df, variables)
-        p2 = p1.concat(None, {drop_var: None})
+        p2 = p1.join(None, {drop_var: None})
 
         assert drop_var in p1
         assert drop_var not in p2
         assert drop_var not in p2.frame
         assert drop_var not in p2.names
 
-    def test_concat_all_operations(self, long_df):
+    def test_join_all_operations(self, long_df):
 
         v1 = {"x": "x", "y": "y", "color": "a"}
         v2 = {"y": "s", "size": "s", "color": None}
 
         p1 = PlotData(long_df, v1)
-        p2 = p1.concat(None, v2)
+        p2 = p1.join(None, v2)
 
         for var, key in v2.items():
             if key is None:
@@ -290,13 +290,13 @@ class TestPlotData:
                 assert p2.names[var] == key
                 assert_vector_equal(p2.frame[var], long_df[key])
 
-    def test_concat_all_operations_same_data(self, long_df):
+    def test_join_all_operations_same_data(self, long_df):
 
         v1 = {"x": "x", "y": "y", "color": "a"}
         v2 = {"y": "s", "size": "s", "color": None}
 
         p1 = PlotData(long_df, v1)
-        p2 = p1.concat(long_df, v2)
+        p2 = p1.join(long_df, v2)
 
         for var, key in v2.items():
             if key is None:
@@ -305,7 +305,7 @@ class TestPlotData:
                 assert p2.names[var] == key
                 assert_vector_equal(p2.frame[var], long_df[key])
 
-    def test_concat_add_variable_new_data(self, long_df):
+    def test_join_add_variable_new_data(self, long_df):
 
         d1 = long_df[["x", "y"]]
         d2 = long_df[["a", "s"]]
@@ -314,13 +314,13 @@ class TestPlotData:
         v2 = {"color": "a"}
 
         p1 = PlotData(d1, v1)
-        p2 = p1.concat(d2, v2)
+        p2 = p1.join(d2, v2)
 
         for var, key in dict(**v1, **v2).items():
             assert p2.names[var] == key
             assert_vector_equal(p2.frame[var], long_df[key])
 
-    def test_concat_replace_variable_new_data(self, long_df):
+    def test_join_replace_variable_new_data(self, long_df):
 
         d1 = long_df[["x", "y"]]
         d2 = long_df[["a", "s"]]
@@ -329,7 +329,7 @@ class TestPlotData:
         v2 = {"x": "a"}
 
         p1 = PlotData(d1, v1)
-        p2 = p1.concat(d2, v2)
+        p2 = p1.join(d2, v2)
 
         variables = v1.copy()
         variables.update(v2)
@@ -338,7 +338,7 @@ class TestPlotData:
             assert p2.names[var] == key
             assert_vector_equal(p2.frame[var], long_df[key])
 
-    def test_concat_add_variable_different_index(self, long_df):
+    def test_join_add_variable_different_index(self, long_df):
 
         d1 = long_df.iloc[:70]
         d2 = long_df.iloc[30:]
@@ -347,7 +347,7 @@ class TestPlotData:
         v2 = {"y": "z"}
 
         p1 = PlotData(d1, v1)
-        p2 = p1.concat(d2, v2)
+        p2 = p1.join(d2, v2)
 
         (var1, key1), = v1.items()
         (var2, key2), = v2.items()
@@ -358,7 +358,7 @@ class TestPlotData:
         assert p2.frame.loc[d2.index.difference(d1.index), var1].isna().all()
         assert p2.frame.loc[d1.index.difference(d2.index), var2].isna().all()
 
-    def test_concat_replace_variable_different_index(self, long_df):
+    def test_join_replace_variable_different_index(self, long_df):
 
         d1 = long_df.iloc[:70]
         d2 = long_df.iloc[30:]
@@ -369,7 +369,7 @@ class TestPlotData:
         v2 = {var: k2}
 
         p1 = PlotData(d1, v1)
-        p2 = p1.concat(d2, v2)
+        p2 = p1.join(d2, v2)
 
         (var1, key1), = v1.items()
         (var2, key2), = v2.items()
@@ -377,22 +377,22 @@ class TestPlotData:
         assert_vector_equal(p2.frame.loc[d2.index, var], d2[k2])
         assert p2.frame.loc[d1.index.difference(d2.index), var].isna().all()
 
-    def test_concat_subset_data_inherit_variables(self, long_df):
+    def test_join_subset_data_inherit_variables(self, long_df):
 
         sub_df = long_df[long_df["a"] == "b"]
 
         var = "y"
         p1 = PlotData(long_df, {var: var})
-        p2 = p1.concat(sub_df, None)
+        p2 = p1.join(sub_df, None)
 
         assert_vector_equal(p2.frame.loc[sub_df.index, var], sub_df[var])
         assert p2.frame.loc[long_df.index.difference(sub_df.index), var].isna().all()
 
-    def test_concat_multiple_inherits_from_orig(self, rng):
+    def test_join_multiple_inherits_from_orig(self, rng):
 
         d1 = pd.DataFrame(dict(a=rng.normal(0, 1, 100), b=rng.normal(0, 1, 100)))
         d2 = pd.DataFrame(dict(a=rng.normal(0, 1, 100)))
 
-        p = PlotData(d1, {"x": "a"}).concat(d2, {"y": "a"}).concat(None, {"y": "a"})
+        p = PlotData(d1, {"x": "a"}).join(d2, {"y": "a"}).join(None, {"y": "a"})
         assert_vector_equal(p.frame["x"], d1["a"])
         assert_vector_equal(p.frame["y"], d1["a"])

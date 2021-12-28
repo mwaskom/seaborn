@@ -38,13 +38,14 @@ class PlotData:
     names
         Dictionary mapping plot variable names to names in source data structure(s).
     ids
-        Dictionary mapping plot variable names to unique variable identifiers.
+        Dictionary mapping plot variable names to unique data source identifiers.
 
     """
     frame: DataFrame
     names: dict[str, str | None]
     ids: dict[str, str | int]
-    _source: DataSource
+    source_data: DataSource
+    source_vars: dict[str, VariableSpec]
 
     def __init__(
         self,
@@ -58,14 +59,14 @@ class PlotData:
         self.names = names
         self.ids = ids
 
-        self._source_data = data
-        self._source_vars = variables
+        self.source_data = data
+        self.source_vars = variables
 
     def __contains__(self, key: str) -> bool:
         """Boolean check on whether a variable is defined in this dataset."""
         return key in self.frame
 
-    def concat(
+    def join(
         self,
         data: DataSource,
         variables: dict[str, VariableSpec] | None,
@@ -73,12 +74,12 @@ class PlotData:
         """Add, replace, or drop variables and return as a new dataset."""
         # Inherit the original source of the upsteam data by default
         if data is None:
-            data = self._source_data
+            data = self.source_data
 
         # TODO allow `data` to be a function (that is called on the source data?)
 
         if not variables:
-            variables = self._source_vars
+            variables = self.source_vars
 
         # Passing var=None implies that we do not want that variable in this layer
         disinherit = [k for k, v in variables.items() if v is None]
@@ -89,7 +90,12 @@ class PlotData:
         # -- Update the inherited DataSource with this new information
 
         drop_cols = [k for k in self.frame if k in new.frame or k in disinherit]
-        frame = pd.concat([self.frame.drop(columns=drop_cols), new.frame], axis=1)
+        parts = [self.frame.drop(columns=drop_cols), new.frame]
+
+        # Because we are combining distinct columns, this is perhaps more
+        # naturally thought of as a "merge"/"join". But using concat because
+        # some simple testing suggests that it is marginally faster.
+        frame = pd.concat(parts, axis=1, sort=False, copy=False)
 
         names = {k: v for k, v in self.names.items() if k not in disinherit}
         names.update(new.names)
@@ -102,8 +108,8 @@ class PlotData:
         new.ids = ids
 
         # Multiple chained operations should always inherit from the original object
-        new._source_data = self._source_data
-        new._source_vars = self._source_vars
+        new.source_data = self.source_data
+        new.source_vars = self.source_vars
 
         return new
 

@@ -210,12 +210,12 @@ class Plot:
             # TODO Do we want to allow additional filtering by variable type?
             # (Possibly even default to using only numeric columns)
 
-            if self._data._source_data is None:
+            if self._data.source_data is None:
                 err = "You must pass `data` in the constructor to use default pairing."
                 raise RuntimeError(err)
 
             all_unused_columns = [
-                key for key in self._data._source_data
+                key for key in self._data.source_data
                 if key not in self._data.names.values()
             ]
             for axis in "xy":
@@ -653,21 +653,21 @@ class Plotter:
 
         self._data = (
             p._data
-            .concat(
+            .join(
                 p._facetspec.get("source"),
                 p._facetspec.get("variables"),
             )
-            .concat(
+            .join(
                 p._pairspec.get("source"),
                 p._pairspec.get("variables"),
             )
         )
 
-        # TODO concat with mapping spec
+        # TODO join with mapping spec
         self._layers = []
         for layer in p._layers:
             self._layers.append({
-                "data": self._data.concat(layer.get("source"), layer.get("variables")),
+                "data": self._data.join(layer.get("source"), layer.get("variables")),
                 **layer,
             })
 
