@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 
 import numpy as np
 import pandas as pd
@@ -10,13 +11,23 @@ from seaborn._marks.base import Mark, Feature
 from seaborn._core.mappings import LookupMapping
 from seaborn._core.scales import get_default_scale
 
+# TODO import MappableFloat
+
 
 class TestFeature:
 
     def mark(self, **features):
 
-        m = Mark()
-        m.features = features
+        @dataclass
+        class MockMark(Mark):
+            linewidth: float = Feature(rc="lines.linewidth")
+            pointsize: float = Feature(4)
+            color: str = Feature("C0")
+            fillcolor: str = Feature(depend="color")
+            alpha: float = Feature(1)
+            fillalpha: float = Feature(depend="alpha")
+
+        m = MockMark(**features)
         return m
 
     def test_repr(self):

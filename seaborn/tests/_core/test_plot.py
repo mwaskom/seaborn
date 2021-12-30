@@ -227,6 +227,7 @@ class TestLayerAddition:
         assert layer["data"].frame.columns.to_list() == ["x"]
         assert_vector_equal(layer["data"].frame["x"], long_df["x"])
 
+    @pytest.mark.xfail(reason="Need decision on default stat")
     def test_stat_default(self):
 
         class MarkWithDefaultStat(Mark):

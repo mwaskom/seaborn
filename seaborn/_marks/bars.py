@@ -1,43 +1,30 @@
 from __future__ import annotations
+from dataclasses import dataclass
 import numpy as np
 import matplotlib as mpl
 from seaborn._marks.base import Mark, Feature
 
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from typing import Union, Optional
 
+    MappableBool = Union[bool, Feature]
+    MappableFloat = Union[float, Feature]
+    MappableString = Union[str, Feature]
+    MappableColor = Union[str, tuple, Feature]  # TODO
+
+
+@dataclass
 class Bar(Mark):
 
-    supports = ["color", "color", "fillcolor", "fill", "width"]
+    color: MappableColor = Feature("C0")
+    alpha: MappableFloat = Feature(1)
+    fill: MappableBool = Feature(True)
+    pattern: MappableString = Feature(None)
+    width: MappableFloat = Feature(.8)
 
-    def __init__(
-        self,
-        color=Feature("C0"),
-        alpha=Feature(1),
-        fill=Feature(True),
-        pattern=Feature(),
-        width=Feature(.8),
-        baseline=0,
-        multiple=None,
-        **kwargs,  # specify mpl kwargs? Not be a catchall?
-    ):
-
-        super().__init__(**kwargs)
-
-        self.features = dict(
-            color=color,
-            alpha=alpha,
-            fill=fill,
-            pattern=pattern,
-            width=width,
-        )
-
-        # Unclear whether baseline should be a Feature, and hence make it possible
-        # to pass a different baseline for each bar. The produces a kind of plot one
-        # can make ... but maybe it should be a different plot? The main reason to
-        # avoid is that it is unclear whether we want to introduce a "BaselineSemantic".
-        # Revisit this question if we have need for other Feature variables that do not
-        # really make sense as "semantics".
-        self.baseline = baseline
-        self.multiple = multiple
+    baseline: float = 0
+    multiple: Optional[str] = None
 
     def _adjust(self, df):
 

@@ -1,5 +1,6 @@
 from __future__ import annotations
 from contextlib import contextmanager
+from dataclasses import dataclass, fields, field
 
 import numpy as np
 import pandas as pd
@@ -9,14 +10,13 @@ from seaborn._core.plot import SEMANTICS
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from typing import Literal, Any, Type, Dict, Callable
+    from typing import Literal, Any, Dict, Callable
     from collections.abc import Generator
     from numpy import ndarray
     from pandas import DataFrame
     from matplotlib.axes import Axes
     from matplotlib.artist import Artist
     from seaborn._core.mappings import SemanticMapping, RGBATuple
-    from seaborn._stats.base import Stat
 
     MappingDict = Dict[str, SemanticMapping]
 
@@ -26,9 +26,11 @@ class Feature:
         self,
         val: Any = None,
         depend: str | None = None,
-        rc: str | None = None
+        rc: str | None = None,
+        groups: bool = False,  # TODO docstring
     ):
-        """Class supporting several default strategies for setting visual features.
+        """
+        Class supporting several default strategies for setting visual features.
 
         Parameters
         ----------
@@ -48,6 +50,7 @@ class Feature:
         self._val = val
         self._rc = rc
         self._depend = depend
+        self._groups = groups
 
     def __repr__(self):
         """Nice formatting for when object appears in Mark init signature."""
@@ -67,6 +70,10 @@ class Feature:
         return self._depend
 
     @property
+    def groups(self) -> bool:
+        return self._groups
+
+    @property
     def default(self) -> Any:
         """Get the default value for this feature, or access the relevant rcParam."""
         if self._val is not None:
@@ -74,18 +81,24 @@ class Feature:
         return mpl.rcParams.get(self._rc)
 
 
+@dataclass
 class Mark:
-    # TODO where to define vars we always group by (col, row, group)
-    default_stat: Type[Stat] | None = None
-    grouping_vars: list[str] = []
-    requires: list[str]  # List of variabes that must be defined
-    supports: list[str]  # TODO can probably derive this from Features now, no?
-    features: dict[str, Any]
 
-    def __init__(self, **kwargs: Any):
-        """Base class for objects that control the actual plotting."""
-        self.features = {}
-        self._kwargs = kwargs
+    artist_kws: dict = field(default_factory=dict)
+
+    @property
+    def features(self):
+        return {
+            f.name: getattr(self, f.name) for f in fields(self)
+            if isinstance(f.default, Feature)
+        }
+
+    @property
+    def grouping_vars(self):
+        return [
+            f.name for f in fields(self)
+            if isinstance(f.default, Feature) and f.default.groups
+        ]
 
     @contextmanager
     def use(
@@ -101,8 +114,15 @@ class Mark:
         self.orient = orient
         try:
             yield
-        finally:
+        finally:  # TODO change to else to make debugging easier
             del self.mappings, self.orient
+
+    def resolve_features(self, data):
+
+        resolved = {}
+        for feature in self.features:
+            resolved[feature] = self._resolve(data, feature)
+        return resolved
 
     def _resolve(
         self,
@@ -235,7 +255,7 @@ class Mark:
         """Main interface for creating a plot."""
         axes_cache = set()
         for keys, data, ax in split_generator():
-            kws = self._kwargs.copy()
+            kws = self.artist_kws.copy()
             self._plot_split(keys, data, ax, kws)
             axes_cache.add(ax)
 

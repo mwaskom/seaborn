@@ -65,10 +65,12 @@ SEMANTICS = {  # TODO should this be pluggable?
     "alpha": AlphaSemantic(),
     "fillalpha": AlphaSemantic(variable="fillalpha"),
     "edgecolor": ColorSemantic(variable="edgecolor"),
+    "edgealpha": AlphaSemantic(variable="edgealpha"),
     "fill": BooleanSemantic(values=None, variable="fill"),
     "marker": MarkerSemantic(),
     "linestyle": LineStyleSemantic(),
     "linewidth": LineWidthSemantic(),
+    "edgewidth": LineWidthSemantic(variable="edgewidth"),
     "pointsize": PointSizeSemantic(),
 
     # TODO we use this dictionary to access the standardize_value method
@@ -210,16 +212,6 @@ class Plot:
 
         # TODO currently it doesn't work to specify faceting for the first time in add()
         # and I think this would be too difficult. But it should not silently fail.
-
-        if stat is None and mark.default_stat is not None:
-            # TODO We need some way to say "do no stat transformation" that is different
-            # from "use the default". That's basically an IdentityStat.
-            # TODO when fixed see FIXME:IdentityStat
-
-            # Default stat needs to be initialized here so that its state is
-            # not modified across multiple plots. If a Mark wants to define a default
-            # stat with non-default params, it should use functools.partial
-            stat = mark.default_stat()
 
         self._layers.append({
             "mark": mark,
