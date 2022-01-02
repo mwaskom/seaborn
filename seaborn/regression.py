@@ -925,7 +925,7 @@ regplot.__doc__ = dedent("""\
     {regplot_vs_lmplot}
 
 
-    It's also easy to combine combine :func:`regplot` and :class:`JointGrid` or
+    It's also easy to combine :func:`regplot` and :class:`JointGrid` or
     :class:`PairGrid` through the :func:`jointplot` and :func:`pairplot`
     functions, although these do not directly accept all of :func:`regplot`'s
     parameters.
