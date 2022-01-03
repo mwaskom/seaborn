@@ -214,7 +214,7 @@ class Histogram:
 
             - `count`: show the number of observations in each bin
             - `frequency`: show the number of observations divided by the bin width
-            - `probability`: or `proportion`: normalize such that bar heights sum to 1
+            - `probability` or `proportion`: normalize such that bar heights sum to 1
             - `percent`: normalize such that bar heights sum to 100
             - `density`: normalize such that the total area of the histogram equals 1
 
