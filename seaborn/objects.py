@@ -7,3 +7,5 @@ from seaborn._marks.bars import Bar  # noqa: F401
 
 from seaborn._stats.base import Stat  # noqa: F401
 from seaborn._stats.aggregations import Mean  # noqa: F401
+
+from seaborn._core.moves import Jitter, Dodge  # noqa: F401

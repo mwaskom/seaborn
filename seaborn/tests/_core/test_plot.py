@@ -15,6 +15,7 @@ from numpy.testing import assert_array_equal
 
 from seaborn._core.plot import Plot
 from seaborn._core.rules import categorical_order
+from seaborn._core.moves import Move
 from seaborn._marks.base import Mark
 from seaborn._stats.base import Stat
 
@@ -255,23 +256,23 @@ class TestLayerAddition:
     )
     def test_orient(self, arg, expected):
 
-        class MockMarkTrackOrient(MockMark):
-            def _adjust(self, data):
-                self.orient_at_adjust = self.orient
-                return data
-
         class MockStatTrackOrient(MockStat):
             def setup(self, data, orient):
                 super().setup(data, orient)
                 self.orient_at_setup = orient
                 return self
 
-        m = MockMarkTrackOrient()
-        s = MockStatTrackOrient()
-        Plot(x=[1, 2, 3], y=[1, 2, 3]).add(m, s, orient=arg).plot()
+        class MockMoveTrackOrient(Move):
+            def __call__(self, data, groupby, orient):
+                self.orient_at_call = orient
+                return data
 
-        assert m.orient_at_adjust == expected
+        s = MockStatTrackOrient()
+        m = MockMoveTrackOrient()
+        Plot(x=[1, 2, 3], y=[1, 2, 3]).add(MockMark(), s, m, orient=arg).plot()
+
         assert s.orient_at_setup == expected
+        assert m.orient_at_call == expected
 
 
 class TestAxisScaling:
@@ -530,7 +531,8 @@ class TestPlotting:
 
         assert m.passed_keys[0] == {}
         assert m.passed_axes == [sub["ax"] for sub in p._subplots]
-        assert_frame_equal(m.passed_data[0], p._data.frame)
+        for col in p._data.frame:
+            assert_series_equal(m.passed_data[0][col], p._data.frame[col])
 
     def test_single_split_multi_layer(self, long_df):
 
@@ -555,7 +557,8 @@ class TestPlotting:
         for i, key in enumerate(split_keys):
 
             split_data = full_data[full_data[split_var] == key]
-            assert_frame_equal(mark.passed_data[i], split_data)
+            for col in split_data:
+                assert_series_equal(mark.passed_data[i][col], split_data[col])
 
     def check_splits_multi_vars(self, plot, mark, split_vars, split_keys):
 
@@ -574,7 +577,8 @@ class TestPlotting:
             for var, key in zip(split_vars, keys):
                 use_rows &= full_data[var] == key
             split_data = full_data[use_rows]
-            assert_frame_equal(mark.passed_data[i], split_data)
+            for col in split_data:
+                assert_series_equal(mark.passed_data[i][col], split_data[col])
 
     @pytest.mark.parametrize(
         "split_var", [
@@ -716,31 +720,31 @@ class TestPlotting:
             assert_vector_equal(data["x"], long_df.loc[rows, x_i])
             assert_vector_equal(data["y"], long_df.loc[rows, y])
 
-    def test_adjustments(self, long_df):
+    def test_movement(self, long_df):
 
         orig_df = long_df.copy(deep=True)
 
-        class AdjustableMockMark(MockMark):
-            def _adjust(self, data):
-                data["x"] = data["x"] + 1
-                return data
+        class MockMove(Move):
+            def __call__(self, data, groupby, orient):
+                return data.assign(x=data["x"] + 1)
 
-        m = AdjustableMockMark()
-        Plot(long_df, x="z", y="z").add(m).plot()
+        m = MockMark()
+        Plot(long_df, x="z", y="z").add(m, move=MockMove()).plot()
         assert_vector_equal(m.passed_data[0]["x"], long_df["z"] + 1)
         assert_vector_equal(m.passed_data[0]["y"], long_df["z"])
 
         assert_frame_equal(long_df, orig_df)   # Test data was not mutated
 
-    def test_adjustments_log_scale(self, long_df):
+    def test_movement_log_scale(self, long_df):
 
-        class AdjustableMockMark(MockMark):
-            def _adjust(self, data):
-                data["x"] = data["x"] - 1
-                return data
+        class MockMove(Move):
+            def __call__(self, data, groupby, orient):
+                return data.assign(x=data["x"] - 1)
 
-        m = AdjustableMockMark()
-        Plot(long_df, x="z", y="z").scale_numeric("x", "log").add(m).plot()
+        m = MockMark()
+        Plot(
+            long_df, x="z", y="z"
+        ).scale_numeric("x", "log").add(m, move=MockMove()).plot()
         assert_vector_equal(m.passed_data[0]["x"], long_df["z"] / 10)
 
     def test_clone(self, long_df):

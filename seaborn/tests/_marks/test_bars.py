@@ -55,6 +55,7 @@ class TestBar:
         for i, bar in enumerate(bars):
             self.check_bar(bar, 0, y[i] - w / 2, x[i], w)
 
+    @pytest.mark.xfail(reason="new dodge api")
     def test_categorical_dodge_vertical(self):
 
         x = ["a", "a", "b", "b"]
@@ -69,6 +70,7 @@ class TestBar:
         for i, bar in enumerate(bars[2:]):
             self.check_bar(bar, i, 0, w / 2, y[i * 2 + 1])
 
+    @pytest.mark.xfail(reason="new dodge api")
     def test_categorical_dodge_horizontal(self):
 
         x = [1, 2, 3, 4]

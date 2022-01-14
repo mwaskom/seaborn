@@ -15,6 +15,7 @@ from seaborn._compat import scale_factory, set_scale_obj
 from seaborn._core.rules import categorical_order
 from seaborn._core.data import PlotData
 from seaborn._core.subplots import Subplots
+from seaborn._core.groupby import GroupBy
 from seaborn._core.mappings import (
     ColorSemantic,
     BooleanSemantic,
@@ -48,6 +49,7 @@ if TYPE_CHECKING:
     from seaborn._core.mappings import Semantic, SemanticMapping
     from seaborn._marks.base import Mark
     from seaborn._stats.base import Stat
+    from seaborn._core.move import Move
     from seaborn._core.typing import (
         DataSource,
         PaletteSpec,
@@ -78,6 +80,7 @@ SEMANTICS = {  # TODO should this be pluggable?
     # (or are they?); we might want to introduce a different concept?
     # Maybe call this VARIABLES and have e.g. ColorSemantic, BaselineVariable?
     "width": WidthSemantic(),
+    "baseline": WidthSemantic(),  # TODO
 }
 
 
@@ -202,6 +205,7 @@ class Plot:
         self,
         mark: Mark,
         stat: Stat | None = None,
+        move: Move | None = None,
         orient: Literal["x", "y", "v", "h"] | None = None,
         data: DataSource = None,
         **variables: VariableSpec,
@@ -216,6 +220,7 @@ class Plot:
         self._layers.append({
             "mark": mark,
             "stat": stat,
+            "move": move,
             "source": data,
             "variables": variables,
             "orient": {"v": "x", "h": "y"}.get(orient, orient),  # type: ignore
@@ -958,6 +963,7 @@ class Plotter:
         data = layer["data"]
         mark = layer["mark"]
         stat = layer["stat"]
+        move = layer["move"]
 
         pair_variables = p._pairspec.get("structure", {})
 
@@ -978,7 +984,27 @@ class Plotter:
                     grouping_vars = stat.grouping_vars + default_grouping_vars
                     df = self._apply_stat(df, grouping_vars, stat, orient)
 
-                df = mark._adjust(df)
+                # TODO get this from the Mark, otherwise scale by natural spacing?
+                # (But what about sparse categoricals? categorical always width/height=1
+                # Should default width/height be 1 and then get scaled by Mark.width?
+                if "width" not in df:
+                    df["width"] = 0.8
+                if "height" not in df:
+                    df["height"] = 0.8
+
+                if move is not None:
+                    moves = move if isinstance(move, list) else [move]
+                    # TODO move width out of semantics and remove
+                    # TODO should default order of semantics be fixed?
+                    # Another option: use order they were defined in the spec?
+                    semantics = [v for v in SEMANTICS if v != "width"]
+                    for move in moves:
+                        semantic_groupers = getattr(move, "by", None) or semantics
+                        grouping_vars = (
+                            [orient] + semantic_groupers + default_grouping_vars
+                        )
+                        groupby = GroupBy(grouping_vars, self._scales)
+                        df = move(df, groupby, orient)
 
                 df = self._unscale_coords(subplots, df)
 
@@ -1014,7 +1040,7 @@ class Plotter:
         # TODO rewrite this whole thing, I think we just need to avoid groupby/apply
         df = (
             df
-            .groupby(stat_grouping_vars)
+            .groupby(stat_grouping_vars, observed=True)
             .apply(stat)
         )
         # TODO next because of https://github.com/pandas-dev/pandas/issues/34809
@@ -1184,6 +1210,7 @@ class Plotter:
                     sub_vars = dict(zip(grouping_vars, key))
                     sub_vars.update(subplot_keys)
 
+                    # TODO need copy(deep=...) policy (here, above, anywhere else?)
                     yield sub_vars, df_subset.copy(), subplot["ax"]
 
         return split_generator

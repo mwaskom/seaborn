@@ -27,7 +27,7 @@ class Feature:
         val: Any = None,
         depend: str | None = None,
         rc: str | None = None,
-        groups: bool = False,  # TODO docstring
+        groups: bool = False,  # TODO docstring; what is best default?
     ):
         """
         Class supporting several default strategies for setting visual features.
@@ -281,4 +281,5 @@ class Mark:
         pass
 
     def _legend_artist(self, variables: list[str], value: Any) -> Artist:
+        # TODO return some sensible default?
         raise NotImplementedError
