@@ -3,7 +3,6 @@ from __future__ import annotations
 import io
 import re
 import itertools
-from copy import deepcopy
 from collections import abc
 from distutils.version import LooseVersion
 
@@ -125,6 +124,9 @@ class Plot:
 
         self._target = None
 
+        # TODO
+        self._inplace = False
+
     def _resolve_positionals(
         self,
         args: tuple[DataSource | VariableSpec, ...],
@@ -176,6 +178,37 @@ class Plot:
 
     # TODO _repr_svg_?
 
+    def _clone(self) -> Plot:
+
+        if self._inplace:
+            return self
+
+        new = Plot()
+
+        # TODO any way to make sure data does not get mutated?
+        new._data = self._data
+
+        new._layers.extend(self._layers)
+
+        new._scales.update(self._scales)
+        new._semantics.update(self._semantics)
+
+        new._subplotspec.update(self._subplotspec)
+        new._facetspec.update(self._facetspec)
+        new._pairspec.update(self._pairspec)
+
+        new._target = self._target
+
+        return new
+
+    def inplace(self, val: bool | None = None) -> Plot:
+
+        if val is None:
+            self._inplace = not self._inplace
+        else:
+            self._inplace = val
+        return self
+
     def on(self, target: Axes | SubFigure | Figure) -> Plot:
 
         accepted_types: tuple  # Allow tuple of various length
@@ -193,13 +226,14 @@ class Plot:
         if not isinstance(target, accepted_types):
             err = (
                 f"The `Plot.on` target must be an instance of {accepted_types_str}. "
-                f"You passed an object of class {target.__class__} instead."
+                f"You passed an instance of {target.__class__} instead."
             )
             raise TypeError(err)
 
-        self._target = target
+        new = self._clone()
+        new._target = target
 
-        return self
+        return new
 
     def add(
         self,
@@ -217,7 +251,8 @@ class Plot:
         # TODO currently it doesn't work to specify faceting for the first time in add()
         # and I think this would be too difficult. But it should not silently fail.
 
-        self._layers.append({
+        new = self._clone()
+        new._layers.append({
             "mark": mark,
             "stat": stat,
             "move": move,
@@ -226,7 +261,7 @@ class Plot:
             "orient": {"v": "x", "h": "y"}.get(orient, orient),  # type: ignore
         })
 
-        return self
+        return new
 
     def pair(
         self,
@@ -245,8 +280,6 @@ class Plot:
         #   and especially the axis scaling, which will need to be pair specific
 
         # TODO lists of vectors currently work, but I'm not sure where best to test
-
-        # TODO add data kwarg here? (it's everywhere else...)
 
         # TODO is is weird to call .pair() to create univariate plots?
         # i.e. Plot(data).pair(x=[...]). The basic logic is fine.
@@ -303,8 +336,9 @@ class Plot:
         pairspec["cartesian"] = cartesian
         pairspec["wrap"] = wrap
 
-        self._pairspec.update(pairspec)
-        return self
+        new = self._clone()
+        new._pairspec.update(pairspec)
+        return new
 
     def facet(
         self,
@@ -322,6 +356,8 @@ class Plot:
         if row is not None:
             variables["row"] = row
 
+        # TODO raise when wrap is specified with both col and row?
+
         col_order = row_order = None
         if isinstance(order, dict):
             col_order = order.get("col")
@@ -332,12 +368,14 @@ class Plot:
                 row_order = list(row_order)
         elif order is not None:
             # TODO Allow order: list here when single facet var defined in constructor?
+            # Thinking I'd rather not at this point; rather at general .order method?
             if col is not None:
                 col_order = list(order)
             if row is not None:
                 row_order = list(order)
 
-        self._facetspec.update({
+        new = self._clone()
+        new._facetspec.update({
             "source": None,
             "variables": variables,
             "col_order": col_order,
@@ -345,7 +383,7 @@ class Plot:
             "wrap": wrap,
         })
 
-        return self
+        return new
 
     def map_color(
         self,
@@ -362,9 +400,10 @@ class Plot:
         # ALSO TODO should these be initialized with defaults?
         # TODO if we define default semantics, we can use that
         # for initialization and make this more abstract (assuming kwargs match?)
-        self._semantics["color"] = ColorSemantic(palette)
-        self._scale_from_map("color", palette, order)
-        return self
+        new = self._clone()
+        new._semantics["color"] = ColorSemantic(palette)
+        new._scale_from_map("color", palette, order)
+        return new
 
     def map_alpha(
         self,
@@ -373,9 +412,10 @@ class Plot:
         norm: Normalize | None = None,
     ) -> Plot:
 
-        self._semantics["alpha"] = AlphaSemantic(values, variable="alpha")
-        self._scale_from_map("alpha", values, order, norm)
-        return self
+        new = self._clone()
+        new._semantics["alpha"] = AlphaSemantic(values, variable="alpha")
+        new._scale_from_map("alpha", values, order, norm)
+        return new
 
     def map_fillcolor(
         self,
@@ -384,9 +424,10 @@ class Plot:
         norm: NormSpec = None,
     ) -> Plot:
 
-        self._semantics["fillcolor"] = ColorSemantic(palette, variable="fillcolor")
-        self._scale_from_map("fillcolor", palette, order)
-        return self
+        new = self._clone()
+        new._semantics["fillcolor"] = ColorSemantic(palette, variable="fillcolor")
+        new._scale_from_map("fillcolor", palette, order)
+        return new
 
     def map_fillalpha(
         self,
@@ -395,9 +436,10 @@ class Plot:
         norm: Normalize | None = None,
     ) -> Plot:
 
-        self._semantics["fillalpha"] = AlphaSemantic(values, variable="fillalpha")
-        self._scale_from_map("fillalpha", values, order, norm)
-        return self
+        new = self._clone()
+        new._semantics["fillalpha"] = AlphaSemantic(values, variable="fillalpha")
+        new._scale_from_map("fillalpha", values, order, norm)
+        return new
 
     def map_fill(
         self,
@@ -405,9 +447,10 @@ class Plot:
         order: OrderSpec = None,
     ) -> Plot:
 
-        self._semantics["fill"] = BooleanSemantic(values, variable="fill")
-        self._scale_from_map("fill", values, order)
-        return self
+        new = self._clone()
+        new._semantics["fill"] = BooleanSemantic(values, variable="fill")
+        new._scale_from_map("fill", values, order)
+        return new
 
     def map_marker(
         self,
@@ -415,9 +458,10 @@ class Plot:
         order: OrderSpec = None,
     ) -> Plot:
 
-        self._semantics["marker"] = MarkerSemantic(shapes, variable="marker")
-        self._scale_from_map("linewidth", shapes, order)
-        return self
+        new = self._clone()
+        new._semantics["marker"] = MarkerSemantic(shapes, variable="marker")
+        new._scale_from_map("linewidth", shapes, order)
+        return new
 
     def map_linestyle(
         self,
@@ -425,9 +469,10 @@ class Plot:
         order: OrderSpec = None,
     ) -> Plot:
 
-        self._semantics["linestyle"] = LineStyleSemantic(styles, variable="linestyle")
-        self._scale_from_map("linewidth", styles, order)
-        return self
+        new = self._clone()
+        new._semantics["linestyle"] = LineStyleSemantic(styles, variable="linestyle")
+        new._scale_from_map("linewidth", styles, order)
+        return new
 
     def map_linewidth(
         self,
@@ -437,9 +482,10 @@ class Plot:
         # TODO clip?
     ) -> Plot:
 
-        self._semantics["linewidth"] = LineWidthSemantic(values, variable="linewidth")
-        self._scale_from_map("linewidth", values, order, norm)
-        return self
+        new = self._clone()
+        new._semantics["linewidth"] = LineWidthSemantic(values, variable="linewidth")
+        new._scale_from_map("linewidth", values, order, norm)
+        return new
 
     def _scale_from_map(self, var, values, order, norm=None) -> None:
 
@@ -489,9 +535,11 @@ class Plot:
 
         if not isinstance(scale, mpl.scale.ScaleBase):
             scale = scale_factory(scale, var, **kwargs)
-        self._scales[var] = NumericScale(scale, norm)
 
-        return self
+        new = self._clone()
+        new._scales[var] = NumericScale(scale, norm)
+
+        return new
 
     def scale_categorical(  # TODO FIXME:names scale_cat()?
         self,
@@ -517,13 +565,16 @@ class Plot:
         # TODO how to set limits/margins "nicely"? (i.e. 0.5 data units, past extremes)
         # TODO similarly, should this modify grid state like current categorical plots?
         # TODO "smart"/data-dependant ordering (e.g. order by median of y variable)
+        # One idea: use phantom artist with "sticky edges" (or set them on the spine?)
 
         if order is not None:
             order = list(order)
 
         scale = mpl.scale.LinearScale(var)
-        self._scales[var] = CategoricalScale(scale, order, formatter)
-        return self
+
+        new = self._clone()
+        new._scales[var] = CategoricalScale(scale, order, formatter)
+        return new
 
     def scale_datetime(
         self,
@@ -532,7 +583,9 @@ class Plot:
     ) -> Plot:
 
         scale = mpl.scale.LinearScale(var)
-        self._scales[var] = DateTimeScale(scale, norm)
+
+        new = self._clone()
+        new._scales[var] = DateTimeScale(scale, norm)
 
         # TODO I think rather than dealing with the question of "should we follow
         # pandas or matplotlib conventions with float -> date conversion, we should
@@ -549,12 +602,13 @@ class Plot:
         # (1) use fewer minticks
         # (2) use the concise dateformatter by default
 
-        return self
+        return new
 
     def scale_identity(self, var: str) -> Plot:
 
-        self._scales[var] = IdentityScale()
-        return self
+        new = self._clone()
+        new._scales[var] = IdentityScale()
+        return new
 
     def configure(
         self,
@@ -568,16 +622,18 @@ class Plot:
         # Also should we have height=, aspect=, exclusive with figsize? Or working
         # with figsize when only one is defined?
 
-        # TODO figsize has no actual effect here
-        self._figsize = figsize
+        new = self._clone()
+
+        # TODO this is a hack; make a proper figure spec object
+        new._figsize = figsize  # type: ignore
 
         subplot_keys = ["sharex", "sharey"]
         for key in subplot_keys:
             val = locals()[key]
             if val is not None:
-                self._subplotspec[key] = val
+                new._subplotspec[key] = val
 
-        return self
+        return new
 
     # TODO def legend (ugh)
 
@@ -586,17 +642,10 @@ class Plot:
         # TODO Plot-specific themes using the seaborn theming system
         # TODO should this also be where custom figure size goes?
         raise NotImplementedError
-        return self
+        new = self._clone()
+        return new
 
     # TODO decorate? (or similar, for various texts) alt names: label?
-
-    def clone(self) -> Plot:
-
-        if self._target is not None:
-            # TODO think about whether this restriction is needed with immutable Plot
-            raise RuntimeError("Cannot clone after calling `Plot.on`.")
-        # TODO we are moving towards non-mutatable Plot so we don't need deep copy here
-        return deepcopy(self)
 
     def save(self, fname, **kwargs) -> Plot:
         # TODO kws?
@@ -633,10 +682,8 @@ class Plot:
 
         # Keep an eye on whether matplotlib implements "attaching" an existing
         # figure to pyplot: https://github.com/matplotlib/matplotlib/pull/14024
-        if self._target is None:
-            self.clone().plot(pyplot=True)
-        else:
-            self.plot(pyplot=True)
+
+        self.plot(pyplot=True)
         plt.show(**kwargs)
 
 

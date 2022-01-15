@@ -747,24 +747,29 @@ class TestPlotting:
         ).scale_numeric("x", "log").add(m, move=MockMove()).plot()
         assert_vector_equal(m.passed_data[0]["x"], long_df["z"] / 10)
 
-    def test_clone(self, long_df):
+    def test_methods_clone(self, long_df):
 
-        p1 = Plot(long_df)
-        p2 = p1.clone()
-        assert isinstance(p2, Plot)
+        p1 = Plot(long_df, "x", "y")
+        p2 = p1.add(MockMark()).facet("a")
+
         assert p1 is not p2
-        assert p1._data.source_data is not p2._data.source_data
-
-        p2.add(MockMark())
         assert not p1._layers
+        assert not p1._facetspec
 
-    def test_clone_raises_with_target(self, long_df):
+    def test_inplace(self, long_df):
 
-        p = Plot(long_df, x="x", y="y").on(mpl.figure.Figure())
-        with pytest.raises(
-            RuntimeError, match="Cannot clone after calling `Plot.on`."
-        ):
-            p.clone()
+        p1 = Plot(long_df, "x", "y")
+        p2 = p1.inplace().add(MockMark())
+        assert p2 is p1
+
+        p3 = p2.inplace().add(MockMark())
+        assert p3 is not p2
+
+        p4 = p3.inplace(False).add(MockMark())
+        assert p4 is not p3
+
+        p5 = p4.inplace(True).add(MockMark())
+        assert p5 is p4
 
     def test_default_is_no_pyplot(self):
 
@@ -1028,19 +1033,19 @@ class TestFacetInterface:
 
         p = Plot(long_df).facet(**variables)
 
-        p1 = p.clone().plot()
+        p1 = p.plot()
         root, *other = p1._figure.axes
         for axis in "xy":
             shareset = getattr(root, f"get_shared_{axis}_axes")()
             assert all(shareset.joined(root, ax) for ax in other)
 
-        p2 = p.clone().configure(sharex=False, sharey=False).plot()
+        p2 = p.configure(sharex=False, sharey=False).plot()
         root, *other = p2._figure.axes
         for axis in "xy":
             shareset = getattr(root, f"get_shared_{axis}_axes")()
             assert not any(shareset.joined(root, ax) for ax in other)
 
-        p3 = p.clone().configure(sharex="col", sharey="row").plot()
+        p3 = p.configure(sharex="col", sharey="row").plot()
         shape = (
             len(categorical_order(long_df[variables["row"]])),
             len(categorical_order(long_df[variables["col"]])),
@@ -1201,7 +1206,7 @@ class TestPairInterface:
         p = Plot(long_df).pair(x=["a", "b"], y=["y", "z"])
         shape = 2, 2
 
-        p1 = p.clone().plot()
+        p1 = p.plot()
         axes_matrix = np.reshape(p1._figure.axes, shape)
 
         for root, *other in axes_matrix:  # Test row-wise sharing
@@ -1216,7 +1221,7 @@ class TestPairInterface:
             y_shareset = getattr(root, "get_shared_y_axes")()
             assert not any(y_shareset.joined(root, ax) for ax in other)
 
-        p2 = p.clone().configure(sharex=False, sharey=False).plot()
+        p2 = p.configure(sharex=False, sharey=False).plot()
         root, *other = p2._figure.axes
         for axis in "xy":
             shareset = getattr(root, f"get_shared_{axis}_axes")()
