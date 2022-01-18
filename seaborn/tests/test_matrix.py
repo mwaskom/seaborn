@@ -764,7 +764,7 @@ class TestClustermap:
         cg = mat.ClusterGrid(df, **self.default_kws)
         cg.plot(**self.default_plot_kws)
         diag = cg.data2d.values[np.diag_indices_from(cg.data2d)]
-        npt.assert_array_equal(diag, np.ones(cg.data2d.shape[0]))
+        npt.assert_array_almost_equal(diag, np.ones(cg.data2d.shape[0]))
 
     def test_pivot_input(self):
         df_norm = self.df_norm.copy()
