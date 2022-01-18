@@ -1283,6 +1283,24 @@ class TestPairInterface:
         assert_gridspec_shape(p._figure.axes[0], len(x_vars) // wrap + 1, wrap)
         assert len(p._figure.axes) == len(x_vars)
 
+    def test_orient_inference(self, long_df):
+
+        orient_list = []
+
+        class CaptureMoveOrient(Move):
+            def __call__(self, data, groupby, orient):
+                orient_list.append(orient)
+                return data
+
+        (
+            Plot(long_df, x="x")
+            .pair(y=["b", "z"])
+            .add(MockMark(), move=CaptureMoveOrient())
+            .plot()
+        )
+
+        assert orient_list == ["y", "x"]
+
 
 class TestLabelVisibility:
 

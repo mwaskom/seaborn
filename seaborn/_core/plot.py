@@ -1184,7 +1184,10 @@ class Plotter:
                         for col in df if col.startswith(prefix)
                     })
 
-            scales = {new: self._scales[old.name] for new, old in reassignments.items()}
+            scales = self._scales.copy()
+            scales.update(
+                {new: self._scales[old.name] for new, old in reassignments.items()}
+            )
 
             yield subplots, df.assign(**reassignments), scales
 
