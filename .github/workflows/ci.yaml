@@ -44,6 +44,7 @@ jobs:
     runs-on: ubuntu-latest
 
     strategy:
+      fail-fast: false
       matrix:
 
         python: ['3.7.x', '3.8.x', '3.9.x']
@@ -85,6 +86,7 @@ jobs:
           if [[ ${{matrix.install}} == 'all' ]]; then EXTRAS='[all]'; fi
           if [[ ${{matrix.deps }} == 'pinned' ]]; then DEPS='-r ci/deps_pinned.txt'; fi
           pip install .$EXTRAS $DEPS -r ci/utils.txt
+          pip install --upgrade --pre pandas==1.4.0rc0
 
       - name: Cache datastes
         run: python ci/cache_test_datasets.py
