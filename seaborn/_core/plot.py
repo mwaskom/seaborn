@@ -251,6 +251,10 @@ class Plot:
         # TODO currently it doesn't work to specify faceting for the first time in add()
         # and I think this would be too difficult. But it should not silently fail.
 
+        # TODO decide how to allow Mark to have Stat/Move
+        # if stat is None and hasattr(mark, "default_stat"):
+        #     stat = mark.default_stat()
+
         new = self._clone()
         new._layers.append({
             "mark": mark,
@@ -1007,6 +1011,11 @@ class Plotter:
 
         default_grouping_vars = ["col", "row", "group"]  # TODO where best to define?
 
+        # TODO move width out of semantics and remove
+        # TODO should default order of semantics be fixed?
+        # Another option: use order they were defined in the spec?
+        semantics = [v for v in SEMANTICS if v != "width"]
+
         data = layer["data"]
         mark = layer["mark"]
         stat = layer["stat"]
@@ -1027,9 +1036,20 @@ class Plotter:
 
                 df = self._scale_coords(subplots, df)
 
+                def get_order(var):
+                    # Ignore order for x/y: they have been scaled to numeric indices,
+                    # so any original order is no longer valid. Default ordering rules
+                    # sorted unique numbers will correctly reconstruct intended order
+                    # TODO This is tricky, make sure we add some tests for this
+                    if var not in "xy" and var in scales:
+                        return scales[var].order
+
                 if stat is not None:
-                    grouping_vars = stat.grouping_vars + default_grouping_vars
-                    df = self._apply_stat(df, grouping_vars, stat, orient)
+                    grouping_vars = semantics + default_grouping_vars
+                    if stat.group_by_orient:
+                        grouping_vars.insert(0, orient)
+                    groupby = GroupBy({var: get_order(var) for var in grouping_vars})
+                    df = stat(df, groupby, orient)
 
                 # TODO get this from the Mark, otherwise scale by natural spacing?
                 # (But what about sparse categoricals? categorical always width/height=1
@@ -1041,16 +1061,13 @@ class Plotter:
 
                 if move is not None:
                     moves = move if isinstance(move, list) else [move]
-                    # TODO move width out of semantics and remove
-                    # TODO should default order of semantics be fixed?
-                    # Another option: use order they were defined in the spec?
-                    semantics = [v for v in SEMANTICS if v != "width"]
                     for move in moves:
                         semantic_groupers = getattr(move, "by", None) or semantics
-                        grouping_vars = (
+                        order = {
+                            var: get_order(var) for var in
                             [orient] + semantic_groupers + default_grouping_vars
-                        )
-                        groupby = GroupBy(grouping_vars, self._scales)
+                        }
+                        groupby = GroupBy(order)
                         df = move(df, groupby, orient)
 
                 df = self._unscale_coords(subplots, df)
@@ -1064,42 +1081,6 @@ class Plotter:
 
         with mark.use(self._mappings, None):  # TODO will we ever need orient?
             self._update_legend_contents(mark, data)
-
-    def _apply_stat(
-        self,
-        df: DataFrame,
-        grouping_vars: list[str],
-        stat: Stat,
-        orient: Literal["x", "y"],
-    ) -> DataFrame:
-
-        stat.setup(df, orient)  # TODO pass scales here?
-
-        # TODO how can we special-case fast aggregations? (i.e. mean, std, etc.)
-        # IDEA: have Stat identify as an aggregator? (Through Mixin or attribute)
-        # e.g. if stat.aggregates ...
-        stat_grouping_vars = [var for var in grouping_vars if var in df]
-        # TODO I don't think we always want to group by the default orient axis?
-        # Better to have the Stat declare when it wants that to happen
-        if orient not in stat_grouping_vars:
-            stat_grouping_vars.append(orient)
-
-        # TODO rewrite this whole thing, I think we just need to avoid groupby/apply
-        df = (
-            df
-            .groupby(stat_grouping_vars, observed=True)
-            .apply(stat)
-        )
-        # TODO next because of https://github.com/pandas-dev/pandas/issues/34809
-        for var in stat_grouping_vars:
-            if var in df.index.names:
-                df = (
-                    df
-                    .drop(var, axis=1, errors="ignore")
-                    .reset_index(var)
-                )
-        df = df.reset_index(drop=True)  # TODO not always needed, can we limit?
-        return df
 
     def _scale_coords(
         self,

@@ -1,21 +1,37 @@
+"""Base module for statistical transformations."""
 from __future__ import annotations
+from dataclasses import dataclass
+from typing import ClassVar
+
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from typing import Literal
     from pandas import DataFrame
+    from seaborn._core.groupby import GroupBy
 
 
+@dataclass
 class Stat:
+    """
+    Base class for objects that define statistical transformations on plot data.
 
-    grouping_vars: list[str] = []
+    The class supports a partial-function application pattern. The object is
+    initialized with desired parameters and the result is a callable that
+    accepts and returns dataframes.
 
-    def setup(self, data: DataFrame, orient: Literal["x", "y"]) -> Stat:
-        """The default setup operation is to store a reference to the full data."""
-        # TODO make this non-mutating
-        self._full_data = data
-        self.orient = orient
-        return self
+    The statistical transformation logic should not add any state to the instance
+    beyond what is defined with the initialization parameters.
 
-    def __call__(self, data: DataFrame):
-        """Sub-classes must define the call method to implement the transform."""
-        raise NotImplementedError
+    """
+    # Subclasses can declare whether the orient dimension should be used in grouping
+    # TODO consider whether this should be a parameter. Motivating example:
+    # use the same KDE class violin plots and univariate density estimation.
+    # In the former case, we would expect separate densities for each unique
+    # value on the orient axis, but we would not in the latter case.
+    group_by_orient: ClassVar[bool] = False
+
+    def __call__(
+        self, data: DataFrame, groupby: GroupBy, orient: Literal["x", "y"]
+    ) -> DataFrame:
+        """Apply statistical transform to data subgroups and return combined result."""
+        return data

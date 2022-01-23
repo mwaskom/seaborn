@@ -122,6 +122,7 @@ class Dot(Scatter):  # TODO depend on ScatterBase or similar?
     fill: MappableBool = Feature(True)
     marker: MappableString = Feature("o")
     pointsize: MappableFloat = Feature(6)  # TODO rcParam?
+    # TODO edgewidth? or both, controlling filled/unfilled?
     linewidth: MappableFloat = Feature(.5)  # TODO rcParam?
 
     def resolve_features(self, data):

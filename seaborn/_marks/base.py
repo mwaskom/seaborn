@@ -28,6 +28,7 @@ class Feature:
         depend: str | None = None,
         rc: str | None = None,
         groups: bool = False,  # TODO docstring; what is best default?
+        stat: str | None = None,
     ):
         """
         Class supporting several default strategies for setting visual features.
@@ -41,6 +42,8 @@ class Feature:
         rc :
             Use the value of this rcParam as the default.
 
+        # TODO missing some parameter doc
+
         """
         if depend is not None:
             assert depend in SEMANTICS
@@ -51,6 +54,7 @@ class Feature:
         self._rc = rc
         self._depend = depend
         self._groups = groups
+        self._stat = stat
 
     def __repr__(self):
         """Nice formatting for when object appears in Mark init signature."""
@@ -100,6 +104,17 @@ class Mark:
             if isinstance(f.default, Feature) and f.default.groups
         ]
 
+    @property
+    def _stat_params(self):
+        return {
+            f.name: getattr(self, f.name) for f in fields(self)
+            if (
+                isinstance(f.default, Feature)
+                and f.default._stat is not None
+                and not isinstance(getattr(self, f.name), Feature)
+            )
+        }
+
     @contextmanager
     def use(
         self,
@@ -119,11 +134,10 @@ class Mark:
 
     def resolve_features(self, data):
 
-        resolved = {}
-        for feature in self.features:
-            resolved[feature] = self._resolve(data, feature)
-        return resolved
+        features = {name: self._resolve(data, name) for name in self.features}
+        return features
 
+    # TODO make this method private? Would extender every need to call directly?
     def _resolve(
         self,
         data: DataFrame | dict[str, Any],

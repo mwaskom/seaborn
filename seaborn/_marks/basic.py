@@ -1,21 +1,27 @@
 from __future__ import annotations
 from dataclasses import dataclass
+from typing import ClassVar
 
 import matplotlib as mpl
 
 from seaborn._marks.base import Mark, Feature
+from seaborn._stats.regression import PolyFit
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from typing import Union
+    from typing import Union, Any
 
     MappableStr = Union[str, Feature]
     MappableFloat = Union[float, Feature]
     MappableColor = Union[str, tuple, Feature]
 
+    StatParam = Union[Any, Feature]
+
 
 @dataclass
 class Line(Mark):
+
+    # TODO other semantics (marker?)
 
     color: MappableColor = Feature("C0", groups=True)
     alpha: MappableFloat = Feature(1, groups=True)
@@ -35,7 +41,9 @@ class Line(Mark):
             data["x"].to_numpy(),
             data["y"].to_numpy(),
             color=keys["color"],
+            alpha=keys["alpha"],
             linewidth=keys["linewidth"],
+            linestyle=keys["linestyle"],
             **kws,
         )
         ax.add_line(line)
@@ -47,6 +55,7 @@ class Line(Mark):
         return mpl.lines.Line2D(
             [], [],
             color=key["color"],
+            alpha=key["alpha"],
             linewidth=key["linewidth"],
             linestyle=key["linestyle"],
         )
@@ -72,3 +81,11 @@ class Area(Mark):
             ax.fill_between(data["x"], data["ymin"], data["ymax"], **kws)
         else:
             ax.fill_betweenx(data["y"], data["xmin"], data["xmax"], **kws)
+
+
+@dataclass
+class PolyLine(Line):
+
+    order: "StatParam" = Feature(stat="order")  # TODO the annotation
+
+    default_stat: ClassVar = PolyFit  # TODO why is this showing up as a field?

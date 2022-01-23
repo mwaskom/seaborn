@@ -26,10 +26,9 @@ class Bar(Mark):
     edgewidth: MappableFloat = Feature(rc="patch.linewidth")
     fill: MappableBool = Feature(True, groups=True)
     # pattern: MappableString = Feature(None, groups=True)  # TODO no Semantic yet
-    width: MappableFloat = Feature(.8)  # TODO groups?
 
-    # baseline: float = 0
-    baseline: MappableFloat = Feature(0)
+    width: MappableFloat = Feature(.8)  # TODO groups?
+    baseline: MappableFloat = Feature(0)  # TODO *is* this mappable?
 
     def resolve_features(self, data):
 

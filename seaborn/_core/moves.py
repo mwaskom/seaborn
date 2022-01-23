@@ -77,13 +77,11 @@ class Dodge(Move):
         self, data: DataFrame, groupby: GroupBy, orient: Literal["x", "y"],
     ) -> DataFrame:
 
-        # TODO change _orderings to public attribute?
-        grouping_vars = [v for v in groupby._orderings if v in data]
+        grouping_vars = [v for v in groupby.order if v in data]
 
-        groups = (
-            groupby
-            .agg(data, "width", "max", missing=self.empty != "fill")
-        )
+        groups = groupby.agg(data, {"width": "max"})
+        if self.empty == "fill":
+            groups = groups.dropna()
 
         def groupby_pos(s):
             grouper = [groups[v] for v in [orient, "col", "row"] if v in data]

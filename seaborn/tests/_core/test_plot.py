@@ -33,13 +33,6 @@ def assert_gridspec_shape(ax, nrows=1, ncols=1):
         assert gs.ncols == ncols
 
 
-class MockStat(Stat):
-
-    def __call__(self, data):
-
-        return data
-
-
 class MockMark(Mark):
 
     # TODO we need to sort out the stat application, it is broken right now
@@ -232,18 +225,18 @@ class TestLayerAddition:
     def test_stat_default(self):
 
         class MarkWithDefaultStat(Mark):
-            default_stat = MockStat
+            default_stat = Stat
 
         p = Plot().add(MarkWithDefaultStat())
         layer, = p._layers
-        assert layer["stat"].__class__ is MockStat
+        assert layer["stat"].__class__ is Stat
 
     def test_stat_nondefault(self):
 
         class MarkWithDefaultStat(Mark):
-            default_stat = MockStat
+            default_stat = Stat
 
-        class OtherMockStat(MockStat):
+        class OtherMockStat(Stat):
             pass
 
         p = Plot().add(MarkWithDefaultStat(), OtherMockStat())
@@ -256,11 +249,10 @@ class TestLayerAddition:
     )
     def test_orient(self, arg, expected):
 
-        class MockStatTrackOrient(MockStat):
-            def setup(self, data, orient):
-                super().setup(data, orient)
-                self.orient_at_setup = orient
-                return self
+        class MockStatTrackOrient(Stat):
+            def __call__(self, data, groupby, orient):
+                self.orient_at_call = orient
+                return data
 
         class MockMoveTrackOrient(Move):
             def __call__(self, data, groupby, orient):
@@ -271,7 +263,7 @@ class TestLayerAddition:
         m = MockMoveTrackOrient()
         Plot(x=[1, 2, 3], y=[1, 2, 3]).add(MockMark(), s, m, orient=arg).plot()
 
-        assert s.orient_at_setup == expected
+        assert s.orient_at_call == expected
         assert m.orient_at_call == expected
 
 
@@ -352,8 +344,11 @@ class TestAxisScaling:
     def test_mark_data_log_transfrom_with_stat(self, long_df):
 
         class Mean(Stat):
-            def __call__(self, data):
-                return data.mean()
+            group_by_orient = True
+
+            def __call__(self, data, groupby, orient):
+                other = {"x": "y", "y": "x"}[orient]
+                return groupby.agg(data, {other: "mean"})
 
         col = "z"
         grouper = "a"
