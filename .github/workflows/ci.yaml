@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [master, skunkworks/**]
+    branches: [master, nextgen/**]
   pull_request:
     branches: master
   workflow_dispatch:
