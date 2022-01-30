@@ -172,6 +172,11 @@ class Plot:
 
         return data, x, y
 
+    def __add__(self, other):
+
+        # TODO restrict to Mark / Stat etc?
+        raise TypeError("Sorry, this isn't ggplot! Perhaps try Plot.add?")
+
     def _repr_png_(self) -> tuple[bytes, dict[str, float]]:
 
         return self.plot()._repr_png_()
@@ -254,6 +259,11 @@ class Plot:
         # TODO decide how to allow Mark to have Stat/Move
         # if stat is None and hasattr(mark, "default_stat"):
         #     stat = mark.default_stat()
+
+        # TODO if data is supplied it overrides the global data object
+        # Another option would be to left join (layer_data, global_data)
+        # after dropping the column intersection from global_data
+        # (but join on what? always the index? that could get tricky...)
 
         new = self._clone()
         new._layers.append({
@@ -443,6 +453,30 @@ class Plot:
         new = self._clone()
         new._semantics["fillalpha"] = AlphaSemantic(values, variable="fillalpha")
         new._scale_from_map("fillalpha", values, order, norm)
+        return new
+
+    def map_edgecolor(
+        self,
+        palette: PaletteSpec = None,
+        order: OrderSpec = None,
+        norm: NormSpec = None,
+    ) -> Plot:
+
+        new = self._clone()
+        new._semantics["edgecolor"] = ColorSemantic(palette, variable="edgecolor")
+        new._scale_from_map("edgecolor", palette, order)
+        return new
+
+    def map_edgealpha(
+        self,
+        values: ContinuousValueSpec = None,
+        order: OrderSpec | None = None,
+        norm: Normalize | None = None,
+    ) -> Plot:
+
+        new = self._clone()
+        new._semantics["edgealpha"] = AlphaSemantic(values, variable="edgealpha")
+        new._scale_from_map("edgealpha", values, order, norm)
         return new
 
     def map_fill(
@@ -689,6 +723,11 @@ class Plot:
 
         self.plot(pyplot=True)
         plt.show(**kwargs)
+
+    def tell(self) -> Plot:
+        # TODO? Have this print a textual summary of how the plot is defined?
+        # Could be nice to stick in the middle of a pipeline for debugging
+        return self
 
 
 class Plotter:
@@ -1054,6 +1093,8 @@ class Plotter:
                 # TODO get this from the Mark, otherwise scale by natural spacing?
                 # (But what about sparse categoricals? categorical always width/height=1
                 # Should default width/height be 1 and then get scaled by Mark.width?
+                # Also note tricky thing, width attached to mark does not get rescaled
+                # during dodge, but then it dominates during feature resolution
                 if "width" not in df:
                     df["width"] = 0.8
                 if "height" not in df:
