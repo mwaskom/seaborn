@@ -1352,8 +1352,8 @@ class Plotter:
                 handles,
                 labels,
                 title=name,  # TODO don't show "None" as title
-                loc="upper right",
-                # bbox_to_anchor=(.98, .98),
+                loc="center left",
+                bbox_to_anchor=(.98, .55),
             )
 
             # TODO: This is an illegal hack accessing private attributes on the legend
