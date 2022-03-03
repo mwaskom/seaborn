@@ -299,35 +299,45 @@ class TestAxisScaling:
         ax = p._figure.axes[0]
         assert ax.yaxis.convert_units("3") == 2
 
+    @pytest.mark.xfail(reason="Calendric scale not implemented")
     def test_categorical_as_datetime(self):
 
         dates = ["1970-01-03", "1970-01-02", "1970-01-04"]
-        p = Plot(x=dates).scale_datetime("x").add(MockMark()).plot()
-        ax = p._figure.axes[0]
-        assert ax.xaxis.converter
+        p = Plot(x=dates).scale(...).add(MockMark()).plot()
+        p  # TODO
+        ...
 
-    @pytest.mark.xfail(reason="Custom log scale needs log name for consistency")
     def test_faceted_log_scale(self):
 
         p = Plot(y=[1, 10]).facet(col=["a", "b"]).scale(y="log").plot()
         for ax in p._figure.axes:
-            assert ax.get_yscale() == "log"
+            xfm = ax.yaxis.get_transform().transform
+            assert_array_equal(xfm([1, 10, 100]), [0, 1, 2])
 
-    @pytest.mark.xfail(reason="Custom log scale needs log name for consistency")
     def test_faceted_log_scale_without_data(self):
 
         p = Plot(y=[1, 10]).facet(col=["a", "b"]).scale(y="log").plot()
         for ax in p._figure.axes:
-            assert ax.get_yscale() == "log"
+            xfm = ax.yaxis.get_transform().transform
+            assert_array_equal(xfm([1, 10, 100]), [0, 1, 2])
 
-    @pytest.mark.xfail(reason="Custom log scale needs log name for consistency")
     def test_paired_single_log_scale(self):
 
         x0, x1 = [1, 2, 3], [1, 10, 100]
         p = Plot().pair(x=[x0, x1]).scale(x1="log").plot()
-        ax0, ax1 = p._figure.axes
-        assert ax0.get_xscale() == "linear"
-        assert ax1.get_xscale() == "log"
+        ax_lin, ax_log = p._figure.axes
+        xfm_lin = ax_lin.xaxis.get_transform().transform
+        assert_array_equal(xfm_lin([1, 10, 100]), [1, 10, 100])
+        xfm_log = ax_log.xaxis.get_transform().transform
+        assert_array_equal(xfm_log([1, 10, 100]), [0, 1, 2])
+
+    @pytest.mark.xfail(reason="Custom log scale needs log name for consistency")
+    def test_log_scale_name(self):
+
+        p = Plot().scale(x="log").plot()
+        ax = p._figure.axes[0]
+        assert ax.get_xscale() == "log"
+        assert ax.get_yscale() == "linear"
 
     def test_mark_data_log_transform_is_inverted(self, long_df):
 

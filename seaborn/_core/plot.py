@@ -10,9 +10,9 @@ import pandas as pd
 import matplotlib as mpl
 import matplotlib.pyplot as plt  # TODO defer import into Plot.show()
 
-from seaborn._compat import scale_factory, set_scale_obj
-from seaborn._core.rules import categorical_order
+from seaborn._compat import set_scale_obj
 from seaborn._core.data import PlotData
+from seaborn._core.rules import categorical_order
 from seaborn._core.scales import ScaleSpec
 from seaborn._core.subplots import Subplots
 from seaborn._core.groupby import GroupBy
@@ -28,39 +28,25 @@ from seaborn._core.mappings import (
     WidthSemantic,
 )
 from seaborn._core.scales import Scale
-from seaborn._core.scales_take1 import (
-    NumericScale,
-    CategoricalScale,
-    DateTimeScale,
-    IdentityScale,
-)
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from typing import Literal, Any
-    from collections.abc import Callable, Generator, Iterable, Hashable
-    from pandas import DataFrame, Series, Index
+    from collections.abc import Callable, Generator, Hashable
+    from pandas import DataFrame, Index
     from matplotlib.axes import Axes
     from matplotlib.artist import Artist
-    from matplotlib.color import Normalize
     from matplotlib.figure import Figure, SubFigure
-    from matplotlib.scale import ScaleBase
     from seaborn._core.mappings import Semantic, SemanticMapping
     from seaborn._marks.base import Mark
     from seaborn._stats.base import Stat
     from seaborn._core.move import Move
-    from seaborn._core.typing import (
-        DataSource,
-        PaletteSpec,
-        VariableSpec,
-        OrderSpec,
-        NormSpec,
-        DiscreteValueSpec,
-        ContinuousValueSpec,
-    )
+    from seaborn._core.typing import DataSource, VariableSpec, OrderSpec
 
 
-SEMANTICS = {  # TODO should this be pluggable?
+# TODO remove this after updating the few places where it's used
+# as global definition of "settable properties"
+SEMANTICS = {
     "color": ColorSemantic(),
     "fillcolor": ColorSemantic(variable="fillcolor"),
     "alpha": AlphaSemantic(),
@@ -85,13 +71,13 @@ SEMANTICS = {  # TODO should this be pluggable?
 
 class Plot:
 
+    # TODO use TypedDict throughout?
+
     _data: PlotData
     _layers: list[dict]
     _semantics: dict[str, Semantic]
-    # TODO keeping Scale as possible value for mypy until we remove that code
-    _scales: dict[str, ScaleSpec | Scale]
+    _scales: dict[str, ScaleSpec]
 
-    # TODO use TypedDict here
     _subplotspec: dict[str, Any]
     _facetspec: dict[str, Any]
     _pairspec: dict[str, Any]
@@ -419,255 +405,6 @@ class Plot:
 
             new._scales[var] = scale
 
-        return new
-
-    def map_color(
-        self,
-        # TODO accept variable specification here?
-        palette: PaletteSpec = None,
-        order: OrderSpec = None,
-        norm: NormSpec = None,
-    ) -> Plot:
-
-        # TODO we do some fancy business currently to avoid having to
-        # write these ... do we want that to persist or is it too confusing?
-        # If we do ... maybe we don't even need to write these methods, but can
-        # instead programatically add them based on central dict of mapping objects.
-        # ALSO TODO should these be initialized with defaults?
-        # TODO if we define default semantics, we can use that
-        # for initialization and make this more abstract (assuming kwargs match?)
-        new = self._clone()
-        new._semantics["color"] = ColorSemantic(palette)
-        new._scale_from_map("color", palette, order)
-        return new
-
-    def map_alpha(
-        self,
-        values: ContinuousValueSpec = None,
-        order: OrderSpec | None = None,
-        norm: Normalize | None = None,
-    ) -> Plot:
-
-        new = self._clone()
-        new._semantics["alpha"] = AlphaSemantic(values, variable="alpha")
-        new._scale_from_map("alpha", values, order, norm)
-        return new
-
-    def map_fillcolor(
-        self,
-        palette: PaletteSpec = None,
-        order: OrderSpec = None,
-        norm: NormSpec = None,
-    ) -> Plot:
-
-        new = self._clone()
-        new._semantics["fillcolor"] = ColorSemantic(palette, variable="fillcolor")
-        new._scale_from_map("fillcolor", palette, order)
-        return new
-
-    def map_fillalpha(
-        self,
-        values: ContinuousValueSpec = None,
-        order: OrderSpec | None = None,
-        norm: Normalize | None = None,
-    ) -> Plot:
-
-        new = self._clone()
-        new._semantics["fillalpha"] = AlphaSemantic(values, variable="fillalpha")
-        new._scale_from_map("fillalpha", values, order, norm)
-        return new
-
-    def map_edgecolor(
-        self,
-        palette: PaletteSpec = None,
-        order: OrderSpec = None,
-        norm: NormSpec = None,
-    ) -> Plot:
-
-        new = self._clone()
-        new._semantics["edgecolor"] = ColorSemantic(palette, variable="edgecolor")
-        new._scale_from_map("edgecolor", palette, order)
-        return new
-
-    def map_edgealpha(
-        self,
-        values: ContinuousValueSpec = None,
-        order: OrderSpec | None = None,
-        norm: Normalize | None = None,
-    ) -> Plot:
-
-        new = self._clone()
-        new._semantics["edgealpha"] = AlphaSemantic(values, variable="edgealpha")
-        new._scale_from_map("edgealpha", values, order, norm)
-        return new
-
-    def map_fill(
-        self,
-        values: DiscreteValueSpec = None,
-        order: OrderSpec = None,
-    ) -> Plot:
-
-        new = self._clone()
-        new._semantics["fill"] = BooleanSemantic(values, variable="fill")
-        new._scale_from_map("fill", values, order)
-        return new
-
-    def map_marker(
-        self,
-        shapes: DiscreteValueSpec = None,
-        order: OrderSpec = None,
-    ) -> Plot:
-
-        new = self._clone()
-        new._semantics["marker"] = MarkerSemantic(shapes, variable="marker")
-        new._scale_from_map("linewidth", shapes, order)
-        return new
-
-    def map_linestyle(
-        self,
-        styles: DiscreteValueSpec = None,
-        order: OrderSpec = None,
-    ) -> Plot:
-
-        new = self._clone()
-        new._semantics["linestyle"] = LineStyleSemantic(styles, variable="linestyle")
-        new._scale_from_map("linewidth", styles, order)
-        return new
-
-    def map_linewidth(
-        self,
-        values: ContinuousValueSpec = None,
-        order: OrderSpec | None = None,
-        norm: Normalize | None = None,
-        # TODO clip?
-    ) -> Plot:
-
-        new = self._clone()
-        new._semantics["linewidth"] = LineWidthSemantic(values, variable="linewidth")
-        new._scale_from_map("linewidth", values, order, norm)
-        return new
-
-    def _scale_from_map(self, var, values, order, norm=None) -> None:
-
-        if order is not None:
-            self.scale_categorical(var, order=order)
-        elif norm is not None:
-            if isinstance(values, (dict, list)):
-                values_type = type(values).__name__
-                err = f"Cannot use a norm with a {values_type} of {var} values."
-                raise ValueError(err)
-            self.scale_numeric(var, norm=norm)
-
-    # TODO have map_gradient?
-    # This could be used to add another color-like dimension
-    # and also the basis for what mappings like stat.density -> rgba do
-
-    # TODO map_saturation/map_chroma as a binary semantic?
-
-    # The scale function names are a bit verbose. Two other options are:
-    # - Have shorthand names (scale_num / scale_cat / scale_dt / scale_id)
-    # - Have a separate scale(var, scale, norm, order, formatter, ...) method
-    #   that dispatches based on the arguments it gets; keep the verbose methods
-    #   around for use in case of ambiguity (e.g. to force a numeric variable to
-    #   get a categorical scale without defining an order for it.
-
-    def scale_numeric(
-        self,
-        var: str,
-        scale: str | ScaleBase = "linear",
-        norm: NormSpec = None,
-        # TODO add clip? Useful for e.g., making sure lines don't get too thick.
-        # (If we add clip, should we make the legend say like ``> value`)?
-        **kwargs  # Needed? Or expose what we need?
-    ) -> Plot:
-
-        # TODO use norm for setting axis limits? Or otherwise share an interface?
-        # Or separate norm as a Normalize object and limits as a tuple?
-        # (If we have one we can create the other)
-
-        # TODO Do we want to be able to call this on numbers-as-strings data and
-        # have it work sensibly?
-
-        if scale == "log":
-            # TODO document that passing a LogNorm without this set can cause issues
-            # (It's not a public attribute on the scale/transform)
-            kwargs.setdefault("nonpositive", "mask")
-
-        if not isinstance(scale, mpl.scale.ScaleBase):
-            scale = scale_factory(scale, var, **kwargs)
-
-        new = self._clone()
-        new._scales[var] = NumericScale(scale, norm)  # type: ignore
-
-        return new
-
-    def scale_categorical(  # TODO FIXME:names scale_cat()?
-        self,
-        var: str,
-        order: Series | Index | Iterable | None = None,
-        # TODO parameter for binning continuous variable?
-        formatter: Callable[[Any], str] = format,
-    ) -> Plot:
-
-        # TODO format() is not a great default for formatter(), ideally we'd want a
-        # function that produces a "minimal" representation for numeric data and dates.
-        # e.g.
-        # 0.3333333333 -> 0.33 (maybe .2g?) This is trickiest
-        # 1.0 -> 1
-        # 2000-01-01 01:01:000000 -> "2000-01-01", or even "Jan 2000" for monthly data
-
-        # Note that this will need to be chosen at setup() time as I think we
-        # want the minimal representation for *all* values, not each one
-        # individually.  There is also a subtle point about the difference
-        # between what shows up in the ticks when a coordinate variable is
-        # categorical vs what shows up in a legend.
-
-        # TODO how to set limits/margins "nicely"? (i.e. 0.5 data units, past extremes)
-        # TODO similarly, should this modify grid state like current categorical plots?
-        # TODO "smart"/data-dependant ordering (e.g. order by median of y variable)
-        # One idea: use phantom artist with "sticky edges" (or set them on the spine?)
-
-        if order is not None:
-            order = list(order)
-
-        scale = mpl.scale.LinearScale(var)
-
-        new = self._clone()
-        new._scales[var] = CategoricalScale(scale, order, formatter)  # type: ignore
-        return new
-
-    def scale_datetime(
-        self,
-        var: str,
-        norm: Normalize | tuple[Any, Any] | None = None,
-    ) -> Plot:
-
-        scale = mpl.scale.LinearScale(var)
-
-        new = self._clone()
-        new._scales[var] = DateTimeScale(scale, norm)  # type: ignore
-
-        # TODO I think rather than dealing with the question of "should we follow
-        # pandas or matplotlib conventions with float -> date conversion, we should
-        # force the user to provide a unit when calling this with a numeric variable.
-
-        # TODO what else should this do?
-        # We should pass kwargs to the DateTime cast probably.
-        # Should we also explicitly expose more of the pd.to_datetime interface?
-
-        # TODO also we should be able to set the formatter here
-        # (well, and also in the other scale methods)
-        # But it's especially important here because the default matplotlib formatter
-        # is not very nice, and we don't need to be bound by that, so we should probably
-        # (1) use fewer minticks
-        # (2) use the concise dateformatter by default
-
-        return new
-
-    def scale_identity(self, var: str) -> Plot:
-
-        new = self._clone()
-        new._scales[var] = IdentityScale()  # type: ignore
         return new
 
     def configure(
