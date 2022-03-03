@@ -10,15 +10,14 @@ from seaborn._core.plot import SEMANTICS
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from typing import Literal, Any, Dict, Callable
+    from typing import Literal, Any, Callable
     from collections.abc import Generator
     from numpy import ndarray
     from pandas import DataFrame
     from matplotlib.axes import Axes
     from matplotlib.artist import Artist
-    from seaborn._core.mappings import SemanticMapping, RGBATuple
-
-    MappingDict = Dict[str, SemanticMapping]
+    from seaborn._core.mappings import RGBATuple
+    from seaborn._core.scales import Scale
 
 
 class Feature:
@@ -118,19 +117,19 @@ class Mark:
     @contextmanager
     def use(
         self,
-        mappings: dict[str, SemanticMapping],
+        scales: dict[str, Scale],
         orient: Literal["x", "y"]
     ) -> Generator:
         """Temporarily attach a mappings dict and orientation during plotting."""
         # Having this allows us to simplify the number of objects that need to be
         # passed all the way down to where plotting happens while not (permanently)
         # mutating a Mark object that may persist in user-space.
-        self.mappings = mappings
+        self.scales = scales
         self.orient = orient
         try:
             yield
         finally:  # TODO change to else to make debugging easier
-            del self.mappings, self.orient
+            del self.scales, self.orient
 
     def resolve_features(self, data):
 
@@ -172,8 +171,8 @@ class Mark:
             return feature
 
         if name in data:
-            if name in self.mappings:
-                feature = self.mappings[name](data[name])
+            if name in self.scales:
+                feature = self.scales[name](data[name])
             else:
                 # TODO Might this obviate the identity scale? Just don't add a mapping?
                 feature = data[name]
@@ -217,13 +216,15 @@ class Mark:
         color = self._resolve(data, f"{prefix}color")
         alpha = self._resolve(data, f"{prefix}alpha")
 
-        if isinstance(color, tuple):
+        if np.ndim(color) < 2:
             if len(color) == 4:
                 return mpl.colors.to_rgba(color)
+            alpha = alpha if np.isfinite(color).all() else np.nan
             return mpl.colors.to_rgba(color, alpha)
         else:
             if color.shape[1] == 4:
                 return mpl.colors.to_rgba_array(color)
+            alpha = np.where(np.isfinite(color).all(axis=1), alpha, np.nan)
             return mpl.colors.to_rgba_array(color, alpha)
 
     def _adjust(
@@ -238,6 +239,9 @@ class Mark:
         # TODO The original version of this (in seaborn._oldcore) did more checking.
         # Paring that down here for the prototype to see what restrictions make sense.
 
+        # TODO rethink this to map from scale type to "DV priority" and use that?
+        # e.g. Nominal > Discrete > Continuous
+
         x_type = None if "x" not in scales else scales["x"].scale_type
         y_type = None if "y" not in scales else scales["y"].scale_type
 
@@ -247,16 +251,16 @@ class Mark:
         elif y_type is None:
             return "x"
 
-        elif x_type != "categorical" and y_type == "categorical":
+        elif x_type != "nominal" and y_type == "nominal":
             return "y"
 
-        elif x_type != "numeric" and y_type == "numeric":
+        elif x_type != "continuous" and y_type == "continuous":
 
             # TODO should we try to orient based on number of unique values?
 
             return "x"
 
-        elif x_type == "numeric" and y_type != "numeric":
+        elif x_type == "continuous" and y_type != "continuous":
             return "y"
 
         else:

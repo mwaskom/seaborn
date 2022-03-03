@@ -9,7 +9,7 @@ from numpy.testing import assert_array_equal
 
 from seaborn._compat import MarkerStyle
 from seaborn._core.rules import categorical_order
-from seaborn._core.scales import (
+from seaborn._core.scales_take1 import (
     CategoricalScale,
     DateTimeScale,
     NumericScale,

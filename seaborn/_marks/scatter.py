@@ -27,6 +27,8 @@ class Scatter(Mark):
     fillalpha: MappableFloat = Feature(.2)
     marker: MappableString = Feature(rc="scatter.marker")
     pointsize: MappableFloat = Feature(3)  # TODO rcParam?
+
+    # TODO is `stroke`` a better name to get reasonable default scale range?
     linewidth: MappableFloat = Feature(.75)  # TODO rcParam?
 
     def _resolve_paths(self, data):

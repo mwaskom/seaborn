@@ -13,8 +13,10 @@ import matplotlib.pyplot as plt  # TODO defer import into Plot.show()
 from seaborn._compat import scale_factory, set_scale_obj
 from seaborn._core.rules import categorical_order
 from seaborn._core.data import PlotData
+from seaborn._core.scales import ScaleSpec
 from seaborn._core.subplots import Subplots
 from seaborn._core.groupby import GroupBy
+from seaborn._core.properties import PROPERTIES, Property
 from seaborn._core.mappings import (
     ColorSemantic,
     BooleanSemantic,
@@ -24,15 +26,13 @@ from seaborn._core.mappings import (
     AlphaSemantic,
     PointSizeSemantic,
     WidthSemantic,
-    IdentityMapping,
 )
-from seaborn._core.scales import (
-    Scale,
+from seaborn._core.scales import Scale
+from seaborn._core.scales_take1 import (
     NumericScale,
     CategoricalScale,
     DateTimeScale,
     IdentityScale,
-    get_default_scale,
 )
 
 from typing import TYPE_CHECKING
@@ -88,7 +88,8 @@ class Plot:
     _data: PlotData
     _layers: list[dict]
     _semantics: dict[str, Semantic]
-    _scales: dict[str, Scale]
+    # TODO keeping Scale as possible value for mypy until we remove that code
+    _scales: dict[str, ScaleSpec | Scale]
 
     # TODO use TypedDict here
     _subplotspec: dict[str, Any]
@@ -102,6 +103,9 @@ class Plot:
         data: DataSource = None,
         x: VariableSpec = None,
         y: VariableSpec = None,
+        # TODO maybe enumerate variables for tab-completion/discoverability?
+        # I think the main concern was being extensible ... possible to add
+        # to the signature using inspect?
         **variables: VariableSpec,
     ):
 
@@ -208,6 +212,8 @@ class Plot:
 
     def inplace(self, val: bool | None = None) -> Plot:
 
+        # TODO I am not convinced we need this
+
         if val is None:
             self._inplace = not self._inplace
         else:
@@ -215,6 +221,8 @@ class Plot:
         return self
 
     def on(self, target: Axes | SubFigure | Figure) -> Plot:
+
+        # TODO alternate name: target?
 
         accepted_types: tuple  # Allow tuple of various length
         if hasattr(mpl.figure, "SubFigure"):  # Added in mpl 3.4
@@ -399,6 +407,20 @@ class Plot:
 
         return new
 
+    # TODO def twin()?
+
+    def scale(self, **scales: ScaleSpec) -> Plot:
+
+        new = self._clone()
+
+        for var, scale in scales.items():
+
+            # TODO where do we do auto inference?
+
+            new._scales[var] = scale
+
+        return new
+
     def map_color(
         self,
         # TODO accept variable specification here?
@@ -575,7 +597,7 @@ class Plot:
             scale = scale_factory(scale, var, **kwargs)
 
         new = self._clone()
-        new._scales[var] = NumericScale(scale, norm)
+        new._scales[var] = NumericScale(scale, norm)  # type: ignore
 
         return new
 
@@ -611,7 +633,7 @@ class Plot:
         scale = mpl.scale.LinearScale(var)
 
         new = self._clone()
-        new._scales[var] = CategoricalScale(scale, order, formatter)
+        new._scales[var] = CategoricalScale(scale, order, formatter)  # type: ignore
         return new
 
     def scale_datetime(
@@ -623,7 +645,7 @@ class Plot:
         scale = mpl.scale.LinearScale(var)
 
         new = self._clone()
-        new._scales[var] = DateTimeScale(scale, norm)
+        new._scales[var] = DateTimeScale(scale, norm)  # type: ignore
 
         # TODO I think rather than dealing with the question of "should we follow
         # pandas or matplotlib conventions with float -> date conversion, we should
@@ -645,7 +667,7 @@ class Plot:
     def scale_identity(self, var: str) -> Plot:
 
         new = self._clone()
-        new._scales[var] = IdentityScale()
+        new._scales[var] = IdentityScale()  # type: ignore
         return new
 
     def configure(
@@ -699,7 +721,6 @@ class Plot:
         plotter._setup_data(self)
         plotter._setup_figure(self)
         plotter._setup_scales(self)
-        plotter._setup_mappings(self)
 
         for layer in plotter._layers:
             plotter._plot_layer(self, layer)
@@ -902,19 +923,20 @@ class Plotter:
         undefined = set(p._scales) - set(variables)
         if undefined:
             err = f"No data found for variable(s) with explicit scale: {undefined}"
-            raise RuntimeError(err)  # FIXME:PlotSpecError
+            # TODO decide whether this is too strict. Maybe a warning?
+            # raise RuntimeError(err)  # FIXME:PlotSpecError
 
         self._scales = {}
 
         for var in variables:
 
             # Get the data all the distinct appearances of this variable.
-            var_data = pd.concat([
+            var_values = pd.concat([
                 df.get(var),
                 # Only use variables that are *added* at the layer-level
                 *(x["data"].frame.get(var)
                   for x in self._layers if var in x["variables"])
-            ], axis=1)
+            ], axis=0, join="inner", ignore_index=True).rename(var)
 
             # Determine whether this is an coordinate variable
             # (i.e., x/y, paired x/y, or derivative such as xmax)
@@ -925,19 +947,30 @@ class Plotter:
                 var = m.group("prefix")
                 axis = m.group("axis")
 
-            # Get the scale object, tracking whether it was explicitly set
-            var_values = var_data.stack()
+            # TODO what is the best way to allow undefined properties?
+            # i.e. it is useful for extensions and non-graphical variables.
+            prop = PROPERTIES.get(var if axis is None else axis, Property())
+
             if var in p._scales:
-                scale = p._scales[var]
-                scale.type_declared = True
+                arg = p._scales[var]
+                if isinstance(arg, ScaleSpec):
+                    scale = arg
+                elif arg is None:
+                    # TODO what is the cleanest way to implement identity scale?
+                    # We don't really need a ScaleSpec, and Identity() will be
+                    # overloaded anyway (but maybe a general Identity object
+                    # that can be used as Scale/Mark/Stat/Move?)
+                    self._scales[var] = Scale([], [], None, "identity", None)
+                    continue
+                else:
+                    scale = prop.infer_scale(arg, var_values)
             else:
-                scale = get_default_scale(var_values)
-                scale.type_declared = False
+                scale = prop.default_scale(var_values)
 
             # Initialize the data-dependent parameters of the scale
             # Note that this returns a copy and does not mutate the original
             # This dictionary is used by the semantic mappings
-            self._scales[var] = scale.setup(var_values)
+            self._scales[var] = scale.setup(var_values, prop)
 
             # The mappings are always shared across subplots, but the coordinate
             # scaling can be independent (i.e. with share{x/y} = False).
@@ -970,13 +1003,12 @@ class Plotter:
                     continue
 
                 axis_obj = getattr(subplot["ax"], f"{axis}axis")
-                set_scale_obj(subplot["ax"], axis, scale)
 
                 # Now we need to identify the right data rows to setup the scale with
 
                 # The all-shared case is easiest, every subplot sees all the data
                 if share_state in [True, "all"]:
-                    axis_scale = scale.setup(var_values, axis_obj)
+                    axis_scale = scale.setup(var_values, prop, axis=axis_obj)
                     subplot[f"{axis}scale"] = axis_scale
 
                 # Otherwise, we need to setup separate scales for different subplots
@@ -991,56 +1023,15 @@ class Plotter:
                         subplot_data = df
 
                     # Same operation as above, but using the reduced dataset
-                    subplot_values = var_data.loc[subplot_data.index].stack()
-                    axis_scale = scale.setup(subplot_values, axis_obj)
+                    subplot_values = var_values.loc[subplot_data.index]
+                    axis_scale = scale.setup(subplot_values, prop, axis=axis_obj)
                     subplot[f"{axis}scale"] = axis_scale
 
-        # Set default axis scales for when they're not defined at this point
-        for subplot in self._subplots:
-            ax = subplot["ax"]
-            for axis in "xy":
-                key = f"{axis}scale"
-                if key not in subplot:
-                    default_scale = scale_factory(getattr(ax, f"get_{key}")(), axis)
-                    # TODO should we also infer categories / datetime units?
-                    subplot[key] = NumericScale(default_scale, None)
-
-    def _setup_mappings(self, p: Plot) -> None:
-
-        semantic_vars: list[str]
-        mapping: SemanticMapping
-
-        variables = list(self._data.frame)  # TODO abstract this?
-        for layer in self._layers:
-            variables.extend(c for c in layer["data"].frame if c not in variables)
-        semantic_vars = [v for v in variables if v in SEMANTICS]
-
-        self._mappings = {}
-        for var in semantic_vars:
-            semantic = p._semantics.get(var) or SEMANTICS[var]
-
-            all_values = pd.concat([
-                self._data.frame.get(var),
-                # Only use variables that are *added* at the layer-level
-                *(x["data"].frame.get(var)
-                  for x in self._layers if var in x["variables"])
-            ], axis=1).stack()
-
-            if var in self._scales:
-                scale = self._scales[var]
-                scale.type_declared = True
-            else:
-                scale = get_default_scale(all_values)
-                scale.type_declared = False
-
-            if isinstance(scale, IdentityScale):
-                # We may not need this dummy mapping, if we can consistently
-                # use Mark.resolve to pull values out of data if not defined in mappings
-                # Not doing that now because it breaks some tests, but seems to work.
-                mapping = IdentityMapping(semantic._standardize_values)
-            else:
-                mapping = semantic.setup(all_values, scale)
-            self._mappings[var] = mapping
+                # TODO should this just happen within scale.setup?
+                # Currently it is disabling the formatters that we set in scale.setup
+                # The other option (using currently) is to define custom matplotlib
+                # scales that don't change other axis properties
+                set_scale_obj(subplot["ax"], axis, axis_scale.matplotlib_scale)
 
     def _plot_layer(
         self,
@@ -1068,7 +1059,7 @@ class Plotter:
             orient = layer["orient"] or mark._infer_orient(scales)
 
             with (
-                mark.use(self._mappings, orient)
+                mark.use(self._scales, orient)
                 # TODO this doesn't work if stat is None
                 # stat.use(mappings=self._mappings, orient=orient),
             ):
@@ -1120,7 +1111,8 @@ class Plotter:
 
                 mark._plot(split_generator)
 
-        with mark.use(self._mappings, None):  # TODO will we ever need orient?
+        # TODO disabling while hacking on scales
+        with mark.use(self._scales, None):  # TODO will we ever need orient?
             self._update_legend_contents(mark, data)
 
     def _scale_coords(
@@ -1140,12 +1132,10 @@ class Plotter:
         for subplot in subplots:
             axes_df = self._filter_subplot_data(df, subplot)[coord_cols]
             with pd.option_context("mode.use_inf_as_null", True):
-                axes_df = axes_df.dropna()  # TODO always wanted?
+                axes_df = axes_df.dropna()  # TODO do we actually need/want this?
             for var, values in axes_df.items():
-                axis = var[0]
-                scale = subplot[f"{axis}scale"]
-                axis_obj = getattr(subplot["ax"], f"{axis}axis")
-                out_df.loc[values.index, var] = scale.forward(values, axis_obj)
+                scale = subplot[f"{var[0]}scale"]
+                out_df.loc[values.index, var] = scale(values)
 
         return out_df
 
@@ -1167,7 +1157,7 @@ class Plotter:
             axes_df = self._filter_subplot_data(df, subplot)[coord_cols]
             for var, values in axes_df.items():
                 scale = subplot[f"{var[0]}scale"]
-                out_df.loc[values.index, var] = scale.reverse(axes_df[var])
+                out_df.loc[values.index, var] = scale.invert_transform(axes_df[var])
 
         return out_df
 
@@ -1176,7 +1166,8 @@ class Plotter:
         df: DataFrame,
         pair_variables: dict,
     ) -> Generator[
-        tuple[list[dict], DataFrame, dict[str, Scale]], None, None
+        # TODO type scales dict more strictly when we get rid of original Scale
+        tuple[list[dict], DataFrame, dict], None, None
     ]:
         # TODO retype return with SubplotSpec or similar
 
@@ -1289,7 +1280,7 @@ class Plotter:
 
     def _update_legend_contents(self, mark: Mark, data: PlotData) -> None:
         """Add legend artists / labels for one layer in the plot."""
-        legend_vars = data.frame.columns.intersection(self._mappings)
+        legend_vars = data.frame.columns.intersection(self._scales)
 
         # First pass: Identify the values that will be shown for each variable
         schema: list[tuple[
@@ -1297,7 +1288,7 @@ class Plotter:
         ]] = []
         schema = []
         for var in legend_vars:
-            var_legend = self._mappings[var].legend
+            var_legend = self._scales[var].legend
             if var_legend is not None:
                 values, labels = var_legend
                 for (_, part_id), part_vars, _ in schema:

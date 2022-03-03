@@ -14,6 +14,7 @@ from pandas.testing import assert_frame_equal, assert_series_equal
 from numpy.testing import assert_array_equal
 
 from seaborn._core.plot import Plot
+from seaborn._core.scales import Nominal, Continuous
 from seaborn._core.rules import categorical_order
 from seaborn._core.moves import Move
 from seaborn._marks.base import Mark
@@ -45,7 +46,7 @@ class MockMark(Mark):
         self.passed_keys = []
         self.passed_data = []
         self.passed_axes = []
-        self.passed_mappings = []
+        self.passed_scales = []
         self.n_splits = 0
 
     def _plot_split(self, keys, data, ax, kws):
@@ -55,8 +56,7 @@ class MockMark(Mark):
         self.passed_data.append(data)
         self.passed_axes.append(ax)
 
-        # TODO update the test that uses this
-        self.passed_mappings.append(self.mappings)
+        self.passed_scales.append(self.scales)
 
     def _legend_artist(self, variables, value):
 
@@ -269,9 +269,10 @@ class TestLayerAddition:
 
 class TestAxisScaling:
 
+    @pytest.mark.xfail(reason="Calendric scale not implemented")
     def test_inference(self, long_df):
 
-        for col, scale_type in zip("zat", ["numeric", "categorical", "datetime"]):
+        for col, scale_type in zip("zat", ["continuous", "nominal", "calendric"]):
             p = Plot(long_df, x=col, y=col).add(MockMark()).plot()
             for var in "xy":
                 assert p._scales[var].scale_type == scale_type
@@ -279,12 +280,12 @@ class TestAxisScaling:
     def test_inference_from_layer_data(self):
 
         p = Plot().add(MockMark(), x=["a", "b", "c"]).plot()
-        assert p._scales["x"].scale_type == "categorical"
+        assert p._scales["x"]("b") == 1
 
     def test_inference_concatenates(self):
 
         p = Plot(x=[1, 2, 3]).add(MockMark(), x=["a", "b", "c"]).plot()
-        assert p._scales["x"].scale_type == "categorical"
+        assert p._scales["x"]("b") == 4
 
     def test_inferred_categorical_converter(self):
 
@@ -294,18 +295,9 @@ class TestAxisScaling:
 
     def test_explicit_categorical_converter(self):
 
-        p = Plot(y=[2, 1, 3]).scale_categorical("y").add(MockMark()).plot()
+        p = Plot(y=[2, 1, 3]).scale(y=Nominal()).add(MockMark()).plot()
         ax = p._figure.axes[0]
         assert ax.yaxis.convert_units("3") == 2
-
-    def test_categorical_as_numeric(self):
-
-        # TODO marked as expected fail because we have not implemented this yet
-        # see notes in ScaleWrapper.cast
-
-        p = Plot(x=["2", "1", "3"]).scale_numeric("x").add(MockMark()).plot()
-        ax = p._figure.axes[0]
-        assert ax.xaxis.converter is None
 
     def test_categorical_as_datetime(self):
 
@@ -314,31 +306,34 @@ class TestAxisScaling:
         ax = p._figure.axes[0]
         assert ax.xaxis.converter
 
+    @pytest.mark.xfail(reason="Custom log scale needs log name for consistency")
     def test_faceted_log_scale(self):
 
-        p = Plot(y=[1, 10]).facet(col=["a", "b"]).scale_numeric("y", "log").plot()
+        p = Plot(y=[1, 10]).facet(col=["a", "b"]).scale(y="log").plot()
         for ax in p._figure.axes:
             assert ax.get_yscale() == "log"
 
+    @pytest.mark.xfail(reason="Custom log scale needs log name for consistency")
     def test_faceted_log_scale_without_data(self):
 
-        p = Plot(y=[1, 10]).facet(col=["a", "b"]).scale_numeric("y", "log").plot()
+        p = Plot(y=[1, 10]).facet(col=["a", "b"]).scale(y="log").plot()
         for ax in p._figure.axes:
             assert ax.get_yscale() == "log"
 
+    @pytest.mark.xfail(reason="Custom log scale needs log name for consistency")
     def test_paired_single_log_scale(self):
 
         x0, x1 = [1, 2, 3], [1, 10, 100]
-        p = Plot().pair(x=[x0, x1]).scale_numeric("x1", "log").plot()
+        p = Plot().pair(x=[x0, x1]).scale(x1="log").plot()
         ax0, ax1 = p._figure.axes
         assert ax0.get_xscale() == "linear"
         assert ax1.get_xscale() == "log"
 
-    def test_mark_data_log_transform(self, long_df):
+    def test_mark_data_log_transform_is_inverted(self, long_df):
 
         col = "z"
         m = MockMark()
-        Plot(long_df, x=col).scale_numeric("x", "log").add(m).plot()
+        Plot(long_df, x=col).scale(x="log").add(m).plot()
         assert_vector_equal(m.passed_data[0]["x"], long_df[col])
 
     def test_mark_data_log_transfrom_with_stat(self, long_df):
@@ -355,7 +350,7 @@ class TestAxisScaling:
         m = MockMark()
         s = Mean()
 
-        Plot(long_df, x=grouper, y=col).scale_numeric("y", "log").add(m, s).plot()
+        Plot(long_df, x=grouper, y=col).scale(y="log").add(m, s).plot()
 
         expected = (
             long_df[col]
@@ -377,6 +372,7 @@ class TestAxisScaling:
         level_map = {x: float(i) for i, x in enumerate(levels)}
         assert_vector_equal(m.passed_data[0]["x"], long_df[col].map(level_map))
 
+    @pytest.mark.xfail(reason="Calendric scale not implemented yet")
     def test_mark_data_from_datetime(self, long_df):
 
         col = "t"
@@ -471,33 +467,40 @@ class TestAxisScaling:
         m = MockMark()
         x = y = [1, 2, 3, 4, 5]
         lw = pd.Series([.5, .1, .1, .9, 3])
-        Plot(x=x, y=y, linewidth=lw).scale_identity("linewidth").add(m).plot()
-        for mapping in m.passed_mappings:
-            assert_vector_equal(mapping["linewidth"](lw), lw)
+        Plot(x=x, y=y, linewidth=lw).scale(linewidth=None).add(m).plot()
+        for scales in m.passed_scales:
+            assert_vector_equal(scales["linewidth"](lw), lw)
 
+    # TODO where should RGB consistency be enforced?
+    @pytest.mark.xfail(
+        reason="Correct output representation for color with identity scale undefined"
+    )
     def test_identity_mapping_color_strings(self):
 
         m = MockMark()
         x = y = [1, 2, 3]
         c = ["C0", "C2", "C1"]
-        Plot(x=x, y=y, color=c).scale_identity("color").add(m).plot()
+        Plot(x=x, y=y, color=c).scale(color=None).add(m).plot()
         expected = mpl.colors.to_rgba_array(c)[:, :3]
-        for mapping in m.passed_mappings:
-            assert_array_equal(mapping["color"](c), expected)
+        for scale in m.passed_scales:
+            assert_array_equal(scale["color"](c), expected)
 
     def test_identity_mapping_color_tuples(self):
 
         m = MockMark()
         x = y = [1, 2, 3]
         c = [(1, 0, 0), (0, 1, 0), (1, 0, 0)]
-        Plot(x=x, y=y, color=c).scale_identity("color").add(m).plot()
+        Plot(x=x, y=y, color=c).scale(color=None).add(m).plot()
         expected = mpl.colors.to_rgba_array(c)[:, :3]
-        for mapping in m.passed_mappings:
-            assert_array_equal(mapping["color"](c), expected)
+        for scale in m.passed_scales:
+            assert_array_equal(scale["color"](c), expected)
 
+    @pytest.mark.xfail(
+        reason="Need decision on what to do with scale defined for unused variable"
+    )
     def test_undefined_variable_raises(self):
 
-        p = Plot(x=[1, 2, 3], color=["a", "b", "c"]).scale_numeric("y")
+        p = Plot(x=[1, 2, 3], color=["a", "b", "c"]).scale(y=Continuous())
         err = r"No data found for variable\(s\) with explicit scale: {'y'}"
         with pytest.raises(RuntimeError, match=err):
             p.plot()
@@ -666,8 +669,8 @@ class TestPlotting:
         var_product = itertools.product(x, y)
 
         for data, (x_i, y_i) in zip(m.passed_data, var_product):
-            assert_vector_equal(data["x"], long_df[x_i].astype(float))
-            assert_vector_equal(data["y"], long_df[y_i].astype(float))
+            assert_vector_equal(data["x"], long_df[x_i])
+            assert_vector_equal(data["y"], long_df[y_i])
 
     def test_paired_one_dimension(self, long_df):
 
@@ -739,7 +742,7 @@ class TestPlotting:
         m = MockMark()
         Plot(
             long_df, x="z", y="z"
-        ).scale_numeric("x", "log").add(m, move=MockMove()).plot()
+        ).scale(x="log").add(m, move=MockMove()).plot()
         assert_vector_equal(m.passed_data[0]["x"], long_df["z"] / 10)
 
     def test_methods_clone(self, long_df):
@@ -1606,7 +1609,7 @@ class TestLegend:
     def test_identity_scale_ignored(self, xy):
 
         s = pd.Series(["r", "g", "b", "g"])
-        p = Plot(**xy).add(MockMark(), color=s).scale_identity("color").plot()
+        p = Plot(**xy).add(MockMark(), color=s).scale(color=None).plot()
         assert not p._legend_contents
 
     # TODO test actually legend content? But wait until we decide
