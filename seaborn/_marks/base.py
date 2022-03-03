@@ -216,15 +216,21 @@ class Mark:
         color = self._resolve(data, f"{prefix}color")
         alpha = self._resolve(data, f"{prefix}alpha")
 
-        if np.ndim(color) < 2:
+        def visible(x, axis=None):
+            """Detect "invisible" colors to set alpha appropriately."""
+            return np.array(x).dtype.kind != "f" or np.isfinite(x).all(axis)
+
+        # Second check here catches vectors of strings with identity scale
+        # It could probably be handled better upstream. This is a tricky problem
+        if np.ndim(color) < 2 and all(isinstance(x, float) for x in color):
             if len(color) == 4:
                 return mpl.colors.to_rgba(color)
-            alpha = alpha if np.isfinite(color).all() else np.nan
+            alpha = alpha if visible(color) else np.nan
             return mpl.colors.to_rgba(color, alpha)
         else:
-            if color.shape[1] == 4:
+            if np.ndim(color) == 2 and color.shape[1] == 4:
                 return mpl.colors.to_rgba_array(color)
-            alpha = np.where(np.isfinite(color).all(axis=1), alpha, np.nan)
+            alpha = np.where(visible(color, axis=1), alpha, np.nan)
             return mpl.colors.to_rgba_array(color, alpha)
 
     def _adjust(

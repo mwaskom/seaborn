@@ -126,6 +126,16 @@ class TestFeature:
 
         assert_array_equal(m._resolve_color(df), expected)
 
+    def test_color_scaled_as_strings(self):
+
+        colors = ["C1", "dodgerblue", "#445566"]
+        m = self.mark()
+        m.scales = {"color": lambda s: colors}
+
+        actual = m._resolve_color({"color": pd.Series(["a", "b", "c"])})
+        expected = mpl.colors.to_rgba_array(colors)
+        assert_array_equal(actual, expected)
+
     def test_fillcolor(self):
 
         c, a = "green", .8
