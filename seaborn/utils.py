@@ -12,6 +12,7 @@ import matplotlib as mpl
 from matplotlib.colors import to_rgb
 import matplotlib.pyplot as plt
 from matplotlib.cbook import normalize_kwargs
+from platformdirs import user_cache_dir
 
 from .external.version import Version
 
@@ -516,12 +517,12 @@ def get_data_home(data_home=None):
     This directory is then used by :func:`load_dataset`.
 
     If the ``data_home`` argument is not specified, it tries to read from the
-    ``SEABORN_DATA`` environment variable and defaults to ``~/seaborn-data``.
+    ``SEABORN_DATA`` environment variable and defaults to
+    ``user_cache_dir('seaborn')``.
 
     """
     if data_home is None:
-        data_home = os.environ.get('SEABORN_DATA',
-                                   os.path.join('~', 'seaborn-data'))
+        data_home = os.environ.get('SEABORN_DATA', user_cache_dir('seaborn'))
     data_home = os.path.expanduser(data_home)
     if not os.path.exists(data_home):
         os.makedirs(data_home)
