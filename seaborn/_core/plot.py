@@ -16,18 +16,8 @@ from seaborn._core.rules import categorical_order
 from seaborn._core.scales import ScaleSpec
 from seaborn._core.subplots import Subplots
 from seaborn._core.groupby import GroupBy
-from seaborn._core.properties import PROPERTIES, Property
-from seaborn._core.mappings import (
-    ColorSemantic,
-    BooleanSemantic,
-    MarkerSemantic,
-    LineStyleSemantic,
-    LineWidthSemantic,
-    AlphaSemantic,
-    PointSizeSemantic,
-    WidthSemantic,
-)
 from seaborn._core.scales import Scale
+from seaborn._core.properties import PROPERTIES, Property
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
@@ -37,36 +27,10 @@ if TYPE_CHECKING:
     from matplotlib.axes import Axes
     from matplotlib.artist import Artist
     from matplotlib.figure import Figure, SubFigure
-    from seaborn._core.mappings import Semantic, SemanticMapping
     from seaborn._marks.base import Mark
     from seaborn._stats.base import Stat
     from seaborn._core.move import Move
     from seaborn._core.typing import DataSource, VariableSpec, OrderSpec
-
-
-# TODO remove this after updating the few places where it's used
-# as global definition of "settable properties"
-SEMANTICS = {
-    "color": ColorSemantic(),
-    "fillcolor": ColorSemantic(variable="fillcolor"),
-    "alpha": AlphaSemantic(),
-    "fillalpha": AlphaSemantic(variable="fillalpha"),
-    "edgecolor": ColorSemantic(variable="edgecolor"),
-    "edgealpha": AlphaSemantic(variable="edgealpha"),
-    "fill": BooleanSemantic(values=None, variable="fill"),
-    "marker": MarkerSemantic(),
-    "linestyle": LineStyleSemantic(),
-    "linewidth": LineWidthSemantic(),
-    "edgewidth": LineWidthSemantic(variable="edgewidth"),
-    "pointsize": PointSizeSemantic(),
-
-    # TODO we use this dictionary to access the standardize_value method
-    # in Mark.resolve, even though these are not really "semantics" as such
-    # (or are they?); we might want to introduce a different concept?
-    # Maybe call this VARIABLES and have e.g. ColorSemantic, BaselineVariable?
-    "width": WidthSemantic(),
-    "baseline": WidthSemantic(),  # TODO
-}
 
 
 class Plot:
@@ -75,7 +39,6 @@ class Plot:
 
     _data: PlotData
     _layers: list[dict]
-    _semantics: dict[str, Semantic]
     _scales: dict[str, ScaleSpec]
 
     _subplotspec: dict[str, Any]
@@ -104,9 +67,7 @@ class Plot:
 
         self._data = PlotData(data, variables)
         self._layers = []
-
         self._scales = {}
-        self._semantics = {}
 
         self._subplotspec = {}
         self._facetspec = {}
@@ -184,9 +145,7 @@ class Plot:
         new._data = self._data
 
         new._layers.extend(self._layers)
-
         new._scales.update(self._scales)
-        new._semantics.update(self._semantics)
 
         new._subplotspec.update(self._subplotspec)
         new._facetspec.update(self._facetspec)
@@ -398,13 +357,9 @@ class Plot:
     def scale(self, **scales: ScaleSpec) -> Plot:
 
         new = self._clone()
-
+        # TODO use update but double check it doesn't mutate parent of clone
         for var, scale in scales.items():
-
-            # TODO where do we do auto inference?
-
             new._scales[var] = scale
-
         return new
 
     def configure(
@@ -482,15 +437,13 @@ class Plot:
         self.plot(pyplot=True)
         plt.show(**kwargs)
 
-    def tell(self) -> Plot:
-        # TODO? Have this print a textual summary of how the plot is defined?
-        # Could be nice to stick in the middle of a pipeline for debugging
-        return self
+    # TODO? Have this print a textual summary of how the plot is defined?
+    # Could be nice to stick in the middle of a pipeline for debugging
+    # def tell(self) -> Plot:
+    #    return self
 
 
 class Plotter:
-
-    _mappings: dict[str, SemanticMapping]
 
     def __init__(self, pyplot=False):
 
@@ -777,11 +730,8 @@ class Plotter:
     ) -> None:
 
         default_grouping_vars = ["col", "row", "group"]  # TODO where best to define?
-
-        # TODO move width out of semantics and remove
-        # TODO should default order of semantics be fixed?
-        # Another option: use order they were defined in the spec?
-        semantics = [v for v in SEMANTICS if v != "width"]
+        # TODO or test that value is not Coordinate? Or test /for/ something?
+        grouping_properties = [v for v in PROPERTIES if v not in "xy"]
 
         data = layer["data"]
         mark = layer["mark"]
@@ -789,6 +739,9 @@ class Plotter:
         move = layer["move"]
 
         pair_variables = p._pairspec.get("structure", {})
+
+        # TODO should default order of properties be fixed?
+        # Another option: use order they were defined in the spec?
 
         full_df = data.frame
         for subplots, df, scales in self._generate_pairings(full_df, pair_variables):
@@ -812,7 +765,7 @@ class Plotter:
                         return scales[var].order
 
                 if stat is not None:
-                    grouping_vars = semantics + default_grouping_vars
+                    grouping_vars = grouping_properties + default_grouping_vars
                     if stat.group_by_orient:
                         grouping_vars.insert(0, orient)
                     groupby = GroupBy({var: get_order(var) for var in grouping_vars})
@@ -831,11 +784,12 @@ class Plotter:
                 if move is not None:
                     moves = move if isinstance(move, list) else [move]
                     for move in moves:
-                        semantic_groupers = getattr(move, "by", None) or semantics
-                        order = {
-                            var: get_order(var) for var in
-                            [orient] + semantic_groupers + default_grouping_vars
-                        }
+                        move_groupers = [
+                            orient,
+                            *(getattr(move, "by", None) or grouping_properties),
+                            *default_grouping_vars,
+                        ]
+                        order = {var: get_order(var) for var in move_groupers}
                         groupby = GroupBy(order)
                         df = move(df, groupby, orient)
 

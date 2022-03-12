@@ -11,7 +11,8 @@ from seaborn._core.rules import categorical_order
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from typing import Any, Callable, Literal, Tuple, List, Optional, Union
+    from typing import Any, Callable, Literal, Tuple, Optional, Union
+    from collections.abc import Sequence
     from matplotlib.scale import ScaleBase as MatplotlibScale
     from pandas import Series
     from numpy.typing import ArrayLike
@@ -22,7 +23,7 @@ if TYPE_CHECKING:
     ]
 
     # TODO standardize String / ArrayLike interface
-    Pipeline = List[Optional[Callable[[Union[Series, ArrayLike]], ArrayLike]]]
+    Pipeline = Sequence[Optional[Callable[[Union[Series, ArrayLike]], ArrayLike]]]
 
 
 class Scale:
@@ -76,6 +77,8 @@ class Scale:
 @dataclass
 class ScaleSpec:
 
+    values: str | list | dict | tuple | None = None
+
     ...
     # TODO have Scale define width (/height?) (using data?), so e.g. nominal scale sets
     # width=1, continuous scale sets width min(diff(unique(data))), etc.
@@ -90,7 +93,6 @@ class ScaleSpec:
 class Nominal(ScaleSpec):
     # Categorical (convert to strings), un-sortable
 
-    values: str | list | dict | None = None
     order: list | None = None
 
     def setup(
@@ -112,6 +114,10 @@ class Nominal(ScaleSpec):
         mpl_scale = CatScale(data.name)
         if axis is None:
             axis = PseudoAxis(mpl_scale)
+
+            # TODO Currently just used in non-Coordinate contexts, but should
+            # we use this to (A) set the padding we want for categorial plots
+            # and (B) allow the values parameter for a Coordinate to set xlim/ylim
             axis.set_view_interval(0, len(units_seed) - 1)
 
         # TODO array cast necessary to handle float/int mixture, which we need
@@ -165,9 +171,8 @@ class Continuous(ScaleSpec):
     transform: str | Transforms | None = None
     outside: Literal["keep", "drop", "clip"] = "keep"
 
-    def tick(self, count=None, *, every=None, at=None, format=None):
+    def tick(self, count=None, *, every=None, at=None, between=None, format=None):
 
-        # Other ideas ... between?
         # How to minor ticks? I am fine with minor ticks never getting labels
         # so it is just a matter or specifing a) you want them and b) how many?
         # Unlike with ticks, knowing how many minor ticks in each interval suffices.

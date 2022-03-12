@@ -12,7 +12,7 @@ from seaborn._core.scales import (
     Continuous,
 )
 from seaborn._core.properties import (
-    SizedProperty,
+    IntervalProperty,
     ObjectProperty,
     Coordinate,
     Alpha,
@@ -46,29 +46,29 @@ class TestContinuous:
         assert_series_equal(s(x), np.power(x, 3))
         assert_series_equal(s.invert_transform(s(x)), x)
 
-    def test_sized_defaults(self, x):
+    def test_interval_defaults(self, x):
 
-        s = Continuous().setup(x, SizedProperty())
+        s = Continuous().setup(x, IntervalProperty())
         assert_array_equal(s(x), [0, .25, 1])
-        # TODO assert_series_equal(s.invert_transform(s(x)), x)
+        # assert_series_equal(s.invert_transform(s(x)), x)
 
-    def test_sized_with_range(self, x):
+    def test_interval_with_range(self, x):
 
-        s = Continuous((1, 3)).setup(x, SizedProperty())
+        s = Continuous((1, 3)).setup(x, IntervalProperty())
         assert_array_equal(s(x), [1, 1.5, 3])
         # TODO assert_series_equal(s.invert_transform(s(x)), x)
 
-    def test_sized_with_norm(self, x):
+    def test_interval_with_norm(self, x):
 
-        s = Continuous(norm=(3, 7)).setup(x, SizedProperty())
+        s = Continuous(norm=(3, 7)).setup(x, IntervalProperty())
         assert_array_equal(s(x), [-.5, 0, 1.5])
         # TODO assert_series_equal(s.invert_transform(s(x)), x)
 
-    def test_sized_with_range_norm_and_transform(self, x):
+    def test_interval_with_range_norm_and_transform(self, x):
 
         x = pd.Series([1, 10, 100])
         # TODO param order?
-        s = Continuous((2, 3), (10, 100), "log").setup(x, SizedProperty())
+        s = Continuous((2, 3), (10, 100), "log").setup(x, IntervalProperty())
         assert_array_equal(s(x), [1, 2, 3])
         # TODO assert_series_equal(s.invert_transform(s(x)), x)
 
@@ -78,16 +78,22 @@ class TestContinuous:
         s = Continuous().setup(x, Color())
         assert_array_equal(s(x), cmap([0, .25, 1])[:, :3])  # FIXME RGBA
 
-    def test_color_with_named_range(self, x):
+    def test_color_named_values(self, x):
 
         cmap = color_palette("viridis", as_cmap=True)
         s = Continuous("viridis").setup(x, Color())
         assert_array_equal(s(x), cmap([0, .25, 1])[:, :3])  # FIXME RGBA
 
-    def test_color_with_tuple_range(self, x):
+    def test_color_tuple_values(self, x):
 
         cmap = color_palette("blend:b,g", as_cmap=True)
         s = Continuous(("b", "g")).setup(x, Color())
+        assert_array_equal(s(x), cmap([0, .25, 1])[:, :3])  # FIXME RGBA
+
+    def test_color_callable_values(self, x):
+
+        cmap = color_palette("light:r", as_cmap=True)
+        s = Continuous(cmap).setup(x, Color())
         assert_array_equal(s(x), cmap([0, .25, 1])[:, :3])  # FIXME RGBA
 
     def test_color_with_norm(self, x):
@@ -158,6 +164,16 @@ class TestNominal:
         f = ax.xaxis.get_major_formatter()
         assert f.format_ticks([0, 1, 2]) == [*order, ""]
 
+    def test_coordinate_axis_with_category_dtype(self, x):
+
+        order = ["b", "a", "d", "c"]
+        x = x.astype(pd.CategoricalDtype(order))
+        ax = mpl.figure.Figure().subplots()
+        s = Nominal().setup(x, Coordinate(), ax.xaxis)
+        assert_array_equal(s(x), np.array([1, 3, 0, 3], float))
+        f = ax.xaxis.get_major_formatter()
+        assert f.format_ticks([0, 1, 2, 3]) == order
+
     def test_coordinate_numeric_data(self, y):
 
         ax = mpl.figure.Figure().subplots()
@@ -223,6 +239,29 @@ class TestNominal:
         null = (np.nan, np.nan, np.nan)
         assert_array_equal(s(z), [c1, null, c2])
 
+    @pytest.mark.xfail(reason="Need to (re)implement alpha pass-through")
+    def test_color_alpha_in_palette(self, x):
+
+        cs = [(.2, .2, .3, .5), (.1, .2, .3, 1), (.5, .6, .2, 0)]
+        s = Nominal(cs).setup(x, Color())
+        assert_array_equal(s(x), [cs[1], cs[0], cs[2], cs[0]])
+
+    @pytest.mark.xfail(reason="Need to (re)implement alpha pass-through")
+    def test_color_mixture_of_alpha_nonalpha(self):
+
+        x = pd.Series(["a", "b"])
+        pal = [(1, 0, .5), (.5, .5, .5, .5)]
+        err = "Color scales cannot mix colors defined with and without alpha channels."
+        with pytest.raises(ValueError, match=err):
+            Nominal(pal).setup(x, Color())
+
+    def test_color_unknown_palette(self, x):
+
+        pal = "not_a_palette"
+        err = f"{pal} is not a valid palette name"
+        with pytest.raises(ValueError, match=err):
+            Nominal(pal).setup(x, Color())
+
     def test_object_defaults(self, x):
 
         class MockProperty(ObjectProperty):
@@ -283,6 +322,45 @@ class TestNominal:
     def test_fill_nunique_warning(self):
 
         x = pd.Series(["a", "b", "c", "a", "b"], name="x")
-        with pytest.warns(UserWarning, match="There are only two possible"):
+        with pytest.warns(UserWarning, match="The variable assigned to fill"):
             s = Nominal().setup(x, Fill())
         assert_array_equal(s(x), [True, False, True, True, False])
+
+    def test_interval_defaults(self, x):
+
+        class MockProperty(IntervalProperty):
+            _default_range = (1, 2)
+
+        s = Nominal().setup(x, MockProperty())
+        assert_array_equal(s(x), [2, 1.5, 1, 1.5])
+
+    def test_interval_tuple(self, x):
+
+        s = Nominal((1, 2)).setup(x, IntervalProperty())
+        assert_array_equal(s(x), [2, 1.5, 1, 1.5])
+
+    def test_interval_tuple_numeric(self, y):
+
+        s = Nominal((1, 2)).setup(y, IntervalProperty())
+        assert_array_equal(s(y), [1.5, 2, 1, 2])
+
+    def test_interval_list(self, x):
+
+        vs = [2, 5, 4]
+        s = Nominal(vs).setup(x, IntervalProperty())
+        assert_array_equal(s(x), [2, 5, 4, 5])
+
+    def test_interval_dict(self, x):
+
+        vs = {"a": 3, "b": 4, "c": 6}
+        s = Nominal(vs).setup(x, IntervalProperty())
+        assert_array_equal(s(x), [3, 6, 4, 6])
+
+    def test_interval_with_transform(self, x):
+
+        class MockProperty(IntervalProperty):
+            _forward = np.square
+            _inverse = np.sqrt
+
+        s = Nominal((2, 4)).setup(x, MockProperty())
+        assert_array_equal(s(x), [4, np.sqrt(10), 2, np.sqrt(10)])

@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 import matplotlib as mpl
 
-from seaborn._core.plot import SEMANTICS
+from seaborn._core.properties import PROPERTIES, Property
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
@@ -45,7 +45,7 @@ class Feature:
 
         """
         if depend is not None:
-            assert depend in SEMANTICS
+            assert depend in PROPERTIES
         if rc is not None:
             assert rc in mpl.rcParams
 
@@ -160,12 +160,12 @@ class Mark:
 
         """
         feature = self.features[name]
-        standardize = SEMANTICS[name]._standardize_value
+        prop = PROPERTIES.get(name, Property(name))
         directly_specified = not isinstance(feature, Feature)
         return_array = isinstance(data, pd.DataFrame)
 
         if directly_specified:
-            feature = standardize(feature)
+            feature = prop.standardize(feature)
             if return_array:
                 feature = np.array([feature] * len(data))
             return feature
@@ -185,7 +185,7 @@ class Mark:
             # e.g. set linewidth as a proportion of pointsize?
             return self._resolve(data, feature.depend)
 
-        default = standardize(feature.default)
+        default = prop.standardize(feature.default)
         if return_array:
             default = np.array([default] * len(data))
         return default
@@ -218,6 +218,8 @@ class Mark:
 
         def visible(x, axis=None):
             """Detect "invisible" colors to set alpha appropriately."""
+            # TODO First clause only needed to handle non-rgba arrays,
+            # which we are trying to handle upstream
             return np.array(x).dtype.kind != "f" or np.isfinite(x).all(axis)
 
         # Second check here catches vectors of strings with identity scale
