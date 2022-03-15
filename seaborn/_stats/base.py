@@ -8,6 +8,7 @@ if TYPE_CHECKING:
     from typing import Literal
     from pandas import DataFrame
     from seaborn._core.groupby import GroupBy
+    from seaborn._core.scales import Scale
 
 
 @dataclass
@@ -31,7 +32,11 @@ class Stat:
     group_by_orient: ClassVar[bool] = False
 
     def __call__(
-        self, data: DataFrame, groupby: GroupBy, orient: Literal["x", "y"]
+        self,
+        data: DataFrame,
+        groupby: GroupBy,
+        orient: Literal["x", "y"],
+        scales: dict[str, Scale],
     ) -> DataFrame:
         """Apply statistical transform to data subgroups and return combined result."""
         return data

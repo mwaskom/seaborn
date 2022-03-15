@@ -32,7 +32,7 @@ class TestAgg:
         ori = "x"
         df = df[["x", "y"]]
         gb = self.get_groupby(df, ori)
-        res = Agg()(df, gb, ori)
+        res = Agg()(df, gb, ori, {})
 
         expected = df.groupby("x", as_index=False)["y"].mean()
         assert_frame_equal(res, expected)
@@ -41,7 +41,7 @@ class TestAgg:
 
         ori = "x"
         gb = self.get_groupby(df, ori)
-        res = Agg()(df, gb, ori)
+        res = Agg()(df, gb, ori, {})
 
         grp = ["x", "color", "group"]
         index = pd.MultiIndex.from_product(
@@ -65,7 +65,7 @@ class TestAgg:
         ori = "x"
         df = df[["x", "y"]]
         gb = self.get_groupby(df, ori)
-        res = Agg(func)(df, gb, ori)
+        res = Agg(func)(df, gb, ori, {})
 
         expected = df.groupby("x", as_index=False)["y"].agg(func)
         assert_frame_equal(res, expected)

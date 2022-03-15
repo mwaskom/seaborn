@@ -30,7 +30,7 @@ class PolyFit(Stat):
     # TODO we should have a way of identifying the method that will be applied
     # and then only define __call__ on a base-class of stats with this pattern
 
-    def __call__(self, data, groupby, orient):
+    def __call__(self, data, groupby, orient, scales):
 
         return groupby.apply(data, self._fit_predict)
 

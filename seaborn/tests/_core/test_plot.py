@@ -250,7 +250,7 @@ class TestLayerAddition:
     def test_orient(self, arg, expected):
 
         class MockStatTrackOrient(Stat):
-            def __call__(self, data, groupby, orient):
+            def __call__(self, data, groupby, orient, scales):
                 self.orient_at_call = orient
                 return data
 
@@ -351,7 +351,7 @@ class TestAxisScaling:
         class Mean(Stat):
             group_by_orient = True
 
-            def __call__(self, data, groupby, orient):
+            def __call__(self, data, groupby, orient, scales):
                 other = {"x": "y", "y": "x"}[orient]
                 return groupby.agg(data, {other: "mean"})
 

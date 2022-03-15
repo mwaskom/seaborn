@@ -25,7 +25,7 @@ class TestPolyFit:
     def test_no_grouper(self, df):
 
         groupby = GroupBy(["group"])
-        res = PolyFit(order=1, gridsize=100)(df[["x", "y"]], groupby, "x")
+        res = PolyFit(order=1, gridsize=100)(df[["x", "y"]], groupby, "x", {})
 
         assert_array_equal(res.columns, ["x", "y"])
 
@@ -39,7 +39,7 @@ class TestPolyFit:
 
         groupby = GroupBy(["group"])
         gridsize = 50
-        res = PolyFit(gridsize=gridsize)(df, groupby, "x")
+        res = PolyFit(gridsize=gridsize)(df, groupby, "x", {})
 
         assert res.columns.to_list() == ["x", "y", "group"]
 

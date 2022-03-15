@@ -11,6 +11,7 @@ from seaborn._marks.bars import Bar  # noqa: F401
 from seaborn._stats.base import Stat  # noqa: F401
 from seaborn._stats.aggregation import Agg  # noqa: F401
 from seaborn._stats.regression import OLSFit, PolyFit  # noqa: F401
+from seaborn._stats.histograms import Hist  # noqa: F401
 
 from seaborn._core.moves import Jitter, Dodge  # noqa: F401
 

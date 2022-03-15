@@ -28,7 +28,7 @@ class Agg(Stat):
 
     group_by_orient: ClassVar[bool] = True
 
-    def __call__(self, data, groupby, orient):
+    def __call__(self, data, groupby, orient, scales):
 
         var = {"x": "y", "y": "x"}.get(orient)
         res = (
@@ -52,7 +52,7 @@ class Est(Stat):
 
     group_by_orient: ClassVar[bool] = True
 
-    def __call__(self, data, groupby, orient):
+    def __call__(self, data, groupby, orient, scales):
 
         # TODO port code over from _statistics
         ...
@@ -62,5 +62,5 @@ class Est(Stat):
 class Rolling(Stat):
     ...
 
-    def __call__(self, data, groupby, orient):
+    def __call__(self, data, groupby, orient, scales):
         ...
