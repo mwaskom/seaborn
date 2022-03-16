@@ -282,7 +282,7 @@ class EdgeWidth(IntervalProperty):
 
 class Alpha(IntervalProperty):
     """Opacity of the color values for an arbitrary mark."""
-    _default_range = .15, .95
+    _default_range = .3, .95
     # TODO validate / enforce that output is in [0, 1]
 
 
