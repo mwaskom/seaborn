@@ -236,6 +236,7 @@ class Plot:
         wrap: int | None = None,
         cartesian: bool = True,  # TODO bikeshed name, maybe cross?
         # TODO other existing PairGrid things like corner?
+        # TODO transpose, so that e.g. multiple y axes go across the columns
     ) -> Plot:
 
         # TODO Problems to solve:
@@ -722,11 +723,8 @@ class Plotter:
                 # scales that don't change other axis properties
                 set_scale_obj(subplot["ax"], axis, axis_scale.matplotlib_scale)
 
-    def _plot_layer(
-        self,
-        p: Plot,
-        layer: dict[str, Any],  # TODO layer should be a TypedDict
-    ) -> None:
+    def _plot_layer(self, p: Plot, layer: dict[str, Any]) -> None:
+        # TODO layer should be a TypedDict
 
         default_grouping_vars = ["col", "row", "group"]  # TODO where best to define?
         # TODO or test that value is not Coordinate? Or test /for/ something?
@@ -790,7 +788,7 @@ class Plotter:
                         groupby = GroupBy(order)
                         df = move(df, groupby, orient)
 
-                df = self._unscale_coords(subplots, df, orient)
+                df = self._unscale_coords(subplots, df)
 
                 grouping_vars = mark.grouping_vars + default_grouping_vars
                 split_generator = self._setup_split_generator(
@@ -803,11 +801,8 @@ class Plotter:
         with mark.use(self._scales, None):  # TODO will we ever need orient?
             self._update_legend_contents(mark, data)
 
-    def _scale_coords(
-        self,
-        subplots: list[dict],  # TODO retype with a SubplotSpec or similar
-        df: DataFrame,
-    ) -> DataFrame:
+    def _scale_coords(self, subplots: list[dict], df: DataFrame) -> DataFrame:
+        # TODO stricter type on subplots
 
         coord_cols = [c for c in df if re.match(r"^[xy]\D*$", c)]
         out_df = (
@@ -827,13 +822,8 @@ class Plotter:
 
         return out_df
 
-    def _unscale_coords(
-        self,
-        subplots: list[dict],  # TODO retype with a SubplotSpec or similar
-        df: DataFrame,
-        orient: Literal["x", "y"],
-    ) -> DataFrame:
-
+    def _unscale_coords(self, subplots: list[dict], df: DataFrame) -> DataFrame:
+        # TODO stricter types for subplots
         coord_cols = [c for c in df if re.match(r"^[xy]\D*$", c)]
         out_df = (
             df
@@ -871,12 +861,10 @@ class Plotter:
         return out_df
 
     def _generate_pairings(
-        self,
-        df: DataFrame,
-        pair_variables: dict,
+        self, df: DataFrame, pair_variables: dict,
     ) -> Generator[
         # TODO type scales dict more strictly when we get rid of original Scale
-        tuple[list[dict], DataFrame, dict], None, None
+        tuple[list[dict], DataFrame, dict[str, Scale]], None, None
     ]:
         # TODO retype return with SubplotSpec or similar
 
@@ -913,11 +901,7 @@ class Plotter:
 
             yield subplots, df.assign(**reassignments), scales
 
-    def _filter_subplot_data(
-        self,
-        df: DataFrame,
-        subplot: dict,
-    ) -> DataFrame:
+    def _filter_subplot_data(self, df: DataFrame, subplot: dict) -> DataFrame:
 
         keep_rows = pd.Series(True, df.index, dtype=bool)
         for dim in ["col", "row"]:
@@ -926,10 +910,7 @@ class Plotter:
         return df[keep_rows]
 
     def _setup_split_generator(
-        self,
-        grouping_vars: list[str],
-        df: DataFrame,
-        subplots: list[dict[str, Any]],
+        self, grouping_vars: list[str], df: DataFrame, subplots: list[dict[str, Any]],
     ) -> Callable[[], Generator]:
 
         allow_empty = False  # TODO will need to recreate previous categorical plots
