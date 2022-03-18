@@ -46,19 +46,22 @@ class MockMark(Mark):
         self.passed_keys = []
         self.passed_data = []
         self.passed_axes = []
-        self.passed_scales = []
+        self.passed_scales = None
+        self.passed_orient = None
         self.n_splits = 0
 
-    def _plot_split(self, keys, data, ax, kws):
+    def plot(self, split_gen, scales, orient):
 
-        self.n_splits += 1
-        self.passed_keys.append(keys)
-        self.passed_data.append(data)
-        self.passed_axes.append(ax)
+        for keys, data, ax in split_gen():
+            self.n_splits += 1
+            self.passed_keys.append(keys)
+            self.passed_data.append(data)
+            self.passed_axes.append(ax)
 
-        self.passed_scales.append(self.scales)
+        self.passed_scales = scales
+        self.passed_orient = orient
 
-    def _legend_artist(self, variables, value):
+    def _legend_artist(self, variables, value, scales):
 
         a = mpl.lines.Line2D([], [])
         a.variables = variables
@@ -478,8 +481,7 @@ class TestAxisScaling:
         x = y = [1, 2, 3, 4, 5]
         lw = pd.Series([.5, .1, .1, .9, 3])
         Plot(x=x, y=y, linewidth=lw).scale(linewidth=None).add(m).plot()
-        for scales in m.passed_scales:
-            assert_vector_equal(scales["linewidth"](lw), lw)
+        assert_vector_equal(m.passed_scales["linewidth"](lw), lw)
 
     # TODO where should RGB consistency be enforced?
     @pytest.mark.xfail(
@@ -492,8 +494,7 @@ class TestAxisScaling:
         c = ["C0", "C2", "C1"]
         Plot(x=x, y=y, color=c).scale(color=None).add(m).plot()
         expected = mpl.colors.to_rgba_array(c)[:, :3]
-        for scale in m.passed_scales:
-            assert_array_equal(scale["color"](c), expected)
+        assert_array_equal(m.passed_scales["color"](c), expected)
 
     def test_identity_mapping_color_tuples(self):
 
@@ -502,8 +503,7 @@ class TestAxisScaling:
         c = [(1, 0, 0), (0, 1, 0), (1, 0, 0)]
         Plot(x=x, y=y, color=c).scale(color=None).add(m).plot()
         expected = mpl.colors.to_rgba_array(c)[:, :3]
-        for scale in m.passed_scales:
-            assert_array_equal(scale["color"](c), expected)
+        assert_array_equal(m.passed_scales["color"](c), expected)
 
     @pytest.mark.xfail(
         reason="Need decision on what to do with scale defined for unused variable"

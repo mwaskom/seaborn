@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from typing import Union, Any
     from matplotlib.artist import Artist
+    from seaborn._core.scales import Scale
 
     MappableBool = Union[bool, Feature]
     MappableFloat = Union[float, Feature]
@@ -30,14 +31,14 @@ class Bar(Mark):
     width: MappableFloat = Feature(.8)  # TODO groups?
     baseline: MappableFloat = Feature(0)  # TODO *is* this mappable?
 
-    def resolve_features(self, data):
+    def resolve_features(self, data, scales):
 
         # TODO copying a lot from scatter
 
-        resolved = super().resolve_features(data)
+        resolved = super().resolve_features(data, scales)
 
-        resolved["facecolor"] = self._resolve_color(data)
-        resolved["edgecolor"] = self._resolve_color(data, "edge")
+        resolved["facecolor"] = self._resolve_color(data, "", scales)
+        resolved["edgecolor"] = self._resolve_color(data, "edge", scales)
 
         fc = resolved["facecolor"]
         if isinstance(fc, tuple):
@@ -48,14 +49,11 @@ class Bar(Mark):
 
         return resolved
 
-    def _plot_split(self, keys, data, ax, kws):
-
-        xys = data[["x", "y"]].to_numpy()
-        data = self.resolve_features(data)
+    def plot(self, split_gen, scales, orient):
 
         def coords_to_geometry(x, y, w, b):
             # TODO possible too slow with lots of bars (e.g. dense hist)
-            if self.orient == "x":
+            if orient == "x":
                 w, h = w, y - b
                 xy = x - w / 2, b
             else:
@@ -63,27 +61,37 @@ class Bar(Mark):
                 xy = b, y - h / 2
             return xy, w, h
 
-        bars = []
-        for i, (x, y) in enumerate(xys):
+        # TODO pass scales *into* split_gen?
+        for keys, data, ax in split_gen():
 
-            xy, w, h = coords_to_geometry(x, y, data["width"][i], data["baseline"][i])
-            bar = mpl.patches.Rectangle(
-                xy=xy,
-                width=w,
-                height=h,
-                facecolor=data["facecolor"][i],
-                edgecolor=data["edgecolor"][i],
-                linewidth=data["edgewidth"][i],
-            )
-            ax.add_patch(bar)
-            bars.append(bar)
+            xys = data[["x", "y"]].to_numpy()
+            data = self.resolve_features(data, scales)
 
-        # TODO add container object to ax, line ax.bar does
+            bars = []
+            for i, (x, y) in enumerate(xys):
 
-    def _legend_artist(self, variables: list[str], value: Any) -> Artist:
+                width, baseline = data["width"][i], data["baseline"][i]
+                xy, w, h = coords_to_geometry(x, y, width, baseline)
+
+                bar = mpl.patches.Rectangle(
+                    xy=xy,
+                    width=w,
+                    height=h,
+                    facecolor=data["facecolor"][i],
+                    edgecolor=data["edgecolor"][i],
+                    linewidth=data["edgewidth"][i],
+                )
+                ax.add_patch(bar)
+                bars.append(bar)
+
+            # TODO add container object to ax, line ax.bar does
+
+    def _legend_artist(
+        self, variables: list[str], value: Any, scales: dict[str, Scale],
+    ) -> Artist:
         # TODO return some sensible default?
         key = {v: value for v in variables}
-        key = self.resolve_features(key)
+        key = self.resolve_features(key, scales)
         artist = mpl.patches.Patch(
             facecolor=key["facecolor"],
             edgecolor=key["edgecolor"],

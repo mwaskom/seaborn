@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from typing import Any, Union
     from matplotlib.artist import Artist
+    from seaborn._core.scales import Scale
 
     MappableBool = Union[bool, Feature]
     MappableFloat = Union[float, Feature]
@@ -49,9 +50,9 @@ class Scatter(Mark):
             paths.append(path_cache[m])
         return paths
 
-    def resolve_features(self, data):
+    def resolve_features(self, data, scales):
 
-        resolved = super().resolve_features(data)
+        resolved = super().resolve_features(data, scales)
         resolved["path"] = self._resolve_paths(resolved)
 
         if isinstance(data, dict):  # TODO need a better way to check
@@ -62,8 +63,8 @@ class Scatter(Mark):
         resolved["fill"] = resolved["fill"] & filled_marker
         resolved["size"] = resolved["pointsize"] ** 2
 
-        resolved["edgecolor"] = self._resolve_color(data)
-        resolved["facecolor"] = self._resolve_color(data, "fill")
+        resolved["edgecolor"] = self._resolve_color(data, "", scales)
+        resolved["facecolor"] = self._resolve_color(data, "fill", scales)
 
         fc = resolved["facecolor"]
         if isinstance(fc, tuple):
@@ -74,35 +75,36 @@ class Scatter(Mark):
 
         return resolved
 
-    def _plot_split(self, keys, data, ax, kws):
+    def plot(self, split_gen, scales, orient):
 
         # TODO Not backcompat with allowed (but nonfunctional) univariate plots
         # (That should be solved upstream by defaulting to "" for unset x/y?)
         # (Be mindful of xmin/xmax, etc!)
 
-        kws = kws.copy()
+        # TODO pass scales *into* split_gen?
+        for keys, data, ax in split_gen():
 
-        offsets = np.column_stack([data["x"], data["y"]])
+            offsets = np.column_stack([data["x"], data["y"]])
+            data = self.resolve_features(data, scales)
 
-        # Maybe this can be out in plot()? How do we get coordinates?
-        data = self.resolve_features(data)
+            points = mpl.collections.PathCollection(
+                offsets=offsets,
+                paths=data["path"],
+                sizes=data["size"],
+                facecolors=data["facecolor"],
+                edgecolors=data["edgecolor"],
+                linewidths=data["linewidth"],
+                transOffset=ax.transData,
+                transform=mpl.transforms.IdentityTransform(),
+            )
+            ax.add_collection(points)
 
-        points = mpl.collections.PathCollection(
-            offsets=offsets,
-            paths=data["path"],
-            sizes=data["size"],
-            facecolors=data["facecolor"],
-            edgecolors=data["edgecolor"],
-            linewidths=data["linewidth"],
-            transOffset=ax.transData,
-            transform=mpl.transforms.IdentityTransform(),
-        )
-        ax.add_collection(points)
-
-    def _legend_artist(self, variables: list[str], value: Any) -> Artist:
+    def _legend_artist(
+        self, variables: list[str], value: Any, scales: dict[str, Scale],
+    ) -> Artist:
 
         key = {v: value for v in variables}
-        key = self.resolve_features(key)
+        key = self.resolve_features(key, scales)
 
         return mpl.collections.PathCollection(
             paths=[key["path"]],
@@ -127,11 +129,11 @@ class Dot(Scatter):  # TODO depend on ScatterBase or similar?
     # TODO edgewidth? or both, controlling filled/unfilled?
     linewidth: MappableFloat = Feature(.5)  # TODO rcParam?
 
-    def resolve_features(self, data):
+    def resolve_features(self, data, scales):
         # TODO this is maybe a little hacky, is there a better abstraction?
-        resolved = super().resolve_features(data)
-        resolved["edgecolor"] = self._resolve_color(data, "edge")
-        resolved["facecolor"] = self._resolve_color(data)
+        resolved = super().resolve_features(data, scales)
+        resolved["edgecolor"] = self._resolve_color(data, "edge", scales)
+        resolved["facecolor"] = self._resolve_color(data, "", scales)
 
         # TODO Could move this into a method but solving it at the root feels ideal
         fc = resolved["facecolor"]

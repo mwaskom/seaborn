@@ -1,5 +1,4 @@
 from __future__ import annotations
-from contextlib import contextmanager
 from dataclasses import dataclass, fields, field
 
 import numpy as np
@@ -14,7 +13,6 @@ if TYPE_CHECKING:
     from collections.abc import Generator
     from numpy import ndarray
     from pandas import DataFrame
-    from matplotlib.axes import Axes
     from matplotlib.artist import Artist
     from seaborn._core.mappings import RGBATuple
     from seaborn._core.scales import Scale
@@ -114,26 +112,14 @@ class Mark:
             )
         }
 
-    @contextmanager
-    def use(
-        self,
-        scales: dict[str, Scale],
-        orient: Literal["x", "y"]
-    ) -> Generator:
-        """Temporarily attach a mappings dict and orientation during plotting."""
-        # Having this allows us to simplify the number of objects that need to be
-        # passed all the way down to where plotting happens while not (permanently)
-        # mutating a Mark object that may persist in user-space.
-        self.scales = scales
-        self.orient = orient
-        try:
-            yield
-        finally:  # TODO change to else to make debugging easier
-            del self.scales, self.orient
+    def resolve_features(
+        self, data: DataFrame, scales: dict[str, Scale]
+    ) -> dict[str, Any]:
 
-    def resolve_features(self, data):
-
-        features = {name: self._resolve(data, name) for name in self.features}
+        features = {
+            name: self._resolve(data, name, scales)
+            for name in self.features
+        }
         return features
 
     # TODO make this method private? Would extender every need to call directly?
@@ -141,6 +127,7 @@ class Mark:
         self,
         data: DataFrame | dict[str, Any],
         name: str,
+        scales: dict[str, Scale] | None = None,
     ) -> Any:
         """Obtain default, specified, or mapped value for a named feature.
 
@@ -150,6 +137,7 @@ class Mark:
             Container with data values for features that will be semantically mapped.
         name :
             Identity of the feature / semantic.
+        TODO scales
 
         Returns
         -------
@@ -171,11 +159,11 @@ class Mark:
             return feature
 
         if name in data:
-            if name in self.scales:
-                feature = self.scales[name](data[name])
-            else:
-                # TODO Might this obviate the identity scale? Just don't add a mapping?
+            if scales is None or name not in scales:
+                # TODO Might this obviate the identity scale? Just don't add a scale?
                 feature = data[name]
+            else:
+                feature = scales[name](data[name])
             if return_array:
                 feature = np.asarray(feature)
             return feature
@@ -183,7 +171,7 @@ class Mark:
         if feature.depend is not None:
             # TODO add source_func or similar to transform the source value?
             # e.g. set linewidth as a proportion of pointsize?
-            return self._resolve(data, feature.depend)
+            return self._resolve(data, feature.depend, scales)
 
         default = prop.standardize(feature.default)
         if return_array:
@@ -194,6 +182,7 @@ class Mark:
         self,
         data: DataFrame | dict,
         prefix: str = "",
+        scales: dict[str, Scale] | None = None,
     ) -> RGBATuple | ndarray:
         """
         Obtain a default, specified, or mapped value for a color feature.
@@ -213,8 +202,8 @@ class Mark:
             Support "color", "fillcolor", etc.
 
         """
-        color = self._resolve(data, f"{prefix}color")
-        alpha = self._resolve(data, f"{prefix}alpha")
+        color = self._resolve(data, f"{prefix}color", scales)
+        alpha = self._resolve(data, f"{prefix}alpha", scales)
 
         def visible(x, axis=None):
             """Detect "invisible" colors to set alpha appropriately."""
@@ -274,38 +263,17 @@ class Mark:
         else:
             return "x"
 
-    def _plot(
+    def plot(
         self,
         split_generator: Callable[[], Generator],
+        scales: dict[str, Scale],
+        orient: Literal["x", "y"],
     ) -> None:
         """Main interface for creating a plot."""
-        axes_cache = set()
-        for keys, data, ax in split_generator():
-            kws = self.artist_kws.copy()
-            self._plot_split(keys, data, ax, kws)
-            axes_cache.add(ax)
+        raise NotImplementedError()
 
-        # TODO what is the best way to do this a minimal number of times?
-        # Probably can be moved out to Plot?
-        for ax in axes_cache:
-            ax.autoscale_view()
-
-        self._finish_plot()
-
-    def _plot_split(
-        self,
-        keys: dict[str, Any],
-        data: DataFrame,
-        ax: Axes,
-        kws: dict,
-    ) -> None:
-        """Method that plots specific subsets of data. Must be defined by subclass."""
-        raise NotImplementedError
-
-    def _finish_plot(self) -> None:
-        """Method that is called after each data subset has been plotted."""
-        pass
-
-    def _legend_artist(self, variables: list[str], value: Any) -> Artist:
+    def _legend_artist(
+        self, variables: list[str], value: Any, scales: dict[str, Scale],
+    ) -> Artist:
         # TODO return some sensible default?
         raise NotImplementedError

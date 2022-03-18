@@ -304,7 +304,7 @@ class TestNominal:
     def test_alpha_default(self, x):
 
         s = Nominal().setup(x, Alpha())
-        assert_array_equal(s(x), [.95, .55, .15, .55])
+        assert_array_equal(s(x), [.95, .625, .3, .625])
 
     def test_fill(self):
 

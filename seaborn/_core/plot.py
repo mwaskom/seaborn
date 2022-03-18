@@ -744,62 +744,59 @@ class Plotter:
         for subplots, df, scales in self._generate_pairings(full_df, pair_variables):
 
             orient = layer["orient"] or mark._infer_orient(scales)
+            df = self._scale_coords(subplots, df)
 
-            with (
-                mark.use(self._scales, orient)
-            ):
+            def get_order(var):
+                # Ignore order for x/y: they have been scaled to numeric indices,
+                # so any original order is no longer valid. Default ordering rules
+                # sorted unique numbers will correctly reconstruct intended order
+                # TODO This is tricky, make sure we add some tests for this
+                if var not in "xy" and var in scales:
+                    return scales[var].order
 
-                df = self._scale_coords(subplots, df)
+            if stat is not None:
+                grouping_vars = grouping_properties + default_grouping_vars
+                if stat.group_by_orient:
+                    grouping_vars.insert(0, orient)
+                groupby = GroupBy({var: get_order(var) for var in grouping_vars})
+                df = stat(df, groupby, orient, scales)
 
-                def get_order(var):
-                    # Ignore order for x/y: they have been scaled to numeric indices,
-                    # so any original order is no longer valid. Default ordering rules
-                    # sorted unique numbers will correctly reconstruct intended order
-                    # TODO This is tricky, make sure we add some tests for this
-                    if var not in "xy" and var in scales:
-                        return scales[var].order
+            # TODO get this from the Mark, otherwise scale by natural spacing?
+            # (But what about sparse categoricals? categorical always width/height=1
+            # Should default width/height be 1 and then get scaled by Mark.width?
+            # Also note tricky thing, width attached to mark does not get rescaled
+            # during dodge, but then it dominates during feature resolution
+            if "width" not in df:
+                df["width"] = 0.8
+            if "height" not in df:
+                df["height"] = 0.8
 
-                if stat is not None:
-                    grouping_vars = grouping_properties + default_grouping_vars
-                    if stat.group_by_orient:
-                        grouping_vars.insert(0, orient)
-                    groupby = GroupBy({var: get_order(var) for var in grouping_vars})
-                    df = stat(df, groupby, orient, scales)
+            if move is not None:
+                moves = move if isinstance(move, list) else [move]
+                for move in moves:
+                    move_groupers = [
+                        orient,
+                        *(getattr(move, "by", None) or grouping_properties),
+                        *default_grouping_vars,
+                    ]
+                    order = {var: get_order(var) for var in move_groupers}
+                    groupby = GroupBy(order)
+                    df = move(df, groupby, orient)
 
-                # TODO get this from the Mark, otherwise scale by natural spacing?
-                # (But what about sparse categoricals? categorical always width/height=1
-                # Should default width/height be 1 and then get scaled by Mark.width?
-                # Also note tricky thing, width attached to mark does not get rescaled
-                # during dodge, but then it dominates during feature resolution
-                if "width" not in df:
-                    df["width"] = 0.8
-                if "height" not in df:
-                    df["height"] = 0.8
+            df = self._unscale_coords(subplots, df)
 
-                if move is not None:
-                    moves = move if isinstance(move, list) else [move]
-                    for move in moves:
-                        move_groupers = [
-                            orient,
-                            *(getattr(move, "by", None) or grouping_properties),
-                            *default_grouping_vars,
-                        ]
-                        order = {var: get_order(var) for var in move_groupers}
-                        groupby = GroupBy(order)
-                        df = move(df, groupby, orient)
+            grouping_vars = mark.grouping_vars + default_grouping_vars
+            split_generator = self._setup_split_generator(
+                grouping_vars, df, subplots
+            )
 
-                df = self._unscale_coords(subplots, df)
+            mark.plot(split_generator, scales, orient)
 
-                grouping_vars = mark.grouping_vars + default_grouping_vars
-                split_generator = self._setup_split_generator(
-                    grouping_vars, df, subplots
-                )
+        # TODO is this the right place for this?
+        for sp in self._subplots:
+            sp["ax"].autoscale_view()
 
-                mark._plot(split_generator)
-
-        # TODO disabling while hacking on scales
-        with mark.use(self._scales, None):  # TODO will we ever need orient?
-            self._update_legend_contents(mark, data)
+        self._update_legend_contents(mark, data, scales)
 
     def _scale_coords(self, subplots: list[dict], df: DataFrame) -> DataFrame:
         # TODO stricter type on subplots
@@ -968,9 +965,11 @@ class Plotter:
 
         return split_generator
 
-    def _update_legend_contents(self, mark: Mark, data: PlotData) -> None:
+    def _update_legend_contents(
+        self, mark: Mark, data: PlotData, scales: dict[str, Scale]
+    ) -> None:
         """Add legend artists / labels for one layer in the plot."""
-        legend_vars = data.frame.columns.intersection(self._scales)
+        legend_vars = data.frame.columns.intersection(scales)
 
         # First pass: Identify the values that will be shown for each variable
         schema: list[tuple[
@@ -978,7 +977,7 @@ class Plotter:
         ]] = []
         schema = []
         for var in legend_vars:
-            var_legend = self._scales[var].legend
+            var_legend = scales[var].legend
             if var_legend is not None:
                 values, labels = var_legend
                 for (_, part_id), part_vars, _ in schema:
@@ -995,7 +994,7 @@ class Plotter:
         for key, variables, (values, labels) in schema:
             artists = []
             for val in values:
-                artists.append(mark._legend_artist(variables, val))
+                artists.append(mark._legend_artist(variables, val, scales))
             contents.append((key, artists, labels))
 
         self._legend_contents.extend(contents)

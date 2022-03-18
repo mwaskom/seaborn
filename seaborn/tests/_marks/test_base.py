@@ -90,12 +90,13 @@ class TestFeature:
             return np.array([values[x_i] for x_i in x])
 
         m = self.mark(linewidth=Feature(2))
-        m.scales = {"linewidth": f}
+        scales = {"linewidth": f}
 
-        assert m._resolve({"linewidth": "c"}, "linewidth") == 3
+        assert m._resolve({"linewidth": "c"}, "linewidth", scales) == 3
 
         df = pd.DataFrame({"linewidth": ["a", "b", "c"]})
-        assert_array_equal(m._resolve(df, "linewidth"), np.array([1, 2, 3], float))
+        expected = np.array([1, 2, 3], float)
+        assert_array_equal(m._resolve(df, "linewidth", scales), expected)
 
     def test_color(self):
 
@@ -114,9 +115,9 @@ class TestFeature:
         values = {"a": .2, "b": .5, "c": .8}
 
         m = self.mark(color=c, alpha=Feature(1))
-        m.scales = {"alpha": lambda s: np.array([values[s_i] for s_i in s])}
+        scales = {"alpha": lambda s: np.array([values[s_i] for s_i in s])}
 
-        assert m._resolve_color({"alpha": "b"}) == mpl.colors.to_rgba(c, .5)
+        assert m._resolve_color({"alpha": "b"}, "", scales) == mpl.colors.to_rgba(c, .5)
 
         df = pd.DataFrame({"alpha": list(values.keys())})
 
@@ -124,15 +125,15 @@ class TestFeature:
         expected = mpl.colors.to_rgba_array([c] * len(df))
         expected[:, 3] = list(values.values())
 
-        assert_array_equal(m._resolve_color(df), expected)
+        assert_array_equal(m._resolve_color(df, "", scales), expected)
 
     def test_color_scaled_as_strings(self):
 
         colors = ["C1", "dodgerblue", "#445566"]
         m = self.mark()
-        m.scales = {"color": lambda s: colors}
+        scales = {"color": lambda s: colors}
 
-        actual = m._resolve_color({"color": pd.Series(["a", "b", "c"])})
+        actual = m._resolve_color({"color": pd.Series(["a", "b", "c"])}, "", scales)
         expected = mpl.colors.to_rgba_array(colors)
         assert_array_equal(actual, expected)
 
