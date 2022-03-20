@@ -24,12 +24,12 @@ The classes should behave roughly in the style of scikit-learn.
   class instantiation.
 
 """
-from distutils.version import LooseVersion
 from numbers import Number
 import numpy as np
 import scipy as sp
 from scipy import stats
 
+from .external.version import Version
 from .utils import _check_argument
 
 
@@ -129,7 +129,7 @@ class KDE:
         """Fit the scipy kde while adding bw_adjust logic and version check."""
         fit_kws = {"bw_method": self.bw_method}
         if weights is not None:
-            if LooseVersion(sp.__version__) < "1.2.0":
+            if Version(sp.__version__) < Version("1.2.0"):
                 msg = "Weighted KDE requires scipy >= 1.2.0"
                 raise RuntimeError(msg)
             fit_kws["weights"] = weights

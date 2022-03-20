@@ -2,7 +2,6 @@ from itertools import product
 from inspect import signature
 import warnings
 from textwrap import dedent
-from distutils.version import LooseVersion
 
 import numpy as np
 import pandas as pd
@@ -11,6 +10,7 @@ import matplotlib.pyplot as plt
 
 from ._core import VectorPlotter, variable_type, categorical_order
 from . import utils
+from .external.version import Version
 from .utils import _check_argument, adjust_legend_subtitles, _draw_figure
 from .palettes import color_palette, blend_palette
 from ._decorators import _deprecate_positional_args
@@ -127,7 +127,7 @@ class Grid(_BaseGrid):
         blank_handle = mpl.patches.Patch(alpha=0, linewidth=0)
         handles = [legend_data.get(l, blank_handle) for l in label_order]
         title = self._hue_var if title is None else title
-        if LooseVersion(mpl.__version__) < LooseVersion("3.0"):
+        if Version(mpl.__version__) < Version("3.0"):
             try:
                 title_size = mpl.rcParams["axes.labelsize"] * .85
             except TypeError:  # labelsize is something like "large"

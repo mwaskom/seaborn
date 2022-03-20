@@ -1,10 +1,10 @@
 """Control plot style and scaling using the matplotlib rcParams interface."""
 import warnings
 import functools
-from distutils.version import LooseVersion
 import matplotlib as mpl
 from cycler import cycler
 from . import palettes
+from .external.version import Version
 
 
 __all__ = ["set_theme", "set", "reset_defaults", "reset_orig",
@@ -79,7 +79,7 @@ _context_keys = [
 
 ]
 
-if LooseVersion(mpl.__version__) >= "3.0":
+if Version(mpl.__version__) >= Version("3.0"):
     _context_keys.append("legend.title_fontsize")
 
 
@@ -397,7 +397,7 @@ def plotting_context(context=None, font_scale=1, rc=None):
 
         }
 
-        if LooseVersion(mpl.__version__) >= "3.0":
+        if Version(mpl.__version__) >= Version("3.0"):
             texts_base_context["legend.title_fontsize"] = 12
 
         base_context = {
