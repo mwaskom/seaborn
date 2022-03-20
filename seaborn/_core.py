@@ -1162,7 +1162,7 @@ class VectorPlotter:
                         if scale is True:
                             set_scale("log")
                         else:
-                            if Version(mpl.__version__) >= "3.3":
+                            if Version(mpl.__version__) >= Version("3.3"):
                                 set_scale("log", base=scale)
                             else:
                                 set_scale("log", **{f"base{axis}": scale})
