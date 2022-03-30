@@ -14,6 +14,7 @@ import matplotlib.pyplot as plt
 from matplotlib.cbook import normalize_kwargs
 
 from .external.version import Version
+from .external.appdirs import user_cache_dir
 
 __all__ = ["desaturate", "saturate", "set_hls_values", "move_legend",
            "despine", "get_dataset_names", "get_data_home", "load_dataset"]
@@ -520,8 +521,7 @@ def get_data_home(data_home=None):
 
     """
     if data_home is None:
-        data_home = os.environ.get('SEABORN_DATA',
-                                   os.path.join('~', 'seaborn-data'))
+        data_home = os.environ.get('SEABORN_DATA', user_cache_dir('seaborn'))
     data_home = os.path.expanduser(data_home)
     if not os.path.exists(data_home):
         os.makedirs(data_home)
