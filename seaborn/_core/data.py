@@ -41,7 +41,8 @@ class PlotData:
         Dictionary mapping plot variable names to unique data source identifiers.
 
     """
-    frame: DataFrame
+    frame: DataFrame | None
+    frames: dict[tuple[str], DataFrame]
     names: dict[str, str | None]
     ids: dict[str, str | int]
     source_data: DataSource
@@ -64,6 +65,8 @@ class PlotData:
 
     def __contains__(self, key: str) -> bool:
         """Boolean check on whether a variable is defined in this dataset."""
+        if self.frame is None:
+            return any(key in df for df in self.frames.values())
         return key in self.frame
 
     def join(

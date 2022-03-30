@@ -20,7 +20,12 @@ from seaborn._core.moves import Move
 from seaborn._marks.base import Mark
 from seaborn._stats.base import Stat
 
-assert_vector_equal = functools.partial(assert_series_equal, check_names=False)
+assert_vector_equal = functools.partial(
+    # TODO do we care about int/float dtype consistency?
+    # Eventually most variables become floats ... but does it matter when?
+    # (Or rather, does it matter if it happens too early?)
+    assert_series_equal, check_names=False, check_dtype=False,
+)
 
 
 def assert_gridspec_shape(ax, nrows=1, ncols=1):
@@ -179,7 +184,7 @@ class TestLayerAddition:
 
         p = Plot(long_df, x="x", y="y").add(MockMark()).plot()
         layer, = p._layers
-        assert_frame_equal(p._data.frame, layer["data"].frame)
+        assert_frame_equal(p._data.frame, layer["data"].frame, check_dtype=False)
 
     def test_with_new_variable_by_name(self, long_df):
 
@@ -222,7 +227,7 @@ class TestLayerAddition:
         p = Plot(long_df, x="x", y="y").add(MockMark(), y=None).plot()
         layer, = p._layers
         assert layer["data"].frame.columns.to_list() == ["x"]
-        assert_vector_equal(layer["data"].frame["x"], long_df["x"])
+        assert_vector_equal(layer["data"].frame["x"], long_df["x"], check_dtype=False)
 
     @pytest.mark.xfail(reason="Need decision on default stat")
     def test_stat_default(self):
@@ -268,6 +273,30 @@ class TestLayerAddition:
 
         assert s.orient_at_call == expected
         assert m.orient_at_call == expected
+
+    def test_variable_list(self, long_df):
+
+        p = Plot(long_df, x="x", y="y")
+        assert p._variables == ["x", "y"]
+
+        p = Plot(long_df).add(MockMark(), x="x", y="y")
+        assert p._variables == ["x", "y"]
+
+        p = Plot(long_df, y="x", color="a").add(MockMark(), x="y")
+        assert p._variables == ["y", "color", "x"]
+
+        p = Plot(long_df, x="x", y="y", color="a").add(MockMark(), color=None)
+        assert p._variables == ["x", "y", "color"]
+
+        p = (
+            Plot(long_df, x="x", y="y")
+            .add(MockMark(), color="a")
+            .add(MockMark(), alpha="s")
+        )
+        assert p._variables == ["x", "y", "color", "alpha"]
+
+        p = Plot(long_df, y="x").pair(x=["a", "b"])
+        assert p._variables == ["y", "x0", "x1"]
 
 
 class TestAxisScaling:
@@ -679,8 +708,8 @@ class TestPlotting:
         var_product = itertools.product(x, y)
 
         for data, (x_i, y_i) in zip(m.passed_data, var_product):
-            assert_vector_equal(data["x"], long_df[x_i])
-            assert_vector_equal(data["y"], long_df[y_i])
+            assert_vector_equal(data["x"], long_df[x_i].astype(float))
+            assert_vector_equal(data["y"], long_df[y_i].astype(float))
 
     def test_paired_one_dimension(self, long_df):
 

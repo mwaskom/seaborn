@@ -4,7 +4,6 @@ import io
 import re
 import itertools
 from collections import abc
-from distutils.version import LooseVersion
 
 import pandas as pd
 import matplotlib as mpl
@@ -16,19 +15,20 @@ from seaborn._core.rules import categorical_order
 from seaborn._core.scales import ScaleSpec, Scale
 from seaborn._core.subplots import Subplots
 from seaborn._core.groupby import GroupBy
-from seaborn._core.properties import PROPERTIES, Property
+from seaborn._core.properties import PROPERTIES, Property, Coordinate
+from seaborn.external.version import Version
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from typing import Literal, Any
     from collections.abc import Callable, Generator, Hashable
-    from pandas import DataFrame, Index
+    from pandas import DataFrame, Series, Index
     from matplotlib.axes import Axes
     from matplotlib.artist import Artist
     from matplotlib.figure import Figure, SubFigure
     from seaborn._marks.base import Mark
     from seaborn._stats.base import Stat
-    from seaborn._core.move import Move
+    from seaborn._core.moves import Move
     from seaborn._core.typing import DataSource, VariableSpec, OrderSpec
 
 
@@ -59,10 +59,12 @@ class Plot:
 
         if args:
             data, x, y = self._resolve_positionals(args, data, x, y)
-        if x is not None:
-            variables["x"] = x
+
+        # Build new dict with x/y rather than adding to preserve natural order
         if y is not None:
-            variables["y"] = y
+            variables = {"y": y, **variables}
+        if x is not None:
+            variables = {"x": x, **variables}
 
         self._data = PlotData(data, variables)
         self._layers = []
@@ -154,6 +156,18 @@ class Plot:
 
         return new
 
+    @property
+    def _variables(self) -> list[str]:
+
+        variables = (
+            list(self._data.frame)
+            + list(self._pairspec.get("variables", []))
+            + list(self._facetspec.get("variables", []))
+        )
+        for layer in self._layers:
+            variables.extend(c for c in layer["vars"] if c not in variables)
+        return variables
+
     def inplace(self, val: bool | None = None) -> Plot:
 
         # TODO I am not convinced we need this
@@ -222,8 +236,8 @@ class Plot:
             "mark": mark,
             "stat": stat,
             "move": move,
+            "vars": variables,
             "source": data,
-            "variables": variables,
             "orient": {"v": "x", "h": "y"}.get(orient, orient),  # type: ignore
         })
 
@@ -409,10 +423,18 @@ class Plot:
         # TODO if we have _target object, pyplot should be determined by whether it
         # is hooked into the pyplot state machine (how do we check?)
 
+        # TODO rather than attaching layers to the plotter, we should pass it around?
+        # That could prevent memory overloads given that the layers might have a few
+        # copies of dataframes included within them. Needs profiling.
+        # One downside is that it might make debugging a little harder.
+
         plotter = Plotter(pyplot=pyplot)
         plotter._setup_data(self)
         plotter._setup_figure(self)
+        plotter._transform_coords(self)
+        plotter._compute_stats(self)
         plotter._setup_scales(self)
+        # plotter._move_marks(self)  # TODO just do this as part of _plot_layer?
 
         for layer in plotter._layers:
             plotter._plot_layer(self, layer)
@@ -451,6 +473,7 @@ class Plotter:
         self._legend_contents: list[
             tuple[str, str | int], list[Artist], list[str],
         ] = []
+        self._scales: dict[str, Scale] = {}
 
     def save(self, fname, **kwargs) -> Plotter:
         # TODO type fname as string or path; handle Path objects if matplotlib can't
@@ -517,10 +540,11 @@ class Plotter:
         )
 
         # TODO join with mapping spec
-        self._layers = []
+        # TODO use TypedDict for _layers
+        self._layers: list[dict] = []
         for layer in p._layers:
             self._layers.append({
-                "data": self._data.join(layer.get("source"), layer.get("variables")),
+                "data": self._data.join(layer.get("source"), layer.get("vars")),
                 **layer,
             })
 
@@ -555,6 +579,8 @@ class Plotter:
                 label = next((name for name in names if name is not None), None)
                 ax.set(**{f"{axis}label": label})
 
+                # TODO there should be some override (in Plot.configure?) so that
+                # tick labels can be shown on interior shared axes
                 axis_obj = getattr(ax, f"{axis}axis")
                 visible_side = {"x": "bottom", "y": "left"}.get(axis)
                 show_axis_label = (
@@ -597,154 +623,258 @@ class Plotter:
                 title_text = ax.set_title(title)
                 title_text.set_visible(show_title)
 
-    def _setup_scales(self, p: Plot) -> None:
+    def _transform_coords(self, p: Plot) -> None:
 
-        # Identify all of the variables that will be used at some point in the plot
-        df = self._data.frame
-        variables = list(df)
-        for layer in self._layers:
-            variables.extend(c for c in layer["data"].frame if c not in variables)
+        for var in (v for v in p._variables if v[0] in "xy"):
 
-        # Catch cases where a variable is explicitly scaled but has no data,
-        # which is *likely* to be a user error (i.e. a typo or mis-specified plot).
-        # It's possible we'd want to allow the coordinate axes to be scaled without
-        # data, which would let the Plot interface be used to set up an empty figure.
-        # So we could revisit this if that seems useful.
-        undefined = set(p._scales) - set(variables)
-        if undefined:
-            err = f"No data found for variable(s) with explicit scale: {undefined}"
-            # TODO decide whether this is too strict. Maybe a warning?
-            # raise RuntimeError(err)  # FIXME:PlotSpecError
+            prop = Coordinate(var[0])
 
-        self._scales = {}
-
-        for var in variables:
-
-            # Get the data all the distinct appearances of this variable.
-            var_values = pd.concat([
-                df.get(var),
-                # Only use variables that are *added* at the layer-level
-                *(x["data"].frame.get(var)
-                  for x in self._layers if var in x["variables"])
-            ], axis=0, join="inner", ignore_index=True).rename(var)
-
-            # Determine whether this is an coordinate variable
-            # (i.e., x/y, paired x/y, or derivative such as xmax)
+            # Parse name to identify variable (x, y, xmin, etc.) and axis (x/y)
+            # TODO should we have xmin0/xmin1 or x0min/x1min?
             m = re.match(r"^(?P<prefix>(?P<axis>[x|y])\d*).*", var)
-            if m is None:
-                axis = None
-            else:
-                var = m.group("prefix")
-                axis = m.group("axis")
-
-            # TODO what is the best way to allow undefined properties?
-            # i.e. it is useful for extensions and non-graphical variables.
-            prop = PROPERTIES.get(var if axis is None else axis, Property())
-
-            if var in p._scales:
-                arg = p._scales[var]
-                if isinstance(arg, ScaleSpec):
-                    scale = arg
-                elif arg is None:
-                    # TODO what is the cleanest way to implement identity scale?
-                    # We don't really need a ScaleSpec, and Identity() will be
-                    # overloaded anyway (but maybe a general Identity object
-                    # that can be used as Scale/Mark/Stat/Move?)
-                    self._scales[var] = Scale([], [], None, "identity", None)
-                    continue
-                else:
-                    scale = prop.infer_scale(arg, var_values)
-            else:
-                scale = prop.default_scale(var_values)
-
-            # Initialize the data-dependent parameters of the scale
-            # Note that this returns a copy and does not mutate the original
-            # This dictionary is used by the semantic mappings
-            self._scales[var] = scale.setup(var_values, prop)
-
-            # The mappings are always shared across subplots, but the coordinate
-            # scaling can be independent (i.e. with share{x/y} = False).
-            # So the coordinate scale setup is more complicated, and the rest of the
-            # code is only used for coordinate scales.
-            if axis is None:
-                continue
+            prefix = m["prefix"]
+            axis = m["axis"]
 
             share_state = self._subplots.subplot_spec[f"share{axis}"]
 
             # Shared categorical axes are broken on matplotlib<3.4.0.
             # https://github.com/matplotlib/matplotlib/pull/18308
-            # This only affects us when sharing *paired* axes.
-            # While it would be possible to hack a workaround together,
-            # this is a novel/niche behavior, so we will just raise.
-            if LooseVersion(mpl.__version__) < "3.4.0":
+            # This only affects us when sharing *paired* axes. This is a novel/niche
+            # behavior, so we will raise rather than hack together a workaround.
+            if Version(mpl.__version__) < Version("3.4.0"):
                 paired_axis = axis in p._pairspec
-                cat_scale = self._scales[var].scale_type == "categorical"
+                cat_scale = self._scales[var].scale_type in ["nominal", "ordinal"]
                 ok_dim = {"x": "col", "y": "row"}[axis]
                 shared_axes = share_state not in [False, "none", ok_dim]
                 if paired_axis and cat_scale and shared_axes:
                     err = "Sharing paired categorical axes requires matplotlib>=3.4.0"
                     raise RuntimeError(err)
 
-            # Loop over every subplot and assign its scale if it's not in the axis cache
-            for subplot in self._subplots:
+            # Concatenate layers, using only the relevant coordinate and faceting vars,
+            # This is unnecessarily wasteful, as layer data will often be redundant.
+            # But figuring out the minimal amount we need is more complicated.
+            cols = [var, "col", "row"]
+            # TODO basically copied from _setup_scales, and very clumsy
+            layer_values = [self._data.frame.filter(cols)]
+            for layer in self._layers:
+                if layer["data"].frame is None:
+                    for df in layer["data"].frames.values():
+                        layer_values.append(df.filter(cols))
+                else:
+                    layer_values.append(layer["data"].frame.filter(cols))
 
-                # This happens when Plot.pair was used
-                if subplot[axis] != var:
-                    continue
+            if layer_values:
+                var_df = pd.concat(layer_values, ignore_index=True)
+            else:
+                var_df = pd.DataFrame(columns=cols)
 
+            # Now loop through each subplot, deriving the relevant seed data to setup
+            # the scale (so that axis units / categories are initialized properly)
+            # And then scale the data in each layer.
+            scale = self._get_scale(p, prefix, prop, var_df[var])
+            subplots = [sp for sp in self._subplots if sp[axis] == prefix]
+
+            # Setup the scale on all of the data and plug it into self._scales
+            # We do this because by the time we do self._setup_scales, coordinate data
+            # will have been converted to floats already, so scale inference fails
+            self._scales[var] = scale.setup(var_df[var], prop)
+
+            # Set up an empty series to receive the transformed values.
+            # We need this to handle piecemeal tranforms of categories -> floats.
+            transformed_data = [
+                pd.Series(dtype=float, index=layer["data"].frame.index, name=var)
+                for layer in self._layers
+            ]
+
+            for subplot in subplots:
                 axis_obj = getattr(subplot["ax"], f"{axis}axis")
 
-                # Now we need to identify the right data rows to setup the scale with
-
-                # The all-shared case is easiest, every subplot sees all the data
                 if share_state in [True, "all"]:
-                    axis_scale = scale.setup(var_values, prop, axis=axis_obj)
-                    subplot[f"{axis}scale"] = axis_scale
-
-                # Otherwise, we need to setup separate scales for different subplots
+                    # The all-shared case is easiest, every subplot sees all the data
+                    seed_values = var_df[var]
                 else:
-                    # Fully independent axes are easy, we use each subplot's data
+                    # Otherwise, we need to setup separate scales for different subplots
                     if share_state in [False, "none"]:
-                        subplot_data = self._filter_subplot_data(df, subplot)
-                    # Sharing within row/col is more complicated
-                    elif share_state in df:
-                        subplot_data = df[df[share_state] == subplot[share_state]]
+                        # Fully independent axes are also easy: use each subplot's data
+                        idx = self._get_subplot_index(var_df, subplot)
+                    elif share_state in var_df:
+                        # Sharing within row/col is more complicated
+                        use_rows = var_df[share_state] == subplot[share_state]
+                        idx = var_df.index[use_rows]
                     else:
-                        subplot_data = df
+                        # This configuration doesn't make much sense, but it's fine
+                        idx = var_df.index
 
-                    # Same operation as above, but using the reduced dataset
-                    subplot_values = var_values.loc[subplot_data.index]
-                    axis_scale = scale.setup(subplot_values, prop, axis=axis_obj)
-                    subplot[f"{axis}scale"] = axis_scale
+                    seed_values = var_df.loc[idx, var]
 
-                # TODO should this just happen within scale.setup?
-                # Currently it is disabling the formatters that we set in scale.setup
-                # The other option (using currently) is to define custom matplotlib
-                # scales that don't change other axis properties
-                set_scale_obj(subplot["ax"], axis, axis_scale.matplotlib_scale)
+                transform = scale.setup(seed_values, prop, axis=axis_obj)
+
+                for layer, new_series in zip(self._layers, transformed_data):
+                    layer_df = layer["data"].frame
+                    if var in layer_df:
+                        idx = self._get_subplot_index(layer_df, subplot)
+                        new_series.loc[idx] = transform(layer_df.loc[idx, var])
+
+                # TODO need decision about whether to do this or modify axis transform
+                set_scale_obj(subplot["ax"], axis, transform.matplotlib_scale)
+
+            # Now the transformed data series are complete, set update the layer data
+            for layer, new_series in zip(self._layers, transformed_data):
+                layer_df = layer["data"].frame
+                if var in layer_df:
+                    layer_df[var] = new_series
+
+    def _compute_stats(self, spec: Plot) -> None:
+
+        grouping_vars = [v for v in PROPERTIES if v not in "xy"]
+        grouping_vars += ["col", "row", "group"]
+
+        pair_vars = spec._pairspec.get("structure", {})
+
+        for layer in self._layers:
+
+            data = layer["data"]
+            mark = layer["mark"]
+            stat = layer["stat"]
+
+            if stat is None:
+                continue
+
+            iter_axes = itertools.product(*[
+                pair_vars.get(axis, [axis]) for axis in "xy"
+            ])
+
+            old = data.frame
+
+            if pair_vars:
+                data.frames = {}
+                data.frame = None
+
+            for coord_vars in iter_axes:
+
+                pairings = "xy", coord_vars
+
+                df = old.copy()
+                for axis, var in zip(*pairings):
+                    if axis != var:
+                        df = df.rename(columns={var: axis})
+                        drop_cols = [x for x in df if re.match(rf"{axis}\d+", x)]
+                        df = df.drop(drop_cols, axis=1)
+
+                # TODO with the refactor we haven't set up scales at this point
+                # But we need them to determine orient in ambiguous cases
+                # It feels cumbersome to be doing this repeatedly, but I am not
+                # sure if it is cleaner to make piecemeal additions to self._scales
+                scales = {}
+                for axis in "xy":
+                    if axis in df:
+                        prop = Coordinate(axis)
+                        scale = self._get_scale(spec, axis, prop, df[axis])
+                        scales[axis] = scale.setup(df[axis], prop)
+                orient = layer["orient"] or mark._infer_orient(scales)
+
+                if stat.group_by_orient:
+                    grouper = [orient, *grouping_vars]
+                else:
+                    grouper = grouping_vars
+                groupby = GroupBy(grouper)
+                res = stat(df, groupby, orient, scales)
+
+                if pair_vars:
+                    data.frames[coord_vars] = res
+                else:
+                    data.frame = res
+
+    def _get_scale(
+        self, spec: Plot, var: str, prop: Property, values: Series
+    ) -> ScaleSpec:
+
+        if var in spec._scales:
+            arg = spec._scales[var]
+            if isinstance(arg, ScaleSpec):
+                scale = arg
+            elif arg is None:
+                # TODO identity scale
+                scale = arg
+            else:
+                scale = prop.infer_scale(arg, values)
+        else:
+            scale = prop.default_scale(values)
+
+        return scale
+
+    def _setup_scales(self, p: Plot) -> None:
+
+        layers = self._layers
+
+        # Identify all of the variables that will be used at some point in the plot
+        variables = set()
+        for layer in layers:
+            if layer["data"].frame is None:
+                for df in layer["data"].frames.values():
+                    variables.update(df.columns)
+            else:
+                variables.update(layer["data"].frame.columns)
+
+        for var in variables:
+
+            if var in self._scales:
+                # Scales for coordinate variables added in _transform_coords
+                continue
+
+            # Get the data all the distinct appearances of this variable.
+            if var in self._data:
+                parts = [self._data.frame.get(var)]
+            else:
+                parts = []
+                for layer in layers:
+                    if layer["data"].frame is None:
+                        for df in layer["data"].frames.values():
+                            parts.append(df.get(var))
+                    else:
+                        parts.append(layer["data"].frame.get(var))
+            var_values = pd.concat(
+                parts, axis=0, join="inner", ignore_index=True
+            ).rename(var)
+
+            # Determine whether this is an coordinate variable
+            # (i.e., x/y, paired x/y, or derivative such as xmax)
+            m = re.match(r"^(?P<prefix>(?P<axis>x|y)\d*).*", var)
+            if m is None:
+                axis = None
+            else:
+                var = m["prefix"]
+                axis = m["axis"]
+
+            prop = PROPERTIES.get(var if axis is None else axis, Property())
+            scale = self._get_scale(p, var, prop, var_values)
+
+            # Initialize the data-dependent parameters of the scale
+            # Note that this returns a copy and does not mutate the original
+            # This dictionary is used by the semantic mappings
+            if scale is None:
+                # TODO what is the cleanest way to implement identity scale?
+                # We don't really need a ScaleSpec, and Identity() will be
+                # overloaded anyway (but maybe a general Identity object
+                # that can be used as Scale/Mark/Stat/Move?)
+                self._scales[var] = Scale([], [], None, "identity", None)
+            else:
+                self._scales[var] = scale.setup(var_values, prop)
 
     def _plot_layer(self, p: Plot, layer: dict[str, Any]) -> None:
-        # TODO layer should be a TypedDict
-
-        default_grouping_vars = ["col", "row", "group"]  # TODO where best to define?
-        # TODO or test that value is not Coordinate? Or test /for/ something?
-        grouping_properties = [v for v in PROPERTIES if v not in "xy"]
 
         data = layer["data"]
         mark = layer["mark"]
-        stat = layer["stat"]
         move = layer["move"]
+
+        default_grouping_vars = ["col", "row", "group"]  # TODO where best to define?
+        grouping_properties = [v for v in PROPERTIES if v not in "xy"]
 
         pair_variables = p._pairspec.get("structure", {})
 
-        # TODO should default order of properties be fixed?
-        # Another option: use order they were defined in the spec?
-
-        full_df = data.frame
-        for subplots, df, scales in self._generate_pairings(full_df, pair_variables):
+        for subplots, df, scales in self._generate_pairings(data, pair_variables):
 
             orient = layer["orient"] or mark._infer_orient(scales)
-            df = self._scale_coords(subplots, df)
 
             def get_order(var):
                 # Ignore order for x/y: they have been scaled to numeric indices,
@@ -753,13 +883,6 @@ class Plotter:
                 # TODO This is tricky, make sure we add some tests for this
                 if var not in "xy" and var in scales:
                     return scales[var].order
-
-            if stat is not None:
-                grouping_vars = grouping_properties + default_grouping_vars
-                if stat.group_by_orient:
-                    grouping_vars.insert(0, orient)
-                groupby = GroupBy({var: get_order(var) for var in grouping_vars})
-                df = stat(df, groupby, orient, scales)
 
             # TODO get this from the Mark, otherwise scale by natural spacing?
             # (But what about sparse categoricals? categorical always width/height=1
@@ -783,6 +906,8 @@ class Plotter:
                     groupby = GroupBy(order)
                     df = move(df, groupby, orient)
 
+            # TODO unscale coords using axes transforms rather than scales?
+            # Also need to handle derivatives (min/max/width, etc)
             df = self._unscale_coords(subplots, df)
 
             grouping_vars = mark.grouping_vars + default_grouping_vars
@@ -796,6 +921,7 @@ class Plotter:
         for sp in self._subplots:
             sp["ax"].autoscale_view()
 
+        # TODO update to use data.frames
         self._update_legend_contents(mark, data, scales)
 
     def _scale_coords(self, subplots: list[dict], df: DataFrame) -> DataFrame:
@@ -833,15 +959,10 @@ class Plotter:
             subplot_df = self._filter_subplot_data(df, subplot)
             axes_df = subplot_df[coord_cols]
             for var, values in axes_df.items():
-                scale = subplot.get(f"{var[0]}scale", None)
-                if scale is not None:
-                    # TODO this is a hack to work around issue encountered while
-                    # prototyping the Hist stat. We need to solve scales for coordinate
-                    # variables defined as part of the stat transform
-                    # Plan is to merge as is and then do a bigger refactor to
-                    # the timing / logic of scale setup
-                    values = scale.invert_transform(values)
-                out_df.loc[values.index, var] = values
+                axis = getattr(subplot["ax"], f"{var[0]}axis")
+                # TODO see https://github.com/matplotlib/matplotlib/issues/22713
+                inverted = axis.get_transform().inverted().transform(values)
+                out_df.loc[values.index, var] = inverted
 
             """ TODO commenting this out to merge Hist work before bigger refactor
             if "width" in subplot_df:
@@ -858,52 +979,68 @@ class Plotter:
         return out_df
 
     def _generate_pairings(
-        self, df: DataFrame, pair_variables: dict,
+        self, data: PlotData, pair_variables: dict,
     ) -> Generator[
-        # TODO type scales dict more strictly when we get rid of original Scale
         tuple[list[dict], DataFrame, dict[str, Scale]], None, None
     ]:
         # TODO retype return with SubplotSpec or similar
 
-        if not pair_variables:
-            # TODO casting to list because subplots below is a list
-            # Maybe a cleaner way to do this?
-            yield list(self._subplots), df, self._scales
-            return
-
         iter_axes = itertools.product(*[
-            pair_variables.get(axis, [None]) for axis in "xy"
+            pair_variables.get(axis, [axis]) for axis in "xy"
         ])
 
         for x, y in iter_axes:
 
             subplots = []
             for sub in self._subplots:
-                if (x is None or sub["x"] == x) and (y is None or sub["y"] == y):
+                if (sub["x"] == x) and (sub["y"] == y):
                     subplots.append(sub)
 
-            reassignments = {}
-            for axis, prefix in zip("xy", [x, y]):
-                if prefix is not None:
-                    reassignments.update({
-                        # Complex regex business to support e.g. x0max
-                        re.sub(rf"^{prefix}(.*)$", rf"{axis}\1", col): df[col]
-                        for col in df if col.startswith(prefix)
-                    })
+            if data.frame is None:
+                out_df = data.frames[(x, y)].copy()
+            elif not pair_variables:
+                out_df = data.frame.copy()
+            else:
+                if data.frame is None:
+                    out_df = data.frames[(x, y)].copy()
+                else:
+                    out_df = data.frame.copy()
 
             scales = self._scales.copy()
-            scales.update(
-                {new: self._scales[old.name] for new, old in reassignments.items()}
-            )
+            if x in out_df:
+                scales["x"] = self._scales[x]
+            if y in out_df:
+                scales["y"] = self._scales[y]
 
-            yield subplots, df.assign(**reassignments), scales
+            for axis, var in zip("xy", (x, y)):
+                if axis != var:
+                    out_df = out_df.rename(columns={var: axis})
+                    cols = [col for col in out_df if re.match(rf"{axis}\d+", col)]
+                    out_df = out_df.drop(cols, axis=1)
 
-    def _filter_subplot_data(self, df: DataFrame, subplot: dict) -> DataFrame:
+            yield subplots, out_df, scales
+
+    def _get_subplot_index(self, df: DataFrame, subplot: dict) -> DataFrame:
+
+        dims = df.columns.intersection(["col", "row"])
+        if dims.empty:
+            return df.index
 
         keep_rows = pd.Series(True, df.index, dtype=bool)
-        for dim in ["col", "row"]:
-            if dim in df:
-                keep_rows &= df[dim] == subplot[dim]
+        for dim in dims:
+            keep_rows &= df[dim] == subplot[dim]
+        return df.index[keep_rows]
+
+    def _filter_subplot_data(self, df: DataFrame, subplot: dict) -> DataFrame:
+        # TODO being replaced by above function
+
+        dims = df.columns.intersection(["col", "row"])
+        if dims.empty:
+            return df
+
+        keep_rows = pd.Series(True, df.index, dtype=bool)
+        for dim in dims:
+            keep_rows &= df[dim] == subplot[dim]
         return df[keep_rows]
 
     def _setup_split_generator(
@@ -969,7 +1106,12 @@ class Plotter:
         self, mark: Mark, data: PlotData, scales: dict[str, Scale]
     ) -> None:
         """Add legend artists / labels for one layer in the plot."""
-        legend_vars = data.frame.columns.intersection(scales)
+        if data.frame is None:
+            legend_vars = set()
+            for frame in data.frames.values():
+                legend_vars.update(frame.columns.intersection(scales))
+        else:
+            legend_vars = data.frame.columns.intersection(scales)
 
         # First pass: Identify the values that will be shown for each variable
         schema: list[tuple[

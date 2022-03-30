@@ -21,9 +21,13 @@ class PolyFit(Stat):
 
         x = data["x"]
         y = data["y"]
-        xx = np.linspace(x.min(), x.max(), self.gridsize)
-        p = np.polyfit(x, y, self.order)
-        yy = np.polyval(p, xx)
+        if x.nunique() <= self.order:
+            # TODO warn?
+            xx = yy = []
+        else:
+            p = np.polyfit(x, y, self.order)
+            xx = np.linspace(x.min(), x.max(), self.gridsize)
+            yy = np.polyval(p, xx)
 
         return pd.DataFrame(dict(x=xx, y=yy))
 

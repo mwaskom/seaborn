@@ -225,6 +225,7 @@ class Continuous(ScaleSpec):
             prop.get_mapping(new, data)
         ]
 
+        # TODO if we invert using axis.get_transform(), we don't need this
         inverse_pipe = [inverse]
 
         # TODO make legend optional on per-plot basis with ScaleSpec parameter?
