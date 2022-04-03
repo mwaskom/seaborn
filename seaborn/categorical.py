@@ -9,10 +9,10 @@ from matplotlib.collections import PatchCollection
 import matplotlib.patches as Patches
 import matplotlib.pyplot as plt
 import warnings
-from distutils.version import LooseVersion
 
 from ._core import variable_type, infer_orient, categorical_order
 from . import utils
+from .external.version import Version
 from .utils import remove_na
 from .algorithms import bootstrap
 from .palettes import color_palette, husl_palette, light_palette, dark_palette
@@ -378,7 +378,7 @@ class _CategoricalPlotter(object):
         if self.hue_names is not None:
             leg = ax.legend(loc="best", title=self.hue_title)
             if self.hue_title is not None:
-                if LooseVersion(mpl.__version__) < "3.0":
+                if Version(mpl.__version__) < Version("3.0"):
                     # Old Matplotlib has no legend title size rcparam
                     try:
                         title_size = mpl.rcParams["axes.labelsize"] * .85

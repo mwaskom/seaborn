@@ -4,7 +4,7 @@ on:
   push:
     branches: [master, v0.11]
   pull_request:
-    branches: master
+    branches: [master, v0.11]
 
 env:
   NB_KERNEL: python

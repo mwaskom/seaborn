@@ -1,5 +1,4 @@
 import itertools
-from distutils.version import LooseVersion
 
 import numpy as np
 import matplotlib as mpl
@@ -32,11 +31,34 @@ from ..distributions import (
     kdeplot,
     rugplot,
 )
+from ..external.version import Version
 from ..axisgrid import FacetGrid
 from .._testing import (
     assert_plots_equal,
     assert_legends_equal,
+    assert_colors_equal,
 )
+
+
+def get_contour_coords(c):
+    """Provide compatability for change in contour artist type in mpl3.5."""
+    # See https://github.com/matplotlib/matplotlib/issues/20906
+    if isinstance(c, mpl.collections.LineCollection):
+        return c.get_segments()
+    elif isinstance(c, mpl.collections.PathCollection):
+        return [p.vertices[:np.argmax(p.codes) + 1] for p in c.get_paths()]
+
+
+def get_contour_color(c):
+    """Provide compatability for change in contour artist type in mpl3.5."""
+    # See https://github.com/matplotlib/matplotlib/issues/20906
+    if isinstance(c, mpl.collections.LineCollection):
+        return c.get_color()
+    elif isinstance(c, mpl.collections.PathCollection):
+        if c.get_facecolor().size:
+            return c.get_facecolor()
+        else:
+            return c.get_edgecolor()
 
 
 class TestDistPlot(object):
@@ -532,7 +554,7 @@ class TestKDEPlotUnivariate:
         assert to_rgba(artist_color) == to_rgba(color, alpha)
 
     @pytest.mark.skipif(
-        LooseVersion(np.__version__) < "1.17",
+        Version(np.__version__) < Version("1.17"),
         reason="Histogram over datetime64 requires numpy >= 1.17",
     )
     def test_datetime_scale(self, long_df):
@@ -736,7 +758,7 @@ class TestKDEPlotUnivariate:
         assert integral == pytest.approx(1)
 
     @pytest.mark.skipif(
-        LooseVersion(scipy.__version__) < "1.2.0",
+        Version(scipy.__version__) < Version("1.2.0"),
         reason="Weights require scipy >= 1.2.0"
     )
     def test_weights(self):
@@ -803,7 +825,10 @@ class TestKDEPlotUnivariate:
         for label, level in zip(legend_labels, order):
             assert label.get_text() == level
 
-        legend_artists = ax.legend_.findobj(mpl.lines.Line2D)[::2]
+        legend_artists = ax.legend_.findobj(mpl.lines.Line2D)
+        if Version(mpl.__version__) < Version("3.5.0b0"):
+            # https://github.com/matplotlib/matplotlib/pull/20699
+            legend_artists = legend_artists[::2]
         palette = color_palette()
         for artist, color in zip(legend_artists, palette):
             assert to_rgb(artist.get_color()) == to_rgb(color)
@@ -854,7 +879,7 @@ class TestKDEPlotBivariate:
             f, ax = plt.subplots()
             kdeplot(data=long_df, x="x", y="y", hue="c", fill=fill)
             for c in ax.collections:
-                if fill:
+                if fill or Version(mpl.__version__) >= Version("3.5.0b0"):
                     assert isinstance(c, mpl.collections.PathCollection)
                 else:
                     assert isinstance(c, mpl.collections.LineCollection)
@@ -870,8 +895,8 @@ class TestKDEPlotBivariate:
         kdeplot(x=x, y=y, hue=hue, common_norm=True, ax=ax1)
         kdeplot(x=x, y=y, hue=hue, common_norm=False, ax=ax2)
 
-        n_seg_1 = sum([len(c.get_segments()) > 0 for c in ax1.collections])
-        n_seg_2 = sum([len(c.get_segments()) > 0 for c in ax2.collections])
+        n_seg_1 = sum([len(get_contour_coords(c)) > 0 for c in ax1.collections])
+        n_seg_2 = sum([len(get_contour_coords(c)) > 0 for c in ax2.collections])
         assert n_seg_2 > n_seg_1
 
     def test_log_scale(self, rng):
@@ -898,7 +923,7 @@ class TestKDEPlotBivariate:
         ax2.contour(10 ** xx, yy, density, levels=levels)
 
         for c1, c2 in zip(ax1.collections, ax2.collections):
-            assert_array_equal(c1.get_segments(), c2.get_segments())
+            assert_array_equal(get_contour_coords(c1), get_contour_coords(c2))
 
     def test_bandwidth(self, rng):
 
@@ -911,14 +936,14 @@ class TestKDEPlotBivariate:
         kdeplot(x=x, y=y, bw_adjust=2, ax=ax2)
 
         for c1, c2 in zip(ax1.collections, ax2.collections):
-            seg1, seg2 = c1.get_segments(), c2.get_segments()
+            seg1, seg2 = get_contour_coords(c1), get_contour_coords(c2)
             if seg1 + seg2:
                 x1 = seg1[0][:, 0]
                 x2 = seg2[0][:, 0]
                 assert np.abs(x2).max() > np.abs(x1).max()
 
     @pytest.mark.skipif(
-        LooseVersion(scipy.__version__) < "1.2.0",
+        Version(scipy.__version__) < Version("1.2.0"),
         reason="Weights require scipy >= 1.2.0"
     )
     def test_weights(self, rng):
@@ -936,9 +961,9 @@ class TestKDEPlotBivariate:
         kdeplot(x=x, y=y, hue=hue, weights=weights, ax=ax2)
 
         for c1, c2 in zip(ax1.collections, ax2.collections):
-            if c1.get_segments() and c2.get_segments():
-                seg1 = np.concatenate(c1.get_segments(), axis=0)
-                seg2 = np.concatenate(c2.get_segments(), axis=0)
+            if get_contour_coords(c1) and get_contour_coords(c2):
+                seg1 = np.concatenate(get_contour_coords(c1), axis=0)
+                seg2 = np.concatenate(get_contour_coords(c2), axis=0)
                 assert not np.array_equal(seg1, seg2)
 
     def test_hue_ignores_cmap(self, long_df):
@@ -946,8 +971,7 @@ class TestKDEPlotBivariate:
         with pytest.warns(UserWarning, match="cmap parameter ignored"):
             ax = kdeplot(data=long_df, x="x", y="y", hue="c", cmap="viridis")
 
-        color = tuple(ax.collections[0].get_color().squeeze())
-        assert color == mpl.colors.colorConverter.to_rgba("C0")
+        assert_colors_equal(get_contour_color(ax.collections[0]), "C0")
 
     def test_contour_line_colors(self, long_df):
 
@@ -955,7 +979,7 @@ class TestKDEPlotBivariate:
         ax = kdeplot(data=long_df, x="x", y="y", color=color)
 
         for c in ax.collections:
-            assert tuple(c.get_color().squeeze()) == color
+            assert_colors_equal(get_contour_color(c), color)
 
     def test_contour_fill_colors(self, long_df):
 
@@ -987,7 +1011,7 @@ class TestKDEPlotBivariate:
         kdeplot(**plot_kws, levels=np.linspace(thresh, 1, n), ax=ax2)
 
         for c1, c2 in zip(ax1.collections, ax2.collections):
-            assert_array_equal(c1.get_segments(), c2.get_segments())
+            assert_array_equal(get_contour_coords(c1), get_contour_coords(c2))
 
         with pytest.raises(ValueError):
             kdeplot(**plot_kws, levels=[0, 1, 2])
@@ -999,7 +1023,7 @@ class TestKDEPlotBivariate:
         kdeplot(**plot_kws, levels=n, thresh=0, ax=ax2)
 
         for c1, c2 in zip(ax1.collections, ax2.collections):
-            assert_array_equal(c1.get_segments(), c2.get_segments())
+            assert_array_equal(get_contour_coords(c1), get_contour_coords(c2))
         for c1, c2 in zip(ax1.collections, ax2.collections):
             assert_array_equal(c1.get_facecolors(), c2.get_facecolors())
 
@@ -1332,7 +1356,7 @@ class TestHistPlotUnivariate:
             histplot(long_df, x="s", discrete=True, element="poly")
 
     @pytest.mark.skipif(
-        LooseVersion(np.__version__) < "1.17",
+        Version(np.__version__) < Version("1.17"),
         reason="Histogram over datetime64 requires numpy >= 1.17",
     )
     def test_datetime_scale(self, long_df):
@@ -2109,7 +2133,7 @@ class TestDisPlot:
     )
     def test_versus_single_kdeplot(self, long_df, kwargs):
 
-        if "weights" in kwargs and LooseVersion(scipy.__version__) < "1.2":
+        if "weights" in kwargs and Version(scipy.__version__) < Version("1.2"):
             pytest.skip("Weights require scipy >= 1.2")
 
         ax = kdeplot(data=long_df, **kwargs)
@@ -2161,15 +2185,16 @@ class TestDisPlot:
     )
     def test_with_rug(self, long_df, kwargs):
 
-        ax = rugplot(data=long_df, **kwargs)
+        ax = plt.figure().subplots()
+        histplot(data=long_df, **kwargs, ax=ax)
+        rugplot(data=long_df, **kwargs, ax=ax)
+
         g = displot(long_df, rug=True, **kwargs)
-        g.ax.patches = []
 
         assert_plots_equal(ax, g.ax, labels=False)
 
         long_df["_"] = "_"
         g2 = displot(long_df, col="_", rug=True, **kwargs)
-        g2.ax.patches = []
 
         assert_plots_equal(ax, g2.ax, labels=False)
 
@@ -2246,13 +2271,13 @@ class TestDisPlot:
         z = [0] * 80 + [1] * 20
 
         g = displot(x=x, y=y, col=z, kind="kde", levels=10)
-        l1 = sum(bool(c.get_segments()) for c in g.axes.flat[0].collections)
-        l2 = sum(bool(c.get_segments()) for c in g.axes.flat[1].collections)
+        l1 = sum(bool(get_contour_coords(c)) for c in g.axes.flat[0].collections)
+        l2 = sum(bool(get_contour_coords(c)) for c in g.axes.flat[1].collections)
         assert l1 > l2
 
         g = displot(x=x, y=y, col=z, kind="kde", levels=10, common_norm=False)
-        l1 = sum(bool(c.get_segments()) for c in g.axes.flat[0].collections)
-        l2 = sum(bool(c.get_segments()) for c in g.axes.flat[1].collections)
+        l1 = sum(bool(get_contour_coords(c)) for c in g.axes.flat[0].collections)
+        l2 = sum(bool(get_contour_coords(c)) for c in g.axes.flat[1].collections)
         assert l1 == l2
 
     def test_bivariate_hist_norm(self, rng):

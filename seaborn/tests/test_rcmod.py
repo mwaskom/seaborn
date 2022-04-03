@@ -1,5 +1,3 @@
-from distutils.version import LooseVersion
-
 import pytest
 import numpy as np
 import matplotlib as mpl
@@ -8,6 +6,7 @@ import numpy.testing as npt
 
 from .. import rcmod, palettes, utils
 from ..conftest import has_verdana
+from ..external.version import Version
 
 
 class RCParamTester:
@@ -184,7 +183,7 @@ class TestPlottingContext(RCParamTester):
         font_keys = ["axes.labelsize", "axes.titlesize", "legend.fontsize",
                      "xtick.labelsize", "ytick.labelsize", "font.size"]
 
-        if LooseVersion(mpl.__version__) >= "3.0":
+        if Version(mpl.__version__) >= Version("3.0"):
             font_keys.append("legend.title_fontsize")
 
         for k in font_keys:
