@@ -314,10 +314,15 @@ class TestAxisScaling:
         p = Plot().add(MockMark(), x=["a", "b", "c"]).plot()
         assert p._scales["x"]("b") == 1
 
-    def test_inference_concatenates(self):
+    def test_inference_joins(self):
 
-        p = Plot(x=[1, 2, 3]).add(MockMark(), x=["a", "b", "c"]).plot()
-        assert p._scales["x"]("b") == 4
+        p = (
+            Plot(y=pd.Series([1, 2, 3, 4]))
+            .add(MockMark(), x=pd.Series([1, 2]))
+            .add(MockMark(), x=pd.Series(["a", "b"], index=[2, 3]))
+            .plot()
+        )
+        assert p._scales["x"]("a") == 2
 
     def test_inferred_categorical_converter(self):
 
@@ -340,13 +345,6 @@ class TestAxisScaling:
         ...
 
     def test_faceted_log_scale(self):
-
-        p = Plot(y=[1, 10]).facet(col=["a", "b"]).scale(y="log").plot()
-        for ax in p._figure.axes:
-            xfm = ax.yaxis.get_transform().transform
-            assert_array_equal(xfm([1, 10, 100]), [0, 1, 2])
-
-    def test_faceted_log_scale_without_data(self):
 
         p = Plot(y=[1, 10]).facet(col=["a", "b"]).scale(y="log").plot()
         for ax in p._figure.axes:
@@ -430,7 +428,7 @@ class TestAxisScaling:
     def test_facet_categories(self):
 
         m = MockMark()
-        p = Plot(x=["a", "b", "a", "c"], col=["x", "x", "y", "y"]).add(m).plot()
+        p = Plot(x=["a", "b", "a", "c"]).facet(col=["x", "x", "y", "y"]).add(m).plot()
         ax1, ax2 = p._figure.axes
         assert len(ax1.get_xticks()) == 3
         assert len(ax2.get_xticks()) == 3
@@ -441,7 +439,8 @@ class TestAxisScaling:
 
         m = MockMark()
         p = (
-            Plot(x=["a", "b", "a", "c"], col=["x", "x", "y", "y"])
+            Plot(x=["a", "b", "a", "c"])
+            .facet(col=["x", "x", "y", "y"])
             .configure(sharex=False)
             .add(m)
             .plot()
@@ -461,10 +460,14 @@ class TestAxisScaling:
             ("e", 2, 2), ("e", 2, 1),
         ]
         df = pd.DataFrame(data, columns=["x", "row", "col"]).assign(y=1)
-        variables = {k: k for k in df}
-
         m = MockMark()
-        p = Plot(df, **variables).add(m).configure(sharex="row").plot()
+        p = (
+            Plot(df, x="x")
+            .facet(row="row", col="col")
+            .add(m)
+            .configure(sharex="row")
+            .plot()
+        )
 
         axs = p._figure.axes
         for ax in axs:
@@ -501,6 +504,7 @@ class TestAxisScaling:
 
         for ax in p._figure.axes:
             assert ax.get_xticks() == [0, 1, 2]
+        print(m.passed_data)
         assert_vector_equal(m.passed_data[0]["x"], pd.Series([0., 1.], [0, 1]))
         assert_vector_equal(m.passed_data[1]["x"], pd.Series([0., 2.], [0, 1]))
 
@@ -585,19 +589,22 @@ class TestPlotting:
             for var, col in v.items():
                 assert_vector_equal(m.passed_data[0][var], long_df[col])
 
-    def check_splits_single_var(self, plot, mark, split_var, split_keys):
+    def check_splits_single_var(
+        self, data, mark, data_vars, split_var, split_col, split_keys
+    ):
 
         assert mark.n_splits == len(split_keys)
         assert mark.passed_keys == [{split_var: key} for key in split_keys]
 
-        full_data = plot._data.frame
         for i, key in enumerate(split_keys):
 
-            split_data = full_data[full_data[split_var] == key]
-            for col in split_data:
-                assert_series_equal(mark.passed_data[i][col], split_data[col])
+            split_data = data[data[split_col] == key]
+            for var, col in data_vars.items():
+                assert_array_equal(mark.passed_data[i][var], split_data[col])
 
-    def check_splits_multi_vars(self, plot, mark, split_vars, split_keys):
+    def check_splits_multi_vars(
+        self, data, mark, data_vars, split_vars, split_cols, split_keys
+    ):
 
         assert mark.n_splits == np.prod([len(ks) for ks in split_keys])
 
@@ -607,15 +614,14 @@ class TestPlotting:
         ]
         assert mark.passed_keys == expected_keys
 
-        full_data = plot._data.frame
         for i, keys in enumerate(itertools.product(*split_keys)):
 
-            use_rows = pd.Series(True, full_data.index)
-            for var, key in zip(split_vars, keys):
-                use_rows &= full_data[var] == key
-            split_data = full_data[use_rows]
-            for col in split_data:
-                assert_series_equal(mark.passed_data[i][col], split_data[col])
+            use_rows = pd.Series(True, data.index)
+            for var, col, key in zip(split_vars, split_cols, keys):
+                use_rows &= data[col] == key
+            split_data = data[use_rows]
+            for var, col in data_vars.items():
+                assert_array_equal(mark.passed_data[i][var], split_data[col])
 
     @pytest.mark.parametrize(
         "split_var", [
@@ -625,51 +631,62 @@ class TestPlotting:
     def test_one_grouping_variable(self, long_df, split_var):
 
         split_col = "a"
+        data_vars = {"x": "f", "y": "z", split_var: split_col}
 
         m = MockMark()
-        p = Plot(long_df, x="f", y="z", **{split_var: split_col}).add(m).plot()
+        p = Plot(long_df, **data_vars).add(m).plot()
 
         split_keys = categorical_order(long_df[split_col])
         sub, *_ = p._subplots
         assert m.passed_axes == [sub["ax"] for _ in split_keys]
-        self.check_splits_single_var(p, m, split_var, split_keys)
+        self.check_splits_single_var(
+            long_df, m, data_vars, split_var, split_col, split_keys
+        )
 
     def test_two_grouping_variables(self, long_df):
 
         split_vars = ["color", "group"]
         split_cols = ["a", "b"]
-        variables = {var: col for var, col in zip(split_vars, split_cols)}
+        data_vars = {"y": "z", **{var: col for var, col in zip(split_vars, split_cols)}}
 
         m = MockMark()
-        p = Plot(long_df, y="z", **variables).add(m).plot()
+        p = Plot(long_df, **data_vars).add(m).plot()
 
         split_keys = [categorical_order(long_df[col]) for col in split_cols]
         sub, *_ = p._subplots
         assert m.passed_axes == [
             sub["ax"] for _ in itertools.product(*split_keys)
         ]
-        self.check_splits_multi_vars(p, m, split_vars, split_keys)
+        self.check_splits_multi_vars(
+            long_df, m, data_vars, split_vars, split_cols, split_keys
+        )
 
     def test_facets_no_subgroups(self, long_df):
 
         split_var = "col"
         split_col = "b"
+        data_vars = {"x": "f", "y": "z"}
 
         m = MockMark()
-        p = Plot(long_df, x="f", y="z", **{split_var: split_col}).add(m).plot()
+        p = Plot(long_df, **data_vars).facet(**{split_var: split_col}).add(m).plot()
 
         split_keys = categorical_order(long_df[split_col])
         assert m.passed_axes == list(p._figure.axes)
-        self.check_splits_single_var(p, m, split_var, split_keys)
+        self.check_splits_single_var(
+            long_df, m, data_vars, split_var, split_col, split_keys
+        )
 
     def test_facets_one_subgroup(self, long_df):
 
-        facet_var, facet_col = "col", "a"
-        group_var, group_col = "group", "b"
+        facet_var, facet_col = fx = "col", "a"
+        group_var, group_col = gx = "group", "b"
+        split_vars, split_cols = zip(*[fx, gx])
+        data_vars = {"x": "f", "y": "z", group_var: group_col}
 
         m = MockMark()
         p = (
-            Plot(long_df, x="f", y="z", **{group_var: group_col, facet_var: facet_col})
+            Plot(long_df, **data_vars)
+            .facet(**{facet_var: facet_col})
             .add(m)
             .plot()
         )
@@ -680,7 +697,9 @@ class TestPlotting:
             for ax in list(p._figure.axes)
             for _ in categorical_order(long_df[group_col])
         ]
-        self.check_splits_multi_vars(p, m, [facet_var, group_var], split_keys)
+        self.check_splits_multi_vars(
+            long_df, m, data_vars, split_vars, split_cols, split_keys
+        )
 
     def test_layer_specific_facet_disabling(self, long_df):
 
@@ -688,7 +707,7 @@ class TestPlotting:
         row_var = "a"
 
         m = MockMark()
-        p = Plot(long_df, **axis_vars, row=row_var).add(m, row=None).plot()
+        p = Plot(long_df, **axis_vars).facet(row=row_var).add(m, row=None).plot()
 
         col_levels = categorical_order(long_df[row_var])
         assert len(p._figure.axes) == len(col_levels)
@@ -747,7 +766,7 @@ class TestPlotting:
         row = "c"
 
         m = MockMark()
-        Plot(long_df, y=y, row=row).pair(x).add(m).plot()
+        Plot(long_df, y=y).facet(row=row).pair(x).add(m).plot()
 
         facets = categorical_order(long_df[row])
         var_product = itertools.product(x, facets)
@@ -791,7 +810,7 @@ class TestPlotting:
 
         assert p1 is not p2
         assert not p1._layers
-        assert not p1._facetspec
+        assert not p1._facet_spec
 
     def test_inplace(self, long_df):
 
@@ -977,38 +996,19 @@ class TestFacetInterface:
             assert subplot["ax"].get_title() == f"{key} = {level}"
             assert_gridspec_shape(subplot["ax"], **{f"n{dim}s": len(order)})
 
-    def test_1d_from_init(self, long_df, dim):
-
-        key = "a"
-        p = Plot(long_df, **{dim: key})
-        self.check_facet_results_1d(p, long_df, dim, key)
-
-    def test_1d_from_facet(self, long_df, dim):
+    def test_1d(self, long_df, dim):
 
         key = "a"
         p = Plot(long_df).facet(**{dim: key})
         self.check_facet_results_1d(p, long_df, dim, key)
 
-    def test_1d_from_init_as_vector(self, long_df, dim):
-
-        key = "a"
-        p = Plot(long_df, **{dim: long_df[key]})
-        self.check_facet_results_1d(p, long_df, dim, key)
-
-    def test_1d_from_facet_as_vector(self, long_df, dim):
+    def test_1d_as_vector(self, long_df, dim):
 
         key = "a"
         p = Plot(long_df).facet(**{dim: long_df[key]})
         self.check_facet_results_1d(p, long_df, dim, key)
 
-    def test_1d_from_init_with_order(self, long_df, dim, reorder):
-
-        key = "a"
-        order = reorder(categorical_order(long_df[key]))
-        p = Plot(long_df, **{dim: key}).facet(order={dim: order})
-        self.check_facet_results_1d(p, long_df, dim, key, order)
-
-    def test_1d_from_facet_with_order(self, long_df, dim, reorder):
+    def test_1d_with_order(self, long_df, dim, reorder):
 
         key = "a"
         order = reorder(categorical_order(long_df[key]))
@@ -1035,25 +1035,13 @@ class TestFacetInterface:
                 subplot["axes"], len(levels["row"]), len(levels["col"])
             )
 
-    def test_2d_from_init(self, long_df):
-
-        variables = {"row": "a", "col": "c"}
-        p = Plot(long_df, **variables)
-        self.check_facet_results_2d(p, long_df, variables)
-
-    def test_2d_from_facet(self, long_df):
+    def test_2d(self, long_df):
 
         variables = {"row": "a", "col": "c"}
         p = Plot(long_df).facet(**variables)
         self.check_facet_results_2d(p, long_df, variables)
 
-    def test_2d_from_init_and_facet(self, long_df):
-
-        variables = {"row": "a", "col": "c"}
-        p = Plot(long_df, row=variables["row"]).facet(col=variables["col"])
-        self.check_facet_results_2d(p, long_df, variables)
-
-    def test_2d_from_facet_with_order(self, long_df, reorder):
+    def test_2d_with_order(self, long_df, reorder):
 
         variables = {"row": "a", "col": "c"}
         order = {
@@ -1184,15 +1172,15 @@ class TestPairInterface:
 
         p1 = Plot(long_df).pair()
         for axis in "xy":
-            assert p1._pairspec[axis] == all_cols.to_list()
+            assert p1._pair_spec[axis] == all_cols.to_list()
 
         p2 = Plot(long_df, y="y").pair()
-        assert all_cols.difference(p2._pairspec["x"]).item() == "y"
-        assert "y" not in p2._pairspec
+        assert all_cols.difference(p2._pair_spec["x"]).item() == "y"
+        assert "y" not in p2._pair_spec
 
         p3 = Plot(long_df, color="a").pair()
         for axis in "xy":
-            assert all_cols.difference(p3._pairspec[axis]).item() == "a"
+            assert all_cols.difference(p3._pair_spec[axis]).item() == "a"
 
         with pytest.raises(RuntimeError, match="You must pass `data`"):
             Plot().pair()
@@ -1220,7 +1208,7 @@ class TestPairInterface:
     def test_error_on_facet_overlap(self, long_df, variables):
 
         facet_dim, pair_axis = variables
-        p = Plot(long_df, **{facet_dim[:3]: "a"}).pair(**{pair_axis: ["x", "y"]})
+        p = Plot(long_df).facet(**{facet_dim[:3]: "a"}).pair(**{pair_axis: ["x", "y"]})
         expected = f"Cannot facet the {facet_dim} while pairing on `{pair_axis}`."
         with pytest.raises(RuntimeError, match=expected):
             p.plot()
@@ -1230,8 +1218,8 @@ class TestPairInterface:
 
         facet_dim, pair_axis = variables
         p = (
-            Plot(long_df, **{facet_dim[:3]: "a"})
-            .facet(wrap=2)
+            Plot(long_df)
+            .facet(wrap=2, **{facet_dim[:3]: "a"})
             .pair(**{pair_axis: ["x", "y"]})
         )
         expected = f"Cannot wrap the {facet_dim} while pairing on `{pair_axis}``."

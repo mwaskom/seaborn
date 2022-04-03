@@ -3,55 +3,55 @@ import itertools
 import numpy as np
 import pytest
 
-from seaborn._core.data import PlotData
 from seaborn._core.subplots import Subplots
-from seaborn._core.rules import categorical_order
 
 
 class TestSpecificationChecks:
 
-    def test_both_facets_and_wrap(self, long_df):
+    def test_both_facets_and_wrap(self):
 
-        data = PlotData(long_df, dict(col="a", row="b"))
         err = "Cannot wrap facets when specifying both `col` and `row`."
+        facet_spec = {"wrap": 3, "variables": {"col": "a", "row": "b"}}
         with pytest.raises(RuntimeError, match=err):
-            Subplots({}, {"wrap": 3}, {}, data)
+            Subplots({}, facet_spec, {})
 
-    def test_cartesian_xy_pairing_and_wrap(self, long_df):
+    def test_cartesian_xy_pairing_and_wrap(self):
 
-        data = PlotData(long_df, {})
         err = "Cannot wrap subplots when pairing on both `x` and `y`."
+        pair_spec = {"x": ["a", "b"], "y": ["y", "z"], "wrap": 3}
         with pytest.raises(RuntimeError, match=err):
-            Subplots({}, {}, {"x": ["x", "y"], "y": ["a", "b"], "wrap": 3}, data)
+            Subplots({}, {}, pair_spec)
 
-    def test_col_facets_and_x_pairing(self, long_df):
+    def test_col_facets_and_x_pairing(self):
 
-        data = PlotData(long_df, {"col": "a"})
         err = "Cannot facet the columns while pairing on `x`."
+        facet_spec = {"variables": {"col": "a"}}
+        pair_spec = {"x": ["x", "y"]}
         with pytest.raises(RuntimeError, match=err):
-            Subplots({}, {}, {"x": ["x", "y"]}, data)
+            Subplots({}, facet_spec, pair_spec)
 
-    def test_wrapped_columns_and_y_pairing(self, long_df):
+    def test_wrapped_columns_and_y_pairing(self):
 
-        data = PlotData(long_df, {"col": "a"})
         err = "Cannot wrap the columns while pairing on `y`."
+        facet_spec = {"variables": {"col": "a"}, "wrap": 2}
+        pair_spec = {"y": ["x", "y"]}
         with pytest.raises(RuntimeError, match=err):
-            Subplots({}, {"wrap": 2}, {"y": ["x", "y"]}, data)
+            Subplots({}, facet_spec, pair_spec)
 
-    def test_wrapped_x_pairing_and_facetd_rows(self, long_df):
+    def test_wrapped_x_pairing_and_facetd_rows(self):
 
-        data = PlotData(long_df, {"row": "a"})
         err = "Cannot wrap the columns while faceting the rows."
+        facet_spec = {"variables": {"row": "a"}}
+        pair_spec = {"x": ["x", "y"], "wrap": 2}
         with pytest.raises(RuntimeError, match=err):
-            Subplots({}, {}, {"x": ["x", "y", "z"], "wrap": 2}, data)
+            Subplots({}, facet_spec, pair_spec)
 
 
 class TestSubplotSpec:
 
-    def test_single_subplot(self, long_df):
+    def test_single_subplot(self):
 
-        data = PlotData(long_df, {"x": "x", "y": "y"})
-        s = Subplots({}, {}, {}, data)
+        s = Subplots({}, {}, {})
 
         assert s.n_subplots == 1
         assert s.subplot_spec["ncols"] == 1
@@ -59,82 +59,85 @@ class TestSubplotSpec:
         assert s.subplot_spec["sharex"] is True
         assert s.subplot_spec["sharey"] is True
 
-    def test_single_facet(self, long_df):
+    def test_single_facet(self):
 
         key = "a"
-        data = PlotData(long_df, {"col": key})
-        s = Subplots({}, {}, {}, data)
+        order = list("abc")
+        spec = {"variables": {"col": key}, "col_order": order}
+        s = Subplots({}, spec, {})
 
-        n_levels = len(categorical_order(long_df[key]))
-        assert s.n_subplots == n_levels
-        assert s.subplot_spec["ncols"] == n_levels
+        assert s.n_subplots == len(order)
+        assert s.subplot_spec["ncols"] == len(order)
         assert s.subplot_spec["nrows"] == 1
         assert s.subplot_spec["sharex"] is True
         assert s.subplot_spec["sharey"] is True
 
-    def test_two_facets(self, long_df):
+    def test_two_facets(self):
 
         col_key = "a"
         row_key = "b"
-        data = PlotData(long_df, {"col": col_key, "row": row_key})
-        s = Subplots({}, {}, {}, data)
+        col_order = list("xy")
+        row_order = list("xyz")
+        spec = {
+            "variables": {"col": col_key, "row": row_key},
+            "col_order": col_order, "row_order": row_order,
 
-        n_cols = len(categorical_order(long_df[col_key]))
-        n_rows = len(categorical_order(long_df[row_key]))
-        assert s.n_subplots == n_cols * n_rows
-        assert s.subplot_spec["ncols"] == n_cols
-        assert s.subplot_spec["nrows"] == n_rows
+        }
+        s = Subplots({}, spec, {})
+
+        assert s.n_subplots == len(col_order) * len(row_order)
+        assert s.subplot_spec["ncols"] == len(col_order)
+        assert s.subplot_spec["nrows"] == len(row_order)
         assert s.subplot_spec["sharex"] is True
         assert s.subplot_spec["sharey"] is True
 
-    def test_col_facet_wrapped(self, long_df):
+    def test_col_facet_wrapped(self):
 
         key = "b"
         wrap = 3
-        data = PlotData(long_df, {"col": key})
-        s = Subplots({}, {"wrap": wrap}, {}, data)
+        order = list("abcde")
+        spec = {"variables": {"col": key}, "col_order": order, "wrap": wrap}
+        s = Subplots({}, spec, {})
 
-        n_levels = len(categorical_order(long_df[key]))
-        assert s.n_subplots == n_levels
+        assert s.n_subplots == len(order)
         assert s.subplot_spec["ncols"] == wrap
-        assert s.subplot_spec["nrows"] == n_levels // wrap + 1
+        assert s.subplot_spec["nrows"] == len(order) // wrap + 1
         assert s.subplot_spec["sharex"] is True
         assert s.subplot_spec["sharey"] is True
 
-    def test_row_facet_wrapped(self, long_df):
+    def test_row_facet_wrapped(self):
 
         key = "b"
         wrap = 3
-        data = PlotData(long_df, {"row": key})
-        s = Subplots({}, {"wrap": wrap}, {}, data)
+        order = list("abcde")
+        spec = {"variables": {"row": key}, "row_order": order, "wrap": wrap}
+        s = Subplots({}, spec, {})
 
-        n_levels = len(categorical_order(long_df[key]))
-        assert s.n_subplots == n_levels
-        assert s.subplot_spec["ncols"] == n_levels // wrap + 1
+        assert s.n_subplots == len(order)
+        assert s.subplot_spec["ncols"] == len(order) // wrap + 1
         assert s.subplot_spec["nrows"] == wrap
         assert s.subplot_spec["sharex"] is True
         assert s.subplot_spec["sharey"] is True
 
-    def test_col_facet_wrapped_single_row(self, long_df):
+    def test_col_facet_wrapped_single_row(self):
 
         key = "b"
-        n_levels = len(categorical_order(long_df[key]))
-        wrap = n_levels + 2
-        data = PlotData(long_df, {"col": key})
-        s = Subplots({}, {"wrap": wrap}, {}, data)
+        order = list("abc")
+        wrap = len(order) + 2
+        spec = {"variables": {"col": key}, "col_order": order, "wrap": wrap}
+        s = Subplots({}, spec, {})
 
-        assert s.n_subplots == n_levels
-        assert s.subplot_spec["ncols"] == n_levels
+        assert s.n_subplots == len(order)
+        assert s.subplot_spec["ncols"] == len(order)
         assert s.subplot_spec["nrows"] == 1
         assert s.subplot_spec["sharex"] is True
         assert s.subplot_spec["sharey"] is True
 
-    def test_x_and_y_paired(self, long_df):
+    def test_x_and_y_paired(self):
 
         x = ["x", "y", "z"]
         y = ["a", "b"]
-        data = PlotData({}, {})
-        s = Subplots({}, {}, {"x": x, "y": y}, data)
+        s = Subplots({}, {}, {"x": x, "y": y})
 
         assert s.n_subplots == len(x) * len(y)
         assert s.subplot_spec["ncols"] == len(x)
@@ -142,11 +145,10 @@ class TestSubplotSpec:
         assert s.subplot_spec["sharex"] == "col"
         assert s.subplot_spec["sharey"] == "row"
 
-    def test_x_paired(self, long_df):
+    def test_x_paired(self):
 
         x = ["x", "y", "z"]
-        data = PlotData(long_df, {"y": "a"})
-        s = Subplots({}, {}, {"x": x}, data)
+        s = Subplots({}, {}, {"x": x})
 
         assert s.n_subplots == len(x)
         assert s.subplot_spec["ncols"] == len(x)
@@ -154,11 +156,10 @@ class TestSubplotSpec:
         assert s.subplot_spec["sharex"] == "col"
         assert s.subplot_spec["sharey"] is True
 
-    def test_y_paired(self, long_df):
+    def test_y_paired(self):
 
         y = ["x", "y", "z"]
-        data = PlotData(long_df, {"x": "a"})
-        s = Subplots({}, {}, {"y": y}, data)
+        s = Subplots({}, {}, {"y": y})
 
         assert s.n_subplots == len(y)
         assert s.subplot_spec["ncols"] == 1
@@ -166,12 +167,11 @@ class TestSubplotSpec:
         assert s.subplot_spec["sharex"] is True
         assert s.subplot_spec["sharey"] == "row"
 
-    def test_x_paired_and_wrapped(self, long_df):
+    def test_x_paired_and_wrapped(self):
 
         x = ["a", "b", "x", "y", "z"]
         wrap = 3
-        data = PlotData(long_df, {"y": "t"})
-        s = Subplots({}, {}, {"x": x, "wrap": wrap}, data)
+        s = Subplots({}, {}, {"x": x, "wrap": wrap})
 
         assert s.n_subplots == len(x)
         assert s.subplot_spec["ncols"] == wrap
@@ -179,12 +179,11 @@ class TestSubplotSpec:
         assert s.subplot_spec["sharex"] is False
         assert s.subplot_spec["sharey"] is True
 
-    def test_y_paired_and_wrapped(self, long_df):
+    def test_y_paired_and_wrapped(self):
 
         y = ["a", "b", "x", "y", "z"]
         wrap = 2
-        data = PlotData(long_df, {"x": "a"})
-        s = Subplots({}, {}, {"y": y, "wrap": wrap}, data)
+        s = Subplots({}, {}, {"y": y, "wrap": wrap})
 
         assert s.n_subplots == len(y)
         assert s.subplot_spec["ncols"] == len(y) // wrap + 1
@@ -192,41 +191,40 @@ class TestSubplotSpec:
         assert s.subplot_spec["sharex"] is True
         assert s.subplot_spec["sharey"] is False
 
-    def test_col_faceted_y_paired(self, long_df):
+    def test_col_faceted_y_paired(self):
 
         y = ["x", "y", "z"]
         key = "a"
-        data = PlotData(long_df, {"x": "f", "col": key})
-        s = Subplots({}, {}, {"y": y}, data)
+        order = list("abc")
+        facet_spec = {"variables": {"col": key}, "col_order": order}
+        s = Subplots({}, facet_spec, {"y": y})
 
-        n_levels = len(categorical_order(long_df[key]))
-        assert s.n_subplots == n_levels * len(y)
-        assert s.subplot_spec["ncols"] == n_levels
+        assert s.n_subplots == len(order) * len(y)
+        assert s.subplot_spec["ncols"] == len(order)
         assert s.subplot_spec["nrows"] == len(y)
         assert s.subplot_spec["sharex"] is True
         assert s.subplot_spec["sharey"] == "row"
 
-    def test_row_faceted_x_paired(self, long_df):
+    def test_row_faceted_x_paired(self):
 
         x = ["f", "s"]
         key = "a"
-        data = PlotData(long_df, {"y": "z", "row": key})
-        s = Subplots({}, {}, {"x": x}, data)
+        order = list("abc")
+        facet_spec = {"variables": {"row": key}, "row_order": order}
+        s = Subplots({}, facet_spec, {"x": x})
 
-        n_levels = len(categorical_order(long_df[key]))
-        assert s.n_subplots == n_levels * len(x)
+        assert s.n_subplots == len(order) * len(x)
         assert s.subplot_spec["ncols"] == len(x)
-        assert s.subplot_spec["nrows"] == n_levels
+        assert s.subplot_spec["nrows"] == len(order)
         assert s.subplot_spec["sharex"] == "col"
         assert s.subplot_spec["sharey"] is True
 
-    def test_x_any_y_paired_non_cartesian(self, long_df):
+    def test_x_any_y_paired_non_cartesian(self):
 
         x = ["a", "b", "c"]
         y = ["x", "y", "z"]
 
-        data = PlotData(long_df, {})
-        s = Subplots({}, {}, {"x": x, "y": y, "cartesian": False}, data)
+        s = Subplots({}, {}, {"x": x, "y": y, "cartesian": False})
 
         assert s.n_subplots == len(x)
         assert s.subplot_spec["ncols"] == len(y)
@@ -234,14 +232,13 @@ class TestSubplotSpec:
         assert s.subplot_spec["sharex"] is False
         assert s.subplot_spec["sharey"] is False
 
-    def test_x_any_y_paired_non_cartesian_wrapped(self, long_df):
+    def test_x_any_y_paired_non_cartesian_wrapped(self):
 
         x = ["a", "b", "c"]
         y = ["x", "y", "z"]
         wrap = 2
 
-        data = PlotData(long_df, {})
-        s = Subplots({}, {}, {"x": x, "y": y, "cartesian": False, "wrap": wrap}, data)
+        s = Subplots({}, {}, {"x": x, "y": y, "cartesian": False, "wrap": wrap})
 
         assert s.n_subplots == len(x)
         assert s.subplot_spec["ncols"] == wrap
@@ -249,21 +246,19 @@ class TestSubplotSpec:
         assert s.subplot_spec["sharex"] is False
         assert s.subplot_spec["sharey"] is False
 
-    def test_forced_unshared_facets(self, long_df):
+    def test_forced_unshared_facets(self):
 
-        data = PlotData(long_df, {"col": "a", "row": "f"})
-        s = Subplots({"sharex": False, "sharey": "row"}, {}, {}, data)
+        s = Subplots({"sharex": False, "sharey": "row"}, {}, {})
         assert s.subplot_spec["sharex"] is False
         assert s.subplot_spec["sharey"] == "row"
 
 
 class TestSubplotElements:
 
-    def test_single_subplot(self, long_df):
+    def test_single_subplot(self):
 
-        data = PlotData(long_df, {"x": "x", "y": "y"})
-        s = Subplots({}, {}, {}, data)
-        f = s.init_figure()
+        s = Subplots({}, {}, {})
+        f = s.init_figure({}, {})
 
         assert len(s) == 1
         for i, e in enumerate(s):
@@ -276,39 +271,39 @@ class TestSubplotElements:
             assert e["ax"] == f.axes[i]
 
     @pytest.mark.parametrize("dim", ["col", "row"])
-    def test_single_facet_dim(self, long_df, dim):
+    def test_single_facet_dim(self, dim):
 
         key = "a"
-        data = PlotData(long_df, {"x": "x", "y": "y", dim: key})
-        s = Subplots({}, {}, {}, data)
-        s.init_figure()
+        order = list("abc")
+        spec = {"variables": {dim: key}, f"{dim}_order": order}
+        s = Subplots({}, spec, {})
+        s.init_figure(spec, {})
 
-        levels = categorical_order(long_df[key])
-        assert len(s) == len(levels)
+        assert len(s) == len(order)
 
         for i, e in enumerate(s):
-            assert e[dim] == levels[i]
+            assert e[dim] == order[i]
             for axis in "xy":
                 assert e[axis] == axis
             assert e["top"] == (dim == "col" or i == 0)
-            assert e["bottom"] == (dim == "col" or i == len(levels) - 1)
+            assert e["bottom"] == (dim == "col" or i == len(order) - 1)
             assert e["left"] == (dim == "row" or i == 0)
-            assert e["right"] == (dim == "row" or i == len(levels) - 1)
+            assert e["right"] == (dim == "row" or i == len(order) - 1)
 
     @pytest.mark.parametrize("dim", ["col", "row"])
-    def test_single_facet_dim_wrapped(self, long_df, dim):
+    def test_single_facet_dim_wrapped(self, dim):
 
         key = "b"
-        levels = categorical_order(long_df[key])
-        wrap = len(levels) - 1
-        data = PlotData(long_df, {"x": "x", "y": "y", dim: key})
-        s = Subplots({}, {"wrap": wrap}, {}, data)
-        s.init_figure()
+        order = list("abc")
+        wrap = len(order) - 1
+        spec = {"variables": {dim: key}, f"{dim}_order": order, "wrap": wrap}
+        s = Subplots({}, spec, {})
+        s.init_figure(spec, {})
 
-        assert len(s) == len(levels)
+        assert len(s) == len(order)
 
         for i, e in enumerate(s):
-            assert e[dim] == levels[i]
+            assert e[dim] == order[i]
             for axis in "xy":
                 assert e[axis] == axis
 
@@ -326,20 +321,21 @@ class TestSubplotElements:
             for side, expected in zip(sides[dim], tests):
                 assert e[side] == expected
 
-    def test_both_facet_dims(self, long_df):
+    def test_both_facet_dims(self):
 
-        x = "f"
-        y = "z"
         col = "a"
         row = "b"
-        data = PlotData(long_df, {"x": x, "y": y, "col": col, "row": row})
-        s = Subplots({}, {}, {}, data)
-        s.init_figure()
+        col_order = list("ab")
+        row_order = list("xyz")
+        facet_spec = {
+            "variables": {"col": col, "row": row},
+            "col_order": col_order, "row_order": row_order,
+        }
+        s = Subplots({}, facet_spec, {})
+        s.init_figure(facet_spec, {})
 
-        col_levels = categorical_order(long_df[col])
-        row_levels = categorical_order(long_df[row])
-        n_cols = len(col_levels)
-        n_rows = len(row_levels)
+        n_cols = len(col_order)
+        n_rows = len(row_order)
         assert len(s) == n_cols * n_rows
         es = list(s)
 
@@ -352,7 +348,7 @@ class TestSubplotElements:
         for e in es[-n_cols:]:
             assert e["bottom"]
 
-        for e, (row_, col_) in zip(es, itertools.product(row_levels, col_levels)):
+        for e, (row_, col_) in zip(es, itertools.product(row_order, col_order)):
             assert e["col"] == col_
             assert e["row"] == row_
 
@@ -361,15 +357,13 @@ class TestSubplotElements:
             assert e["y"] == "y"
 
     @pytest.mark.parametrize("var", ["x", "y"])
-    def test_single_paired_var(self, long_df, var):
+    def test_single_paired_var(self, var):
 
         other_var = {"x": "y", "y": "x"}[var]
-        variables = {other_var: "a"}
         pair_spec = {var: ["x", "y", "z"]}
 
-        data = PlotData(long_df, variables)
-        s = Subplots({}, {}, pair_spec, data)
-        s.init_figure()
+        s = Subplots({}, {}, pair_spec)
+        s.init_figure({}, pair_spec)
 
         assert len(s) == len(pair_spec[var])
 
@@ -388,16 +382,14 @@ class TestSubplotElements:
             assert e[side] == expected
 
     @pytest.mark.parametrize("var", ["x", "y"])
-    def test_single_paired_var_wrapped(self, long_df, var):
+    def test_single_paired_var_wrapped(self, var):
 
         other_var = {"x": "y", "y": "x"}[var]
-        variables = {other_var: "a"}
         pairings = ["x", "y", "z", "a", "b"]
         wrap = len(pairings) - 2
         pair_spec = {var: pairings, "wrap": wrap}
-        data = PlotData(long_df, variables)
-        s = Subplots({}, {}, pair_spec, data)
-        s.init_figure()
+        s = Subplots({}, {}, pair_spec)
+        s.init_figure({}, pair_spec)
 
         assert len(s) == len(pairings)
 
@@ -419,13 +411,13 @@ class TestSubplotElements:
             for side, expected in zip(sides[var], tests):
                 assert e[side] == expected
 
-    def test_both_paired_variables(self, long_df):
+    def test_both_paired_variables(self):
 
         x = ["a", "b"]
         y = ["x", "y", "z"]
-        data = PlotData(long_df, {})
-        s = Subplots({}, {}, {"x": x, "y": y}, data)
-        s.init_figure()
+        pair_spec = {"x": x, "y": y}
+        s = Subplots({}, {}, pair_spec)
+        s.init_figure({}, pair_spec)
 
         n_cols = len(x)
         n_rows = len(y)
@@ -450,12 +442,11 @@ class TestSubplotElements:
                 assert e["x"] == f"x{j}"
                 assert e["y"] == f"y{i}"
 
-    def test_both_paired_non_cartesian(self, long_df):
+    def test_both_paired_non_cartesian(self):
 
         pair_spec = {"x": ["a", "b", "c"], "y": ["x", "y", "z"], "cartesian": False}
-        data = PlotData(long_df, {})
-        s = Subplots({}, {}, pair_spec, data)
-        s.init_figure()
+        s = Subplots({}, {}, pair_spec)
+        s.init_figure({}, pair_spec)
 
         for i, e in enumerate(s):
             assert e["x"] == f"x{i}"
@@ -467,24 +458,23 @@ class TestSubplotElements:
             assert e["bottom"]
 
     @pytest.mark.parametrize("dim,var", [("col", "y"), ("row", "x")])
-    def test_one_facet_one_paired(self, long_df, dim, var):
+    def test_one_facet_one_paired(self, dim, var):
 
         other_var = {"x": "y", "y": "x"}[var]
         other_dim = {"col": "row", "row": "col"}[dim]
+        order = list("abc")
+        facet_spec = {"variables": {dim: "s"}, f"{dim}_order": order}
 
-        variables = {other_var: "z", dim: "s"}
         pairings = ["x", "y", "t"]
         pair_spec = {var: pairings}
 
-        data = PlotData(long_df, variables)
-        s = Subplots({}, {}, pair_spec, data)
-        s.init_figure()
+        s = Subplots({}, facet_spec, pair_spec)
+        s.init_figure(facet_spec, pair_spec)
 
-        levels = categorical_order(long_df[variables[dim]])
-        n_cols = len(levels) if dim == "col" else len(pairings)
-        n_rows = len(levels) if dim == "row" else len(pairings)
+        n_cols = len(order) if dim == "col" else len(pairings)
+        n_rows = len(order) if dim == "row" else len(pairings)
 
-        assert len(s) == len(levels) * len(pairings)
+        assert len(s) == len(order) * len(pairings)
 
         es = list(s)
 
@@ -501,7 +491,7 @@ class TestSubplotElements:
             es = np.reshape(es, (n_rows, n_cols)).T.ravel()
 
         for i, e in enumerate(es):
-            assert e[dim] == levels[i % len(pairings)]
+            assert e[dim] == order[i % len(pairings)]
             assert e[other_dim] is None
-            assert e[var] == f"{var}{i // len(levels)}"
+            assert e[var] == f"{var}{i // len(order)}"
             assert e[other_var] == other_var

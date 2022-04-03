@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import io
+import os
 import re
 import itertools
 from collections import abc
@@ -40,9 +41,9 @@ class Plot:
     _layers: list[dict]
     _scales: dict[str, ScaleSpec]
 
-    _subplotspec: dict[str, Any]
-    _facetspec: dict[str, Any]
-    _pairspec: dict[str, Any]
+    _subplot_spec: dict[str, Any]
+    _facet_spec: dict[str, Any]
+    _pair_spec: dict[str, Any]
 
     def __init__(
         self,
@@ -70,9 +71,9 @@ class Plot:
         self._layers = []
         self._scales = {}
 
-        self._subplotspec = {}
-        self._facetspec = {}
-        self._pairspec = {}
+        self._subplot_spec = {}
+        self._facet_spec = {}
+        self._pair_spec = {}
 
         self._target = None
 
@@ -148,9 +149,9 @@ class Plot:
         new._layers.extend(self._layers)
         new._scales.update(self._scales)
 
-        new._subplotspec.update(self._subplotspec)
-        new._facetspec.update(self._facetspec)
-        new._pairspec.update(self._pairspec)
+        new._subplot_spec.update(self._subplot_spec)
+        new._facet_spec.update(self._facet_spec)
+        new._pair_spec.update(self._pair_spec)
 
         new._target = self._target
 
@@ -161,8 +162,8 @@ class Plot:
 
         variables = (
             list(self._data.frame)
-            + list(self._pairspec.get("variables", []))
-            + list(self._facetspec.get("variables", []))
+            + list(self._pair_spec.get("variables", []))
+            + list(self._facet_spec.get("variables", []))
         )
         for layer in self._layers:
             variables.extend(c for c in layer["vars"] if c not in variables)
@@ -267,7 +268,7 @@ class Plot:
         # But maybe a different verb (e.g. Plot.spread) would be more clear?
         # Then Plot(data).pair(x=[...]) would show the given x vars vs all.
 
-        pairspec: dict[str, Any] = {}
+        pair_spec: dict[str, Any] = {}
 
         if x is None and y is None:
 
@@ -286,7 +287,7 @@ class Plot:
             ]
             for axis in "xy":
                 if axis not in self._data:
-                    pairspec[axis] = all_unused_columns
+                    pair_spec[axis] = all_unused_columns
         else:
 
             axes = {"x": x, "y": y}
@@ -295,30 +296,26 @@ class Plot:
                     if isinstance(arg, (str, int)):
                         err = f"You must pass a sequence of variable keys to `{axis}`"
                         raise TypeError(err)
-                    pairspec[axis] = list(arg)
+                    pair_spec[axis] = list(arg)
 
-        pairspec["variables"] = {}
-        pairspec["structure"] = {}
+        pair_spec["variables"] = {}
+        pair_spec["structure"] = {}
         for axis in "xy":
             keys = []
-            for i, col in enumerate(pairspec.get(axis, [])):
-                # TODO note that this assumes no variables are defined as {axis}{digit}
-                # This could be a slight problem as matplotlib occasionally uses that
-                # format for artists that take multiple parameters on each axis.
-                # Perhaps we should set the internal pair variables to "_{axis}{index}"?
+            for i, col in enumerate(pair_spec.get(axis, [])):
                 key = f"{axis}{i}"
                 keys.append(key)
-                pairspec["variables"][key] = col
+                pair_spec["variables"][key] = col
 
             if keys:
-                pairspec["structure"][axis] = keys
+                pair_spec["structure"][axis] = keys
 
         # TODO raise here if cartesian is False and len(x) != len(y)?
-        pairspec["cartesian"] = cartesian
-        pairspec["wrap"] = wrap
+        pair_spec["cartesian"] = cartesian
+        pair_spec["wrap"] = wrap
 
         new = self._clone()
-        new._pairspec.update(pairspec)
+        new._pair_spec.update(pair_spec)
         return new
 
     def facet(
@@ -330,14 +327,16 @@ class Plot:
         wrap: int | None = None,
     ) -> Plot:
 
+        # TODO don't allow col/row in the Plot constructor, require an explicit
+        # call the facet(). That makes things simpler!
+
         # Can't pass `None` here or it will disinherit the `Plot()` def
+        # TODO less complex if we don't allow col/row in Plot()
         variables = {}
         if col is not None:
             variables["col"] = col
         if row is not None:
             variables["row"] = row
-
-        # TODO raise when wrap is specified with both col and row?
 
         col_order = row_order = None
         if isinstance(order, dict):
@@ -348,15 +347,13 @@ class Plot:
             if row_order is not None:
                 row_order = list(row_order)
         elif order is not None:
-            # TODO Allow order: list here when single facet var defined in constructor?
-            # Thinking I'd rather not at this point; rather at general .order method?
             if col is not None:
                 col_order = list(order)
             if row is not None:
                 row_order = list(order)
 
         new = self._clone()
-        new._facetspec.update({
+        new._facet_spec.update({
             "source": None,
             "variables": variables,
             "col_order": col_order,
@@ -397,7 +394,7 @@ class Plot:
         for key in subplot_keys:
             val = locals()[key]
             if val is not None:
-                new._subplotspec[key] = val
+                new._subplot_spec[key] = val
 
         return new
 
@@ -423,20 +420,23 @@ class Plot:
         # TODO if we have _target object, pyplot should be determined by whether it
         # is hooked into the pyplot state machine (how do we check?)
 
-        # TODO rather than attaching layers to the plotter, we should pass it around?
-        # That could prevent memory overloads given that the layers might have a few
-        # copies of dataframes included within them. Needs profiling.
-        # One downside is that it might make debugging a little harder.
-
         plotter = Plotter(pyplot=pyplot)
-        plotter._setup_data(self)
-        plotter._setup_figure(self)
-        plotter._transform_coords(self)
-        plotter._compute_stats(self)
-        plotter._setup_scales(self)
+
+        common, layers = plotter._extract_data(self)
+        plotter._setup_figure(self, common, layers)
+        plotter._transform_coords(self, common, layers)
+
+        # TODO Remove these after updating other methods
+        # ---- Maybe have debug= param that attaches these when True?
+        plotter._compute_stats(self, layers)
+        plotter._setup_scales(self, layers)
+
+        plotter._data = common
+        plotter._layers = layers
+
         # plotter._move_marks(self)  # TODO just do this as part of _plot_layer?
 
-        for layer in plotter._layers:
+        for layer in layers:
             plotter._plot_layer(self, layer)
 
         # TODO should this go here?
@@ -478,7 +478,7 @@ class Plotter:
     def save(self, fname, **kwargs) -> Plotter:
         # TODO type fname as string or path; handle Path objects if matplotlib can't
         kwargs.setdefault("dpi", 96)
-        self._figure.savefig(fname, **kwargs)
+        self._figure.savefig(os.path.expanduser(fname), **kwargs)
         return self
 
     def show(self, **kwargs) -> None:
@@ -525,43 +525,50 @@ class Plotter:
         metadata = {"width": w * dpi * scaling, "height": h * dpi * scaling}
         return data, metadata
 
-    def _setup_data(self, p: Plot) -> None:
+    def _extract_data(self, p: Plot) -> tuple[PlotData, list[dict]]:
 
-        self._data = (
+        common_data = (
             p._data
-            .join(
-                p._facetspec.get("source"),
-                p._facetspec.get("variables"),
-            )
-            .join(
-                p._pairspec.get("source"),
-                p._pairspec.get("variables"),
-            )
+            .join(None, p._facet_spec.get("variables"))
+            .join(None, p._pair_spec.get("variables"))
         )
 
-        # TODO join with mapping spec
         # TODO use TypedDict for _layers
-        self._layers: list[dict] = []
+        layers = []
         for layer in p._layers:
-            self._layers.append({
-                "data": self._data.join(layer.get("source"), layer.get("vars")),
+            layers.append({
+                "data": common_data.join(layer.get("source"), layer.get("vars")),
                 **layer,
             })
 
-    def _setup_figure(self, p: Plot) -> None:
+        return common_data, layers
+
+    def _setup_figure(self, p: Plot, common: PlotData, layers: list[dict]) -> None:
 
         # --- Parsing the faceting/pairing parameterization to specify figure grid
 
         # TODO use context manager with theme that has been set
         # TODO (maybe wrap THIS function with context manager; would be cleaner)
 
-        self._subplots = subplots = Subplots(
-            p._subplotspec, p._facetspec, p._pairspec, self._data,
-        )
+        subplot_spec = p._subplot_spec.copy()
+        facet_spec = p._facet_spec.copy()
+        pair_spec = p._pair_spec.copy()
+
+        for dim in ["col", "row"]:
+            if dim in common.frame:
+                key = f"{dim}_order"
+                facet_spec[key] = categorical_order(
+                    common.frame[dim], facet_spec.get(key)
+                )
+                facet_spec[f"{dim}_name"] = common.names[dim]
+
+        self._subplots = subplots = Subplots(subplot_spec, facet_spec, pair_spec)
 
         # --- Figure initialization
         figure_kws = {"figsize": getattr(p, "_figsize", None)}  # TODO fix
-        self._figure = subplots.init_figure(self.pyplot, figure_kws, p._target)
+        self._figure = subplots.init_figure(
+            facet_spec, pair_spec, self.pyplot, figure_kws, p._target,
+        )
 
         # --- Figure annotation
         for sub in subplots:
@@ -573,8 +580,8 @@ class Plotter:
                 # although the alignments of the labels from that method leaves
                 # something to be desired (in terms of how it defines 'centered').
                 names = [
-                    self._data.names.get(axis_key),
-                    *[layer["data"].names.get(axis_key) for layer in self._layers],
+                    common.names.get(axis_key),
+                    *(layer["data"].names.get(axis_key) for layer in layers)
                 ]
                 label = next((name for name in names if name is not None), None)
                 ax.set(**{f"{axis}label": label})
@@ -585,13 +592,13 @@ class Plotter:
                 visible_side = {"x": "bottom", "y": "left"}.get(axis)
                 show_axis_label = (
                     sub[visible_side]
-                    or axis in p._pairspec and bool(p._pairspec.get("wrap"))
-                    or not p._pairspec.get("cartesian", True)
+                    or axis in p._pair_spec and bool(p._pair_spec.get("wrap"))
+                    or not p._pair_spec.get("cartesian", True)
                 )
                 axis_obj.get_label().set_visible(show_axis_label)
                 show_tick_labels = (
                     show_axis_label
-                    or p._subplotspec.get(f"share{axis}") not in (
+                    or subplot_spec.get(f"share{axis}") not in (
                         True, "all", {"x": "col", "y": "row"}[axis]
                     )
                 )
@@ -599,21 +606,22 @@ class Plotter:
                 plt.setp(axis_obj.get_minorticklabels(), visible=show_tick_labels)
 
             # TODO title template should be configurable
-            # TODO Also we want right-side titles for row facets in most cases
+            # ---- Also we want right-side titles for row facets in most cases?
+            # ---- Or wrapped? That can get annoying too.
             # TODO should configure() accept a title= kwarg (for single subplot plots)?
             # Let's have what we currently call "margin titles" but properly using the
             # ax.set_title interface (see my gist)
             title_parts = []
             for dim in ["row", "col"]:
                 if sub[dim] is not None:
-                    name = self._data.names.get(dim, f"_{dim}_")
+                    name = facet_spec.get(f"{dim}_name")
                     title_parts.append(f"{name} = {sub[dim]}")
 
             has_col = sub["col"] is not None
             has_row = sub["row"] is not None
             show_title = (
                 has_col and has_row
-                or (has_col or has_row) and p._facetspec.get("wrap")
+                or (has_col or has_row) and p._facet_spec.get("wrap")
                 or (has_col and sub["top"])
                 # TODO or has_row and sub["right"] and <right titles>
                 or has_row  # TODO and not <right titles>
@@ -623,9 +631,11 @@ class Plotter:
                 title_text = ax.set_title(title)
                 title_text.set_visible(show_title)
 
-    def _transform_coords(self, p: Plot) -> None:
+    def _transform_coords(self, p: Plot, common: PlotData, layers: list[dict]) -> None:
 
-        for var in (v for v in p._variables if v[0] in "xy"):
+        variables = [v for v in p._variables if v[0] in "xy"]
+
+        for var in variables:
 
             prop = Coordinate(var[0])
 
@@ -642,7 +652,7 @@ class Plotter:
             # This only affects us when sharing *paired* axes. This is a novel/niche
             # behavior, so we will raise rather than hack together a workaround.
             if Version(mpl.__version__) < Version("3.4.0"):
-                paired_axis = axis in p._pairspec
+                paired_axis = axis in p._pair_spec
                 cat_scale = self._scales[var].scale_type in ["nominal", "ordinal"]
                 ok_dim = {"x": "col", "y": "row"}[axis]
                 shared_axes = share_state not in [False, "none", ok_dim]
@@ -655,8 +665,8 @@ class Plotter:
             # But figuring out the minimal amount we need is more complicated.
             cols = [var, "col", "row"]
             # TODO basically copied from _setup_scales, and very clumsy
-            layer_values = [self._data.frame.filter(cols)]
-            for layer in self._layers:
+            layer_values = [common.frame.filter(cols)]
+            for layer in layers:
                 if layer["data"].frame is None:
                     for df in layer["data"].frames.values():
                         layer_values.append(df.filter(cols))
@@ -683,7 +693,7 @@ class Plotter:
             # We need this to handle piecemeal tranforms of categories -> floats.
             transformed_data = [
                 pd.Series(dtype=float, index=layer["data"].frame.index, name=var)
-                for layer in self._layers
+                for layer in layers
             ]
 
             for subplot in subplots:
@@ -709,7 +719,7 @@ class Plotter:
 
                 transform = scale.setup(seed_values, prop, axis=axis_obj)
 
-                for layer, new_series in zip(self._layers, transformed_data):
+                for layer, new_series in zip(layers, transformed_data):
                     layer_df = layer["data"].frame
                     if var in layer_df:
                         idx = self._get_subplot_index(layer_df, subplot)
@@ -719,19 +729,19 @@ class Plotter:
                 set_scale_obj(subplot["ax"], axis, transform.matplotlib_scale)
 
             # Now the transformed data series are complete, set update the layer data
-            for layer, new_series in zip(self._layers, transformed_data):
+            for layer, new_series in zip(layers, transformed_data):
                 layer_df = layer["data"].frame
                 if var in layer_df:
                     layer_df[var] = new_series
 
-    def _compute_stats(self, spec: Plot) -> None:
+    def _compute_stats(self, spec: Plot, layers: list[dict]) -> None:
 
         grouping_vars = [v for v in PROPERTIES if v not in "xy"]
         grouping_vars += ["col", "row", "group"]
 
-        pair_vars = spec._pairspec.get("structure", {})
+        pair_vars = spec._pair_spec.get("structure", {})
 
-        for layer in self._layers:
+        for layer in layers:
 
             data = layer["data"]
             mark = layer["mark"]
@@ -803,9 +813,7 @@ class Plotter:
 
         return scale
 
-    def _setup_scales(self, p: Plot) -> None:
-
-        layers = self._layers
+    def _setup_scales(self, p: Plot, layers: list[dict]) -> None:
 
         # Identify all of the variables that will be used at some point in the plot
         variables = set()
@@ -823,16 +831,13 @@ class Plotter:
                 continue
 
             # Get the data all the distinct appearances of this variable.
-            if var in self._data:
-                parts = [self._data.frame.get(var)]
-            else:
-                parts = []
-                for layer in layers:
-                    if layer["data"].frame is None:
-                        for df in layer["data"].frames.values():
-                            parts.append(df.get(var))
-                    else:
-                        parts.append(layer["data"].frame.get(var))
+            parts = []
+            for layer in layers:
+                if layer["data"].frame is None:
+                    for df in layer["data"].frames.values():
+                        parts.append(df.get(var))
+                else:
+                    parts.append(layer["data"].frame.get(var))
             var_values = pd.concat(
                 parts, axis=0, join="inner", ignore_index=True
             ).rename(var)
@@ -870,7 +875,7 @@ class Plotter:
         default_grouping_vars = ["col", "row", "group"]  # TODO where best to define?
         grouping_properties = [v for v in PROPERTIES if v not in "xy"]
 
-        pair_variables = p._pairspec.get("structure", {})
+        pair_variables = p._pair_spec.get("structure", {})
 
         for subplots, df, scales in self._generate_pairings(data, pair_variables):
 
@@ -983,7 +988,7 @@ class Plotter:
     ) -> Generator[
         tuple[list[dict], DataFrame, dict[str, Scale]], None, None
     ]:
-        # TODO retype return with SubplotSpec or similar
+        # TODO retype return with subplot_spec or similar
 
         iter_axes = itertools.product(*[
             pair_variables.get(axis, [axis]) for axis in "xy"

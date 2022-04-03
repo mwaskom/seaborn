@@ -129,7 +129,10 @@ class Nominal(ScaleSpec):
         def convert_units(x):
             # TODO only do this with explicit order?
             # (But also category dtype?)
-            keep = np.isin(x, units_seed)
+            # TODO isin fails when units_seed mixes numbers and strings (numpy error?)
+            # but np.isin also does not seem any faster? (Maybe not broadcasting in C)
+            # keep = x.isin(units_seed)
+            keep = np.array([x_ in units_seed for x_ in x], bool)
             out = np.full(len(x), np.nan)
             out[keep] = axis.convert_units(stringify(x[keep]))
             return out
