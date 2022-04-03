@@ -1100,7 +1100,11 @@ class VectorPlotter:
                     if converter.get_scale() == "log":
                         comp = np.log10(comp)
                     parts.append(pd.Series(comp, orig.index, name=orig.name))
-                comp_data.insert(0, var, pd.concat(parts))
+                if parts:
+                    comp_col = pd.concat(parts)
+                else:
+                    comp_col = pd.Series(dtype=float, name=var)
+                comp_data.insert(0, var, comp_col)
 
             self._comp_data = comp_data
 
