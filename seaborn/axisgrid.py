@@ -524,7 +524,7 @@ class FacetGrid(Grid):
 
             When using seaborn functions that infer semantic mappings from a
             dataset, care must be taken to synchronize those mappings across
-            facets (e.g., by defing the ``hue`` mapping with a palette dict or
+            facets (e.g., by defining the ``hue`` mapping with a palette dict or
             setting the data type of the variables to ``category``). In most cases,
             it will be better to use a figure-level function (e.g. :func:`relplot`
             or :func:`catplot`) than to use :class:`FacetGrid` directly.
