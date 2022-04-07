@@ -5,7 +5,7 @@ import numpy as np
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from typing import Literal, Optional
+    from typing import Optional
     from pandas import DataFrame
     from seaborn._core.groupby import GroupBy
 
@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 class Move:
 
     def __call__(
-        self, data: DataFrame, groupby: GroupBy, orient: Literal["x", "y"],
+        self, data: DataFrame, groupby: GroupBy, orient: str,
     ) -> DataFrame:
         raise NotImplementedError
 
@@ -34,7 +34,7 @@ class Jitter(Move):
     # The problem is that "reasonable" seems dependent on the mark
 
     def __call__(
-        self, data: DataFrame, groupby: GroupBy, orient: Literal["x", "y"],
+        self, data: DataFrame, groupby: GroupBy, orient: str,
     ) -> DataFrame:
 
         # TODO is it a problem that GroupBy is not used for anything here?
@@ -67,14 +67,14 @@ class Jitter(Move):
 @dataclass
 class Dodge(Move):
 
-    empty: Literal["keep", "drop", "fill"] = "keep"
+    empty: str = "keep"  # keep, drop, fill
     gap: float = 0
 
     # TODO accept just a str here?
     by: Optional[list[str]] = None
 
     def __call__(
-        self, data: DataFrame, groupby: GroupBy, orient: Literal["x", "y"],
+        self, data: DataFrame, groupby: GroupBy, orient: str,
     ) -> DataFrame:
 
         grouping_vars = [v for v in groupby.order if v in data]

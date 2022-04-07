@@ -5,7 +5,6 @@ from typing import ClassVar
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from typing import Literal
     from pandas import DataFrame
     from seaborn._core.groupby import GroupBy
     from seaborn._core.scales import Scale
@@ -35,7 +34,7 @@ class Stat:
         self,
         data: DataFrame,
         groupby: GroupBy,
-        orient: Literal["x", "y"],
+        orient: str,
         scales: dict[str, Scale],
     ) -> DataFrame:
         """Apply statistical transform to data subgroups and return combined result."""

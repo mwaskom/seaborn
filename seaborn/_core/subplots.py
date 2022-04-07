@@ -1,14 +1,16 @@
 from __future__ import annotations
+from collections.abc import Generator
 
 import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 
+from matplotlib.axes import Axes
+from matplotlib.figure import Figure
 from typing import TYPE_CHECKING
-if TYPE_CHECKING:
-    from collections.abc import Generator
-    from matplotlib.axes import Axes
-    from matplotlib.figure import Figure, SubFigure
+if TYPE_CHECKING:  # TODO move to seaborn._core.typing?
+    from seaborn._core.plot import FacetSpec, PairSpec
+    from matplotlib.figure import SubFigure
 
 
 class Subplots:
@@ -31,8 +33,8 @@ class Subplots:
         # TODO defined TypedDict types for these specs
         self,
         subplot_spec: dict,
-        facet_spec: dict,
-        pair_spec: dict,
+        facet_spec: FacetSpec,
+        pair_spec: PairSpec,
     ):
 
         self.subplot_spec = subplot_spec
@@ -42,25 +44,27 @@ class Subplots:
         self._handle_wrapping(facet_spec, pair_spec)
         self._determine_axis_sharing(pair_spec)
 
-    def _check_dimension_uniqueness(self, facet_spec: dict, pair_spec: dict) -> None:
+    def _check_dimension_uniqueness(
+        self, facet_spec: FacetSpec, pair_spec: PairSpec
+    ) -> None:
         """Reject specs that pair and facet on (or wrap to) same figure dimension."""
         err = None
 
-        facet_vars = facet_spec.get("variables", [])
+        facet_vars = facet_spec.get("variables", {})
 
         if facet_spec.get("wrap") and {"col", "row"} <= set(facet_vars):
             err = "Cannot wrap facets when specifying both `col` and `row`."
         elif (
             pair_spec.get("wrap")
             and pair_spec.get("cartesian", True)
-            and len(pair_spec.get("x", [])) > 1
-            and len(pair_spec.get("y", [])) > 1
+            and len(pair_spec.get("structure", {}).get("x", [])) > 1
+            and len(pair_spec.get("structure", {}).get("y", [])) > 1
         ):
             err = "Cannot wrap subplots when pairing on both `x` and `y`."
 
         collisions = {"x": ["columns", "rows"], "y": ["rows", "columns"]}
         for pair_axis, (multi_dim, wrap_dim) in collisions.items():
-            if pair_axis not in pair_spec:
+            if pair_axis not in pair_spec.get("structure", {}):
                 continue
             elif multi_dim[:3] in facet_vars:
                 err = f"Cannot facet the {multi_dim} while pairing on `{pair_axis}``."
@@ -72,16 +76,20 @@ class Subplots:
         if err is not None:
             raise RuntimeError(err)  # TODO what err class? Define PlotSpecError?
 
-    def _determine_grid_dimensions(self, facet_spec: dict, pair_spec: dict) -> None:
+    def _determine_grid_dimensions(
+        self, facet_spec: FacetSpec, pair_spec: PairSpec
+    ) -> None:
         """Parse faceting and pairing information to define figure structure."""
-        self.grid_dimensions = {}
+        self.grid_dimensions: dict[str, list] = {}
         for dim, axis in zip(["col", "row"], ["x", "y"]):
 
             facet_vars = facet_spec.get("variables", {})
             if dim in facet_vars:
-                self.grid_dimensions[dim] = facet_spec[f"{dim}_order"]
-            elif axis in pair_spec:
-                self.grid_dimensions[dim] = [None for _ in pair_spec[axis]]
+                self.grid_dimensions[dim] = facet_spec["structure"][dim]
+            elif axis in pair_spec.get("structure", {}):
+                self.grid_dimensions[dim] = [
+                    None for _ in pair_spec.get("structure", {})[axis]
+                ]
             else:
                 self.grid_dimensions[dim] = [None]
 
@@ -92,7 +100,9 @@ class Subplots:
 
         self.n_subplots = self.subplot_spec["ncols"] * self.subplot_spec["nrows"]
 
-    def _handle_wrapping(self, facet_spec: dict, pair_spec: dict) -> None:
+    def _handle_wrapping(
+        self, facet_spec: FacetSpec, pair_spec: PairSpec
+    ) -> None:
         """Update figure structure parameters based on facet/pair wrapping."""
         self.wrap = wrap = facet_spec.get("wrap") or pair_spec.get("wrap")
         if not wrap:
@@ -109,7 +119,7 @@ class Subplots:
         self.n_subplots = n_subplots
         self.wrap_dim = wrap_dim
 
-    def _determine_axis_sharing(self, pair_spec: dict) -> None:
+    def _determine_axis_sharing(self, pair_spec: PairSpec) -> None:
         """Update subplot spec with default or specified axis sharing parameters."""
         axis_to_dim = {"x": "col", "y": "row"}
         key: str
@@ -118,7 +128,7 @@ class Subplots:
             key = f"share{axis}"
             # Always use user-specified value, if present
             if key not in self.subplot_spec:
-                if axis in pair_spec:
+                if axis in pair_spec.get("structure", {}):
                     # Paired axes are shared along one dimension by default
                     if self.wrap in [None, 1] and pair_spec.get("cartesian", True):
                         val = axis_to_dim[axis]
@@ -132,13 +142,14 @@ class Subplots:
 
     def init_figure(
         self,
-        facet_spec: dict,
-        pair_spec: dict,
+        pair_spec: PairSpec,
         pyplot: bool = False,
         figure_kws: dict | None = None,
         target: Axes | Figure | SubFigure = None,
     ) -> Figure:
         """Initialize matplotlib objects and add seaborn-relevant metadata."""
+        # TODO reduce need to pass pair_spec here?
+
         if figure_kws is None:
             figure_kws = {}
 
@@ -240,7 +251,7 @@ class Subplots:
             for axis in "xy":
 
                 idx = {"x": j, "y": i}[axis]
-                if axis in pair_spec:
+                if axis in pair_spec.get("structure", {}):
                     key = f"{axis}{idx}"
                 else:
                     key = axis

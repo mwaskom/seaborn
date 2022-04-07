@@ -33,6 +33,7 @@ INSTALL_REQUIRES = [
     'numpy>=1.17',
     'pandas>=0.25',
     'matplotlib>=3.1',
+    'typing_extensions; python_version < "3.8"',
 ]
 
 EXTRAS_REQUIRE = {

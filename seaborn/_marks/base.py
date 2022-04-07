@@ -9,7 +9,7 @@ from seaborn._core.properties import PROPERTIES, Property
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from typing import Literal, Any, Callable
+    from typing import Any, Callable
     from collections.abc import Generator
     from numpy import ndarray
     from pandas import DataFrame
@@ -231,7 +231,7 @@ class Mark:
 
         return df
 
-    def _infer_orient(self, scales: dict) -> Literal["x", "y"]:  # TODO type scales
+    def _infer_orient(self, scales: dict) -> str:  # TODO type scales
 
         # TODO The original version of this (in seaborn._oldcore) did more checking.
         # Paring that down here for the prototype to see what restrictions make sense.
@@ -267,7 +267,7 @@ class Mark:
         self,
         split_generator: Callable[[], Generator],
         scales: dict[str, Scale],
-        orient: Literal["x", "y"],
+        orient: str,
     ) -> None:
         """Main interface for creating a plot."""
         raise NotImplementedError()

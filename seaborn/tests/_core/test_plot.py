@@ -1172,15 +1172,24 @@ class TestPairInterface:
 
         p1 = Plot(long_df).pair()
         for axis in "xy":
-            assert p1._pair_spec[axis] == all_cols.to_list()
+            actual = [
+                v for k, v in p1._pair_spec["variables"].items() if k.startswith(axis)
+            ]
+            assert actual == all_cols.to_list()
 
         p2 = Plot(long_df, y="y").pair()
-        assert all_cols.difference(p2._pair_spec["x"]).item() == "y"
+        x_vars = [
+            v for k, v in p2._pair_spec["variables"].items() if k.startswith("x")
+        ]
+        assert all_cols.difference(x_vars).item() == "y"
         assert "y" not in p2._pair_spec
 
         p3 = Plot(long_df, color="a").pair()
         for axis in "xy":
-            assert all_cols.difference(p3._pair_spec[axis]).item() == "a"
+            x_vars = [
+                v for k, v in p3._pair_spec["variables"].items() if k.startswith("x")
+            ]
+            assert all_cols.difference(x_vars).item() == "a"
 
         with pytest.raises(RuntimeError, match="You must pass `data`"):
             Plot().pair()
@@ -1325,6 +1334,13 @@ class TestPairInterface:
         )
 
         assert orient_list == ["y", "x"]
+
+    def test_two_variables_single_order_error(self, long_df):
+
+        p = Plot(long_df)
+        err = "When faceting on both col= and row=, passing `order`"
+        with pytest.raises(RuntimeError, match=err):
+            p.facet(col="a", row="b", order=["a", "b", "c"])
 
 
 class TestLabelVisibility:
@@ -1633,11 +1649,32 @@ class TestLegend:
                 assert a.value == label
                 assert a.variables == [variables[s.name]]
 
+    def test_multi_layer_different_artists(self, xy):
+
+        class MockMark1(MockMark):
+            def _legend_artist(self, variables, value, scales):
+                return mpl.lines.Line2D([], [])
+
+        class MockMark2(MockMark):
+            def _legend_artist(self, variables, value, scales):
+                return mpl.patches.Patch()
+
+        s = pd.Series(["a", "b", "a", "c"], name="s")
+        p = Plot(**xy, color=s).add(MockMark1()).add(MockMark2()).plot()
+
+        legend, = p._figure.legends
+
+        names = categorical_order(s)
+        labels = [t.get_text() for t in legend.get_texts()]
+        assert labels == names
+
+        if LooseVersion(mpl.__version__) >= "3.2":
+            contents = legend.get_children()[0]
+            assert len(contents.findobj(mpl.lines.Line2D)) == len(names)
+            assert len(contents.findobj(mpl.patches.Patch)) == len(names)
+
     def test_identity_scale_ignored(self, xy):
 
         s = pd.Series(["r", "g", "b", "g"])
         p = Plot(**xy).add(MockMark(), color=s).scale(color=None).plot()
         assert not p._legend_contents
-
-    # TODO test actually legend content? But wait until we decide
-    # how we want to actually create the legend ...
