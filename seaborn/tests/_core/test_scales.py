@@ -347,21 +347,11 @@ class TestNominal:
         null = (np.nan, np.nan, np.nan)
         assert_array_equal(s(z), [c1, null, c2])
 
-    @pytest.mark.xfail(reason="Need to (re)implement alpha pass-through")
     def test_color_alpha_in_palette(self, x):
 
         cs = [(.2, .2, .3, .5), (.1, .2, .3, 1), (.5, .6, .2, 0)]
         s = Nominal(cs).setup(x, Color())
-        assert_array_equal(s(x), [cs[1], cs[0], cs[2], cs[0]])
-
-    @pytest.mark.xfail(reason="Need to (re)implement alpha pass-through")
-    def test_color_mixture_of_alpha_nonalpha(self):
-
-        x = pd.Series(["a", "b"])
-        pal = [(1, 0, .5), (.5, .5, .5, .5)]
-        err = "Color scales cannot mix colors defined with and without alpha channels."
-        with pytest.raises(ValueError, match=err):
-            Nominal(pal).setup(x, Color())
+        assert_array_equal(s(x), [cs[0], cs[1], cs[2], cs[1]])
 
     def test_color_unknown_palette(self, x):
 

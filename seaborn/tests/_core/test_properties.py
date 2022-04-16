@@ -73,6 +73,9 @@ class TestCoordinate(DataFixtures):
 
 class TestColor(DataFixtures):
 
+    def assert_same_rgb(self, a, b):
+        assert_array_equal(a[:, :3], b[:, :3])
+
     def test_nominal_default_palette(self, cat_vector, cat_order):
 
         m = Color().get_mapping(Nominal(), cat_vector)
@@ -142,6 +145,38 @@ class TestColor(DataFixtures):
         msg = rf"The edgecolor list has more values \({n}\) than needed \({n - 1}\)"
         with pytest.warns(UserWarning, match=msg):
             Color("edgecolor").get_mapping(Nominal(palette), cat_vector)
+
+    def test_continuous_default_palette(self, num_vector):
+
+        cmap = color_palette("ch:", as_cmap=True)
+        m = Color().get_mapping(Continuous(), num_vector)
+        self.assert_same_rgb(m(num_vector), cmap(num_vector))
+
+    def test_continuous_named_palette(self, num_vector):
+
+        pal = "flare"
+        cmap = color_palette(pal, as_cmap=True)
+        m = Color().get_mapping(Continuous(pal), num_vector)
+        self.assert_same_rgb(m(num_vector), cmap(num_vector))
+
+    def test_continuous_tuple_palette(self, num_vector):
+
+        vals = ("blue", "red")
+        cmap = color_palette("blend:" + ",".join(vals), as_cmap=True)
+        m = Color().get_mapping(Continuous(vals), num_vector)
+        self.assert_same_rgb(m(num_vector), cmap(num_vector))
+
+    def test_continuous_callable_palette(self, num_vector):
+
+        cmap = mpl.cm.get_cmap("viridis")
+        m = Color().get_mapping(Continuous(cmap), num_vector)
+        self.assert_same_rgb(m(num_vector), cmap(num_vector))
+
+    def test_continuous_missing(self):
+
+        x = pd.Series([1, 2, np.nan, 4])
+        m = Color().get_mapping(Continuous(), x)
+        assert np.isnan(m(x)[2]).all()
 
     def test_bad_scale_values_continuous(self, num_vector):
 

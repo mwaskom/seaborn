@@ -501,6 +501,21 @@ class Color(Property):
         else:
             return to_rgb(val)
 
+    def _standardize_color_sequence(self, colors: ArrayLike) -> ArrayLike:
+        """Convert color sequence to RGB(A) array, preserving but not adding alpha."""
+        def has_alpha(x):
+            return to_rgba(x) != to_rgba(x, 1)
+
+        if isinstance(colors, np.ndarray):
+            needs_alpha = colors.shape[1] == 4
+        else:
+            needs_alpha = any(has_alpha(x) for x in colors)
+
+        if needs_alpha:
+            return to_rgba_array(colors)
+        else:
+            return to_rgba_array(colors)[:, :3]
+
     def infer_scale(self, arg: Any, data: Series) -> ScaleSpec:
         # TODO when inferring Continuous without data, verify type
 
@@ -543,22 +558,6 @@ class Color(Property):
         else:
             return Nominal(arg)
 
-    def _standardize_colors(self, colors: ArrayLike) -> ArrayLike:
-        """Convert color sequence to RGB(A) array, preserving but not adding alpha."""
-        # TODO can be simplified using new Color.standardize approach?
-        def has_alpha(x):
-            return (str(x).startswith("#") and len(x) in (5, 9)) or len(x) == 4
-
-        if isinstance(colors, np.ndarray):
-            needs_alpha = colors.shape[1] == 4
-        else:
-            needs_alpha = any(has_alpha(x) for x in colors)
-
-        if needs_alpha:
-            return to_rgba_array(colors)
-        else:
-            return to_rgba_array(colors)[:, :3]
-
     def _get_categorical_mapping(self, scale, data):
         """Define mapping as lookup in list of discrete color values."""
         levels = categorical_order(data, scale.order)
@@ -590,7 +589,7 @@ class Color(Property):
             raise TypeError(msg)
 
         # If color specified here has alpha channel, it will override alpha property
-        colors = self._standardize_colors(colors)
+        colors = self._standardize_color_sequence(colors)
 
         def mapping(x):
             ixs = np.asarray(x, np.intp)
@@ -635,7 +634,10 @@ class Color(Property):
         def _mapping(x):
             # Remove alpha channel so it does not override alpha property downstream
             # TODO this will need to be more flexible to support RGBA tuples (see above)
-            return mapping(x)[:, :3]
+            invalid = ~np.isfinite(x)
+            out = mapping(x)[:, :3]
+            out[invalid] = np.nan
+            return out
 
         return _mapping
 
