@@ -10,6 +10,7 @@ from pandas.testing import assert_series_equal
 from seaborn._core.scales import (
     Nominal,
     Continuous,
+    PseudoAxis,
 )
 from seaborn._core.properties import (
     IntervalProperty,
@@ -108,6 +109,113 @@ class TestContinuous:
         cmap = color_palette("ch:", as_cmap=True)
         s = Continuous(transform="log").setup(x, Color())
         assert_array_equal(s(x), cmap([0, .5, 1])[:, :3])  # FIXME RGBA
+
+    def test_tick_locator(self, x):
+
+        locs = [.2, .5, .8]
+        locator = mpl.ticker.FixedLocator(locs)
+        s = Continuous().tick(locator).setup(x, Coordinate())
+        a = PseudoAxis(s.matplotlib_scale)
+        a.set_view_interval(0, 1)
+        assert_array_equal(a.major.locator(), locs)
+
+    def test_tick_locator_input_check(self, x):
+
+        err = "Tick locator must be an instance of .*?, not <class 'tuple'>."
+        with pytest.raises(TypeError, match=err):
+            Continuous().tick((1, 2))
+
+    def test_tick_upto(self, x):
+
+        for n in [2, 5, 10]:
+            s = Continuous().tick(upto=n).setup(x, Coordinate())
+            a = PseudoAxis(s.matplotlib_scale)
+            a.set_view_interval(0, 1)
+            assert len(a.major.locator()) <= (n + 1)
+
+    def test_tick_every(self, x):
+
+        for d in [.05, .2, .5]:
+            s = Continuous().tick(every=d).setup(x, Coordinate())
+            a = PseudoAxis(s.matplotlib_scale)
+            a.set_view_interval(0, 1)
+            assert np.allclose(np.diff(a.major.locator()), d)
+
+    def test_tick_every_between(self, x):
+
+        lo, hi = .2, .8
+        for d in [.05, .2, .5]:
+            s = Continuous().tick(every=d, between=(lo, hi)).setup(x, Coordinate())
+            a = PseudoAxis(s.matplotlib_scale)
+            a.set_view_interval(0, 1)
+            expected = np.arange(lo, hi + d, d)
+            assert_array_equal(a.major.locator(), expected)
+
+    def test_tick_at(self, x):
+
+        locs = [.2, .5, .9]
+        s = Continuous().tick(at=locs).setup(x, Coordinate())
+        a = PseudoAxis(s.matplotlib_scale)
+        a.set_view_interval(0, 1)
+        assert_array_equal(a.major.locator(), locs)
+
+    def test_tick_count(self, x):
+
+        n = 8
+        s = Continuous().tick(count=n).setup(x, Coordinate())
+        a = PseudoAxis(s.matplotlib_scale)
+        a.set_view_interval(0, 1)
+        assert_array_equal(a.major.locator(), np.linspace(0, 1, n))
+
+    def test_tick_count_between(self, x):
+
+        n = 5
+        lo, hi = .2, .7
+        s = Continuous().tick(count=n, between=(lo, hi)).setup(x, Coordinate())
+        a = PseudoAxis(s.matplotlib_scale)
+        a.set_view_interval(0, 1)
+        assert_array_equal(a.major.locator(), np.linspace(lo, hi, n))
+
+    def test_tick_minor(self, x):
+
+        n = 3
+        s = Continuous().tick(count=2, minor=n).setup(x, Coordinate())
+        a = PseudoAxis(s.matplotlib_scale)
+        a.set_view_interval(0, 1)
+        # I am not sure why matplotlib's minor ticks include the
+        # largest major location but exclude the smalllest one ...
+        expected = np.linspace(0, 1, n + 2)[1:]
+        assert_array_equal(a.minor.locator(), expected)
+
+    def test_log_tick_default(self, x):
+
+        s = Continuous(transform="log").setup(x, Coordinate())
+        a = PseudoAxis(s.matplotlib_scale)
+        a.set_view_interval(.5, 1050)
+        ticks = a.major.locator()
+        assert np.allclose(np.diff(np.log10(ticks)), 1)
+
+    def test_log_tick_upto(self, x):
+
+        n = 3
+        s = Continuous(transform="log").tick(upto=n).setup(x, Coordinate())
+        a = PseudoAxis(s.matplotlib_scale)
+        assert a.major.locator.numticks == n
+
+    def test_log_tick_count(self, x):
+
+        with pytest.raises(RuntimeError, match="`count` requires"):
+            Continuous(transform="log").tick(count=4)
+
+        s = Continuous(transform="log").tick(count=4, between=(1, 1000))
+        a = PseudoAxis(s.setup(x, Coordinate()).matplotlib_scale)
+        a.set_view_interval(.5, 1050)
+        assert_array_equal(a.major.locator(), [1, 10, 100, 1000])
+
+    def test_log_tick_every(self, x):
+
+        with pytest.raises(RuntimeError, match="`every` not supported"):
+            Continuous(transform="log").tick(every=2)
 
 
 class TestNominal:
