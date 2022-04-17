@@ -14,7 +14,7 @@ if TYPE_CHECKING:
     from numpy import ndarray
     from pandas import DataFrame
     from matplotlib.artist import Artist
-    from seaborn._core.mappings import RGBATuple
+    from seaborn._core.properties import RGBATuple
     from seaborn._core.scales import Scale
 
 
@@ -133,11 +133,12 @@ class Mark:
 
         Parameters
         ----------
-        data :
+        data : DataFrame or dict with scalar values
             Container with data values for features that will be semantically mapped.
-        name :
+        name : string
             Identity of the feature / semantic.
-        TODO scales
+        scales: dict
+            Mapping from variable to corresponding scale object.
 
         Returns
         -------

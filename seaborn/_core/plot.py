@@ -15,7 +15,6 @@ import matplotlib as mpl
 from matplotlib.axes import Axes
 from matplotlib.artist import Artist
 from matplotlib.figure import Figure
-import matplotlib.pyplot as plt  # TODO defer import into Plot.show()
 
 from seaborn._marks.base import Mark
 from seaborn._stats.base import Stat
@@ -75,7 +74,7 @@ class Plot:
     _layers: list[Layer]
     _scales: dict[str, ScaleSpec]
 
-    _subplot_spec: dict[str, Any]
+    _subplot_spec: dict[str, Any]  # TODO values type
     _facet_spec: FacetSpec
     _pair_spec: PairSpec
 
@@ -254,9 +253,6 @@ class Plot:
         # TODO do a check here that mark has been initialized,
         # otherwise errors will be inscrutable
 
-        # TODO currently it doesn't work to specify faceting for the first time in add()
-        # and I think this would be too difficult. But it should not silently fail.
-
         # TODO decide how to allow Mark to have Stat/Move
         # if stat is None and hasattr(mark, "default_stat"):
         #     stat = mark.default_stat()
@@ -265,6 +261,10 @@ class Plot:
         # Another option would be to left join (layer_data, global_data)
         # after dropping the column intersection from global_data
         # (but join on what? always the index? that could get tricky...)
+
+        # TODO accept arbitrary variables defined by the stat (/move?) here
+        # (but not in the Plot constructor)
+        # Should stat variables every go in the constructor, or just in the add call?
 
         new = self._clone()
         new._layers.append({
@@ -435,7 +435,6 @@ class Plot:
     def theme(self) -> Plot:
 
         # TODO Plot-specific themes using the seaborn theming system
-        # TODO should this also be where custom figure size goes?
         raise NotImplementedError
         new = self._clone()
         return new
@@ -458,11 +457,11 @@ class Plot:
         plotter._setup_figure(self, common, layers)
         plotter._transform_coords(self, common, layers)
 
-        # TODO Remove these after updating other methods
-        # ---- Maybe have debug= param that attaches these when True?
         plotter._compute_stats(self, layers)
         plotter._setup_scales(self, layers)
 
+        # TODO Remove these after updating other methods
+        # ---- Maybe have debug= param that attaches these when True?
         plotter._data = common
         plotter._layers = layers
 
@@ -488,8 +487,7 @@ class Plot:
         # Keep an eye on whether matplotlib implements "attaching" an existing
         # figure to pyplot: https://github.com/matplotlib/matplotlib/pull/14024
 
-        self.plot(pyplot=True)
-        plt.show(**kwargs)
+        self.plot(pyplot=True).show(**kwargs)
 
     # TODO? Have this print a textual summary of how the plot is defined?
     # Could be nice to stick in the middle of a pipeline for debugging
@@ -513,7 +511,6 @@ class Plotter:
         self._scales: dict[str, Scale] = {}
 
     def save(self, fname, **kwargs) -> Plotter:
-        # TODO type fname as string or path; handle Path objects if matplotlib can't
         kwargs.setdefault("dpi", 96)
         self._figure.savefig(os.path.expanduser(fname), **kwargs)
         return self
@@ -521,12 +518,11 @@ class Plotter:
     def show(self, **kwargs) -> None:
         # TODO if we did not create the Plotter with pyplot, is it possible to do this?
         # If not we should clearly raise.
+        import matplotlib.pyplot as plt
         plt.show(**kwargs)
 
     # TODO API for accessing the underlying matplotlib objects
     # TODO what else is useful in the public API for this class?
-
-    # def draw?
 
     def _repr_png_(self) -> tuple[bytes, dict[str, float]]:
 
@@ -634,8 +630,9 @@ class Plotter:
                         True, "all", {"x": "col", "y": "row"}[axis]
                     )
                 )
-                plt.setp(axis_obj.get_majorticklabels(), visible=show_tick_labels)
-                plt.setp(axis_obj.get_minorticklabels(), visible=show_tick_labels)
+                for group in ("major", "minor"):
+                    for t in getattr(axis_obj, f"get_{group}ticklabels")():
+                        t.set_visible(show_tick_labels)
 
             # TODO title template should be configurable
             # ---- Also we want right-side titles for row facets in most cases?
@@ -698,7 +695,7 @@ class Plotter:
                 var_df = pd.DataFrame(columns=cols)
 
             prop = Coordinate(axis)
-            scale = self._get_scale(p, prefix, prop, var_df[var])
+            scale_spec = self._get_scale(p, prefix, prop, var_df[var])
 
             # Shared categorical axes are broken on matplotlib<3.4.0.
             # https://github.com/matplotlib/matplotlib/pull/18308
@@ -707,7 +704,7 @@ class Plotter:
             if Version(mpl.__version__) < Version("3.4.0"):
                 from seaborn._core.scales import Nominal
                 paired_axis = axis in p._pair_spec
-                cat_scale = isinstance(scale, Nominal)
+                cat_scale = isinstance(scale_spec, Nominal)
                 ok_dim = {"x": "col", "y": "row"}[axis]
                 shared_axes = share_state not in [False, "none", ok_dim]
                 if paired_axis and cat_scale and shared_axes:
@@ -722,7 +719,7 @@ class Plotter:
             # Setup the scale on all of the data and plug it into self._scales
             # We do this because by the time we do self._setup_scales, coordinate data
             # will have been converted to floats already, so scale inference fails
-            self._scales[var] = scale.setup(var_df[var], prop)
+            self._scales[var] = scale_spec.setup(var_df[var], prop)
 
             # Set up an empty series to receive the transformed values.
             # We need this to handle piecemeal tranforms of categories -> floats.
@@ -752,16 +749,16 @@ class Plotter:
 
                     seed_values = var_df.loc[idx, var]
 
-                transform = scale.setup(seed_values, prop, axis=axis_obj)
+                scale = scale_spec.setup(seed_values, prop, axis=axis_obj)
 
                 for layer, new_series in zip(layers, transformed_data):
                     layer_df = layer["data"].frame
                     if var in layer_df:
                         idx = self._get_subplot_index(layer_df, view)
-                        new_series.loc[idx] = transform(layer_df.loc[idx, var])
+                        new_series.loc[idx] = scale(layer_df.loc[idx, var])
 
                 # TODO need decision about whether to do this or modify axis transform
-                set_scale_obj(view["ax"], axis, transform.matplotlib_scale)
+                set_scale_obj(view["ax"], axis, scale.matplotlib_scale)
 
             # Now the transformed data series are complete, set update the layer data
             for layer, new_series in zip(layers, transformed_data):
@@ -836,10 +833,7 @@ class Plotter:
 
         if var in spec._scales:
             arg = spec._scales[var]
-            if isinstance(arg, ScaleSpec):
-                scale = arg
-            elif arg is None:
-                # TODO identity scale
+            if arg is None or isinstance(arg, ScaleSpec):
                 scale = arg
             else:
                 scale = prop.infer_scale(arg, values)
