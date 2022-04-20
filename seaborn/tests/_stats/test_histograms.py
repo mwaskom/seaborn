@@ -114,13 +114,13 @@ class TestHist:
 
         h = Hist(stat="density")
         out = h(long_df, *single_args)
-        assert (out["y"] * out["width"]).sum() == 1
+        assert (out["y"] * out["space"]).sum() == 1
 
     def test_frequency_stat(self, long_df, single_args):
 
         h = Hist(stat="frequency")
         out = h(long_df, *single_args)
-        assert (out["y"] * out["width"]).sum() == len(long_df)
+        assert (out["y"] * out["space"]).sum() == len(long_df)
 
     def test_cumulative_count(self, long_df, single_args):
 
@@ -193,7 +193,7 @@ class TestHist:
         out = h(long_df, *single_args)
         hist, edges = np.histogram(long_df["x"], bins="auto")
         assert_array_equal(out["y"], hist)
-        assert_array_equal(out["width"], np.diff(edges))
+        assert_array_equal(out["space"], np.diff(edges))
 
     def test_histogram_multiple(self, long_df, triple_args):
 
@@ -204,4 +204,4 @@ class TestHist:
             x = long_df.loc[(long_df["a"] == a) & (long_df["s"] == s), "x"]
             hist, edges = np.histogram(x, bins=bins)
             assert_array_equal(out_part["y"], hist)
-            assert_array_equal(out_part["width"], np.diff(edges))
+            assert_array_equal(out_part["space"], np.diff(edges))

@@ -31,6 +31,8 @@ class Hist(Stat):
 
     def _define_bin_edges(self, vals, weight, bins, binwidth, binrange, discrete):
         """Inner function that takes bin parameters as arguments."""
+        vals = vals.dropna()
+
         if binrange is None:
             start, stop = vals.min(), vals.max()
         else:
@@ -54,6 +56,7 @@ class Hist(Stat):
         weight = data.get("weight", None)
 
         # TODO We'll want this for ordinal / discrete scales too
+        # (Do we need discrete as a parameter or just infer from scale?)
         discrete = self.discrete or scale_type == "nominal"
 
         bin_edges = self._define_bin_edges(
@@ -88,7 +91,7 @@ class Hist(Stat):
         pos = bin_edges[:-1] + width / 2
         other = {"x": "y", "y": "x"}[orient]
 
-        return pd.DataFrame({orient: pos, other: hist, "width": width})
+        return pd.DataFrame({orient: pos, other: hist, "space": width})
 
     def _normalize(self, data, orient):
 
@@ -100,11 +103,11 @@ class Hist(Stat):
         elif self.stat == "percent":
             hist = hist.astype(float) / hist.sum() * 100
         elif self.stat == "frequency":
-            hist = hist.astype(float) / data["width"]
+            hist = hist.astype(float) / data["space"]
 
         if self.cumulative:
             if self.stat in ["density", "frequency"]:
-                hist = (hist * data["width"]).cumsum()
+                hist = (hist * data["space"]).cumsum()
             else:
                 hist = hist.cumsum()
 
@@ -125,6 +128,11 @@ class Hist(Stat):
             data = bin_groupby.apply(
                 data, self._get_bins_and_eval, orient, groupby, scale_type,
             )
+
+        # TODO Make this an option?
+        # (This needs to be tested if enabled, and maybe should be in _eval)
+        # other = {"x": "y", "y": "x"}[orient]
+        # data = data[data[other] > 0]
 
         if not grouping_vars or self.common_norm is True:
             data = self._normalize(data, orient)

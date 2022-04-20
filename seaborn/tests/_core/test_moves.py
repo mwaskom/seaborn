@@ -55,16 +55,6 @@ class TestJitter(MoveFixtures):
         self.check_same(res, df, "y", "grp2", "width")
         self.check_pos(res, df, "x", width * df["width"])
 
-    def test_height(self, df):
-
-        df["height"] = df["width"]
-        height = .4
-        orient = "y"
-        groupby = self.get_groupby(df, orient)
-        res = Jitter(height=height)(df, groupby, orient)
-        self.check_same(res, df, "y", "grp2", "width")
-        self.check_pos(res, df, "x", height * df["height"])
-
     def test_x(self, df):
 
         val = .2

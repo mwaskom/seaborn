@@ -53,6 +53,7 @@ class Bar(Mark):
 
         def coords_to_geometry(x, y, w, b):
             # TODO possible too slow with lots of bars (e.g. dense hist)
+            # Why not just use BarCollection?
             if orient == "x":
                 w, h = w, y - b
                 xy = x - w / 2, b
@@ -61,7 +62,6 @@ class Bar(Mark):
                 xy = b, y - h / 2
             return xy, w, h
 
-        # TODO pass scales *into* split_gen?
         for keys, data, ax in split_gen():
 
             xys = data[["x", "y"]].to_numpy()
@@ -70,7 +70,8 @@ class Bar(Mark):
             bars = []
             for i, (x, y) in enumerate(xys):
 
-                width, baseline = data["width"][i], data["baseline"][i]
+                baseline = data["baseline"][i]
+                width = data["width"][i]
                 xy, w, h = coords_to_geometry(x, y, width, baseline)
 
                 bar = mpl.patches.Rectangle(

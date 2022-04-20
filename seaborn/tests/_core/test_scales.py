@@ -33,19 +33,19 @@ class TestContinuous:
 
         s = Continuous().setup(x, Coordinate())
         assert_series_equal(s(x), x)
-        assert_series_equal(s.invert_transform(x), x)
+        assert_series_equal(s.invert_axis_transform(s(x)), x)
 
     def test_coordinate_transform(self, x):
 
         s = Continuous(transform="log").setup(x, Coordinate())
         assert_series_equal(s(x), np.log10(x))
-        assert_series_equal(s.invert_transform(s(x)), x)
+        assert_series_equal(s.invert_axis_transform(s(x)), x)
 
     def test_coordinate_transform_with_parameter(self, x):
 
         s = Continuous(transform="pow3").setup(x, Coordinate())
         assert_series_equal(s(x), np.power(x, 3))
-        assert_series_equal(s.invert_transform(s(x)), x)
+        assert_series_equal(s.invert_axis_transform(s(x)), x)
 
     def test_interval_defaults(self, x):
 
@@ -232,19 +232,19 @@ class TestNominal:
 
         s = Nominal().setup(x, Coordinate())
         assert_array_equal(s(x), np.array([0, 1, 2, 1], float))
-        assert_array_equal(s.invert_transform(s(x)), s(x))
+        assert_array_equal(s.invert_axis_transform(s(x)), s(x))
 
     def test_coordinate_with_order(self, x):
 
         s = Nominal(order=["a", "b", "c"]).setup(x, Coordinate())
         assert_array_equal(s(x), np.array([0, 2, 1, 2], float))
-        assert_array_equal(s.invert_transform(s(x)), s(x))
+        assert_array_equal(s.invert_axis_transform(s(x)), s(x))
 
     def test_coordinate_with_subset_order(self, x):
 
         s = Nominal(order=["c", "a"]).setup(x, Coordinate())
         assert_array_equal(s(x), np.array([1, 0, np.nan, 0], float))
-        assert_array_equal(s.invert_transform(s(x)), s(x))
+        assert_array_equal(s.invert_axis_transform(s(x)), s(x))
 
     def test_coordinate_axis(self, x):
 

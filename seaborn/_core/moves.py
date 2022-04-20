@@ -23,8 +23,6 @@ class Move:
 class Jitter(Move):
 
     width: float = 0
-    height: float = 0
-
     x: float = 0
     y: float = 0
 
@@ -49,13 +47,8 @@ class Jitter(Move):
             offsets = noise * scale
             return data[col] + offsets
 
-        w = orient
-        h = {"x": "y", "y": "x"}[orient]
-
         if self.width:
-            data[w] = jitter(data, w, self.width * data["width"])
-        if self.height:
-            data[h] = jitter(data, h, self.height * data["height"])
+            data[orient] = jitter(data, orient, self.width * data["width"])
         if self.x:
             data["x"] = jitter(data, "x", self.x)
         if self.y:
@@ -90,8 +83,8 @@ class Dodge(Move):
         def scale_widths(w):
             # TODO what value to fill missing widths??? Hard problem...
             # TODO short circuit this if outer widths has no variance?
-            space = 0 if self.empty == "fill" else w.mean()
-            filled = w.fillna(space)
+            empty = 0 if self.empty == "fill" else w.mean()
+            filled = w.fillna(empty)
             scale = filled.max()
             norm = filled.sum()
             if self.empty == "keep":

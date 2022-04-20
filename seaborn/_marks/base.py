@@ -153,6 +153,12 @@ class Mark:
         directly_specified = not isinstance(feature, Feature)
         return_array = isinstance(data, pd.DataFrame)
 
+        # Special case width because it needs to be resolved and added to the dataframe
+        # during layer prep (so the Move operations use it properly).
+        # TODO how does width *scaling* work, e.g. for violin width by count?
+        if name == "width":
+            directly_specified = directly_specified and name not in data
+
         if directly_specified:
             feature = prop.standardize(feature)
             if return_array:

@@ -52,7 +52,8 @@ There is an immense amount of wisdom in the grammar of graphics and in
 its particular implementation as ggplot2. But I think that, as
 languages, R and Python are just too different for idioms from one to
 feel natural when translated literally into the other. So while I have
-taken much inspiration from ggplot, I’ve also made plenty of choices
+taken much inspiration from ggplot (along with vegalite, and other
+declarative visualization libraries), I’ve also made plenty of choices
 differently, for better or for worse.
 
 --------------
@@ -135,7 +136,7 @@ Each layer can also have its own data:
 
     (
         so.Plot(tips, x="total_bill", y="tip")
-        .add(so.Scatter(color=".6"))
+        .add(so.Scatter(color=".6"), data=tips.query("size != 2"))
         .add(so.Scatter(), data=tips.query("size == 2"))
     )
 
@@ -310,15 +311,16 @@ objects to plug into the broader system:
 .. code:: ipython3
 
     class PeakAnnotation(so.Mark):
-        def _plot_split(self, keys, data, ax, kws):
-            ix = data["y"].idxmax()
-            ax.annotate(
-                "The peak", data.loc[ix, ["x", "y"]],
-                xytext=(10, -100), textcoords="offset points",
-                va="top", ha="center",
-                arrowprops=dict(arrowstyle="->", color=".2"),
-                
-            )
+        def plot(self, split_generator, scales, orient):
+            for keys, data, ax in split_generator():
+                ix = data["y"].idxmax()
+                ax.annotate(
+                    "The peak", data.loc[ix, ["x", "y"]],
+                    xytext=(10, -100), textcoords="offset points",
+                    va="top", ha="center",
+                    arrowprops=dict(arrowstyle="->", color=".2"),
+    
+                )
     
     (
         so.Plot(fmri, x="timepoint", y="signal")
@@ -453,7 +455,10 @@ a list:
 
     (
         so.Plot(tips, "day", "total_bill", color="time", alpha="smoker")
-        .add(so.Dot(), move=[so.Dodge(by=["color"]), so.Jitter(.5)])
+        .add(
+            so.Dot(),
+            move=[so.Dodge(by=["color"]), so.Jitter(.5)]
+        )
     )
 
 
@@ -471,20 +476,31 @@ can be created.
 
 --------------
 
-Configuring and customization
------------------------------
+Semantic mapping: the Scale
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-All of the existing customization (and more) is available, but in
-dedicated methods rather than one long list of keyword arguments:
+The declarative interface allows users to represent dataset variables
+with visual properites such as position, color or size. A complete plot
+can be made without doing anything more defining the mappings: users
+need not be concerned with converting their data into units that
+matplotlib understands. But what if one wants to alter the mapping that
+seaborn chooses? This is accomplished through the concept of a
+``Scale``.
+
+The notion of scaling will probably not be unfamiliar; as in matplotlib,
+seaborn allows one to apply a mathematical transformation, such as
+``log``, to the coordinate variables:
 
 .. code:: ipython3
 
-    planets = seaborn.load_dataset("planets").query("distance < 1000000")
+    planets = seaborn.load_dataset("planets").query("distance < 1000")
+
+.. code:: ipython3
+
     (
-        so.Plot(planets, x="mass", y="distance", color="year")
-        .map_color("flare", norm=(2000, 2010))
-        .scale_numeric("x", "log")
-        .add(so.Scatter(pointsize=3))
+        so.Plot(planets, x="mass", y="distance")
+        .scale(x="log", y="log")
+        .add(so.Scatter())
     )
 
 
@@ -496,15 +512,16 @@ dedicated methods rather than one long list of keyword arguments:
 
 
 
-The interface is declarative; methods can be called in any order:
+But the ``Scale`` concept is much more general in seaborn: a scale can
+be provided for any mappable property. For example, it is how you
+specify the palette used for color variables:
 
 .. code:: ipython3
 
     (
-        so.Plot(planets, x="mass", y="distance", color="year")
-        .add(so.Scatter(pointsize=3))
-        .scale_numeric("x", "log")
-        .map_color("flare", norm=(2000, 2010))
+        so.Plot(planets, x="mass", y="distance", color="orbital_period")
+        .scale(x="log", y="log", color="rocket")
+        .add(so.Scatter())
     )
 
 
@@ -516,16 +533,23 @@ The interface is declarative; methods can be called in any order:
 
 
 
-When an axis has a nonlinear scale, any statistical transformations or
-adjustments take place in the appropriate space:
+While there are a number of short-hand “magic” arguments you can provide
+for each scale, it is also possible to be more explicit by passing a
+``Scale`` object. There are several distinct ``Scale`` classes,
+corresponding to the fundamental scale types (nominal, ordinal,
+continuous, etc.). Each class exposes a number of relevant parameters
+that control the details of the mapping:
 
 .. code:: ipython3
 
     (
-        so.Plot(planets, x="year", y="orbital_period")
-        .scale_numeric("y", "log")
-        .add(so.Scatter(alpha=.5, marker="x"), color="method")
-        .add(so.Line(linewidth=2, color=".2"), so.Agg())
+        so.Plot(planets, x="mass", y="distance", color="orbital_period")
+        .scale(
+            x="log",
+            y=so.Continuous(transform="log").tick(at=[3, 10, 30, 100, 300]),
+            color=so.Continuous("rocket", transform="log"),
+        )
+        .add(so.Scatter())
     )
 
 
@@ -537,12 +561,19 @@ adjustments take place in the appropriate space:
 
 
 
-The object tries to do inference and use smart defaults for mapping and
-scaling:
+There are several different kinds of scales, including scales
+appropriate for categorical data:
 
 .. code:: ipython3
 
-    so.Plot(tips, x="size", y="total_bill", color="size").add(so.Dot())
+    (
+        so.Plot(planets, x="year", y="distance", color="method")
+        .scale(
+            y="log",
+            color=so.Nominal(["b", "g"], order=["Radial Velocity", "Transit"])
+        )
+        .add(so.Scatter())
+    )
 
 
 
@@ -553,15 +584,15 @@ scaling:
 
 
 
-But also allows explicit control:
+It’s also possible to disable scaling for a variable so that the literal
+values in the dataset are passed directly through to matplotlib:
 
 .. code:: ipython3
 
     (
-        so.Plot(tips, x="size", y="total_bill", color="size")
-        .scale_categorical("x")
-        .scale_categorical("color")
-        .add(so.Dot())
+        so.Plot(planets, x="distance", y="orbital_period", pointsize="mass")
+        .scale(x="log", y="log", pointsize=None)
+        .add(so.Scatter())
     )
 
 
@@ -573,15 +604,13 @@ But also allows explicit control:
 
 
 
-As well as passing through literal values for the visual properties:
+Scaling interacts with the ``Stat`` and ``Move`` transformations. When
+an axis has a nonlinear scale, any statistical transformations or
+adjustments take place in the appropriate space:
 
 .. code:: ipython3
 
-    (
-        so.Plot(x=[1, 2, 3], y=[1, 2, 3], color=["dodgerblue", "#569721", "C3"])
-        .scale_identity("color")
-        .add(so.Dot(pointsize=20))
-    )
+    so.Plot(planets, x="distance").add(so.Bar(), so.Hist()).scale(x="log")
 
 
 
@@ -592,16 +621,17 @@ As well as passing through literal values for the visual properties:
 
 
 
-Layers can be generically passed an ``orient`` parameter that controls
-the axis of statistical transformation and how the mark is drawn:
+This is also true of the ``Move`` transformations:
 
 .. code:: ipython3
 
     (
-        so.Plot(planets, y="year", x="orbital_period")
-        .scale_numeric("x", "log")
-        .add(so.Scatter(alpha=.5, marker="x"), color="method")
-        .add(so.Line(linewidth=2, color=".2"), so.Agg(), orient="h")
+        so.Plot(
+            planets, x="distance",
+            color=(planets["number"] > 1).rename("multiple")
+        )
+        .add(so.Bar(), so.Hist(), so.Dodge())
+        .scale(x="log")
     )
 
 
@@ -618,23 +648,9 @@ the axis of statistical transformation and how the mark is drawn:
 Defining subplot structure
 --------------------------
 
-Faceting is built into the interface implicitly by assigning a faceting
-variable:
-
-.. code:: ipython3
-
-    so.Plot(tips, x="total_bill", y="tip", col="time").add(so.Scatter())
-
-
-
-
-.. image:: index_files/index_64_0.png
-   :width: 489.59999999999997px
-   :height: 326.4px
-
-
-
-Or by explicit declaration:
+Seaborn’s faceting functionality (drawing subsets of the data on
+distinct subplots) is built into the ``Plot`` object and works
+interchangably with any ``Mark``/``Stat``/``Move``/``Scale`` spec:
 
 .. code:: ipython3
 
@@ -647,7 +663,7 @@ Or by explicit declaration:
 
 
 
-.. image:: index_files/index_66_0.png
+.. image:: index_files/index_64_0.png
    :width: 489.59999999999997px
    :height: 326.4px
 
@@ -659,7 +675,8 @@ so that a plot is simply replicated across each column (or row):
 .. code:: ipython3
 
     (
-        so.Plot(tips, x="total_bill", y="tip", col="day")
+        so.Plot(tips, x="total_bill", y="tip")
+        .facet(col="day")
         .add(so.Scatter(color=".75"), col=None)
         .add(so.Scatter(), color="day")
         .configure(figsize=(7, 3))
@@ -668,7 +685,7 @@ so that a plot is simply replicated across each column (or row):
 
 
 
-.. image:: index_files/index_68_0.png
+.. image:: index_files/index_66_0.png
    :width: 571.1999999999999px
    :height: 244.79999999999998px
 
@@ -687,7 +704,7 @@ The ``Plot`` object *also* subsumes the ``PairGrid`` functionality:
 
 
 
-.. image:: index_files/index_70_0.png
+.. image:: index_files/index_68_0.png
    :width: 489.59999999999997px
    :height: 326.4px
 
@@ -707,7 +724,7 @@ Pairing and faceting can be combined in the same plot:
 
 
 
-.. image:: index_files/index_72_0.png
+.. image:: index_files/index_70_0.png
    :width: 489.59999999999997px
    :height: 326.4px
 
@@ -719,7 +736,7 @@ between variables:
 .. code:: ipython3
 
     (
-        so.Plot(tips, x="day")
+        so.Plot(tips)
         .pair(x=["day", "time"], y=["total_bill", "tip"], cartesian=False)
         .add(so.Dot())
     )
@@ -727,7 +744,7 @@ between variables:
 
 
 
-.. image:: index_files/index_74_0.png
+.. image:: index_files/index_72_0.png
    :width: 489.59999999999997px
    :height: 326.4px
 
@@ -741,22 +758,17 @@ be “wrapped”, and this works both columwise and rowwise:
 
 .. code:: ipython3
 
-    class Histogram(so.Mark):  # TODO replace once we implement
-        def _plot_split(self, keys, data, ax, kws):
-            ax.hist(data["x"], bins="auto", **kws)
-            ax.set_ylabel("count")
-    
     (
         so.Plot(tips)
         .pair(x=tips.columns, wrap=3)
         .configure(sharey=False)
-        .add(Histogram())
-    )      
+        .add(so.Bar(), so.Hist())
+    )
 
 
 
 
-.. image:: index_files/index_76_0.png
+.. image:: index_files/index_74_0.png
    :width: 489.59999999999997px
    :height: 326.4px
 
@@ -789,7 +801,7 @@ showing it:
 
 
 
-.. image:: index_files/index_81_0.png
+.. image:: index_files/index_79_0.png
    :width: 489.59999999999997px
    :height: 326.4px
 
@@ -803,7 +815,7 @@ and then iterate on different versions of it.
 
     p = (
         so.Plot(fmri, x="timepoint", y="signal", color="event")
-        .map_color(palette="crest")
+        .scale(color="crest")
     )
 
 .. code:: ipython3
@@ -813,7 +825,7 @@ and then iterate on different versions of it.
 
 
 
-.. image:: index_files/index_84_0.png
+.. image:: index_files/index_82_0.png
    :width: 489.59999999999997px
    :height: 326.4px
 
@@ -826,7 +838,7 @@ and then iterate on different versions of it.
 
 
 
-.. image:: index_files/index_85_0.png
+.. image:: index_files/index_83_0.png
    :width: 489.59999999999997px
    :height: 326.4px
 
@@ -839,7 +851,7 @@ and then iterate on different versions of it.
 
 
 
-.. image:: index_files/index_86_0.png
+.. image:: index_files/index_84_0.png
    :width: 489.59999999999997px
    :height: 326.4px
 
@@ -856,7 +868,7 @@ and then iterate on different versions of it.
 
 
 
-.. image:: index_files/index_87_0.png
+.. image:: index_files/index_85_0.png
    :width: 489.59999999999997px
    :height: 326.4px
 
@@ -878,7 +890,7 @@ Notice how this looks lower-res: that’s because ``Plot`` is generating
 
 
 
-.. image:: index_files/index_89_0.png
+.. image:: index_files/index_87_0.png
 
 
 --------------
@@ -904,7 +916,7 @@ parameter. The ``Plot`` object *will* provide a similar functionality:
 
 
 
-.. image:: index_files/index_91_0.png
+.. image:: index_files/index_89_0.png
    :width: 489.59999999999997px
    :height: 326.4px
 
@@ -928,7 +940,7 @@ figure. That is no longer the case; ``Plot.on()`` also accepts a
 
 
 
-.. image:: index_files/index_93_0.png
+.. image:: index_files/index_91_0.png
    :width: 489.59999999999997px
    :height: 326.4px
 
@@ -961,7 +973,7 @@ small-multiples plot *within* a larger set of subplots:
 
 
 
-.. image:: index_files/index_95_0.png
+.. image:: index_files/index_93_0.png
    :width: 652.8px
    :height: 326.4px
 

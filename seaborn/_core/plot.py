@@ -723,10 +723,10 @@ class Plotter:
 
             # Set up an empty series to receive the transformed values.
             # We need this to handle piecemeal tranforms of categories -> floats.
-            transformed_data = [
-                pd.Series(dtype=float, index=layer["data"].frame.index, name=var)
-                for layer in layers
-            ]
+            transformed_data = []
+            for layer in layers:
+                index = layer["data"].frame.index
+                transformed_data.append(pd.Series(dtype=float, index=index, name=var))
 
             for view in subplots:
                 axis_obj = getattr(view["ax"], f"{axis}axis")
@@ -891,7 +891,10 @@ class Plotter:
                 # We don't really need a ScaleSpec, and Identity() will be
                 # overloaded anyway (but maybe a general Identity object
                 # that can be used as Scale/Mark/Stat/Move?)
-                self._scales[var] = Scale([], [], None, "identity", None)
+                # Note that this may not be the right spacer to use
+                # (but that is only relevant for coordinates where identity scale
+                # doesn't make sense or is poorly defined — should it mean "pixes"?)
+                self._scales[var] = Scale([], lambda x: x, None, "identity", None)
             else:
                 self._scales[var] = scale.setup(var_values, prop)
 
@@ -918,15 +921,14 @@ class Plotter:
                 if var not in "xy" and var in scales:
                     return scales[var].order
 
-            # TODO get this from the Mark, otherwise scale by natural spacing?
-            # (But what about sparse categoricals? categorical always width/height=1
-            # Should default width/height be 1 and then get scaled by Mark.width?
-            # Also note tricky thing, width attached to mark does not get rescaled
-            # during dodge, but then it dominates during feature resolution
-            if "width" not in df:
-                df["width"] = 0.8
-            if "height" not in df:
-                df["height"] = 0.8
+            if "width" in mark.features:
+                width = mark._resolve(df, "width", None)
+            elif "width" in df:
+                width = df["width"]
+            else:
+                width = 0.8  # TODO what default?
+            if orient in df:
+                df["width"] = width * scales[orient].spacing(df[orient])
 
             if move is not None:
                 moves = move if isinstance(move, list) else [move]
@@ -942,7 +944,7 @@ class Plotter:
 
             # TODO unscale coords using axes transforms rather than scales?
             # Also need to handle derivatives (min/max/width, etc)
-            df = self._unscale_coords(subplots, df)
+            df = self._unscale_coords(subplots, df, orient)
 
             grouping_vars = mark.grouping_vars + default_grouping_vars
             split_generator = self._setup_split_generator(
@@ -972,43 +974,43 @@ class Plotter:
             view_df = self._filter_subplot_data(df, view)
             axes_df = view_df[coord_cols]
             with pd.option_context("mode.use_inf_as_null", True):
-                axes_df = axes_df.dropna()  # TODO do we actually need/want this?
+                # TODO Is this just removing infs (since nans get added back?)
+                axes_df = axes_df.dropna()
             for var, values in axes_df.items():
                 scale = view[f"{var[0]}scale"]
                 out_df.loc[values.index, var] = scale(values)
 
         return out_df
 
-    def _unscale_coords(self, subplots: list[dict], df: DataFrame) -> DataFrame:
-        # TODO stricter types for subplots
+    def _unscale_coords(
+        self, subplots: list[dict], df: DataFrame, orient: str,
+    ) -> DataFrame:
+        # TODO do we still have numbers in the variable name at this point?
         coord_cols = [c for c in df if re.match(r"^[xy]\D*$", c)]
+        drop_cols = [*coord_cols, "width"] if "width" in df else coord_cols
         out_df = (
             df
-            .drop(coord_cols, axis=1)
-            .copy(deep=False)
+            .drop(drop_cols, axis=1)
             .reindex(df.columns, axis=1)  # So unscaled columns retain their place
+            .copy(deep=False)
         )
 
         for view in subplots:
             view_df = self._filter_subplot_data(df, view)
             axes_df = view_df[coord_cols]
             for var, values in axes_df.items():
+
                 axis = getattr(view["ax"], f"{var[0]}axis")
                 # TODO see https://github.com/matplotlib/matplotlib/issues/22713
-                inverted = axis.get_transform().inverted().transform(values)
+                transform = axis.get_transform().inverted().transform
+                inverted = transform(values)
                 out_df.loc[values.index, var] = inverted
 
-            """ TODO commenting this out to merge Hist work before bigger refactor
-            if "width" in subplot_df:
-                scale = subplot[f"{orient}scale"]
-                width = subplot_df["width"]
-                new_width = (
-                    scale.invert_transform(axes_df[orient] + width / 2)
-                    - scale.invert_transform(axes_df[orient] - width / 2)
-                )
-                # TODO don't mutate
-                out_df.loc[values.index, "width"] = new_width
-            """
+                if var == orient and "width" in view_df:
+                    width = view_df["width"]
+                    out_df.loc[values.index, "width"] = (
+                        transform(values + width / 2) - transform(values - width / 2)
+                    )
 
         return out_df
 

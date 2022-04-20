@@ -577,7 +577,7 @@ class TestPlotting:
 
     def test_single_split_multi_layer(self, long_df):
 
-        vs = [{"color": "a", "width": "z"}, {"color": "b", "pattern": "c"}]
+        vs = [{"color": "a", "linewidth": "z"}, {"color": "b", "pattern": "c"}]
 
         class NoGroupingMark(MockMark):
             grouping_vars = []

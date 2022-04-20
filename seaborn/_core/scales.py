@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from functools import partial
 
 import numpy as np
+import pandas as pd
 import matplotlib as mpl
 from matplotlib.ticker import (
     Locator,
@@ -43,14 +44,14 @@ class Scale:
     def __init__(
         self,
         forward_pipe: Pipeline,
-        inverse_pipe: Pipeline,
+        spacer: Callable[[Series], float],
         legend: tuple[list[Any], list[str]] | None,
         scale_type: Literal["nominal", "continuous"],
         matplotlib_scale: MatplotlibScale,
     ):
 
         self.forward_pipe = forward_pipe
-        self.inverse_pipe = inverse_pipe
+        self.spacer = spacer
         self.legend = legend
         self.scale_type = scale_type
         self.matplotlib_scale = matplotlib_scale
@@ -61,6 +62,8 @@ class Scale:
     def __call__(self, data: Series) -> ArrayLike:
 
         return self._apply_pipeline(data, self.forward_pipe)
+
+    # TODO def as_identity(cls):  ?
 
     def _apply_pipeline(
         self, data: ArrayLike, pipeline: Pipeline,
@@ -81,9 +84,15 @@ class Scale:
 
         return data
 
-    def invert_transform(self, data):
-        assert self.inverse_pipe is not None  # TODO raise or no-op?
-        return self._apply_pipeline(data, self.inverse_pipe)
+    def spacing(self, data: Series) -> float:
+        return self.spacer(data)
+
+    def invert_axis_transform(self, x):
+        finv = self.matplotlib_scale.get_transform().inverted().transform
+        out = finv(x)
+        if isinstance(x, pd.Series):
+            return pd.Series(out, index=x.index, name=x.name)
+        return out
 
 
 @dataclass
@@ -166,14 +175,15 @@ class Nominal(ScaleSpec):
             # TODO how to handle color representation consistency?
         ]
 
-        inverse_pipe: Pipeline = []
+        def spacer(x):
+            return 1
 
         if prop.legend:
             legend = units_seed, list(stringify(units_seed))
         else:
             legend = None
 
-        scale = Scale(forward_pipe, inverse_pipe, legend, "nominal", mpl_scale)
+        scale = Scale(forward_pipe, spacer, legend, "nominal", mpl_scale)
         return scale
 
 
@@ -364,8 +374,8 @@ class Continuous(ScaleSpec):
             prop.get_mapping(new, data)
         ]
 
-        # TODO if we invert using axis.get_transform(), we don't need this
-        inverse_pipe = [inverse]
+        def spacer(x):
+            return np.min(np.diff(np.sort(x.unique())))
 
         # TODO make legend optional on per-plot basis with ScaleSpec parameter?
         if prop.legend:
@@ -378,7 +388,7 @@ class Continuous(ScaleSpec):
         else:
             legend = None
 
-        return Scale(forward_pipe, inverse_pipe, legend, "continuous", mpl_scale)
+        return Scale(forward_pipe, spacer, legend, "continuous", mpl_scale)
 
     def _get_transform(self):
 
