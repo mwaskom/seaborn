@@ -516,6 +516,18 @@ class TestAxisScaling:
         Plot(x=x, y=y, linewidth=lw).scale(linewidth=None).add(m).plot()
         assert_vector_equal(m.passed_scales["linewidth"](lw), lw)
 
+    def test_inferred_nominal_passed_to_stat(self):
+
+        class MockStat(Stat):
+            def __call__(self, data, groupby, orient, scales):
+                self.scales = scales
+                return data
+
+        s = MockStat()
+        y = ["a", "a", "b", "c"]
+        Plot(y=y).add(MockMark(), s).plot()
+        assert s.scales["y"].scale_type == "nominal"
+
     # TODO where should RGB consistency be enforced?
     @pytest.mark.xfail(
         reason="Correct output representation for color with identity scale undefined"

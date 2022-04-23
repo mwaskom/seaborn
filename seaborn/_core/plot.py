@@ -803,24 +803,14 @@ class Plotter:
                         drop_cols = [x for x in df if re.match(rf"{axis}\d+", x)]
                         df = df.drop(drop_cols, axis=1)
 
-                # TODO with the refactor we haven't set up scales at this point
-                # But we need them to determine orient in ambiguous cases
-                # It feels cumbersome to be doing this repeatedly, but I am not
-                # sure if it is cleaner to make piecemeal additions to self._scales
-                scales = {}
-                for axis in "xy":
-                    if axis in df:
-                        prop = Coordinate(axis)
-                        scale = self._get_scale(spec, axis, prop, df[axis])
-                        scales[axis] = scale.setup(df[axis], prop)
-                orient = layer["orient"] or mark._infer_orient(scales)
+                orient = layer["orient"] or mark._infer_orient(self._scales)
 
                 if stat.group_by_orient:
                     grouper = [orient, *grouping_vars]
                 else:
                     grouper = grouping_vars
                 groupby = GroupBy(grouper)
-                res = stat(df, groupby, orient, scales)
+                res = stat(df, groupby, orient, self._scales)
 
                 if pair_vars:
                     data.frames[coord_vars] = res
