@@ -31,6 +31,9 @@ release = 'nextgen'
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
+    "sphinx.ext.autodoc",
+    "sphinx.ext.intersphinx",
+    "numpydoc",
     "IPython.sphinxext.ipython_console_highlighting",
 ]
 
@@ -42,6 +45,11 @@ templates_path = ['_templates']
 # This pattern also affects html_static_path and html_extra_path.
 exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store', '.ipynb_checkpoints']
 
+# The reST default role (used for this markup: `text`) to use for all documents.
+default_role = 'literal'
+
+autosummary_generate = True
+numpydoc_show_class_members = False
 
 # -- Options for HTML output -------------------------------------------------
 
@@ -65,4 +73,15 @@ html_logo = "_static/logo.svg"
 html_sidebars = {
     # "**": [],
     "index": ["page-toc"]
+}
+
+
+# -- Intersphinx ------------------------------------------------
+
+intersphinx_mapping = {
+    'numpy': ('https://numpy.org/doc/stable/', None),
+    'scipy': ('https://docs.scipy.org/doc/scipy/reference/', None),
+    'matplotlib': ('https://matplotlib.org/stable', None),
+    'pandas': ('https://pandas.pydata.org/pandas-docs/stable/', None),
+    'statsmodels': ('https://www.statsmodels.org/stable/', None)
 }

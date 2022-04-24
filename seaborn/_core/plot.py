@@ -67,7 +67,10 @@ class PairSpec(TypedDict, total=False):
 
 
 class Plot:
+    """
+    Declarative specification of a statistical graphic.
 
+    """
     # TODO use TypedDict throughout?
 
     _data: PlotData
@@ -157,8 +160,11 @@ class Plot:
 
     def __add__(self, other):
 
-        # TODO restrict to Mark / Stat etc?
-        raise TypeError("Sorry, this isn't ggplot! Perhaps try Plot.add?")
+        if isinstance(other, Mark) or isinstance(other, Stat):
+            raise TypeError("Sorry, this isn't ggplot! Perhaps try Plot.add?")
+
+        other_type = other.__class__.__name__
+        raise TypeError(f"Unsupported operand type(s) for +: 'Plot' and '{other_type}")
 
     def _repr_png_(self) -> tuple[bytes, dict[str, float]]:
 
@@ -197,7 +203,18 @@ class Plot:
         return variables
 
     def on(self, target: Axes | SubFigure | Figure) -> Plot:
+        """
+        Draw the plot into an existing Matplotlib object.
 
+        Parameters
+        ----------
+        target : Axes, SubFigure, or Figure
+            Matplotlib object to use. Passing :class:`matplotlib.axes.Axes` will add
+            artists without otherwise modifying the figure. Otherwise, subplots will be
+            created within the space of the given :class:`matplotlib.figure.Figure` or
+            :class:`matplotlib.figure.SubFigure`.
+
+        """
         # TODO alternate name: target?
 
         accepted_types: tuple  # Allow tuple of various length
@@ -228,12 +245,40 @@ class Plot:
         self,
         mark: Mark,
         stat: Stat | None = None,
-        move: Move | None = None,
+        move: Move | None = None,  # TODO or list[Move]
+        *,
         orient: str | None = None,
         data: DataSource = None,
         **variables: VariableSpec,
     ) -> Plot:
+        """
+        Define a layer of the visualization.
 
+        This is the main method for specifying how the data should be visualized.
+        It can be called multiple times with different arguments to define
+        a plot with multiple layers.
+
+        Parameters
+        ----------
+        mark : :class:`seaborn.objects.Mark`
+            The visual representation of the data to use in this layer.
+        stat : :class:`seaborn.objects.Stat`
+            A transformation applied to the data before plotting.
+        move : :class:`seaborn.objects.Move`
+            Additional transformation(s) to handle over-plotting.
+        orient : "x", "y", "v", or "h"
+            The orientation of the mark, which affects how the stat is computed.
+            Typically corresponds to the axis that defines groups for aggregation.
+            The "v" (vertical) and "h" (horizontal) options are synonyms for "x" / "y",
+            but may be more intuitive with some marks. When not provided, an
+            orientation will be inferred from characteristics of the data and scales.
+        data : DataFrame or dict
+            Data source to override the global source provided in the constructor.
+        variables : data vectors or identifiers
+            Additional layer-specific variables, including variables that will be
+            passed directly to the stat without scaling.
+
+        """
         # TODO do a check here that mark has been initialized,
         # otherwise errors will be inscrutable
 
@@ -241,14 +286,11 @@ class Plot:
         # if stat is None and hasattr(mark, "default_stat"):
         #     stat = mark.default_stat()
 
-        # TODO if data is supplied it overrides the global data object
-        # Another option would be to left join (layer_data, global_data)
-        # after dropping the column intersection from global_data
-        # (but join on what? always the index? that could get tricky...)
+        # TODO it doesn't work to supply scalars to variables, but that would be nice
 
         # TODO accept arbitrary variables defined by the stat (/move?) here
         # (but not in the Plot constructor)
-        # Should stat variables every go in the constructor, or just in the add call?
+        # Should stat variables ever go in the constructor, or just in the add call?
 
         new = self._clone()
         new._layers.append({
@@ -271,7 +313,22 @@ class Plot:
         # TODO other existing PairGrid things like corner?
         # TODO transpose, so that e.g. multiple y axes go across the columns
     ) -> Plot:
+        """
+        Produce subplots with distinct `x` and/or `y` variables.
 
+        Parameters
+        ----------
+        x, y : sequence(s) of data identifiers
+            Variables that will define the grid of subplots.
+        wrap : int
+            Maximum height/width of the grid, with additional subplots "wrapped"
+            on the other dimension. Requires that only one of `x` or `y` are set here.
+        cartesian : bool
+            When True, define a two-dimensional grid using the Cartesian product of `x`
+            and `y`.  Otherwise, define a one-dimensional grid by pairing `x` and `y`
+            entries in by position.
+
+        """
         # TODO Problems to solve:
         #
         # - Unclear is how to handle the diagonal plots that PairGrid offers
@@ -280,6 +337,7 @@ class Plot:
         #   and especially the axis scaling, which will need to be pair specific
 
         # TODO lists of vectors currently work, but I'm not sure where best to test
+        # Will need to update the signature typing to keep them
 
         # TODO is is weird to call .pair() to create univariate plots?
         # i.e. Plot(data).pair(x=[...]). The basic logic is fine.
@@ -346,7 +404,21 @@ class Plot:
         order: OrderSpec | dict[str, OrderSpec] = None,
         wrap: int | None = None,
     ) -> Plot:
+        """
+        Produce subplots with conditional subsets of the data.
 
+        Parameters
+        ----------
+        col, row : data vectors or identifiers
+            Variables used to define subsets along the columns and/or rows of the grid.
+            Can be references to the global data source passed in the constructor.
+        order : list of strings, or dict with dimensional keys
+            Define the order of the faceting variables.
+        wrap : int
+            Maximum height/width of the grid, with additional subplots "wrapped"
+            on the other dimension. Requires that only one of `x` or `y` are set here.
+
+        """
         variables = {}
         if col is not None:
             variables["col"] = col
@@ -385,7 +457,24 @@ class Plot:
     # TODO def twin()?
 
     def scale(self, **scales: ScaleSpec) -> Plot:
+        """
+        Control mappings from data units to visual properties.
 
+        Keywords correspond to variables defined in the plot, including coordinate
+        variables (`x`, `y`) and semantic variables (`color`, `pointsize`, etc.).
+
+        A number of "magic" arguments are accepted, including:
+            - The name of a transform (e.g., `"log"`, `"sqrt"`)
+            - The name of a palette (e.g., `"viridis"`, `"muted"`)
+            - A dict providing the value for each level (e.g. `{"a": .2, "b": .5}`)
+            - A list of values, implying a :class:`Nominal` scale (e.g. `["b", "r"]`)
+            - A tuple of values, defining the output range (e.g. `(1, 5)`)
+
+        For more explicit control, pass a scale spec object such as :class:`Continuous`
+        or :class:`Nominal`. Or use `None` to use an "identity" scale, which treats data
+        values as literally encoding visual properties.
+
+        """
         new = self._clone()
         new._scales.update(**scales)
         return new
@@ -396,7 +485,19 @@ class Plot:
         sharex: bool | str | None = None,
         sharey: bool | str | None = None,
     ) -> Plot:
+        """
+        Set figure parameters.
 
+        Parameters
+        ----------
+        figsize: (width, height)
+            Size of the resulting figure, in inches.
+        sharex, sharey : bool, "row", or "col"
+            Whether axis limits should be shared across subplots. Boolean values apply
+            across the entire grid, whereas `"row"` or `"col"` have a smaller scope.
+            Shared axes will have tick labels disabled.
+
+        """
         # TODO add an "auto" mode for figsize that roughly scales with the rcParams
         # figsize (so that works), but expands to prevent subplots from being squished
         # Also should we have height=, aspect=, exclusive with figsize? Or working
@@ -417,7 +518,12 @@ class Plot:
     # TODO def legend (ugh)
 
     def theme(self) -> Plot:
+        """
+        Control the default appearance of elements in the plot.
 
+        TODO
+ 
+        """
         # TODO Plot-specific themes using the seaborn theming system
         raise NotImplementedError
         new = self._clone()
@@ -426,12 +532,25 @@ class Plot:
     # TODO decorate? (or similar, for various texts) alt names: label?
 
     def save(self, fname, **kwargs) -> Plot:
-        # TODO kws?
+        """
+        Render the plot and write it to a buffer or file on disk.
+
+        Parameters
+        ----------
+        fname : str, path, or buffer
+            Location on disk to save the figure, or a buffer to write into.
+        Other keyword arguments are passed to :meth:`matplotlib.figure.Figure.savefig`.
+
+        """
+        # TODO expose important keyword arugments in our signature?
         self.plot().save(fname, **kwargs)
         return self
 
     def plot(self, pyplot=False) -> Plotter:
+        """
+        Render the plot and return the :class:`Plotter` engine.
 
+        """
         # TODO if we have _target object, pyplot should be determined by whether it
         # is hooked into the pyplot state machine (how do we check?)
 
@@ -449,8 +568,6 @@ class Plot:
         plotter._data = common
         plotter._layers = layers
 
-        # plotter._move_marks(self)  # TODO just do this as part of _plot_layer?
-
         for layer in layers:
             plotter._plot_layer(self, layer)
 
@@ -464,7 +581,10 @@ class Plot:
         return plotter
 
     def show(self, **kwargs) -> None:
+        """
+        Render and display the plot.
 
+        """
         # TODO make pyplot configurable at the class level, and when not using,
         # import IPython.display and call on self to populate cell output?
 
@@ -480,7 +600,12 @@ class Plot:
 
 
 class Plotter:
+    """
+    Engine for translating a :class:`Plot` spec into a Matplotlib figure.
 
+    This class is not intended to be instantiated directly by users.
+
+    """
     # TODO decide if we ever want these (Plot.plot(debug=True))?
     _data: PlotData
     _layers: list[Layer]
