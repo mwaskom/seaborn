@@ -299,7 +299,7 @@ class TestLayerAddition:
         assert p._variables == ["y", "x0", "x1"]
 
 
-class TestAxisScaling:
+class TestScaling:
 
     @pytest.mark.xfail(reason="Calendric scale not implemented")
     def test_inference(self, long_df):
@@ -515,6 +515,17 @@ class TestAxisScaling:
         lw = pd.Series([.5, .1, .1, .9, 3])
         Plot(x=x, y=y, linewidth=lw).scale(linewidth=None).add(m).plot()
         assert_vector_equal(m.passed_scales["linewidth"](lw), lw)
+
+    def test_pair_single_coordinate_stat_orient(self, long_df):
+
+        class MockStat(Stat):
+            def __call__(self, data, groupby, orient, scales):
+                self.orient = orient
+                return data
+
+        s = MockStat()
+        Plot(long_df).pair(x=["x", "y"]).add(MockMark(), s).plot()
+        assert s.orient == "x"
 
     def test_inferred_nominal_passed_to_stat(self):
 

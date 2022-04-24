@@ -522,7 +522,6 @@ class Plot:
         Control the default appearance of elements in the plot.
 
         TODO
- 
         """
         # TODO Plot-specific themes using the seaborn theming system
         raise NotImplementedError
@@ -906,20 +905,23 @@ class Plotter:
                 pairings = "xy", coord_vars
 
                 df = old.copy()
+                scales = self._scales.copy()
+
                 for axis, var in zip(*pairings):
                     if axis != var:
                         df = df.rename(columns={var: axis})
                         drop_cols = [x for x in df if re.match(rf"{axis}\d+", x)]
                         df = df.drop(drop_cols, axis=1)
+                        scales[axis] = scales[var]
 
-                orient = layer["orient"] or mark._infer_orient(self._scales)
+                orient = layer["orient"] or mark._infer_orient(scales)
 
                 if stat.group_by_orient:
                     grouper = [orient, *grouping_vars]
                 else:
                     grouper = grouping_vars
                 groupby = GroupBy(grouper)
-                res = stat(df, groupby, orient, self._scales)
+                res = stat(df, groupby, orient, scales)
 
                 if pair_vars:
                     data.frames[coord_vars] = res

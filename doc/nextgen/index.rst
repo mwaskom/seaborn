@@ -766,54 +766,12 @@ be “wrapped”, and this works both columwise and rowwise:
     )
 
 
-::
 
 
-    ---------------------------------------------------------------------------
+.. image:: index_files/index_74_0.png
+   :width: 489.59999999999997px
+   :height: 326.4px
 
-    KeyError                                  Traceback (most recent call last)
-
-    ~/miniconda3/envs/seaborn-py39-latest/lib/python3.9/site-packages/IPython/core/formatters.py in __call__(self, obj)
-        343             method = get_real_method(obj, self.print_method)
-        344             if method is not None:
-    --> 345                 return method()
-        346             return None
-        347         else:
-
-
-    ~/code/seaborn/seaborn/_core/plot.py in _repr_png_(self)
-        169     def _repr_png_(self) -> tuple[bytes, dict[str, float]]:
-        170 
-    --> 171         return self.plot()._repr_png_()
-        172 
-        173     # TODO _repr_svg_?
-
-
-    ~/code/seaborn/seaborn/_core/plot.py in plot(self, pyplot)
-        560         plotter._transform_coords(self, common, layers)
-        561 
-    --> 562         plotter._compute_stats(self, layers)
-        563         plotter._setup_scales(self, layers)
-        564 
-
-
-    ~/code/seaborn/seaborn/_core/plot.py in _compute_stats(self, spec, layers)
-        919                     grouper = grouping_vars
-        920                 groupby = GroupBy(grouper)
-    --> 921                 res = stat(df, groupby, orient, self._scales)
-        922 
-        923                 if pair_vars:
-
-
-    ~/code/seaborn/seaborn/_stats/histograms.py in __call__(self, data, groupby, orient, scales)
-        116     def __call__(self, data, groupby, orient, scales):
-        117 
-    --> 118         scale_type = scales[orient].scale_type
-        119         grouping_vars = [v for v in data if v in groupby.order]
-        120         if not grouping_vars or self.common_bins is True:
-
-
-    KeyError: 'y'
 
 
 Importantly, there’s no distinction between “axes-level” and
