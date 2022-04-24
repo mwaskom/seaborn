@@ -2,7 +2,6 @@ import functools
 import itertools
 import warnings
 import imghdr
-from distutils.version import LooseVersion
 
 import numpy as np
 import pandas as pd
@@ -19,6 +18,7 @@ from seaborn._core.rules import categorical_order
 from seaborn._core.moves import Move
 from seaborn._marks.base import Mark
 from seaborn._stats.base import Stat
+from seaborn.external.version import Version
 
 assert_vector_equal = functools.partial(
     # TODO do we care about int/float dtype consistency?
@@ -31,7 +31,7 @@ assert_vector_equal = functools.partial(
 def assert_gridspec_shape(ax, nrows=1, ncols=1):
 
     gs = ax.get_gridspec()
-    if LooseVersion(mpl.__version__) < "3.2":
+    if Version(mpl.__version__) < Version("3.2"):
         assert gs._nrows == nrows
         assert gs._ncols == ncols
     else:
@@ -420,7 +420,7 @@ class TestScaling:
         Plot(long_df, x=col).add(m).plot()
 
         expected = long_df[col].map(mpl.dates.date2num)
-        if LooseVersion(mpl.__version__) < "3.3":
+        if Version(mpl.__version__) < Version("3.3"):
             expected = expected + mpl.dates.date2num(np.datetime64('0000-12-31'))
 
         assert_vector_equal(m.passed_data[0]["x"], expected)
@@ -492,7 +492,7 @@ class TestScaling:
         assert_vector_equal(m.passed_data[1]["x"], pd.Series([0., 1.], [0, 1]))
 
     @pytest.mark.xfail(
-        LooseVersion(mpl.__version__) < "3.4.0",
+        Version(mpl.__version__) < Version("3.4.0"),
         reason="Sharing paired categorical axes requires matplotlib>3.4.0"
     )
     def test_pair_categories_shared(self):
@@ -906,7 +906,8 @@ class TestPlotting:
         assert p._figure is f
 
     @pytest.mark.skipif(
-        LooseVersion(mpl.__version__) < "3.4", reason="mpl<3.4 does not have SubFigure",
+        Version(mpl.__version__) < Version("3.4"),
+        reason="mpl<3.4 does not have SubFigure",
     )
     @pytest.mark.parametrize("facet", [True, False])
     def test_on_subfigure(self, facet):
@@ -1676,7 +1677,7 @@ class TestLegend:
         labels = [t.get_text() for t in legend.get_texts()]
         assert labels == names
 
-        if LooseVersion(mpl.__version__) >= "3.2":
+        if Version(mpl.__version__) >= Version("3.2"):
             contents = legend.get_children()[0]
             assert len(contents.findobj(mpl.lines.Line2D)) == len(names)
             assert len(contents.findobj(mpl.patches.Patch)) == len(names)
