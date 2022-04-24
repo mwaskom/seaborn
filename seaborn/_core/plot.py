@@ -110,9 +110,6 @@ class Plot:
 
         self._target = None
 
-        # TODO
-        self._inplace = False
-
     def _resolve_positionals(
         self,
         args: tuple[DataSource | VariableSpec, ...],
@@ -171,9 +168,6 @@ class Plot:
 
     def _clone(self) -> Plot:
 
-        if self._inplace:
-            return self
-
         new = Plot()
 
         # TODO any way to make sure data does not get mutated?
@@ -201,16 +195,6 @@ class Plot:
         for layer in self._layers:
             variables.extend(c for c in layer["vars"] if c not in variables)
         return variables
-
-    def inplace(self, val: bool | None = None) -> Plot:
-
-        # TODO I am not convinced we need this
-
-        if val is None:
-            self._inplace = not self._inplace
-        else:
-            self._inplace = val
-        return self
 
     def on(self, target: Axes | SubFigure | Figure) -> Plot:
 

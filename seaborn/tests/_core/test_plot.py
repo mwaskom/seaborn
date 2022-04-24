@@ -824,21 +824,6 @@ class TestPlotting:
         assert not p1._layers
         assert not p1._facet_spec
 
-    def test_inplace(self, long_df):
-
-        p1 = Plot(long_df, "x", "y")
-        p2 = p1.inplace().add(MockMark())
-        assert p2 is p1
-
-        p3 = p2.inplace().add(MockMark())
-        assert p3 is not p2
-
-        p4 = p3.inplace(False).add(MockMark())
-        assert p4 is not p3
-
-        p5 = p4.inplace(True).add(MockMark())
-        assert p5 is p4
-
     def test_default_is_no_pyplot(self):
 
         p = Plot().plot()
