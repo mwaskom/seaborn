@@ -99,7 +99,7 @@ class GroupBy:
         return res
 
     def apply(
-        self, data: DataFrame, func: Callable[[DataFrame], DataFrame],
+        self, data: DataFrame, func: Callable[..., DataFrame],
         *args, **kwargs,
     ) -> DataFrame:
         """Apply a DataFrame -> DataFrame mapping to each group."""

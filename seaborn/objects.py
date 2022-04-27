@@ -13,6 +13,6 @@ from seaborn._stats.aggregation import Agg  # noqa: F401
 from seaborn._stats.regression import OLSFit, PolyFit  # noqa: F401
 from seaborn._stats.histograms import Hist  # noqa: F401
 
-from seaborn._core.moves import Jitter, Dodge  # noqa: F401
+from seaborn._core.moves import Dodge, Jitter, Stack  # noqa: F401
 
 from seaborn._core.scales import Nominal, Discrete, Continuous  # noqa: F401

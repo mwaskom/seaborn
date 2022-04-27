@@ -1024,12 +1024,20 @@ class Plotter:
 
             if "width" in mark.features:
                 width = mark._resolve(df, "width", None)
-            elif "width" in df:
-                width = df["width"]
             else:
-                width = 0.8  # TODO what default?
+                width = df.get("width", 0.8)  # TODO what default
             if orient in df:
                 df["width"] = width * scales[orient].spacing(df[orient])
+
+            if "baseline" in mark.features:
+                # TODO what marks should have this?
+                # If we can set baseline with, e.g., Bar(), then the
+                # "other" (e.g. y for x oriented bars) parameterization
+                # is somewhat ambiguous.
+                baseline = mark._resolve(df, "baseline", None)
+            else:
+                baseline = df.get("baseline", 0)
+            df["baseline"] = baseline
 
             if move is not None:
                 moves = move if isinstance(move, list) else [move]

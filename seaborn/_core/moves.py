@@ -3,19 +3,18 @@ from dataclasses import dataclass
 
 import numpy as np
 
+from seaborn._core.groupby import GroupBy
+
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from typing import Optional
     from pandas import DataFrame
-    from seaborn._core.groupby import GroupBy
 
 
 @dataclass
 class Move:
 
-    def __call__(
-        self, data: DataFrame, groupby: GroupBy, orient: str,
-    ) -> DataFrame:
+    def __call__(self, data: DataFrame, groupby: GroupBy, orient: str) -> DataFrame:
         raise NotImplementedError
 
 
@@ -31,9 +30,7 @@ class Jitter(Move):
     # TODO what is the best way to have a reasonable default?
     # The problem is that "reasonable" seems dependent on the mark
 
-    def __call__(
-        self, data: DataFrame, groupby: GroupBy, orient: str,
-    ) -> DataFrame:
+    def __call__(self, data: DataFrame, groupby: GroupBy, orient: str) -> DataFrame:
 
         # TODO is it a problem that GroupBy is not used for anything here?
         # Should we type it as optional?
@@ -66,12 +63,9 @@ class Dodge(Move):
     # TODO accept just a str here?
     by: Optional[list[str]] = None
 
-    def __call__(
-        self, data: DataFrame, groupby: GroupBy, orient: str,
-    ) -> DataFrame:
+    def __call__(self, data: DataFrame, groupby: GroupBy, orient: str) -> DataFrame:
 
         grouping_vars = [v for v in groupby.order if v in data]
-
         groups = groupby.agg(data, {"width": "max"})
         if self.empty == "fill":
             groups = groups.dropna()
@@ -112,3 +106,33 @@ class Dodge(Move):
         )
 
         return out
+
+
+@dataclass
+class Stack(Move):
+
+    # TODO center (or should this be a different move?)
+
+    def _stack(self, df, orient):
+
+        # TODO should stack do something with ymin/ymax style marks?
+        # Should there be an upstream conversion to baseline/height parameterization?
+
+        if df["baseline"].nunique() > 1:
+            err = "Stack move cannot be used when baselines are already heterogeneous"
+            raise RuntimeError(err)
+
+        other = {"x": "y", "y": "x"}[orient]
+        stacked_lengths = (df[other] - df["baseline"]).dropna().cumsum()
+        offsets = stacked_lengths.shift(1).fillna(0)
+
+        df[other] = stacked_lengths
+        df["baseline"] = df["baseline"] + offsets
+
+        return df
+
+    def __call__(self, data: DataFrame, groupby: GroupBy, orient: str) -> DataFrame:
+
+        # TODO where to ensure that other semantic variables are sorted properly?
+        groupers = ["col", "row", orient]
+        return GroupBy(groupers).apply(data, self._stack, orient)

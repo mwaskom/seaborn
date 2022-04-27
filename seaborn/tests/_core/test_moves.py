@@ -6,7 +6,7 @@ import pandas as pd
 from pandas.testing import assert_series_equal
 from numpy.testing import assert_array_equal, assert_array_almost_equal
 
-from seaborn._core.moves import Dodge, Jitter
+from seaborn._core.moves import Dodge, Jitter, Stack
 from seaborn._core.rules import categorical_order
 from seaborn._core.groupby import GroupBy
 
@@ -24,7 +24,39 @@ class MoveFixtures:
             "y": rng.normal(0, 1, n),
             "grp2": rng.choice(["a", "b"], n),
             "grp3": rng.choice(["x", "y", "z"], n),
-            "width": 0.8
+            "width": 0.8,
+            "baseline": 0,
+        }
+        return pd.DataFrame(data)
+
+    @pytest.fixture
+    def toy_df(self):
+
+        data = {
+            "x": [0, 0, 1],
+            "y": [1, 2, 3],
+            "grp": ["a", "b", "b"],
+            "width": .8,
+            "baseline": 0,
+        }
+        return pd.DataFrame(data)
+
+    @pytest.fixture
+    def toy_df_widths(self, toy_df):
+
+        toy_df["width"] = [.8, .2, .4]
+        return toy_df
+
+    @pytest.fixture
+    def toy_df_facets(self):
+
+        data = {
+            "x": [0, 0, 1, 0, 1, 2],
+            "y": [1, 2, 3, 1, 2, 3],
+            "grp": ["a", "b", "a", "b", "a", "b"],
+            "col": ["x", "x", "x", "y", "y", "y"],
+            "width": .8,
+            "baseline": 0,
         }
         return pd.DataFrame(data)
 
@@ -87,35 +119,6 @@ class TestJitter(MoveFixtures):
 class TestDodge(MoveFixtures):
 
     # First some very simple toy examples
-
-    @pytest.fixture
-    def toy_df(self):
-
-        data = {
-            "x": [0, 0, 1],
-            "y": [1, 2, 3],
-            "grp": ["a", "b", "b"],
-            "width": .8,
-        }
-        return pd.DataFrame(data)
-
-    @pytest.fixture
-    def toy_df_widths(self, toy_df):
-
-        toy_df["width"] = [.8, .2, .4]
-        return toy_df
-
-    @pytest.fixture
-    def toy_df_facets(self):
-
-        data = {
-            "x": [0, 0, 1, 0, 1, 2],
-            "y": [1, 2, 3, 1, 2, 3],
-            "grp": ["a", "b", "a", "b", "a", "b"],
-            "col": ["x", "x", "x", "y", "y", "y"],
-            "width": .8,
-        }
-        return pd.DataFrame(data)
 
     def test_default(self, toy_df):
 
@@ -256,3 +259,44 @@ class TestDodge(MoveFixtures):
         for (v2, v3), shift in zip(product(*levels), shifts):
             rows = (df["grp2"] == v2) & (df["grp3"] == v3)
             assert_series_equal(res.loc[rows, "x"], df.loc[rows, "x"] + shift)
+
+
+class TestStack(MoveFixtures):
+
+    def test_basic(self, toy_df):
+
+        groupby = GroupBy(["color", "group"])
+        res = Stack()(toy_df, groupby, "x")
+
+        assert_array_equal(res["x"], [0, 0, 1])
+        assert_array_equal(res["y"], [1, 3, 3])
+        assert_array_equal(res["baseline"], [0, 1, 0])
+
+    def test_faceted(self, toy_df_facets):
+
+        groupby = GroupBy(["color", "group"])
+        res = Stack()(toy_df_facets, groupby, "x")
+
+        assert_array_equal(res["x"], [0, 0, 1, 0, 1, 2])
+        assert_array_equal(res["y"], [1, 3, 3, 1, 2, 3])
+        assert_array_equal(res["baseline"], [0, 1, 0, 0, 0, 0])
+
+    def test_misssing_data(self, toy_df):
+
+        df = pd.DataFrame({
+            "x": [0, 0, 0],
+            "y": [2, np.nan, 1],
+            "baseline": [0, 0, 0],
+        })
+        res = Stack()(df, None, "x")
+        assert_array_equal(res["y"], [2, np.nan, 3])
+        assert_array_equal(res["baseline"], [0, np.nan, 2])
+
+    def test_baseline_homogeneity_check(self, toy_df):
+
+        toy_df["baseline"] = [0, 1, 2]
+        groupby = GroupBy(["color", "group"])
+        move = Stack()
+        err = "Stack move cannot be used when baselines"
+        with pytest.raises(RuntimeError, match=err):
+            move(toy_df, groupby, "x")
