@@ -6,7 +6,7 @@ import pandas as pd
 from pandas.testing import assert_series_equal
 from numpy.testing import assert_array_equal, assert_array_almost_equal
 
-from seaborn._core.moves import Dodge, Jitter, Stack
+from seaborn._core.moves import Dodge, Jitter, Shift, Stack
 from seaborn._core.rules import categorical_order
 from seaborn._core.groupby import GroupBy
 
@@ -300,3 +300,21 @@ class TestStack(MoveFixtures):
         err = "Stack move cannot be used when baselines"
         with pytest.raises(RuntimeError, match=err):
             move(toy_df, groupby, "x")
+
+
+class TestShift(MoveFixtures):
+
+    def test_default(self, toy_df):
+
+        gb = GroupBy(["color", "group"])
+        res = Shift()(toy_df, gb, "x")
+        for col in toy_df:
+            assert_series_equal(toy_df[col], res[col])
+
+    @pytest.mark.parametrize("x,y", [(.3, 0), (0, .2), (.1, .3)])
+    def test_moves(self, toy_df, x, y):
+
+        gb = GroupBy(["color", "group"])
+        res = Shift(x=x, y=y)(toy_df, gb, "x")
+        assert_array_equal(res["x"], toy_df["x"] + x)
+        assert_array_equal(res["y"], toy_df["y"] + y)

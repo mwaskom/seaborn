@@ -111,7 +111,7 @@ class Dodge(Move):
 @dataclass
 class Stack(Move):
 
-    # TODO center (or should this be a different move?)
+    # TODO center? (or should this be a different move?)
 
     def _stack(self, df, orient):
 
@@ -136,3 +136,17 @@ class Stack(Move):
         # TODO where to ensure that other semantic variables are sorted properly?
         groupers = ["col", "row", orient]
         return GroupBy(groupers).apply(data, self._stack, orient)
+
+
+@dataclass
+class Shift(Move):
+
+    x: float = 0
+    y: float = 0
+
+    def __call__(self, data: DataFrame, groupby: GroupBy, orient: str) -> DataFrame:
+
+        data = data.copy(deep=False)
+        data["x"] = data["x"] + self.x
+        data["y"] = data["y"] + self.y
+        return data
