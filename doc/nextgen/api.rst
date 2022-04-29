@@ -2,8 +2,12 @@
 
 .. currentmodule:: seaborn.objects
 
-Nextgen API
-===========
+API
+===
+
+.. note::
+
+    This is a provisional API that is under active development, incomplete, and subject to change before release.
 
 Plot interface
 --------------
@@ -23,6 +27,43 @@ Plot interface
     Plot.save
     Plot.show
 
+Marks
+-----
+
+.. autosummary::
+    :toctree: api/
+    :nosignatures:
+
+    Area
+    Bar
+    Dot
+    Line
+    Scatter
+
+Stats
+-----
+
+.. autosummary::
+    :toctree: api/
+    :nosignatures:
+
+    Agg
+    Hist
+    PolyFit
+
+Moves
+-----
+
+.. autosummary::
+    :toctree: api/
+    :nosignatures:
+
+    Dodge
+    Jitter
+    Shift
+    Stack
+
+
 Scales
 ------
 
@@ -30,5 +71,5 @@ Scales
     :toctree: api/
     :nosignatures:
 
-    Nominal
     Continuous
+    Nominal

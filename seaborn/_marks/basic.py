@@ -20,6 +20,9 @@ if TYPE_CHECKING:
 
 @dataclass
 class Line(Mark):
+    """
+    A mark connecting data points with sorting along the orientation axis.
+    """
 
     # TODO other semantics (marker?)
 
@@ -28,6 +31,7 @@ class Line(Mark):
     linewidth: MappableFloat = Feature(rc="lines.linewidth", groups=True)
     linestyle: MappableStr = Feature(rc="lines.linestyle", groups=True)
 
+    # TODO alternately, have Path mark that doesn't sort
     sort: bool = True
 
     def plot(self, split_gen, scales, orient):
@@ -66,7 +70,9 @@ class Line(Mark):
 
 @dataclass
 class Area(Mark):
-
+    """
+    An interval mark that fills between baseline and data values.
+    """
     color: MappableColor = Feature("C0", groups=True)
     alpha: MappableFloat = Feature(1, groups=True)
 
@@ -79,6 +85,9 @@ class Area(Mark):
             keys = self.resolve_features(keys, scales)
             kws["facecolor"] = self._resolve_color(keys, scales=scales)
             kws["edgecolor"] = self._resolve_color(keys, scales=scales)
+
+            # TODO parametrize as baseline / value
+            # Use Ribbon for ymin/ymax parametrization
 
             # TODO how will orient work here?
             # Currently this requires you to specify both orient and use y, xmin, xmin

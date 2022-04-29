@@ -123,6 +123,9 @@ class ScaleSpec:
 
 @dataclass
 class Nominal(ScaleSpec):
+    """
+    A categorical scale without relative importance / magnitude.
+    """
     # Categorical (convert to strings), un-sortable
 
     order: list | None = None
@@ -201,6 +204,9 @@ class Discrete(ScaleSpec):
 
 @dataclass
 class Continuous(ScaleSpec):
+    """
+    A numeric scale on arbitrary floating point values.
+    """
 
     values: tuple | str | None = None
     norm: tuple[float | None, float | None] | None = None

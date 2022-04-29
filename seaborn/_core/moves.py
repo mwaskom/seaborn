@@ -20,7 +20,9 @@ class Move:
 
 @dataclass
 class Jitter(Move):
-
+    """
+    Random displacement of marks along either or both axes to reduce overplotting.
+    """
     width: float = 0
     x: float = 0
     y: float = 0
@@ -56,7 +58,9 @@ class Jitter(Move):
 
 @dataclass
 class Dodge(Move):
-
+    """
+    Displacement and narrowing of overlapping marks along orientation axis.
+    """
     empty: str = "keep"  # keep, drop, fill
     gap: float = 0
 
@@ -110,7 +114,9 @@ class Dodge(Move):
 
 @dataclass
 class Stack(Move):
-
+    """
+    Displacement of overlapping bar or area marks along the value axis.
+    """
     # TODO center? (or should this be a different move?)
 
     def _stack(self, df, orient):
@@ -140,7 +146,9 @@ class Stack(Move):
 
 @dataclass
 class Shift(Move):
-
+    """
+    Displacement of all marks with the same magnitude / direction.
+    """
     x: float = 0
     y: float = 0
 

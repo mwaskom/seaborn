@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 @dataclass
 class Agg(Stat):
     """
-    Aggregate the values of one coordinate variable using a specified method.
+    Aggregate data along the value axis using given method.
 
     Parameters
     ----------

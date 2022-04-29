@@ -19,7 +19,9 @@ if TYPE_CHECKING:
 
 @dataclass
 class Bar(Mark):
-
+    """
+    An interval mark drawn between baseline and data values with a width.
+    """
     color: MappableColor = Feature("C0", groups=True)
     alpha: MappableFloat = Feature(1, groups=True)
     edgecolor: MappableColor = Feature(depend="color", groups=True)

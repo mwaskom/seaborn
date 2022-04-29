@@ -15,7 +15,9 @@ if TYPE_CHECKING:
 
 @dataclass
 class Hist(Stat):
-
+    """
+    Bin observations, count them, and optionally normalize or cumulate.
+    """
     stat: str = "count"  # TODO how to do validation on this arg?
 
     bins: str | int | ArrayLike = "auto"

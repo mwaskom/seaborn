@@ -20,7 +20,9 @@ if TYPE_CHECKING:
 
 @dataclass
 class Scatter(Mark):
-
+    """
+    A point mark defined by strokes with optional fills.
+    """
     color: MappableColor = Feature("C0")
     alpha: MappableFloat = Feature(1)  # TODO auto alpha?
     fill: MappableBool = Feature(True)
@@ -118,7 +120,9 @@ class Scatter(Mark):
 
 @dataclass
 class Dot(Scatter):  # TODO depend on ScatterBase or similar?
-
+    """
+    A point mark defined by shape with optional edges.
+    """
     color: MappableColor = Feature("C0")
     alpha: MappableFloat = Feature(1)
     edgecolor: MappableColor = Feature(depend="color")
