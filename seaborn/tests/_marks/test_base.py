@@ -7,38 +7,38 @@ import matplotlib as mpl
 import pytest
 from numpy.testing import assert_array_equal
 
-from seaborn._marks.base import Mark, Feature
+from seaborn._marks.base import Mark, Mappable
 
 
-class TestFeature:
+class TestMappable:
 
     def mark(self, **features):
 
         @dataclass
         class MockMark(Mark):
-            linewidth: float = Feature(rc="lines.linewidth")
-            pointsize: float = Feature(4)
-            color: str = Feature("C0")
-            fillcolor: str = Feature(depend="color")
-            alpha: float = Feature(1)
-            fillalpha: float = Feature(depend="alpha")
+            linewidth: float = Mappable(rc="lines.linewidth")
+            pointsize: float = Mappable(4)
+            color: str = Mappable("C0")
+            fillcolor: str = Mappable(depend="color")
+            alpha: float = Mappable(1)
+            fillalpha: float = Mappable(depend="alpha")
 
         m = MockMark(**features)
         return m
 
     def test_repr(self):
 
-        assert str(Feature(.5)) == "<0.5>"
-        assert str(Feature("CO")) == "<'CO'>"
-        assert str(Feature(rc="lines.linewidth")) == "<rc:lines.linewidth>"
-        assert str(Feature(depend="color")) == "<depend:color>"
+        assert str(Mappable(.5)) == "<0.5>"
+        assert str(Mappable("CO")) == "<'CO'>"
+        assert str(Mappable(rc="lines.linewidth")) == "<rc:lines.linewidth>"
+        assert str(Mappable(depend="color")) == "<depend:color>"
 
     def test_input_checks(self):
 
         with pytest.raises(AssertionError):
-            Feature(rc="bogus.parameter")
+            Mappable(rc="bogus.parameter")
         with pytest.raises(AssertionError):
-            Feature(depend="nonexistent_feature")
+            Mappable(depend="nonexistent_feature")
 
     def test_value(self):
 
@@ -52,7 +52,7 @@ class TestFeature:
     def test_default(self):
 
         val = 3
-        m = self.mark(linewidth=Feature(val))
+        m = self.mark(linewidth=Mappable(val))
         assert m._resolve({}, "linewidth") == val
 
         df = pd.DataFrame(index=pd.RangeIndex(10))
@@ -63,7 +63,7 @@ class TestFeature:
         param = "lines.linewidth"
         val = mpl.rcParams[param]
 
-        m = self.mark(linewidth=Feature(rc=param))
+        m = self.mark(linewidth=Mappable(rc=param))
         assert m._resolve({}, "linewidth") == val
 
         df = pd.DataFrame(index=pd.RangeIndex(10))
@@ -74,11 +74,11 @@ class TestFeature:
         val = 2
         df = pd.DataFrame(index=pd.RangeIndex(10))
 
-        m = self.mark(pointsize=Feature(val), linewidth=Feature(depend="pointsize"))
+        m = self.mark(pointsize=Mappable(val), linewidth=Mappable(depend="pointsize"))
         assert m._resolve({}, "linewidth") == val
         assert_array_equal(m._resolve(df, "linewidth"), np.full(len(df), val))
 
-        m = self.mark(pointsize=val * 2, linewidth=Feature(depend="pointsize"))
+        m = self.mark(pointsize=val * 2, linewidth=Mappable(depend="pointsize"))
         assert m._resolve({}, "linewidth") == val * 2
         assert_array_equal(m._resolve(df, "linewidth"), np.full(len(df), val * 2))
 
@@ -89,7 +89,7 @@ class TestFeature:
         def f(x):
             return np.array([values[x_i] for x_i in x])
 
-        m = self.mark(linewidth=Feature(2))
+        m = self.mark(linewidth=Mappable(2))
         scales = {"linewidth": f}
 
         assert m._resolve({"linewidth": "c"}, "linewidth", scales) == 3
@@ -114,7 +114,7 @@ class TestFeature:
         c = "r"
         values = {"a": .2, "b": .5, "c": .8}
 
-        m = self.mark(color=c, alpha=Feature(1))
+        m = self.mark(color=c, alpha=Mappable(1))
         scales = {"alpha": lambda s: np.array([values[s_i] for s_i in s])}
 
         assert m._resolve_color({"alpha": "b"}, "", scales) == mpl.colors.to_rgba(c, .5)
@@ -143,7 +143,7 @@ class TestFeature:
         fa = .2
         m = self.mark(
             color=c, alpha=a,
-            fillcolor=Feature(depend="color"), fillalpha=Feature(fa),
+            fillcolor=Mappable(depend="color"), fillalpha=Mappable(fa),
         )
 
         assert m._resolve_color({}) == mpl.colors.to_rgba(c, a)

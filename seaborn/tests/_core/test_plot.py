@@ -41,9 +41,7 @@ def assert_gridspec_shape(ax, nrows=1, ncols=1):
 
 class MockMark(Mark):
 
-    # TODO we need to sort out the stat application, it is broken right now
-    # default_stat = MockStat
-    grouping_vars = ["color"]
+    grouping_props = ["color"]
 
     def __init__(self, *args, **kwargs):
 
@@ -603,7 +601,7 @@ class TestPlotting:
         vs = [{"color": "a", "linewidth": "z"}, {"color": "b", "pattern": "c"}]
 
         class NoGroupingMark(MockMark):
-            grouping_vars = []
+            grouping_props = []
 
         ms = [NoGroupingMark(), NoGroupingMark()]
         Plot(long_df).add(ms[0], **vs[0]).add(ms[1], **vs[1]).plot()

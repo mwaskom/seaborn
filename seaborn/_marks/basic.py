@@ -4,18 +4,18 @@ from typing import ClassVar
 
 import matplotlib as mpl
 
-from seaborn._marks.base import Mark, Feature
+from seaborn._marks.base import Mark, Mappable
 from seaborn._stats.regression import PolyFit
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from typing import Union, Any
 
-    MappableStr = Union[str, Feature]
-    MappableFloat = Union[float, Feature]
-    MappableColor = Union[str, tuple, Feature]
+    MappableStr = Union[str, Mappable]
+    MappableFloat = Union[float, Mappable]
+    MappableColor = Union[str, tuple, Mappable]
 
-    StatParam = Union[Any, Feature]
+    StatParam = Union[Any, Mappable]
 
 
 @dataclass
@@ -26,10 +26,10 @@ class Line(Mark):
 
     # TODO other semantics (marker?)
 
-    color: MappableColor = Feature("C0", groups=True)
-    alpha: MappableFloat = Feature(1, groups=True)
-    linewidth: MappableFloat = Feature(rc="lines.linewidth", groups=True)
-    linestyle: MappableStr = Feature(rc="lines.linestyle", groups=True)
+    color: MappableColor = Mappable("C0", groups=True)
+    alpha: MappableFloat = Mappable(1, groups=True)
+    linewidth: MappableFloat = Mappable(rc="lines.linewidth", groups=True)
+    linestyle: MappableStr = Mappable(rc="lines.linestyle", groups=True)
 
     # TODO alternately, have Path mark that doesn't sort
     sort: bool = True
@@ -38,7 +38,7 @@ class Line(Mark):
 
         for keys, data, ax in split_gen():
 
-            keys = self.resolve_features(keys, scales)
+            keys = self.resolve_properties(keys, scales)
 
             if self.sort:
                 # TODO where to dropna?
@@ -57,7 +57,7 @@ class Line(Mark):
 
     def _legend_artist(self, variables, value, scales):
 
-        key = self.resolve_features({v: value for v in variables}, scales)
+        key = self.resolve_properties({v: value for v in variables}, scales)
 
         return mpl.lines.Line2D(
             [], [],
@@ -73,8 +73,8 @@ class Area(Mark):
     """
     An interval mark that fills between baseline and data values.
     """
-    color: MappableColor = Feature("C0", groups=True)
-    alpha: MappableFloat = Feature(1, groups=True)
+    color: MappableColor = Mappable("C0", groups=True)
+    alpha: MappableFloat = Mappable(1, groups=True)
 
     def plot(self, split_gen, scales, orient):
 
@@ -82,7 +82,7 @@ class Area(Mark):
 
             kws = self.artist_kws.copy()
 
-            keys = self.resolve_features(keys, scales)
+            keys = self.resolve_properties(keys, scales)
             kws["facecolor"] = self._resolve_color(keys, scales=scales)
             kws["edgecolor"] = self._resolve_color(keys, scales=scales)
 
@@ -102,6 +102,6 @@ class Area(Mark):
 @dataclass
 class PolyLine(Line):
 
-    order: "StatParam" = Feature(stat="order")  # TODO the annotation
+    order: "StatParam" = Mappable(stat="order")  # TODO the annotation
 
     default_stat: ClassVar = PolyFit  # TODO why is this showing up as a field?

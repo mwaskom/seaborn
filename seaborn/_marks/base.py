@@ -18,7 +18,7 @@ if TYPE_CHECKING:
     from seaborn._core.scales import Scale
 
 
-class Feature:
+class Mappable:
     def __init__(
         self,
         val: Any = None,
@@ -28,7 +28,7 @@ class Feature:
         stat: str | None = None,
     ):
         """
-        Class supporting several default strategies for setting visual features.
+        Property that can be mapped from data or set directly, with flexible defaults.
 
         Parameters
         ----------
@@ -88,17 +88,17 @@ class Mark:
     artist_kws: dict = field(default_factory=dict)
 
     @property
-    def features(self):
+    def mappable_props(self):
         return {
             f.name: getattr(self, f.name) for f in fields(self)
-            if isinstance(f.default, Feature)
+            if isinstance(f.default, Mappable)
         }
 
     @property
-    def grouping_vars(self):
+    def grouping_props(self):
         return [
             f.name for f in fields(self)
-            if isinstance(f.default, Feature) and f.default.groups
+            if isinstance(f.default, Mappable) and f.default.groups
         ]
 
     @property
@@ -106,19 +106,18 @@ class Mark:
         return {
             f.name: getattr(self, f.name) for f in fields(self)
             if (
-                isinstance(f.default, Feature)
+                isinstance(f.default, Mappable)
                 and f.default._stat is not None
-                and not isinstance(getattr(self, f.name), Feature)
+                and not isinstance(getattr(self, f.name), Mappable)
             )
         }
 
-    def resolve_features(
+    def resolve_properties(
         self, data: DataFrame, scales: dict[str, Scale]
     ) -> dict[str, Any]:
 
         features = {
-            name: self._resolve(data, name, scales)
-            for name in self.features
+            name: self._resolve(data, name, scales) for name in self.mappable_props
         }
         return features
 
@@ -148,9 +147,9 @@ class Mark:
             of values with matching length).
 
         """
-        feature = self.features[name]
+        feature = self.mappable_props[name]
         prop = PROPERTIES.get(name, Property(name))
-        directly_specified = not isinstance(feature, Feature)
+        directly_specified = not isinstance(feature, Mappable)
         return_array = isinstance(data, pd.DataFrame)
 
         # Special case width because it needs to be resolved and added to the dataframe

@@ -1022,20 +1022,23 @@ class Plotter:
                 if var not in "xy" and var in scales:
                     return scales[var].order
 
-            if "width" in mark.features:
+            if "width" in mark.mappable_props:
                 width = mark._resolve(df, "width", None)
             else:
                 width = df.get("width", 0.8)  # TODO what default
             if orient in df:
                 df["width"] = width * scales[orient].spacing(df[orient])
 
-            if "baseline" in mark.features:
+            if "baseline" in mark.mappable_props:
                 # TODO what marks should have this?
                 # If we can set baseline with, e.g., Bar(), then the
                 # "other" (e.g. y for x oriented bars) parameterization
                 # is somewhat ambiguous.
                 baseline = mark._resolve(df, "baseline", None)
             else:
+                # TODO unlike width, we might not want to add baseline to data
+                # if the mark doesn't use it. Practically, there is a concern about
+                # Mark abstraction like Area / Ribbon
                 baseline = df.get("baseline", 0)
             df["baseline"] = baseline
 
@@ -1051,11 +1054,9 @@ class Plotter:
                     groupby = GroupBy(order)
                     df = move(df, groupby, orient)
 
-            # TODO unscale coords using axes transforms rather than scales?
-            # Also need to handle derivatives (min/max/width, etc)
             df = self._unscale_coords(subplots, df, orient)
 
-            grouping_vars = mark.grouping_vars + default_grouping_vars
+            grouping_vars = mark.grouping_props + default_grouping_vars
             split_generator = self._setup_split_generator(
                 grouping_vars, df, subplots
             )

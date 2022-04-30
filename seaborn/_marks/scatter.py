@@ -4,7 +4,7 @@ from dataclasses import dataclass
 import numpy as np
 import matplotlib as mpl
 
-from seaborn._marks.base import Mark, Feature
+from seaborn._marks.base import Mark, Mappable
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
@@ -12,10 +12,10 @@ if TYPE_CHECKING:
     from matplotlib.artist import Artist
     from seaborn._core.scales import Scale
 
-    MappableBool = Union[bool, Feature]
-    MappableFloat = Union[float, Feature]
-    MappableString = Union[str, Feature]
-    MappableColor = Union[str, tuple, Feature]  # TODO
+    MappableBool = Union[bool, Mappable]
+    MappableFloat = Union[float, Mappable]
+    MappableString = Union[str, Mappable]
+    MappableColor = Union[str, tuple, Mappable]  # TODO
 
 
 @dataclass
@@ -23,14 +23,14 @@ class Scatter(Mark):
     """
     A point mark defined by strokes with optional fills.
     """
-    color: MappableColor = Feature("C0")
-    alpha: MappableFloat = Feature(1)  # TODO auto alpha?
-    fill: MappableBool = Feature(True)
-    fillcolor: MappableColor = Feature(depend="color")
-    fillalpha: MappableFloat = Feature(.2)
-    marker: MappableString = Feature(rc="scatter.marker")
-    pointsize: MappableFloat = Feature(3)  # TODO rcParam?
-    stroke: MappableFloat = Feature(.75)  # TODO rcParam?
+    color: MappableColor = Mappable("C0")
+    alpha: MappableFloat = Mappable(1)  # TODO auto alpha?
+    fill: MappableBool = Mappable(True)
+    fillcolor: MappableColor = Mappable(depend="color")
+    fillalpha: MappableFloat = Mappable(.2)
+    marker: MappableString = Mappable(rc="scatter.marker")
+    pointsize: MappableFloat = Mappable(3)  # TODO rcParam?
+    stroke: MappableFloat = Mappable(.75)  # TODO rcParam?
 
     def _resolve_paths(self, data):
 
@@ -50,9 +50,9 @@ class Scatter(Mark):
             paths.append(path_cache[m])
         return paths
 
-    def resolve_features(self, data, scales):
+    def resolve_properties(self, data, scales):
 
-        resolved = super().resolve_features(data, scales)
+        resolved = super().resolve_properties(data, scales)
         resolved["path"] = self._resolve_paths(resolved)
 
         if isinstance(data, dict):  # TODO need a better way to check
@@ -86,7 +86,7 @@ class Scatter(Mark):
         for keys, data, ax in split_gen():
 
             offsets = np.column_stack([data["x"], data["y"]])
-            data = self.resolve_features(data, scales)
+            data = self.resolve_properties(data, scales)
 
             points = mpl.collections.PathCollection(
                 offsets=offsets,
@@ -105,7 +105,7 @@ class Scatter(Mark):
     ) -> Artist:
 
         key = {v: value for v in variables}
-        key = self.resolve_features(key, scales)
+        key = self.resolve_properties(key, scales)
 
         return mpl.collections.PathCollection(
             paths=[key["path"]],
@@ -123,18 +123,18 @@ class Dot(Scatter):
     """
     A point mark defined by shape with optional edges.
     """
-    color: MappableColor = Feature("C0")
-    alpha: MappableFloat = Feature(1)
-    edgecolor: MappableColor = Feature(depend="color")
-    edgealpha: MappableFloat = Feature(depend="alpha")
-    fill: MappableBool = Feature(True)
-    marker: MappableString = Feature("o")
-    pointsize: MappableFloat = Feature(6)  # TODO rcParam?
-    edgewidth: MappableFloat = Feature(.5)  # TODO rcParam?
+    color: MappableColor = Mappable("C0")
+    alpha: MappableFloat = Mappable(1)
+    edgecolor: MappableColor = Mappable(depend="color")
+    edgealpha: MappableFloat = Mappable(depend="alpha")
+    fill: MappableBool = Mappable(True)
+    marker: MappableString = Mappable("o")
+    pointsize: MappableFloat = Mappable(6)  # TODO rcParam?
+    edgewidth: MappableFloat = Mappable(.5)  # TODO rcParam?
 
-    def resolve_features(self, data, scales):
+    def resolve_properties(self, data, scales):
         # TODO this is maybe a little hacky, is there a better abstraction?
-        resolved = super().resolve_features(data, scales)
+        resolved = super().resolve_properties(data, scales)
 
         filled = resolved["fill"]
 
