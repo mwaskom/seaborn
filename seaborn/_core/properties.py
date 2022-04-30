@@ -280,6 +280,11 @@ class EdgeWidth(IntervalProperty):
         return base * .5, base * 2
 
 
+class Stroke(IntervalProperty):
+    """Thickness of lines that define point glyphs."""
+    _default_range = .25, 2.5
+
+
 class Alpha(IntervalProperty):
     """Opacity of the color values for an arbitrary mark."""
     _default_range = .3, .95
@@ -732,6 +737,7 @@ PROPERTIES = {
     "pointsize": PointSize(),
     "linewidth": LineWidth(),
     "edgewidth": EdgeWidth(),
+    "stroke": Stroke(),
     # TODO pattern?
     # TODO gradient?
 }

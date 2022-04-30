@@ -30,9 +30,7 @@ class Scatter(Mark):
     fillalpha: MappableFloat = Feature(.2)
     marker: MappableString = Feature(rc="scatter.marker")
     pointsize: MappableFloat = Feature(3)  # TODO rcParam?
-
-    # TODO is `stroke`` a better name to get reasonable default scale range?
-    linewidth: MappableFloat = Feature(.75)  # TODO rcParam?
+    stroke: MappableFloat = Feature(.75)  # TODO rcParam?
 
     def _resolve_paths(self, data):
 
@@ -62,6 +60,7 @@ class Scatter(Mark):
         else:
             filled_marker = [m.is_filled() for m in resolved["marker"]]
 
+        resolved["linewidth"] = resolved["stroke"]
         resolved["fill"] = resolved["fill"] & filled_marker
         resolved["size"] = resolved["pointsize"] ** 2
 
@@ -118,8 +117,9 @@ class Scatter(Mark):
         )
 
 
+# TODO change this to depend on ScatterBase?
 @dataclass
-class Dot(Scatter):  # TODO depend on ScatterBase or similar?
+class Dot(Scatter):
     """
     A point mark defined by shape with optional edges.
     """
@@ -130,21 +130,32 @@ class Dot(Scatter):  # TODO depend on ScatterBase or similar?
     fill: MappableBool = Feature(True)
     marker: MappableString = Feature("o")
     pointsize: MappableFloat = Feature(6)  # TODO rcParam?
-    # TODO edgewidth? or both, controlling filled/unfilled?
-    linewidth: MappableFloat = Feature(.5)  # TODO rcParam?
+    edgewidth: MappableFloat = Feature(.5)  # TODO rcParam?
 
     def resolve_features(self, data, scales):
         # TODO this is maybe a little hacky, is there a better abstraction?
         resolved = super().resolve_features(data, scales)
-        resolved["edgecolor"] = self._resolve_color(data, "edge", scales)
-        resolved["facecolor"] = self._resolve_color(data, "", scales)
 
-        # TODO Could move this into a method but solving it at the root feels ideal
-        fc = resolved["facecolor"]
-        if isinstance(fc, tuple):
-            resolved["facecolor"] = fc[0], fc[1], fc[2], fc[3] * resolved["fill"]
+        filled = resolved["fill"]
+
+        main_stroke = resolved["stroke"]
+        edge_stroke = resolved["edgewidth"]
+        resolved["linewidth"] = np.where(filled, edge_stroke, main_stroke)
+
+        # Overwrite the colors that the super class set
+        main_color = self._resolve_color(data, "", scales)
+        edge_color = self._resolve_color(data, "edge", scales)
+
+        if not np.isscalar(filled):
+            # Expand dims to use in np.where with rgba arrays
+            filled = filled[:, None]
+        resolved["edgecolor"] = np.where(filled, edge_color, main_color)
+
+        filled = np.squeeze(filled)
+        if isinstance(main_color, tuple):
+            main_color = tuple([*main_color[:3], main_color[3] * filled])
         else:
-            fc[:, 3] = fc[:, 3] * resolved["fill"]  # TODO Is inplace mod a problem?
-            resolved["facecolor"] = fc
+            main_color = np.c_[main_color[:, :3], main_color[:, 3] * filled]
+        resolved["facecolor"] = main_color
 
         return resolved
