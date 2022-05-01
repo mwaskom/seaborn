@@ -7,15 +7,13 @@ import matplotlib as mpl
 
 from seaborn._core.properties import PROPERTIES, Property
 
-from typing import TYPE_CHECKING
-if TYPE_CHECKING:
-    from typing import Any, Callable
-    from collections.abc import Generator
-    from numpy import ndarray
-    from pandas import DataFrame
-    from matplotlib.artist import Artist
-    from seaborn._core.properties import RGBATuple
-    from seaborn._core.scales import Scale
+from typing import Any, Callable, Union
+from collections.abc import Generator
+from numpy import ndarray
+from pandas import DataFrame
+from matplotlib.artist import Artist
+from seaborn._core.properties import RGBATuple
+from seaborn._core.scales import Scale
 
 
 class Mappable:
@@ -80,6 +78,13 @@ class Mappable:
         if self._val is not None:
             return self._val
         return mpl.rcParams.get(self._rc)
+
+
+# TODO where is the right place to put this kind of type aliasing?
+MappableBool = Union[bool, Mappable]
+MappableString = Union[str, Mappable]
+MappableFloat = Union[float, Mappable]
+MappableColor = Union[str, tuple, Mappable]
 
 
 @dataclass

@@ -38,6 +38,7 @@ Marks
     Bar
     Dot
     Line
+    Ribbon
     Scatter
 
 Stats

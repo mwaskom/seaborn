@@ -3,8 +3,10 @@ import itertools
 import warnings
 
 import numpy as np
+from pandas import Series
 import matplotlib as mpl
 from matplotlib.colors import to_rgb, to_rgba, to_rgba_array
+from matplotlib.path import Path
 
 from seaborn._core.scales import ScaleSpec, Nominal, Continuous
 from seaborn._core.rules import categorical_order, variable_type
@@ -12,27 +14,28 @@ from seaborn._compat import MarkerStyle
 from seaborn.palettes import QUAL_PALETTES, color_palette, blend_palette
 from seaborn.utils import get_color_cycle
 
-from typing import TYPE_CHECKING
-if TYPE_CHECKING:
-    from typing import Any, Callable, Tuple, List, Union, Optional
-    from pandas import Series
+from typing import Any, Callable, Tuple, List, Union, Optional
+
+try:
     from numpy.typing import ArrayLike
-    from matplotlib.path import Path
+except ImportError:
+    # numpy<1.20.0 (Jan 2021)
+    ArrayLike = Any
 
-    RGBTuple = Tuple[float, float, float]
-    RGBATuple = Tuple[float, float, float, float]
-    ColorSpec = Union[RGBTuple, RGBATuple, str]
+RGBTuple = Tuple[float, float, float]
+RGBATuple = Tuple[float, float, float, float]
+ColorSpec = Union[RGBTuple, RGBATuple, str]
 
-    DashPattern = Tuple[float, ...]
-    DashPatternWithOffset = Tuple[float, Optional[DashPattern]]
-    MarkerPattern = Union[
-        float,
-        str,
-        Tuple[int, int, float],
-        List[Tuple[float, float]],
-        Path,
-        MarkerStyle,
-    ]
+DashPattern = Tuple[float, ...]
+DashPatternWithOffset = Tuple[float, Optional[DashPattern]]
+MarkerPattern = Union[
+    float,
+    str,
+    Tuple[int, int, float],
+    List[Tuple[float, float]],
+    Path,
+    MarkerStyle,
+]
 
 
 # =================================================================================== #
@@ -60,7 +63,7 @@ class Property:
         # TODO allow variable_type to be "boolean" if that's a scale?
         # TODO how will this handle data with units that can be treated as numeric
         # if passed through a registered matplotlib converter?
-        var_type = variable_type(data, boolean_type="categorical")
+        var_type = variable_type(data, boolean_type="numeric")
         if var_type == "numeric":
             return Continuous()
         # TODO others ...

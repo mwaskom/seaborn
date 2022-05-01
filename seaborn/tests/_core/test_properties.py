@@ -211,7 +211,7 @@ class TestColor(DataFixtures):
 
         x = pd.Series([0, 0, 1, 0, 1], dtype=int)
         scale = Color().default_scale(x)
-        assert isinstance(scale, Nominal)
+        assert isinstance(scale, Continuous)
 
     # TODO default scales for other types
 

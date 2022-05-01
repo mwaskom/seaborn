@@ -12,6 +12,7 @@ if TYPE_CHECKING:
     from matplotlib.artist import Artist
     from seaborn._core.scales import Scale
 
+    # TODO import from base
     MappableBool = Union[bool, Mappable]
     MappableFloat = Union[float, Mappable]
     MappableString = Union[str, Mappable]
