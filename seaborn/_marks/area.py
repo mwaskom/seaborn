@@ -4,7 +4,6 @@ from dataclasses import dataclass
 
 import numpy as np
 import matplotlib as mpl
-from matplotlib.colors import to_rgba
 
 from seaborn._marks.base import (
     Mark,
@@ -13,32 +12,36 @@ from seaborn._marks.base import (
     MappableFloat,
     MappableColor,
     MappableStyle,
+    resolve_properties,
+    resolve_color,
 )
 
 
 class AreaBase:
 
-    def plot(self, split_gen, scales, orient):
+    def _plot(self, split_gen, scales, orient):
 
         kws = {}
 
         for keys, data, ax in split_gen():
 
+            kws.setdefault(ax, defaultdict(list))
+
             data = self._standardize_coordinate_parameters(data, orient)
-            keys = self.resolve_properties(keys, scales)
+            resolved = resolve_properties(self, keys, scales)
             verts = self._get_verts(data, orient)
 
             ax.update_datalim(verts)
-
-            kws.setdefault(ax, defaultdict(list))
             kws[ax]["verts"].append(verts)
 
-            alpha = keys["alpha"] if keys["fill"] else 0
-            kws[ax]["facecolors"].append(to_rgba(keys["color"], alpha))
-            kws[ax]["edgecolors"].append(to_rgba(keys["edgecolor"], keys["edgealpha"]))
+            # TODO fill= is not working here properly
+            # We could hack a fix, but would be better to handle fill in resolve_color
 
-            kws[ax]["linewidth"].append(keys["edgewidth"])
-            kws[ax]["linestyle"].append(keys["edgestyle"])
+            kws[ax]["facecolors"].append(resolve_color(self, keys, "", scales))
+            kws[ax]["edgecolors"].append(resolve_color(self, keys, "edge", scales))
+
+            kws[ax]["linewidth"].append(resolved["edgewidth"])
+            kws[ax]["linestyle"].append(resolved["edgestyle"])
 
         for ax, ax_kws in kws.items():
             ax.add_collection(mpl.collections.PolyCollection(**ax_kws))
@@ -60,13 +63,14 @@ class AreaBase:
 
     def _legend_artist(self, variables, value, scales):
 
-        key = self.resolve_properties({v: value for v in variables}, scales)
+        keys = {v: value for v in variables}
+        resolved = resolve_properties(self, keys, scales)
 
         return mpl.patches.Patch(
-            facecolor=to_rgba(key["color"], key["alpha"] if key["fill"] else 0),
-            edgecolor=to_rgba(key["edgecolor"], key["edgealpha"]),
-            linewidth=key["edgewidth"],
-            linestyle=key["edgestyle"],
+            facecolor=resolve_color(self, keys, "", scales),
+            edgecolor=resolve_color(self, keys, "edge", scales),
+            linewidth=resolved["edgewidth"],
+            linestyle=resolved["edgestyle"],
             **self.artist_kws,
         )
 
@@ -76,16 +80,16 @@ class Area(AreaBase, Mark):
     """
     An interval mark that fills between baseline and data values.
     """
-    color: MappableColor = Mappable("C0", groups=True)
-    alpha: MappableFloat = Mappable(.2, groups=True)
-    fill: MappableBool = Mappable(True, groups=True)
-    edgecolor: MappableColor = Mappable(depend="color", groups=True)
-    edgealpha: MappableFloat = Mappable(1, groups=True)
-    edgewidth: MappableFloat = Mappable(rc="patch.linewidth", groups=True)
-    edgestyle: MappableStyle = Mappable("-", groups=True)
+    color: MappableColor = Mappable("C0", )
+    alpha: MappableFloat = Mappable(.2, )
+    fill: MappableBool = Mappable(True, )
+    edgecolor: MappableColor = Mappable(depend="color")
+    edgealpha: MappableFloat = Mappable(1, )
+    edgewidth: MappableFloat = Mappable(rc="patch.linewidth", )
+    edgestyle: MappableStyle = Mappable("-", )
 
     # TODO should this be settable / mappable?
-    baseline: MappableFloat = Mappable(0)
+    baseline: MappableFloat = Mappable(0, grouping=False)
 
     def _standardize_coordinate_parameters(self, data, orient):
         dv = {"x": "y", "y": "x"}[orient]
@@ -97,13 +101,13 @@ class Ribbon(AreaBase, Mark):
     """
     An interval mark that fills between minimum and maximum values.
     """
-    color: MappableColor = Mappable("C0", groups=True)
-    alpha: MappableFloat = Mappable(.2, groups=True)
-    fill: MappableBool = Mappable(True, groups=True)
-    edgecolor: MappableColor = Mappable(depend="color", groups=True)
-    edgealpha: MappableFloat = Mappable(1, groups=True)
-    edgewidth: MappableFloat = Mappable(0, groups=True)
-    edgestyle: MappableFloat = Mappable("-", groups=True)
+    color: MappableColor = Mappable("C0", )
+    alpha: MappableFloat = Mappable(.2, )
+    fill: MappableBool = Mappable(True, )
+    edgecolor: MappableColor = Mappable(depend="color", )
+    edgealpha: MappableFloat = Mappable(1, )
+    edgewidth: MappableFloat = Mappable(0, )
+    edgestyle: MappableFloat = Mappable("-", )
 
     def _standardize_coordinate_parameters(self, data, orient):
         # dv = {"x": "y", "y": "x"}[orient]

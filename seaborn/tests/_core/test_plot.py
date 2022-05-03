@@ -41,7 +41,7 @@ def assert_gridspec_shape(ax, nrows=1, ncols=1):
 
 class MockMark(Mark):
 
-    grouping_props = ["color"]
+    _grouping_props = ["color"]
 
     def __init__(self, *args, **kwargs):
 
@@ -53,7 +53,7 @@ class MockMark(Mark):
         self.passed_orient = None
         self.n_splits = 0
 
-    def plot(self, split_gen, scales, orient):
+    def _plot(self, split_gen, scales, orient):
 
         for keys, data, ax in split_gen():
             self.n_splits += 1
@@ -601,7 +601,7 @@ class TestPlotting:
         vs = [{"color": "a", "linewidth": "z"}, {"color": "b", "pattern": "c"}]
 
         class NoGroupingMark(MockMark):
-            grouping_props = []
+            _grouping_props = []
 
         ms = [NoGroupingMark(), NoGroupingMark()]
         Plot(long_df).add(ms[0], **vs[0]).add(ms[1], **vs[1]).plot()

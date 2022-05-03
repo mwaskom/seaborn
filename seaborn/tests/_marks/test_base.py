@@ -7,7 +7,7 @@ import matplotlib as mpl
 import pytest
 from numpy.testing import assert_array_equal
 
-from seaborn._marks.base import Mark, Mappable
+from seaborn._marks.base import Mark, Mappable, resolve_color
 
 
 class TestMappable:
@@ -103,11 +103,11 @@ class TestMappable:
         c, a = "C1", .5
         m = self.mark(color=c, alpha=a)
 
-        assert m._resolve_color({}) == mpl.colors.to_rgba(c, a)
+        assert resolve_color(m, {}) == mpl.colors.to_rgba(c, a)
 
         df = pd.DataFrame(index=pd.RangeIndex(10))
         cs = [c] * len(df)
-        assert_array_equal(m._resolve_color(df), mpl.colors.to_rgba_array(cs, a))
+        assert_array_equal(resolve_color(m, df), mpl.colors.to_rgba_array(cs, a))
 
     def test_color_mapped_alpha(self):
 
@@ -117,7 +117,7 @@ class TestMappable:
         m = self.mark(color=c, alpha=Mappable(1))
         scales = {"alpha": lambda s: np.array([values[s_i] for s_i in s])}
 
-        assert m._resolve_color({"alpha": "b"}, "", scales) == mpl.colors.to_rgba(c, .5)
+        assert resolve_color(m, {"alpha": "b"}, "", scales) == mpl.colors.to_rgba(c, .5)
 
         df = pd.DataFrame({"alpha": list(values.keys())})
 
@@ -125,7 +125,7 @@ class TestMappable:
         expected = mpl.colors.to_rgba_array([c] * len(df))
         expected[:, 3] = list(values.values())
 
-        assert_array_equal(m._resolve_color(df, "", scales), expected)
+        assert_array_equal(resolve_color(m, df, "", scales), expected)
 
     def test_color_scaled_as_strings(self):
 
@@ -133,7 +133,7 @@ class TestMappable:
         m = self.mark()
         scales = {"color": lambda s: colors}
 
-        actual = m._resolve_color({"color": pd.Series(["a", "b", "c"])}, "", scales)
+        actual = resolve_color(m, {"color": pd.Series(["a", "b", "c"])}, "", scales)
         expected = mpl.colors.to_rgba_array(colors)
         assert_array_equal(actual, expected)
 
@@ -146,12 +146,12 @@ class TestMappable:
             fillcolor=Mappable(depend="color"), fillalpha=Mappable(fa),
         )
 
-        assert m._resolve_color({}) == mpl.colors.to_rgba(c, a)
-        assert m._resolve_color({}, "fill") == mpl.colors.to_rgba(c, fa)
+        assert resolve_color(m, {}) == mpl.colors.to_rgba(c, a)
+        assert resolve_color(m, {}, "fill") == mpl.colors.to_rgba(c, fa)
 
         df = pd.DataFrame(index=pd.RangeIndex(10))
         cs = [c] * len(df)
-        assert_array_equal(m._resolve_color(df), mpl.colors.to_rgba_array(cs, a))
+        assert_array_equal(resolve_color(m, df), mpl.colors.to_rgba_array(cs, a))
         assert_array_equal(
-            m._resolve_color(df, "fill"), mpl.colors.to_rgba_array(cs, fa)
+            resolve_color(m, df, "fill"), mpl.colors.to_rgba_array(cs, fa)
         )

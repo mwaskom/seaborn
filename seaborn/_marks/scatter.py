@@ -12,6 +12,8 @@ from seaborn._marks.base import (
     MappableString,
     MappableColor,
     MappableStyle,
+    resolve_properties,
+    resolve_color,
 )
 
 from typing import TYPE_CHECKING
@@ -26,14 +28,15 @@ class Scatter(Mark):
     """
     A point mark defined by strokes with optional fills.
     """
-    marker: MappableString = Mappable(rc="scatter.marker")  # TODO MappableMarker
-    stroke: MappableFloat = Mappable(.75)  # TODO rcParam?
-    pointsize: MappableFloat = Mappable(3)  # TODO rcParam?
-    color: MappableColor = Mappable("C0")
-    alpha: MappableFloat = Mappable(1)  # TODO auto alpha?
-    fill: MappableBool = Mappable(True)
-    fillcolor: MappableColor = Mappable(depend="color")
-    fillalpha: MappableFloat = Mappable(.2)
+    # TODO retype marker as MappableMarker
+    marker: MappableString = Mappable(rc="scatter.marker", grouping=False)
+    stroke: MappableFloat = Mappable(.75, grouping=False)  # TODO rcParam?
+    pointsize: MappableFloat = Mappable(3, grouping=False)  # TODO rcParam?
+    color: MappableColor = Mappable("C0", grouping=False)
+    alpha: MappableFloat = Mappable(1, grouping=False)  # TODO auto alpha?
+    fill: MappableBool = Mappable(True, grouping=False)
+    fillcolor: MappableColor = Mappable(depend="color", grouping=False)
+    fillalpha: MappableFloat = Mappable(.2, grouping=False)
 
     def _resolve_paths(self, data):
 
@@ -53,9 +56,9 @@ class Scatter(Mark):
             paths.append(path_cache[m])
         return paths
 
-    def resolve_properties(self, data, scales):
+    def _resolve_properties(self, data, scales):
 
-        resolved = super().resolve_properties(data, scales)
+        resolved = resolve_properties(self, data, scales)
         resolved["path"] = self._resolve_paths(resolved)
 
         if isinstance(data, dict):  # TODO need a better way to check
@@ -67,8 +70,8 @@ class Scatter(Mark):
         resolved["fill"] = resolved["fill"] & filled_marker
         resolved["size"] = resolved["pointsize"] ** 2
 
-        resolved["edgecolor"] = self._resolve_color(data, "", scales)
-        resolved["facecolor"] = self._resolve_color(data, "fill", scales)
+        resolved["edgecolor"] = resolve_color(self, data, "", scales)
+        resolved["facecolor"] = resolve_color(self, data, "fill", scales)
 
         # Because only Dot, and not Scatter, has an edgestyle
         resolved.setdefault("edgestyle", (0, None))
@@ -82,7 +85,7 @@ class Scatter(Mark):
 
         return resolved
 
-    def plot(self, split_gen, scales, orient):
+    def _plot(self, split_gen, scales, orient):
 
         # TODO Not backcompat with allowed (but nonfunctional) univariate plots
         # (That should be solved upstream by defaulting to "" for unset x/y?)
@@ -92,7 +95,7 @@ class Scatter(Mark):
         for keys, data, ax in split_gen():
 
             offsets = np.column_stack([data["x"], data["y"]])
-            data = self.resolve_properties(data, scales)
+            data = self._resolve_properties(data, scales)
 
             points = mpl.collections.PathCollection(
                 offsets=offsets,
@@ -112,7 +115,7 @@ class Scatter(Mark):
     ) -> Artist:
 
         key = {v: value for v in variables}
-        key = self.resolve_properties(key, scales)
+        key = self._resolve_properties(key, scales)
 
         return mpl.collections.PathCollection(
             paths=[key["path"]],
@@ -131,19 +134,19 @@ class Dot(Scatter):
     """
     A point mark defined by shape with optional edges.
     """
-    marker: MappableString = Mappable("o")
-    color: MappableColor = Mappable("C0")
-    alpha: MappableFloat = Mappable(1)
-    fill: MappableBool = Mappable(True)
-    edgecolor: MappableColor = Mappable(depend="color")
-    edgealpha: MappableFloat = Mappable(depend="alpha")
-    pointsize: MappableFloat = Mappable(6)  # TODO rcParam?
-    edgewidth: MappableFloat = Mappable(.5)  # TODO rcParam?
-    edgestyle: MappableStyle = Mappable("-")
+    marker: MappableString = Mappable("o", grouping=False)
+    color: MappableColor = Mappable("C0", grouping=False)
+    alpha: MappableFloat = Mappable(1, grouping=False)
+    fill: MappableBool = Mappable(True, grouping=False)
+    edgecolor: MappableColor = Mappable(depend="color", grouping=False)
+    edgealpha: MappableFloat = Mappable(depend="alpha", grouping=False)
+    pointsize: MappableFloat = Mappable(6, grouping=False)  # TODO rcParam?
+    edgewidth: MappableFloat = Mappable(.5, grouping=False)  # TODO rcParam?
+    edgestyle: MappableStyle = Mappable("-", grouping=False)
 
-    def resolve_properties(self, data, scales):
+    def _resolve_properties(self, data, scales):
         # TODO this is maybe a little hacky, is there a better abstraction?
-        resolved = super().resolve_properties(data, scales)
+        resolved = super()._resolve_properties(data, scales)
 
         filled = resolved["fill"]
 
@@ -152,8 +155,8 @@ class Dot(Scatter):
         resolved["linewidth"] = np.where(filled, edge_stroke, main_stroke)
 
         # Overwrite the colors that the super class set
-        main_color = self._resolve_color(data, "", scales)
-        edge_color = self._resolve_color(data, "edge", scales)
+        main_color = resolve_color(self, data, "", scales)
+        edge_color = resolve_color(self, data, "edge", scales)
 
         if not np.isscalar(filled):
             # Expand dims to use in np.where with rgba arrays

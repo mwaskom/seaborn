@@ -24,10 +24,10 @@ class Line(Mark):
 
     # TODO other semantics (marker?)
 
-    color: MappableColor = Mappable("C0", groups=True)
-    alpha: MappableFloat = Mappable(1, groups=True)
-    linewidth: MappableFloat = Mappable(rc="lines.linewidth", groups=True)
-    linestyle: MappableString = Mappable(rc="lines.linestyle", groups=True)
+    color: MappableColor = Mappable("C0", )
+    alpha: MappableFloat = Mappable(1, )
+    linewidth: MappableFloat = Mappable(rc="lines.linewidth", )
+    linestyle: MappableString = Mappable(rc="lines.linestyle", )
 
     # TODO alternately, have Path mark that doesn't sort
     sort: bool = True

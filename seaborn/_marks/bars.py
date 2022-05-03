@@ -10,6 +10,8 @@ from seaborn._marks.base import (
     MappableColor,
     MappableFloat,
     MappableStyle,
+    resolve_properties,
+    resolve_color,
 )
 
 from typing import TYPE_CHECKING
@@ -24,26 +26,24 @@ class Bar(Mark):
     """
     An interval mark drawn between baseline and data values with a width.
     """
-    color: MappableColor = Mappable("C0", groups=True)
-    alpha: MappableFloat = Mappable(.7, groups=True)
-    fill: MappableBool = Mappable(True, groups=True)
-    edgecolor: MappableColor = Mappable(depend="color", groups=True)
-    edgealpha: MappableFloat = Mappable(1, groups=True)
+    color: MappableColor = Mappable("C0", )
+    alpha: MappableFloat = Mappable(.7, )
+    fill: MappableBool = Mappable(True, )
+    edgecolor: MappableColor = Mappable(depend="color", )
+    edgealpha: MappableFloat = Mappable(1, )
     edgewidth: MappableFloat = Mappable(rc="patch.linewidth")
-    edgestyle: MappableStyle = Mappable("-", groups=True)
-    # pattern: MappableString = Mappable(None, groups=True)  # TODO no Property yet
+    edgestyle: MappableStyle = Mappable("-", )
+    # pattern: MappableString = Mappable(None, )  # TODO no Property yet
 
-    width: MappableFloat = Mappable(.8)  # TODO groups?
-    baseline: MappableFloat = Mappable(0)  # TODO *is* this mappable?
+    width: MappableFloat = Mappable(.8, grouping=False)
+    baseline: MappableFloat = Mappable(0, grouping=False)  # TODO *is* this mappable?
 
-    def resolve_properties(self, data, scales):
+    def _resolve_properties(self, data, scales):
 
-        # TODO copying a lot from scatter
+        resolved = resolve_properties(self, data, scales)
 
-        resolved = super().resolve_properties(data, scales)
-
-        resolved["facecolor"] = self._resolve_color(data, "", scales)
-        resolved["edgecolor"] = self._resolve_color(data, "edge", scales)
+        resolved["facecolor"] = resolve_color(self, data, "", scales)
+        resolved["edgecolor"] = resolve_color(self, data, "edge", scales)
 
         fc = resolved["facecolor"]
         if isinstance(fc, tuple):
@@ -54,7 +54,7 @@ class Bar(Mark):
 
         return resolved
 
-    def plot(self, split_gen, scales, orient):
+    def _plot(self, split_gen, scales, orient):
 
         def coords_to_geometry(x, y, w, b):
             # TODO possible too slow with lots of bars (e.g. dense hist)
@@ -70,7 +70,7 @@ class Bar(Mark):
         for _, data, ax in split_gen():
 
             xys = data[["x", "y"]].to_numpy()
-            data = self.resolve_properties(data, scales)
+            data = self._resolve_properties(data, scales)
 
             bars = []
             for i, (x, y) in enumerate(xys):
@@ -98,7 +98,7 @@ class Bar(Mark):
     ) -> Artist:
         # TODO return some sensible default?
         key = {v: value for v in variables}
-        key = self.resolve_properties(key, scales)
+        key = self._resolve_properties(key, scales)
         artist = mpl.patches.Patch(
             facecolor=key["facecolor"],
             edgecolor=key["edgecolor"],

@@ -1022,14 +1022,14 @@ class Plotter:
                 if var not in "xy" and var in scales:
                     return scales[var].order
 
-            if "width" in mark.mappable_props:
+            if "width" in mark._mappable_props:
                 width = mark._resolve(df, "width", None)
             else:
                 width = df.get("width", 0.8)  # TODO what default
             if orient in df:
                 df["width"] = width * scales[orient].spacing(df[orient])
 
-            if "baseline" in mark.mappable_props:
+            if "baseline" in mark._mappable_props:
                 # TODO what marks should have this?
                 # If we can set baseline with, e.g., Bar(), then the
                 # "other" (e.g. y for x oriented bars) parameterization
@@ -1056,12 +1056,12 @@ class Plotter:
 
             df = self._unscale_coords(subplots, df, orient)
 
-            grouping_vars = mark.grouping_props + default_grouping_vars
+            grouping_vars = mark._grouping_props + default_grouping_vars
             split_generator = self._setup_split_generator(
                 grouping_vars, df, subplots
             )
 
-            mark.plot(split_generator, scales, orient)
+            mark._plot(split_generator, scales, orient)
 
         # TODO is this the right place for this?
         for view in self._subplots:
