@@ -50,6 +50,7 @@ default_role = 'literal'
 
 autosummary_generate = True
 numpydoc_show_class_members = False
+autodoc_typehints = "none"
 
 # -- Options for HTML output -------------------------------------------------
 
@@ -59,8 +60,8 @@ numpydoc_show_class_members = False
 html_theme = "pydata_sphinx_theme"
 
 html_theme_options = {
-  "show_prev_next": False,
-  "page_sidebar_items": [],
+    "show_prev_next": False,
+    "page_sidebar_items": [],
 }
 
 # Add any paths that contain custom static files (such as style sheets) here,

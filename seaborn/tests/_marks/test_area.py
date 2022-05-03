@@ -42,6 +42,7 @@ class TestAreaMarks:
             edgecolor="k",
             edgealpha=.8,
             edgewidth=2,
+            edgestyle=(0, (2, 1)),
         )
         p = Plot(x=x, y=y).add(mark).plot()
         ax = p._figure.axes[0]
@@ -55,6 +56,11 @@ class TestAreaMarks:
 
         lw = poly.get_linewidth()
         assert_array_equal(lw, mark.edgewidth)
+
+        ls = poly.get_linestyle()
+        dash_on, dash_off = mark.edgestyle[1]
+        expected = [(0, [mark.edgewidth * dash_on, mark.edgewidth * dash_off])]
+        assert ls == expected
 
     def test_mapped(self):
 

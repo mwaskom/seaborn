@@ -12,6 +12,7 @@ from seaborn._marks.base import (
     MappableBool,
     MappableFloat,
     MappableColor,
+    MappableStyle,
 )
 
 
@@ -37,7 +38,7 @@ class AreaBase:
             kws[ax]["edgecolors"].append(to_rgba(keys["edgecolor"], keys["edgealpha"]))
 
             kws[ax]["linewidth"].append(keys["edgewidth"])
-            kws[ax]["linestyle"].append(keys["linestyle"])
+            kws[ax]["linestyle"].append(keys["edgestyle"])
 
         for ax, ax_kws in kws.items():
             ax.add_collection(mpl.collections.PolyCollection(**ax_kws))
@@ -65,7 +66,7 @@ class AreaBase:
             facecolor=to_rgba(key["color"], key["alpha"] if key["fill"] else 0),
             edgecolor=to_rgba(key["edgecolor"], key["edgealpha"]),
             linewidth=key["edgewidth"],
-            linestyle=key["linestyle"],
+            linestyle=key["edgestyle"],
             **self.artist_kws,
         )
 
@@ -81,9 +82,7 @@ class Area(AreaBase, Mark):
     edgecolor: MappableColor = Mappable(depend="color", groups=True)
     edgealpha: MappableFloat = Mappable(1, groups=True)
     edgewidth: MappableFloat = Mappable(rc="patch.linewidth", groups=True)
-
-    # TODO should this be edgestyle?
-    linestyle: MappableFloat = Mappable("-", groups=True)
+    edgestyle: MappableStyle = Mappable("-", groups=True)
 
     # TODO should this be settable / mappable?
     baseline: MappableFloat = Mappable(0)
@@ -104,7 +103,7 @@ class Ribbon(AreaBase, Mark):
     edgecolor: MappableColor = Mappable(depend="color", groups=True)
     edgealpha: MappableFloat = Mappable(1, groups=True)
     edgewidth: MappableFloat = Mappable(0, groups=True)
-    linestyle: MappableFloat = Mappable("-", groups=True)
+    edgestyle: MappableFloat = Mappable("-", groups=True)
 
     def _standardize_coordinate_parameters(self, data, orient):
         # dv = {"x": "y", "y": "x"}[orient]

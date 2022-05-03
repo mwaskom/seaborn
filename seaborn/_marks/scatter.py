@@ -4,19 +4,21 @@ from dataclasses import dataclass
 import numpy as np
 import matplotlib as mpl
 
-from seaborn._marks.base import Mark, Mappable
+from seaborn._marks.base import (
+    Mark,
+    Mappable,
+    MappableBool,
+    MappableFloat,
+    MappableString,
+    MappableColor,
+    MappableStyle,
+)
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from typing import Any, Union
+    from typing import Any
     from matplotlib.artist import Artist
     from seaborn._core.scales import Scale
-
-    # TODO import from base
-    MappableBool = Union[bool, Mappable]
-    MappableFloat = Union[float, Mappable]
-    MappableString = Union[str, Mappable]
-    MappableColor = Union[str, tuple, Mappable]  # TODO
 
 
 @dataclass
@@ -24,14 +26,14 @@ class Scatter(Mark):
     """
     A point mark defined by strokes with optional fills.
     """
+    marker: MappableString = Mappable(rc="scatter.marker")  # TODO MappableMarker
+    stroke: MappableFloat = Mappable(.75)  # TODO rcParam?
+    pointsize: MappableFloat = Mappable(3)  # TODO rcParam?
     color: MappableColor = Mappable("C0")
     alpha: MappableFloat = Mappable(1)  # TODO auto alpha?
     fill: MappableBool = Mappable(True)
     fillcolor: MappableColor = Mappable(depend="color")
     fillalpha: MappableFloat = Mappable(.2)
-    marker: MappableString = Mappable(rc="scatter.marker")
-    pointsize: MappableFloat = Mappable(3)  # TODO rcParam?
-    stroke: MappableFloat = Mappable(.75)  # TODO rcParam?
 
     def _resolve_paths(self, data):
 
@@ -68,6 +70,9 @@ class Scatter(Mark):
         resolved["edgecolor"] = self._resolve_color(data, "", scales)
         resolved["facecolor"] = self._resolve_color(data, "fill", scales)
 
+        # Because only Dot, and not Scatter, has an edgestyle
+        resolved.setdefault("edgestyle", (0, None))
+
         fc = resolved["facecolor"]
         if isinstance(fc, tuple):
             resolved["facecolor"] = fc[0], fc[1], fc[2], fc[3] * resolved["fill"]
@@ -96,6 +101,7 @@ class Scatter(Mark):
                 facecolors=data["facecolor"],
                 edgecolors=data["edgecolor"],
                 linewidths=data["linewidth"],
+                linestyles=data["edgestyle"],
                 transOffset=ax.transData,
                 transform=mpl.transforms.IdentityTransform(),
             )
@@ -114,6 +120,7 @@ class Scatter(Mark):
             facecolors=[key["facecolor"]],
             edgecolors=[key["edgecolor"]],
             linewidths=[key["linewidth"]],
+            linestyles=[key["edgestyle"]],
             transform=mpl.transforms.IdentityTransform(),
         )
 
@@ -124,14 +131,15 @@ class Dot(Scatter):
     """
     A point mark defined by shape with optional edges.
     """
+    marker: MappableString = Mappable("o")
     color: MappableColor = Mappable("C0")
     alpha: MappableFloat = Mappable(1)
+    fill: MappableBool = Mappable(True)
     edgecolor: MappableColor = Mappable(depend="color")
     edgealpha: MappableFloat = Mappable(depend="alpha")
-    fill: MappableBool = Mappable(True)
-    marker: MappableString = Mappable("o")
     pointsize: MappableFloat = Mappable(6)  # TODO rcParam?
     edgewidth: MappableFloat = Mappable(.5)  # TODO rcParam?
+    edgestyle: MappableStyle = Mappable("-")
 
     def resolve_properties(self, data, scales):
         # TODO this is maybe a little hacky, is there a better abstraction?

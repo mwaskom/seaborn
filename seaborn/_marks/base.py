@@ -12,7 +12,7 @@ from collections.abc import Generator
 from numpy import ndarray
 from pandas import DataFrame
 from matplotlib.artist import Artist
-from seaborn._core.properties import RGBATuple
+from seaborn._core.properties import RGBATuple, DashPattern, DashPatternWithOffset
 from seaborn._core.scales import Scale
 
 
@@ -81,10 +81,12 @@ class Mappable:
 
 
 # TODO where is the right place to put this kind of type aliasing?
+
 MappableBool = Union[bool, Mappable]
 MappableString = Union[str, Mappable]
 MappableFloat = Union[float, Mappable]
 MappableColor = Union[str, tuple, Mappable]
+MappableStyle = Union[str, DashPattern, DashPatternWithOffset, Mappable]
 
 
 @dataclass
@@ -155,7 +157,8 @@ class Mark:
         feature = self.mappable_props[name]
         prop = PROPERTIES.get(name, Property(name))
         directly_specified = not isinstance(feature, Mappable)
-        return_array = isinstance(data, pd.DataFrame)
+        return_multiple = isinstance(data, pd.DataFrame)
+        return_array = return_multiple and not name.endswith("style")
 
         # Special case width because it needs to be resolved and added to the dataframe
         # during layer prep (so the Move operations use it properly).
@@ -165,8 +168,10 @@ class Mark:
 
         if directly_specified:
             feature = prop.standardize(feature)
+            if return_multiple:
+                feature = [feature] * len(data)
             if return_array:
-                feature = np.array([feature] * len(data))
+                feature = np.array(feature)
             return feature
 
         if name in data:
@@ -185,8 +190,10 @@ class Mark:
             return self._resolve(data, feature.depend, scales)
 
         default = prop.standardize(feature.default)
+        if return_multiple:
+            default = [default] * len(data)
         if return_array:
-            default = np.array([default] * len(data))
+            default = np.array(default)
         return default
 
     def _resolve_color(

@@ -3,18 +3,20 @@ from dataclasses import dataclass
 
 import matplotlib as mpl
 
-from seaborn._marks.base import Mark, Mappable
+from seaborn._marks.base import (
+    Mark,
+    Mappable,
+    MappableBool,
+    MappableColor,
+    MappableFloat,
+    MappableStyle,
+)
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from typing import Union, Any
+    from typing import Any
     from matplotlib.artist import Artist
     from seaborn._core.scales import Scale
-
-    MappableBool = Union[bool, Mappable]
-    MappableFloat = Union[float, Mappable]
-    MappableString = Union[str, Mappable]
-    MappableColor = Union[str, tuple, Mappable]  # TODO
 
 
 @dataclass
@@ -23,12 +25,13 @@ class Bar(Mark):
     An interval mark drawn between baseline and data values with a width.
     """
     color: MappableColor = Mappable("C0", groups=True)
-    alpha: MappableFloat = Mappable(1, groups=True)
-    edgecolor: MappableColor = Mappable(depend="color", groups=True)
-    edgealpha: MappableFloat = Mappable(depend="alpha", groups=True)
-    edgewidth: MappableFloat = Mappable(rc="patch.linewidth")
+    alpha: MappableFloat = Mappable(.7, groups=True)
     fill: MappableBool = Mappable(True, groups=True)
-    # pattern: MappableString = Mappable(None, groups=True)  # TODO no Semantic yet
+    edgecolor: MappableColor = Mappable(depend="color", groups=True)
+    edgealpha: MappableFloat = Mappable(1, groups=True)
+    edgewidth: MappableFloat = Mappable(rc="patch.linewidth")
+    edgestyle: MappableStyle = Mappable("-", groups=True)
+    # pattern: MappableString = Mappable(None, groups=True)  # TODO no Property yet
 
     width: MappableFloat = Mappable(.8)  # TODO groups?
     baseline: MappableFloat = Mappable(0)  # TODO *is* this mappable?
@@ -64,7 +67,7 @@ class Bar(Mark):
                 xy = b, y - h / 2
             return xy, w, h
 
-        for keys, data, ax in split_gen():
+        for _, data, ax in split_gen():
 
             xys = data[["x", "y"]].to_numpy()
             data = self.resolve_properties(data, scales)
@@ -83,6 +86,7 @@ class Bar(Mark):
                     facecolor=data["facecolor"][i],
                     edgecolor=data["edgecolor"][i],
                     linewidth=data["edgewidth"][i],
+                    linestyle=data["edgestyle"][i],
                 )
                 ax.add_patch(bar)
                 bars.append(bar)
@@ -99,5 +103,6 @@ class Bar(Mark):
             facecolor=key["facecolor"],
             edgecolor=key["edgecolor"],
             linewidth=key["edgewidth"],
+            linestyle=key["edgestyle"],
         )
         return artist

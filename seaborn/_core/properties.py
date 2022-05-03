@@ -28,6 +28,7 @@ ColorSpec = Union[RGBTuple, RGBATuple, str]
 
 DashPattern = Tuple[float, ...]
 DashPatternWithOffset = Tuple[float, Optional[DashPattern]]
+
 MarkerPattern = Union[
     float,
     str,
@@ -725,22 +726,25 @@ class Fill(Property):
 # TODO Users do not interact directly with properties, so how to document them?
 
 
-PROPERTIES = {
-    "x": Coordinate(),
-    "y": Coordinate(),
-    "color": Color(),
-    "fillcolor": Color("fillcolor"),
-    "edgecolor": Color("edgecolor"),
-    "alpha": Alpha(),
-    "fillalpha": Alpha("fillalpha"),
-    "edgealpha": Alpha("edgealpha"),
-    "fill": Fill(),
-    "marker": Marker(),
-    "linestyle": LineStyle(),
-    "pointsize": PointSize(),
-    "linewidth": LineWidth(),
-    "edgewidth": EdgeWidth(),
-    "stroke": Stroke(),
+PROPERTY_CLASSES = {
+    "x": Coordinate,
+    "y": Coordinate,
+    "color": Color,
+    "fillcolor": Color,
+    "edgecolor": Color,
+    "alpha": Alpha,
+    "fillalpha": Alpha,
+    "edgealpha": Alpha,
+    "fill": Fill,
+    "marker": Marker,
+    "linestyle": LineStyle,
+    "edgestyle": LineStyle,
+    "pointsize": PointSize,
+    "linewidth": LineWidth,
+    "edgewidth": EdgeWidth,
+    "stroke": Stroke,
     # TODO pattern?
     # TODO gradient?
 }
+
+PROPERTIES = {var: cls(var) for var, cls in PROPERTY_CLASSES.items()}

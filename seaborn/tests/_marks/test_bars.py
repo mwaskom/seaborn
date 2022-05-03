@@ -1,5 +1,7 @@
 import pytest
 
+from matplotlib.colors import to_rgba
+
 from seaborn._core.plot import Plot
 from seaborn._marks.bars import Bar
 
@@ -84,3 +86,37 @@ class TestBar:
             self.check_bar(bar, 0, i - w / 2, x[i * 2], w / 2)
         for i, bar in enumerate(bars[2:]):
             self.check_bar(bar, 0, i, x[i * 2 + 1], w / 2)
+
+    def test_direct_properties(self):
+
+        x = ["a", "b", "c"]
+        y = [1, 3, 2]
+
+        mark = Bar(
+            color="C2",
+            alpha=.5,
+            edgecolor="k",
+            edgealpha=.9,
+            edgestyle=(2, 1),
+            edgewidth=1.5,
+        )
+
+        p = Plot(x, y).add(mark).plot()
+        ax = p._figure.axes[0]
+        for bar in ax.patches:
+            assert bar.get_facecolor() == to_rgba(mark.color, mark.alpha)
+            assert bar.get_edgecolor() == to_rgba(mark.edgecolor, mark.edgealpha)
+            assert bar.get_linewidth() == mark.edgewidth
+            assert bar.get_linestyle() == (0, mark.edgestyle)
+
+    def test_mapped_properties(self):
+
+        x = ["a", "b"]
+        y = [1, 2]
+        mark = Bar(alpha=.2)
+        p = Plot(x, y, color=x, edgewidth=y).add(mark).plot()
+        ax = p._figure.axes[0]
+        for i, bar in enumerate(ax.patches):
+            assert bar.get_facecolor() == to_rgba(f"C{i}", mark.alpha)
+            assert bar.get_edgecolor() == to_rgba(f"C{i}", 1)
+        assert ax.patches[0].get_linewidth() < ax.patches[1].get_linewidth()
