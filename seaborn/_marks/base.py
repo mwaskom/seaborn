@@ -284,3 +284,11 @@ def resolve_color(
 
     # TODO should we be implementing fill here too?
     # (i.e. set fillalpha to 0 when fill=False)
+
+
+class MultiMark(Mark):
+
+    # TODO implement this as a way to wrap multiple marks (e.g. line and ribbon)
+    # It should be fairly lightweight, the main thing is to expose the union
+    # of each mark's parameters and then to call them sequentially in _plot.
+    pass

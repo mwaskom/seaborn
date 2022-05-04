@@ -296,6 +296,18 @@ class TestLayerAddition:
         p = Plot(long_df, y="x").pair(x=["a", "b"])
         assert p._variables == ["y", "x0", "x1"]
 
+    def test_type_checks(self):
+
+        p = Plot()
+        with pytest.raises(TypeError, match="mark must be a Mark instance"):
+            p.add(MockMark)
+
+        class MockStat(Stat):
+            pass
+
+        with pytest.raises(TypeError, match="stat must be a Stat instance"):
+            p.add(MockMark(), MockStat)
+
 
 class TestScaling:
 

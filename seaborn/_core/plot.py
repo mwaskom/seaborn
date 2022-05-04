@@ -176,7 +176,7 @@ class Plot:
 
         new = Plot()
 
-        # TODO any way to make sure data does not get mutated?
+        # TODO any way to enforce that data does not get mutated?
         new._data = self._data
 
         new._layers.extend(self._layers)
@@ -279,10 +279,15 @@ class Plot:
             passed directly to the stat without scaling.
 
         """
-        # TODO do a check here that mark has been initialized,
-        # otherwise errors will be inscrutable
+        if not isinstance(mark, Mark):
+            msg = f"mark must be a Mark instance, not {type(mark)!r}."
+            raise TypeError(msg)
 
-        # TODO decide how to allow Mark to have Stat/Move
+        if stat is not None and not isinstance(stat, Stat):
+            msg = f"stat must be a Stat instance, not {type(stat)!r}."
+            raise TypeError(msg)
+
+        # TODO decide how to allow Mark to have default Stat/Move
         # if stat is None and hasattr(mark, "default_stat"):
         #     stat = mark.default_stat()
 
@@ -466,9 +471,9 @@ class Plot:
         A number of "magic" arguments are accepted, including:
             - The name of a transform (e.g., `"log"`, `"sqrt"`)
             - The name of a palette (e.g., `"viridis"`, `"muted"`)
-            - A dict providing the value for each level (e.g. `{"a": .2, "b": .5}`)
-            - A list of values, implying a :class:`Nominal` scale (e.g. `["b", "r"]`)
             - A tuple of values, defining the output range (e.g. `(1, 5)`)
+            - A dict, implying a :class:`Nominal` scale (e.g. `{"a": .2, "b": .5}`)
+            - A list of values, implying a :class:`Nominal` scale (e.g. `["b", "r"]`)
 
         For more explicit control, pass a scale spec object such as :class:`Continuous`
         or :class:`Nominal`. Or use `None` to use an "identity" scale, which treats data
@@ -486,7 +491,7 @@ class Plot:
         sharey: bool | str | None = None,
     ) -> Plot:
         """
-        Set figure parameters.
+        Control the figure size and layout.
 
         Parameters
         ----------
@@ -524,7 +529,7 @@ class Plot:
         TODO
         """
         # TODO Plot-specific themes using the seaborn theming system
-        raise NotImplementedError
+        raise NotImplementedError()
         new = self._clone()
         return new
 
