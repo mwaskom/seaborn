@@ -9,6 +9,7 @@ from seaborn._marks.base import (
     MappableFloat,
     MappableString,
     MappableColor,
+    resolve_properties,
 )
 
 
@@ -32,11 +33,11 @@ class Line(Mark):
     # TODO alternately, have Path mark that doesn't sort
     sort: bool = True
 
-    def plot(self, split_gen, scales, orient):
+    def _plot(self, split_gen, scales, orient):
 
         for keys, data, ax in split_gen():
 
-            keys = self.resolve_properties(keys, scales)
+            keys = resolve_properties(self, keys, scales)
 
             if self.sort:
                 # TODO where to dropna?
@@ -55,7 +56,7 @@ class Line(Mark):
 
     def _legend_artist(self, variables, value, scales):
 
-        key = self.resolve_properties({v: value for v in variables}, scales)
+        key = resolve_properties(self, {v: value for v in variables}, scales)
 
         return mpl.lines.Line2D(
             [], [],
