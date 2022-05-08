@@ -311,10 +311,9 @@ class TestLayerAddition:
 
 class TestScaling:
 
-    @pytest.mark.xfail(reason="Calendric scale not implemented")
     def test_inference(self, long_df):
 
-        for col, scale_type in zip("zat", ["continuous", "nominal", "calendric"]):
+        for col, scale_type in zip("zat", ["continuous", "nominal", "temporal"]):
             p = Plot(long_df, x=col, y=col).add(MockMark()).plot()
             for var in "xy":
                 assert p._scales[var].scale_type == scale_type
@@ -346,7 +345,7 @@ class TestScaling:
         ax = p._figure.axes[0]
         assert ax.yaxis.convert_units("3") == 2
 
-    @pytest.mark.xfail(reason="Calendric scale not implemented")
+    @pytest.mark.xfail(reason="Temporal auto-conversion not implemented")
     def test_categorical_as_datetime(self):
 
         dates = ["1970-01-03", "1970-01-02", "1970-01-04"]
@@ -422,7 +421,6 @@ class TestScaling:
         level_map = {x: float(i) for i, x in enumerate(levels)}
         assert_vector_equal(m.passed_data[0]["x"], long_df[col].map(level_map))
 
-    @pytest.mark.xfail(reason="Calendric scale not implemented yet")
     def test_mark_data_from_datetime(self, long_df):
 
         col = "t"

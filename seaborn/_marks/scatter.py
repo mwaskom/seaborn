@@ -115,15 +115,15 @@ class Scatter(Mark):
     ) -> Artist:
 
         key = {v: value for v in variables}
-        key = self._resolve_properties(key, scales)
+        res = self._resolve_properties(key, scales)
 
         return mpl.collections.PathCollection(
-            paths=[key["path"]],
-            sizes=[key["size"]],
-            facecolors=[key["facecolor"]],
-            edgecolors=[key["edgecolor"]],
-            linewidths=[key["linewidth"]],
-            linestyles=[key["edgestyle"]],
+            paths=[res["path"]],
+            sizes=[res["size"]],
+            facecolors=[res["facecolor"]],
+            edgecolors=[res["edgecolor"]],
+            linewidths=[res["linewidth"]],
+            linestyles=[res["edgestyle"]],
             transform=mpl.transforms.IdentityTransform(),
         )
 

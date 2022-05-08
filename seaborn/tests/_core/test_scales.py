@@ -10,6 +10,7 @@ from pandas.testing import assert_series_equal
 from seaborn._core.scales import (
     Nominal,
     Continuous,
+    Temporal,
     PseudoAxis,
 )
 from seaborn._core.properties import (
@@ -51,19 +52,16 @@ class TestContinuous:
 
         s = Continuous().setup(x, IntervalProperty())
         assert_array_equal(s(x), [0, .25, 1])
-        # assert_series_equal(s.invert_transform(s(x)), x)
 
     def test_interval_with_range(self, x):
 
         s = Continuous((1, 3)).setup(x, IntervalProperty())
         assert_array_equal(s(x), [1, 1.5, 3])
-        # TODO assert_series_equal(s.invert_transform(s(x)), x)
 
     def test_interval_with_norm(self, x):
 
         s = Continuous(norm=(3, 7)).setup(x, IntervalProperty())
         assert_array_equal(s(x), [-.5, 0, 1.5])
-        # TODO assert_series_equal(s.invert_transform(s(x)), x)
 
     def test_interval_with_range_norm_and_transform(self, x):
 
@@ -71,7 +69,6 @@ class TestContinuous:
         # TODO param order?
         s = Continuous((2, 3), (10, 100), "log").setup(x, IntervalProperty())
         assert_array_equal(s(x), [1, 2, 3])
-        # TODO assert_series_equal(s.invert_transform(s(x)), x)
 
     def test_color_defaults(self, x):
 
@@ -462,3 +459,82 @@ class TestNominal:
 
         s = Nominal((2, 4)).setup(x, MockProperty())
         assert_array_equal(s(x), [4, np.sqrt(10), 2, np.sqrt(10)])
+
+
+class TestTemporal:
+
+    @pytest.fixture
+    def t(self):
+        dates = pd.to_datetime(["1972-09-27", "1975-06-24", "1980-12-14"])
+        return pd.Series(dates, name="x")
+
+    @pytest.fixture
+    def x(self, t):
+        return pd.Series(mpl.dates.date2num(t), name=t.name)
+
+    def test_coordinate_defaults(self, t, x):
+
+        s = Temporal().setup(t, Coordinate())
+        assert_array_equal(s(t), x)
+
+    def test_interval_defaults(self, t, x):
+
+        s = Temporal().setup(t, IntervalProperty())
+        normed = (x - x.min()) / (x.max() - x.min())
+        assert_array_equal(s(t), normed)
+
+    def test_interval_with_range(self, t, x):
+
+        values = (1, 3)
+        s = Temporal((1, 3)).setup(t, IntervalProperty())
+        normed = (x - x.min()) / (x.max() - x.min())
+        expected = normed * (values[1] - values[0]) + values[0]
+        assert_array_equal(s(t), expected)
+
+    def test_interval_with_norm(self, t, x):
+
+        norm = t[1], t[2]
+        s = Temporal(norm=norm).setup(t, IntervalProperty())
+        n = mpl.dates.date2num(norm)
+        normed = (x - n[0]) / (n[1] - n[0])
+        assert_array_equal(s(t), normed)
+
+    def test_color_defaults(self, t, x):
+
+        cmap = color_palette("ch:", as_cmap=True)
+        s = Temporal().setup(t, Color())
+        normed = (x - x.min()) / (x.max() - x.min())
+        assert_array_equal(s(t), cmap(normed)[:, :3])  # FIXME RGBA
+
+    def test_color_named_values(self, t, x):
+
+        name = "viridis"
+        cmap = color_palette(name, as_cmap=True)
+        s = Temporal(name).setup(t, Color())
+        normed = (x - x.min()) / (x.max() - x.min())
+        assert_array_equal(s(t), cmap(normed)[:, :3])  # FIXME RGBA
+
+    def test_coordinate_axis(self, t, x):
+
+        ax = mpl.figure.Figure().subplots()
+        s = Temporal().setup(t, Coordinate(), ax.xaxis)
+        assert_array_equal(s(t), x)
+        locator = ax.xaxis.get_major_locator()
+        formatter = ax.xaxis.get_major_formatter()
+        assert isinstance(locator, mpl.dates.AutoDateLocator)
+        assert isinstance(formatter, mpl.dates.AutoDateFormatter)
+
+    def test_concise_format(self, t, x):
+
+        ax = mpl.figure.Figure().subplots()
+        Temporal().format(concise=True).setup(t, Coordinate(), ax.xaxis)
+        formatter = ax.xaxis.get_major_formatter()
+        assert isinstance(formatter, mpl.dates.ConciseDateFormatter)
+
+    def test_tick_upto(self, t, x):
+
+        n = 8
+        ax = mpl.figure.Figure().subplots()
+        Temporal().tick(upto=n).setup(t, Coordinate(), ax.xaxis)
+        locator = ax.xaxis.get_major_locator()
+        assert set(locator.maxticks.values()) == {n}

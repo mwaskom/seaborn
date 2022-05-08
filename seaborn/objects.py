@@ -16,4 +16,4 @@ from seaborn._stats.histograms import Hist  # noqa: F401
 
 from seaborn._core.moves import Dodge, Jitter, Shift, Stack  # noqa: F401
 
-from seaborn._core.scales import Nominal, Discrete, Continuous  # noqa: F401
+from seaborn._core.scales import Nominal, Continuous, Temporal  # noqa: F401

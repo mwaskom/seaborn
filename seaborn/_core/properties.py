@@ -8,7 +8,7 @@ import matplotlib as mpl
 from matplotlib.colors import to_rgb, to_rgba, to_rgba_array
 from matplotlib.path import Path
 
-from seaborn._core.scales import ScaleSpec, Nominal, Continuous
+from seaborn._core.scales import ScaleSpec, Nominal, Continuous, Temporal
 from seaborn._core.rules import categorical_order, variable_type
 from seaborn._compat import MarkerStyle
 from seaborn.palettes import QUAL_PALETTES, color_palette, blend_palette
@@ -67,7 +67,11 @@ class Property:
         var_type = variable_type(data, boolean_type="numeric")
         if var_type == "numeric":
             return Continuous()
-        # TODO others ...
+        elif var_type == "datetime":
+            return Temporal()
+        # TODO others
+        # time-based (TimeStamp, TimeDelta, Period)
+        # boolean scale?
         else:
             return Nominal()
 
@@ -181,6 +185,8 @@ class IntervalProperty(Property):
             return Nominal(arg)
         elif variable_type(data) == "categorical":
             return Nominal(arg)
+        elif variable_type(data) == "datetime":
+            return Temporal(arg)
         # TODO other variable types
         else:
             return Continuous(arg)
@@ -737,9 +743,9 @@ PROPERTY_CLASSES = {
     "edgealpha": Alpha,
     "fill": Fill,
     "marker": Marker,
+    "pointsize": PointSize,
     "linestyle": LineStyle,
     "edgestyle": LineStyle,
-    "pointsize": PointSize,
     "linewidth": LineWidth,
     "edgewidth": EdgeWidth,
     "stroke": Stroke,

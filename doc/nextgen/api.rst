@@ -72,5 +72,6 @@ Scales
     :toctree: api/
     :nosignatures:
 
-    Continuous
     Nominal
+    Continuous
+    Temporal
