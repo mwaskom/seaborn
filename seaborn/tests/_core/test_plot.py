@@ -171,7 +171,7 @@ class TestInit:
 
     def test_positional_too_many(self, long_df):
 
-        err = r"Plot accepts no more than 3 positional arguments \(data, x, y\)"
+        err = r"Plot\(\) accepts no more than 3 positional arguments \(data, x, y\)"
         with pytest.raises(TypeError, match=err):
             Plot(long_df, "x", "y", "z")
 

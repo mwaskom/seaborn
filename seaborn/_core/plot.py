@@ -103,19 +103,11 @@ class Plot:
         self,
         *args: DataSource | VariableSpec,
         data: DataSource = None,
-        x: VariableSpec = None,
-        y: VariableSpec = None,
         **variables: VariableSpec,
     ):
 
         if args:
-            data, x, y = self._resolve_positionals(args, data, x, y)
-
-        # Build new dict with x/y rather than adding to preserve natural order
-        if y is not None:
-            variables = {"y": y, **variables}
-        if x is not None:
-            variables = {"x": x, **variables}
+            data, variables = self._resolve_positionals(args, data, variables)
 
         self._data = PlotData(data, variables)
         self._layers = []
@@ -130,48 +122,38 @@ class Plot:
     def _resolve_positionals(
         self,
         args: tuple[DataSource | VariableSpec, ...],
-        data: DataSource, x: VariableSpec, y: VariableSpec,
-    ) -> tuple[DataSource, VariableSpec, VariableSpec]:
+        data: DataSource,
+        variables: dict[str, VariableSpec],
+    ) -> tuple[DataSource, dict[str, VariableSpec]]:
 
         if len(args) > 3:
             err = "Plot() accepts no more than 3 positional arguments (data, x, y)."
             raise TypeError(err)
-        elif len(args) == 3:
-            data_, x_, y_ = args
+
+        # TODO need some clearer way to differentiate data / vector here
+        # Alternatively, could decide this is too flexible for its own good,
+        # and require data to be in positional signature. I'm conflicted.
+        # (There might be an abstract DataFrame class to use here?)
+        if isinstance(args[0], (abc.Mapping, pd.DataFrame)):
+            if data is not None:
+                raise TypeError("`data` given by both name and position.")
+            data, args = args[0], args[1:]
+
+        if len(args) == 2:
+            x, y = args
+        elif len(args) == 1:
+            x, y = *args, None
         else:
-            # TODO need some clearer way to differentiate data / vector here
-            # Alternatively, could decide this is too flexible for its own good,
-            # and require data to be in positional signature. I'm conflicted.
-            # (There might be an abstract DataFrame class to use here?)
-            have_data = isinstance(args[0], (abc.Mapping, pd.DataFrame))
-            if len(args) == 2:
-                if have_data:
-                    data_, x_ = args
-                    y_ = None
-                else:
-                    data_ = None
-                    x_, y_ = args
-            else:
-                y_ = None
-                if have_data:
-                    data_ = args[0]
-                    x_ = None
-                else:
-                    data_ = None
-                    x_ = args[0]
+            x = y = None
 
-        out = []
-        for var, named, pos in zip(["data", "x", "y"], [data, x, y], [data_, x_, y_]):
-            if pos is None:
-                val = named
-            else:
-                if named is not None:
-                    raise TypeError(f"`{var}` given by both name and position.")
-                val = pos
-            out.append(val)
-        data, x, y = out
+        for name, var in zip("yx", (y, x)):
+            if var is not None:
+                if name in variables:
+                    raise TypeError(f"`{name}` given by both name and position.")
+                # Keep coordinates at the front of the variables dict
+                variables = {name: var, **variables}
 
-        return data, x, y
+        return data, variables
 
     def __add__(self, other):
 
