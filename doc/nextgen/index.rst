@@ -328,15 +328,6 @@ objects to plug into the broader system:
         .add(PeakAnnotation(), so.Agg())
     )
 
-
-
-
-.. image:: index_files/index_33_0.png
-   :width: 489.59999999999997px
-   :height: 326.4px
-
-
-
 The new interface understands not just ``x`` and ``y``, but also range
 specifiers; some ``Stat`` objects will output ranges, and some ``Mark``
 objects will accept them. (This means that it will finally be possible
@@ -351,7 +342,7 @@ to pass pre-defined error-bars into seaborn):
         .describe()
         .pipe(so.Plot, x="timepoint")
         .add(so.Line(), y="mean")
-        .add(so.Area(alpha=.2), ymin="min", ymax="max")
+        .add(so.Ribbon(alpha=.2), ymin="min", ymax="max")
     )
 
 
@@ -631,7 +622,7 @@ This is also true of the ``Move`` transformations:
             color=(planets["number"] > 1).rename("multiple")
         )
         .add(so.Bar(), so.Hist(), so.Dodge())
-        .scale(x="log")
+        .scale(x="log", color=so.Nominal())
     )
 
 
@@ -978,6 +969,9 @@ small-multiples plot *within* a larger set of subplots:
    :height: 326.4px
 
 
+
+API Reference
+-------------
 
 .. toctree::
 
