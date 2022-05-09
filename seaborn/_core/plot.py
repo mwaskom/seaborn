@@ -4,6 +4,7 @@ import io
 import os
 import re
 import sys
+import inspect
 import itertools
 from collections import abc
 from collections.abc import Callable, Generator, Hashable
@@ -66,6 +67,23 @@ class PairSpec(TypedDict, total=False):
     wrap: int | None
 
 
+def build_plot_signature(cls):
+
+    sig = inspect.signature(cls)
+    params = [
+        inspect.Parameter("args", inspect.Parameter.VAR_POSITIONAL),
+        inspect.Parameter("data", inspect.Parameter.KEYWORD_ONLY, default=None)
+    ]
+    params.extend([
+        inspect.Parameter(name, inspect.Parameter.KEYWORD_ONLY, default=None)
+        for name in PROPERTIES
+    ])
+    new_sig = sig.replace(parameters=params)
+    cls.__signature__ = new_sig
+    return cls
+
+
+@build_plot_signature
 class Plot:
     """
     Declarative specification of a statistical graphic.
@@ -83,14 +101,10 @@ class Plot:
 
     def __init__(
         self,
-        # TODO rewrite with overload to clarify possible signatures?
         *args: DataSource | VariableSpec,
         data: DataSource = None,
         x: VariableSpec = None,
         y: VariableSpec = None,
-        # TODO maybe enumerate variables for tab-completion/discoverability?
-        # I think the main concern was being extensible ... possible to add
-        # to the signature using inspect?
         **variables: VariableSpec,
     ):
 
@@ -120,14 +134,15 @@ class Plot:
     ) -> tuple[DataSource, VariableSpec, VariableSpec]:
 
         if len(args) > 3:
-            err = "Plot accepts no more than 3 positional arguments (data, x, y)"
-            raise TypeError(err)  # TODO PlotSpecError?
+            err = "Plot() accepts no more than 3 positional arguments (data, x, y)."
+            raise TypeError(err)
         elif len(args) == 3:
             data_, x_, y_ = args
         else:
             # TODO need some clearer way to differentiate data / vector here
             # Alternatively, could decide this is too flexible for its own good,
             # and require data to be in positional signature. I'm conflicted.
+            # (There might be an abstract DataFrame class to use here?)
             have_data = isinstance(args[0], (abc.Mapping, pd.DataFrame))
             if len(args) == 2:
                 if have_data:
@@ -151,7 +166,7 @@ class Plot:
                 val = named
             else:
                 if named is not None:
-                    raise TypeError(f"`{var}` given by both name and position")
+                    raise TypeError(f"`{var}` given by both name and position.")
                 val = pos
             out.append(val)
         data, x, y = out
