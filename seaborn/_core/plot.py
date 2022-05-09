@@ -6,6 +6,7 @@ import re
 import sys
 import inspect
 import itertools
+import textwrap
 from collections import abc
 from collections.abc import Callable, Generator, Hashable
 from typing import Any
@@ -80,13 +81,50 @@ def build_plot_signature(cls):
     ])
     new_sig = sig.replace(parameters=params)
     cls.__signature__ = new_sig
+
+    known_properties = textwrap.fill(
+        ", ".join(PROPERTIES), 78, subsequent_indent=" " * 8,
+    )
+
+    cls.__doc__ = cls.__doc__.format(known_properties=known_properties)
+
     return cls
 
 
 @build_plot_signature
 class Plot:
     """
-    Declarative specification of a statistical graphic.
+    The main interface for declaratively specifying a statistical graphic.
+
+    Plots are constructed by initializing this class and adding one or more
+    layers, comprising a `Mark` and optional `Stat`` or `Move`.  Additionally,
+    you may define faceting variables or variable pairings to divide the space
+    into multiple subplots. The mappings from data values to visual properties
+    can be controlled using scales, although the plot will try to infer good
+    defaults when scales are not explicitly defined.
+
+    The constructor accepts a data source (a :class:`pandas.DataFrame` or
+    dictionary with columnar values) and variable assignments. Variables
+    can be keys that appear in the data source or data vectors. If multiple
+    data-containing objects are provided, they will be index-aligned.
+
+    The data source and variables defined in the constructor will be used for
+    all layers in the plot, unless overridden or disabled when adding the layer.
+    Layer-specific variables can also be defined at that time.
+
+    The following variables can be defined in the constructor:
+        {known_properties}
+
+    The `data`, `x`, and `y` variables can be passed as positional arguments or
+    using keywords. Whether the first positional argument will be used as a data
+    source or `x` variable depends on its type.
+
+    The methods of this class return a copy of the instance; use chaining to
+    build up a plot through multiple calls. Methods can be called in any order.
+
+    Most methods only add inforation to the plot spec; no actual processing
+    happens until the plot is shown or saved. It is also possible to compile
+    the plot without rendering it to access the lower-level representation.
 
     """
     # TODO use TypedDict throughout?
@@ -109,6 +147,8 @@ class Plot:
         if args:
             data, variables = self._resolve_positionals(args, data, variables)
 
+        # TODO check for unknown variables
+
         self._data = PlotData(data, variables)
         self._layers = []
         self._scales = {}
@@ -125,14 +165,12 @@ class Plot:
         data: DataSource,
         variables: dict[str, VariableSpec],
     ) -> tuple[DataSource, dict[str, VariableSpec]]:
-
+        """Handle positional arguments, which may contain data / x / y."""
         if len(args) > 3:
             err = "Plot() accepts no more than 3 positional arguments (data, x, y)."
             raise TypeError(err)
 
         # TODO need some clearer way to differentiate data / vector here
-        # Alternatively, could decide this is too flexible for its own good,
-        # and require data to be in positional signature. I'm conflicted.
         # (There might be an abstract DataFrame class to use here?)
         if isinstance(args[0], (abc.Mapping, pd.DataFrame)):
             if data is not None:
