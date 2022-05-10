@@ -749,6 +749,10 @@ PROPERTY_CLASSES = {
     "edgestyle": LineStyle,
     "edgecolor": Color,
     "edgealpha": Alpha,
+    "xmin": Coordinate,
+    "xmax": Coordinate,
+    "ymin": Coordinate,
+    "ymax": Coordinate,
     "group": Property,
     # TODO pattern?
     # TODO gradient?

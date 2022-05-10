@@ -148,7 +148,7 @@ class Plot:
             data, variables = self._resolve_positionals(args, data, variables)
 
         # TODO check for unknown variables
-        unknown = set(variables) - set(PROPERTIES)
+        unknown = [x for x in variables if x not in PROPERTIES]
         if unknown:
             err = f"Plot() got unexpected keyword argument(s): {', '.join(unknown)}"
             raise TypeError(err)
