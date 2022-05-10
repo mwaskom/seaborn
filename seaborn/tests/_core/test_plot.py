@@ -175,6 +175,12 @@ class TestInit:
         with pytest.raises(TypeError, match=err):
             Plot(long_df, "x", "y", "z")
 
+    def test_unknown_keywords(self, long_df):
+
+        err = r"Plot\(\) got unexpected keyword argument\(s\): bad"
+        with pytest.raises(TypeError, match=err):
+            Plot(long_df, bad="x")
+
 
 class TestLayerAddition:
 

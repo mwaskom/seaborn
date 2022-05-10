@@ -94,18 +94,18 @@ def build_plot_signature(cls):
 @build_plot_signature
 class Plot:
     """
-    The main interface for declaratively specifying a statistical graphic.
+    The main interface for declaratively specifying statistical graphics.
 
     Plots are constructed by initializing this class and adding one or more
-    layers, comprising a `Mark` and optional `Stat`` or `Move`.  Additionally,
-    you may define faceting variables or variable pairings to divide the space
+    layers, comprising a `Mark` and optional `Stat` or `Move`.  Additionally,
+    faceting variables or variable pairings may be defined to divide the space
     into multiple subplots. The mappings from data values to visual properties
-    can be controlled using scales, although the plot will try to infer good
+    can be parametrized using scales, although the plot will try to infer good
     defaults when scales are not explicitly defined.
 
     The constructor accepts a data source (a :class:`pandas.DataFrame` or
-    dictionary with columnar values) and variable assignments. Variables
-    can be keys that appear in the data source or data vectors. If multiple
+    dictionary with columnar values) and variable assignments. Variables can be
+    passed as keys to the data source or directly as data vectors.  If multiple
     data-containing objects are provided, they will be index-aligned.
 
     The data source and variables defined in the constructor will be used for
@@ -116,13 +116,13 @@ class Plot:
         {known_properties}
 
     The `data`, `x`, and `y` variables can be passed as positional arguments or
-    using keywords. Whether the first positional argument will be used as a data
-    source or `x` variable depends on its type.
+    using keywords. Whether the first positional argument is interpreted as a
+    data source or `x` variable depends on its type.
 
     The methods of this class return a copy of the instance; use chaining to
     build up a plot through multiple calls. Methods can be called in any order.
 
-    Most methods only add inforation to the plot spec; no actual processing
+    Most methods only add information to the plot spec; no actual processing
     happens until the plot is shown or saved. It is also possible to compile
     the plot without rendering it to access the lower-level representation.
 
@@ -148,6 +148,10 @@ class Plot:
             data, variables = self._resolve_positionals(args, data, variables)
 
         # TODO check for unknown variables
+        unknown = set(variables) - set(PROPERTIES)
+        if unknown:
+            err = f"Plot() got unexpected keyword argument(s): {', '.join(unknown)}"
+            raise TypeError(err)
 
         self._data = PlotData(data, variables)
         self._layers = []
