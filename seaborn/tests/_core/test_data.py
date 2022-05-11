@@ -49,7 +49,7 @@ class TestPlotData:
 
     def test_index_as_variable(self, long_df, long_variables):
 
-        index = pd.Int64Index(np.arange(len(long_df)) * 2 + 10, name="i")
+        index = pd.Index(np.arange(len(long_df)) * 2 + 10, name="i", dtype=int)
         long_variables["x"] = "i"
         p = PlotData(long_df.set_index(index), long_variables)
 
@@ -58,8 +58,8 @@ class TestPlotData:
 
     def test_multiindex_as_variables(self, long_df, long_variables):
 
-        index_i = pd.Int64Index(np.arange(len(long_df)) * 2 + 10, name="i")
-        index_j = pd.Int64Index(np.arange(len(long_df)) * 3 + 5, name="j")
+        index_i = pd.Index(np.arange(len(long_df)) * 2 + 10, name="i", dtype=int)
+        index_j = pd.Index(np.arange(len(long_df)) * 3 + 5, name="j", dtype=int)
         index = pd.MultiIndex.from_arrays([index_i, index_j])
         long_variables.update({"x": "i", "y": "j"})
 
@@ -160,10 +160,10 @@ class TestPlotData:
     def test_index_alignment_series_to_dataframe(self):
 
         x = [1, 2, 3]
-        x_index = pd.Int64Index(x)
+        x_index = pd.Index(x, dtype=int)
 
         y_values = [3, 4, 5]
-        y_index = pd.Int64Index(y_values)
+        y_index = pd.Index(y_values, dtype=int)
         y = pd.Series(y_values, y_index, name="y")
 
         data = pd.DataFrame(dict(x=x), index=x_index)
