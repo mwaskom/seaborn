@@ -1086,7 +1086,7 @@ class VectorPlotter:
                 if var not in self.variables:
                     continue
 
-                comp_col = pd.Series(index=self.plot_data.index, dtype=float, name=var)
+                parts = []
                 grouped = self.plot_data[var].groupby(self.converters[var], sort=False)
                 for converter, orig in grouped:
                     with pd.option_context('mode.use_inf_as_null', True):
@@ -1099,8 +1099,11 @@ class VectorPlotter:
                     comp = pd.to_numeric(converter.convert_units(orig))
                     if converter.get_scale() == "log":
                         comp = np.log10(comp)
-                    comp_col.loc[orig.index] = comp
-
+                    parts.append(pd.Series(comp, orig.index, name=orig.name))
+                if parts:
+                    comp_col = pd.concat(parts)
+                else:
+                    comp_col = pd.Series(dtype=float, name=var)
                 comp_data.insert(0, var, comp_col)
 
             self._comp_data = comp_data

@@ -1328,6 +1328,14 @@ class TestVectorPlotter:
         p._attach(ax)
         assert_array_equal(p.comp_data["x"], comp_data)
 
+    def test_comp_data_duplicate_index(self):
+
+        x = pd.Series([1, 2, 3, 4, 5], [1, 1, 1, 2, 2])
+        p = VectorPlotter(variables={"x": x})
+        ax = plt.figure().subplots()
+        p._attach(ax)
+        assert_array_equal(p.comp_data["x"], x)
+
     def test_var_order(self, long_df):
 
         order = ["c", "b", "a"]
