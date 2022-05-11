@@ -1,3 +1,4 @@
+"""The classes for specifying and compiling a declarative visualization."""
 from __future__ import annotations
 
 import io
@@ -42,6 +43,9 @@ else:
     from typing_extensions import TypedDict
 
 
+# ---- Definitions for internal specs --------------------------------- #
+
+
 class Layer(TypedDict, total=False):
 
     mark: Mark  # TODO allow list?
@@ -68,8 +72,18 @@ class PairSpec(TypedDict, total=False):
     wrap: int | None
 
 
-def build_plot_signature(cls):
+# ---- The main interface for declarative plotting -------------------- #
 
+
+def build_plot_signature(cls):
+    """
+    Decorator function for giving Plot a useful signature.
+
+    Currently this mostly saves us some duplicated typing, but we would
+    like eventually to have a way of registering new semantic properties,
+    at which point dynamic signature generation would become more important.
+
+    """
     sig = inspect.signature(cls)
     params = [
         inspect.Parameter("args", inspect.Parameter.VAR_POSITIONAL),
@@ -94,7 +108,7 @@ def build_plot_signature(cls):
 @build_plot_signature
 class Plot:
     """
-    The main interface for declaratively specifying statistical graphics.
+    An interface for declaratively specifying statistical graphics.
 
     Plots are constructed by initializing this class and adding one or more
     layers, comprising a `Mark` and optional `Stat` or `Move`.  Additionally,
@@ -109,8 +123,7 @@ class Plot:
     data-containing objects are provided, they will be index-aligned.
 
     The data source and variables defined in the constructor will be used for
-    all layers in the plot, unless overridden or disabled when adding the layer.
-    Layer-specific variables can also be defined at that time.
+    all layers in the plot, unless overridden or disabled when adding a layer.
 
     The following variables can be defined in the constructor:
         {known_properties}
@@ -147,7 +160,6 @@ class Plot:
         if args:
             data, variables = self._resolve_positionals(args, data, variables)
 
-        # TODO check for unknown variables
         unknown = [x for x in variables if x not in PROPERTIES]
         if unknown:
             err = f"Plot() got unexpected keyword argument(s): {', '.join(unknown)}"
@@ -212,7 +224,7 @@ class Plot:
     # TODO _repr_svg_?
 
     def _clone(self) -> Plot:
-
+        """Generate a new object with the same information as the current spec."""
         new = Plot()
 
         # TODO any way to enforce that data does not get mutated?
@@ -642,9 +654,12 @@ class Plot:
     #    return self
 
 
+# ---- The plot compilation engine ---------------------------------------------- #
+
+
 class Plotter:
     """
-    Engine for translating a :class:`Plot` spec into a Matplotlib figure.
+    Engine for compiling a :class:`Plot` spec into a Matplotlib figure.
 
     This class is not intended to be instantiated directly by users.
 
@@ -1222,8 +1237,7 @@ class Plotter:
         return df.index[keep_rows]
 
     def _filter_subplot_data(self, df: DataFrame, subplot: dict) -> DataFrame:
-        # TODO being replaced by above function
-
+        # TODO note redundancies with preceding function ... needs refactoring
         dims = df.columns.intersection(["col", "row"])
         if dims.empty:
             return df
