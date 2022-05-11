@@ -383,7 +383,7 @@ def heatmap(
         The mapping from data values to color space. If not provided, the
         default will depend on whether ``center`` is set.
     center : float, optional
-        The value at which to center the colormap when plotting divergant data.
+        The value at which to center the colormap when plotting divergent data.
         Using this parameter will change the default ``cmap`` if none is
         specified.
     robust : bool, optional
