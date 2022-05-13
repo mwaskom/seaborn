@@ -159,7 +159,7 @@ def rgb_prepare(triple):
         ch = round(ch, 3)
 
         if ch < -0.0001 or ch > 1.0001:
-            raise Exception("Illegal RGB value %f" % ch)
+            raise Exception(f"Illegal RGB value {ch:f}")
 
         if ch < 0:
             ch = 0

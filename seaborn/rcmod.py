@@ -185,7 +185,7 @@ def axes_style(style=None, rc=None):
     else:
         styles = ["white", "dark", "whitegrid", "darkgrid", "ticks"]
         if style not in styles:
-            raise ValueError("style must be one of %s" % ", ".join(styles))
+            raise ValueError(f"style must be one of {', '.join(styles)}")
 
         # Define colors here
         dark_gray = ".15"
@@ -380,7 +380,7 @@ def plotting_context(context=None, font_scale=1, rc=None):
 
         contexts = ["paper", "notebook", "talk", "poster"]
         if context not in contexts:
-            raise ValueError("context must be in %s" % ", ".join(contexts))
+            raise ValueError(f"context must be in {', '.join(contexts)}")
 
         # Set up dictionary of default parameters
         texts_base_context = {

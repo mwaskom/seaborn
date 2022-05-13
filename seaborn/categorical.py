@@ -498,7 +498,7 @@ class _CategoricalPlotter(object):
             # Validate the inputs
             for var in [x, y, hue, units]:
                 if isinstance(var, str):
-                    err = "Could not interpret input '{}'".format(var)
+                    err = f"Could not interpret input '{var}'"
                     raise ValueError(err)
 
             # Figure out the plotting orientation
@@ -872,7 +872,7 @@ class _ViolinPlotter(_CategoricalPlotter):
                         inner.startswith("box"),
                         inner.startswith("stick"),
                         inner.startswith("point")]):
-                err = "Inner style '{}' not recognized".format(inner)
+                err = f"Inner style '{inner}' not recognized"
                 raise ValueError(err)
         self.inner = inner
 
@@ -1004,7 +1004,7 @@ class _ViolinPlotter(_CategoricalPlotter):
             self.scale_count(density, counts, scale_hue)
 
         else:
-            raise ValueError("scale method '{}' not recognized".format(scale))
+            raise ValueError(f"scale method '{scale}' not recognized")
 
         # Set object attributes that will be used while plotting
         self.support = support
@@ -3592,7 +3592,7 @@ def catplot(
     try:
         plot_func = globals()[kind + "plot"]
     except KeyError:
-        err = "Plot kind '{}' is not recognized".format(kind)
+        err = f"Plot kind '{kind}' is not recognized"
         raise ValueError(err)
 
     # Check for attempt to plot onto specific axes and warn

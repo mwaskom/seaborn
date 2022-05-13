@@ -303,7 +303,7 @@ class TestHeatmap:
         ax = mat.heatmap(self.df_norm, annot=True, fmt=".1f",
                          annot_kws={"fontsize": 14})
         for val, text in zip(self.x_norm.flat, ax.texts):
-            assert text.get_text() == "{:.1f}".format(val)
+            assert text.get_text() == f"{val:.1f}"
             assert text.get_fontsize() == 14
 
     def test_heatmap_annotation_overwrite_kws(self):
@@ -326,7 +326,7 @@ class TestHeatmap:
         ax = mat.heatmap(df, annot=True, fmt='.1f', mask=mask)
         assert len(df_masked.compressed()) == len(ax.texts)
         for val, text in zip(df_masked.compressed(), ax.texts):
-            assert "{:.1f}".format(val) == text.get_text()
+            assert f"{val:.1f}" == text.get_text()
 
     def test_heatmap_annotation_mesh_colors(self):
 
@@ -343,14 +343,14 @@ class TestHeatmap:
                          annot_kws={"fontsize": 14})
 
         for val, text in zip(annot_data.values.flat, ax.texts):
-            assert text.get_text() == "{:.1f}".format(val)
+            assert text.get_text() == f"{val:.1f}"
             assert text.get_fontsize() == 14
 
     def test_heatmap_annotation_with_limited_ticklabels(self):
         ax = mat.heatmap(self.df_norm, fmt=".2f", annot=True,
                          xticklabels=False, yticklabels=False)
         for val, text in zip(self.x_norm.flat, ax.texts):
-            assert text.get_text() == "{:.2f}".format(val)
+            assert text.get_text() == f"{val:.2f}"
 
     def test_heatmap_cbar(self):
 
@@ -1305,11 +1305,11 @@ class TestClustermap:
 
         g = mat.clustermap(self.df_norm, annot=True, fmt=".1f")
         for val, text in zip(np.asarray(g.data2d).flat, g.ax_heatmap.texts):
-            assert text.get_text() == "{:.1f}".format(val)
+            assert text.get_text() == f"{val:.1f}"
 
         g = mat.clustermap(self.df_norm, annot=self.df_norm, fmt=".1f")
         for val, text in zip(np.asarray(g.data2d).flat, g.ax_heatmap.texts):
-            assert text.get_text() == "{:.1f}".format(val)
+            assert text.get_text() == f"{val:.1f}"
 
     def test_tree_kws(self):
 
