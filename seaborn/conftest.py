@@ -64,7 +64,7 @@ def rng():
 def wide_df(rng):
 
     columns = list("abc")
-    index = pd.Int64Index(np.arange(10, 50, 2), name="wide_index")
+    index = pd.RangeIndex(10, 50, 2, name="wide_index")
     values = rng.normal(size=(len(index), len(columns)))
     return pd.DataFrame(values, index=index, columns=columns)
 
@@ -78,7 +78,7 @@ def wide_array(wide_df):
 @pytest.fixture
 def flat_series(rng):
 
-    index = pd.Int64Index(np.arange(10, 30), name="t")
+    index = pd.RangeIndex(10, 30, name="t")
     return pd.Series(rng.normal(size=20), index, name="s")
 
 
@@ -97,7 +97,7 @@ def flat_list(flat_series):
 @pytest.fixture(params=["series", "array", "list"])
 def flat_data(rng, request):
 
-    index = pd.Int64Index(np.arange(10, 30), name="t")
+    index = pd.RangeIndex(10, 30, name="t")
     series = pd.Series(rng.normal(size=20), index, name="s")
     if request.param == "series":
         data = series
