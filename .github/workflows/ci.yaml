@@ -1,32 +1,31 @@
-name : CI
+name: CI
 
 on:
   push:
     branches: master
   pull_request:
     branches: master
+  workflow_dispatch:
 
 env:
   NB_KERNEL: python
   MPLBACKEND: Agg
 
 jobs:
-
   build-docs:
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v3
 
-      - name: Checkout
-        uses: actions/checkout@v2
-
-      - name: Setup Python
-        uses: actions/setup-python@v2
+      - name: Setup Python 3.10
+        uses: actions/setup-python@v3
         with:
-          python-version: '3.9.x'
+          python-version: "3.10"
+          cache: "pip"
 
       - name: Install seaborn
         run: |
-          python -m pip install --upgrade pip
+          pip install --upgrade pip
           pip install .[all] -r ci/utils.txt
 
       - name: Install doc tools
@@ -45,43 +44,41 @@ jobs:
 
     strategy:
       matrix:
-
-        python: ['3.7.x', '3.8.x', '3.9.x', '3.10.x']
+        python: ["3.7", "3.8", "3.9", "3.10"]
         target: [test]
         install: [all]
         deps: [latest]
         backend: [agg]
 
         include:
-          - python: '3.7.x'
+          - python: "3.7"
             target: unittests
             install: all
             deps: pinned
             backend: agg
-          - python: '3.9.x'
+          - python: "3.10"
             target: unittests
             install: light
             deps: latest
             backend: agg
-          - python: '3.9.x'
+          - python: "3.10"
             target: test
             install: all
             deps: latest
             backend: tkagg
 
     steps:
+      - uses: actions/checkout@v3
 
-      - name: Checkout
-        uses: actions/checkout@v2
-
-      - name: Setup Python
-        uses: actions/setup-python@v2
+      - name: Setup Python ${{ matrix.python }}
+        uses: actions/setup-python@v3
         with:
           python-version: ${{ matrix.python }}
+          cache: "pip"
 
       - name: Install seaborn
         run: |
-          python -m pip install --upgrade pip
+          pip install --upgrade pip
           if [[ ${{matrix.install}} == 'all' ]]; then EXTRAS='[all]'; fi
           if [[ ${{matrix.deps }} == 'pinned' ]]; then DEPS='-r ci/deps_pinned.txt'; fi
           pip install .$EXTRAS $DEPS -r ci/utils.txt
@@ -97,5 +94,5 @@ jobs:
           $PREFIX make ${{ matrix.target }}
 
       - name: Upload coverage
-        uses: codecov/codecov-action@v1
+        uses: codecov/codecov-action@v2
         if: ${{ success() }}
