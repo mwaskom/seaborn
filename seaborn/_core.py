@@ -51,7 +51,7 @@ class SemanticMapping:
 
     def map(cls, plotter, *args, **kwargs):
         # This method is assigned the __init__ docstring
-        method_name = "_{}_map".format(cls.__name__[:-7].lower())
+        method_name = f"_{cls.__name__[:-7].lower()}_map"
         setattr(plotter, method_name, cls(plotter, *args, **kwargs))
         return plotter
 

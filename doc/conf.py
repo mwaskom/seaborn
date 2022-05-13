@@ -68,7 +68,7 @@ master_doc = 'index'
 # General information about the project.
 project = u'seaborn'
 import time
-copyright = u'2012-{}'.format(time.strftime("%Y"))
+copyright = f"2012-{time.strftime('%Y')}"
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the

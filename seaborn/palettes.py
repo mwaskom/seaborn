@@ -205,7 +205,7 @@ def color_palette(palette=None, n_colors=None, desat=None, as_cmap=False):
                 # Perhaps a named matplotlib colormap?
                 palette = mpl_palette(palette, n_colors, as_cmap=as_cmap)
             except ValueError:
-                raise ValueError("%s is not a valid palette name" % palette)
+                raise ValueError(f"{palette} is not a valid palette name")
 
     if desat is not None:
         palette = [desaturate(c, desat) for c in palette]
@@ -1029,7 +1029,7 @@ def set_color_codes(palette="deep"):
             palette = palette + "6"
         colors = SEABORN_PALETTES[palette] + [(.1, .1, .1)]
     else:
-        err = "Cannot set colors with palette '{}'".format(palette)
+        err = f"Cannot set colors with palette '{palette}'"
         raise ValueError(err)
 
     for code, color in zip("bgrmyck", colors):

@@ -185,7 +185,7 @@ class ExampleGenerator(object):
         if not op.exists(outfilename) or op.getmtime(outfilename) < file_mtime:
             self.exec_file()
         else:
-            print("skipping {0}".format(self.filename))
+            print(f"skipping {self.filename}")
 
     @property
     def dirname(self):
@@ -299,7 +299,7 @@ class ExampleGenerator(object):
         self.end_line = erow + 1 + start_row
 
     def exec_file(self):
-        print("running {0}".format(self.filename))
+        print(f"running {self.filename}")
 
         plt.close('all')
         my_globals = {'pl': plt,
@@ -310,14 +310,14 @@ class ExampleGenerator(object):
         fig.canvas.draw()
         pngfile = op.join(self.target_dir, self.pngfilename)
         thumbfile = op.join("example_thumbs", self.thumbfilename)
-        self.html = "<img src=../%s>" % self.pngfilename
+        self.html = f"<img src=../{self.pngfilename}>"
         fig.savefig(pngfile, dpi=75, bbox_inches="tight")
 
         cx, cy = self.thumbloc
         create_thumbnail(pngfile, thumbfile, cx=cx, cy=cy)
 
     def toctree_entry(self):
-        return "   ./%s\n\n" % op.splitext(self.htmlfilename)[0]
+        return f"   ./{op.splitext(self.htmlfilename)[0]}\n\n"
 
     def contents_entry(self):
         return (".. raw:: html\n\n"

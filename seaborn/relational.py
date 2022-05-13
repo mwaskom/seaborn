@@ -882,7 +882,7 @@ def relplot(
         dashes = True if dashes is None else dashes
 
     else:
-        err = "Plot kind {} not recognized".format(kind)
+        err = f"Plot kind {kind} not recognized"
         raise ValueError(err)
 
     # Check for attempt to plot onto specific axes and warn

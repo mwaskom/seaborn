@@ -2073,8 +2073,7 @@ def pairplot(
 
     if not isinstance(data, pd.DataFrame):
         raise TypeError(
-            "'data' must be pandas DataFrame object, not: {typefound}".format(
-                typefound=type(data)))
+            f"'data' must be pandas DataFrame object, not: {type(data)}")
 
     plot_kws = {} if plot_kws is None else plot_kws.copy()
     diag_kws = {} if diag_kws is None else diag_kws.copy()
