@@ -17,7 +17,6 @@ except ImportError:
 from . import utils
 from . import algorithms as algo
 from .axisgrid import FacetGrid, _facet_docs
-from ._decorators import _deprecate_positional_args
 
 
 __all__ = ["lmplot", "regplot", "residplot"]
@@ -556,12 +555,9 @@ _regression_docs = dict(
 _regression_docs.update(_facet_docs)
 
 
-@_deprecate_positional_args
 def lmplot(
-    *,
-    x=None, y=None,
-    data=None,
-    hue=None, col=None, row=None,  # TODO move before data once * is enforced
+    data=None, *,
+    x=None, y=None, hue=None, col=None, row=None,
     palette=None, col_wrap=None, height=5, aspect=1, markers="o",
     sharex=None, sharey=None, hue_order=None, col_order=None, row_order=None,
     legend=True, legend_out=None, x_estimator=None, x_bins=None,
@@ -671,9 +667,9 @@ lmplot.__doc__ = dedent("""\
 
     Parameters
     ----------
+    {data}
     x, y : strings, optional
         Input variables; these should be column names in ``data``.
-    {data}
     hue, col, row : strings
         Variables that define subsets of the data, which will be drawn on
         separate facets in the grid. See the ``*_order`` parameters to control
@@ -833,11 +829,8 @@ lmplot.__doc__ = dedent("""\
     """).format(**_regression_docs)
 
 
-@_deprecate_positional_args
 def regplot(
-    *,
-    x=None, y=None,
-    data=None,
+    data=None, *, x=None, y=None,
     x_estimator=None, x_bins=None, x_ci="ci",
     scatter=True, fit_reg=True, ci=95, n_boot=1000, units=None,
     seed=None, order=1, logistic=False, lowess=False, robust=False,
@@ -1032,12 +1025,9 @@ regplot.__doc__ = dedent("""\
     """).format(**_regression_docs)
 
 
-@_deprecate_positional_args
 def residplot(
-    *,
-    x=None, y=None,
-    data=None,
-    lowess=False, x_partial=None, y_partial=None,
+    data=None, *, x=None, y=None,
+    x_partial=None, y_partial=None, lowess=False,
     order=1, robust=False, dropna=True, label=None, color=None,
     scatter_kws=None, line_kws=None, ax=None
 ):
@@ -1050,18 +1040,17 @@ def residplot(
 
     Parameters
     ----------
+    data : DataFrame, optional
+        DataFrame to use if `x` and `y` are column names.
     x : vector or string
         Data or column name in `data` for the predictor variable.
     y : vector or string
         Data or column name in `data` for the response variable.
-    data : DataFrame, optional
-        DataFrame to use if `x` and `y` are column names.
-    lowess : boolean, optional
-        Fit a lowess smoother to the residual scatterplot.
-    {x, y}_partial : matrix or string(s) , optional
-        Matrix with same first dimension as `x`, or column name(s) in `data`.
+    {x, y}_partial : vectors or string(s) , optional
         These variables are treated as confounding and are removed from
         the `x` or `y` variables before plotting.
+    lowess : boolean, optional
+        Fit a lowess smoother to the residual scatterplot.
     order : int, optional
         Order of the polynomial to fit when calculating the residuals.
     robust : boolean, optional

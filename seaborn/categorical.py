@@ -29,7 +29,6 @@ from .utils import remove_na, _normal_quantile_func, _draw_figure, _default_colo
 from .algorithms import bootstrap
 from .palettes import color_palette, husl_palette, light_palette, dark_palette
 from .axisgrid import FacetGrid, _facet_docs
-from ._decorators import _deprecate_positional_args
 
 
 __all__ = [
@@ -2199,12 +2198,8 @@ _categorical_docs = dict(
 _categorical_docs.update(_facet_docs)
 
 
-@_deprecate_positional_args
 def boxplot(
-    *,
-    x=None, y=None,
-    hue=None, data=None,
-    order=None, hue_order=None,
+    data=None, *, x=None, y=None, hue=None, order=None, hue_order=None,
     orient=None, color=None, palette=None, saturation=.75,
     width=.8, dodge=True, fliersize=5, linewidth=None,
     whis=1.5, ax=None,
@@ -2239,8 +2234,8 @@ boxplot.__doc__ = dedent("""\
 
     Parameters
     ----------
-    {input_params}
     {categorical_data}
+    {input_params}
     {order_vars}
     {orient}
     {color}
@@ -2356,12 +2351,8 @@ boxplot.__doc__ = dedent("""\
     """).format(**_categorical_docs)
 
 
-@_deprecate_positional_args
 def violinplot(
-    *,
-    x=None, y=None,
-    hue=None, data=None,
-    order=None, hue_order=None,
+    data=None, *, x=None, y=None, hue=None, order=None, hue_order=None,
     bw="scott", cut=2, scale="area", scale_hue=True, gridsize=100,
     width=.8, inner="box", split=False, dodge=True, orient=None,
     linewidth=None, color=None, palette=None, saturation=.75,
@@ -2401,8 +2392,8 @@ violinplot.__doc__ = dedent("""\
 
     Parameters
     ----------
-    {input_params}
     {categorical_data}
+    {input_params}
     {order_vars}
     bw : {{'scott', 'silverman', float}}, optional
         Either the name of a reference rule or the scale factor to use when
@@ -2590,12 +2581,8 @@ violinplot.__doc__ = dedent("""\
     """).format(**_categorical_docs)
 
 
-@_deprecate_positional_args
 def boxenplot(
-    *,
-    x=None, y=None,
-    hue=None, data=None,
-    order=None, hue_order=None,
+    data=None, *, x=None, y=None, hue=None, order=None, hue_order=None,
     orient=None, color=None, palette=None, saturation=.75,
     width=.8, dodge=True, k_depth='tukey', linewidth=None,
     scale='exponential', outlier_prop=0.007, trust_alpha=0.05, showfliers=True,
@@ -2633,8 +2620,8 @@ boxenplot.__doc__ = dedent("""\
 
     Parameters
     ----------
-    {input_params}
     {categorical_data}
+    {input_params}
     {order_vars}
     {orient}
     {color}
@@ -2759,19 +2746,15 @@ boxenplot.__doc__ = dedent("""\
     """).format(**_categorical_docs)
 
 
-@_deprecate_positional_args
 def stripplot(
-    *,
-    x=None, y=None,
-    hue=None, data=None,
-    order=None, hue_order=None,
+    data=None, *, x=None, y=None, hue=None, order=None, hue_order=None,
     jitter=True, dodge=False, orient=None, color=None, palette=None,
     size=5, edgecolor="gray", linewidth=0, ax=None,
     hue_norm=None, native_scale=False, formatter=None,
     **kwargs
 ):
 
-    # XXX we need to add a legend= param!!!
+    # TODO XXX we need to add a legend= param!!!
 
     p = _CategoricalPlotterNew(
         data=data,
@@ -2885,12 +2868,8 @@ stripplot.__doc__ = dedent("""\
     """).format(**_categorical_docs)
 
 
-@_deprecate_positional_args
 def swarmplot(
-    *,
-    x=None, y=None,
-    hue=None, data=None,
-    order=None, hue_order=None,
+    data=None, *, x=None, y=None, hue=None, order=None, hue_order=None,
     dodge=False, orient=None, color=None, palette=None,
     size=5, edgecolor="gray", linewidth=0, ax=None,
     hue_norm=None, native_scale=False, formatter=None, warn_thresh=.05,
@@ -2974,8 +2953,8 @@ swarmplot.__doc__ = dedent("""\
 
     Parameters
     ----------
-    {input_params}
     {categorical_data}
+    {input_params}
     {order_vars}
     dodge : bool, optional
         When using ``hue`` nesting, setting this to ``True`` will separate
@@ -3017,12 +2996,8 @@ swarmplot.__doc__ = dedent("""\
     """).format(**_categorical_docs)
 
 
-@_deprecate_positional_args
 def barplot(
-    *,
-    x=None, y=None,
-    hue=None, data=None,
-    order=None, hue_order=None,
+    data=None, *, x=None, y=None, hue=None, order=None, hue_order=None,
     estimator=np.mean, ci=95, n_boot=1000, units=None, seed=None,
     orient=None, color=None, palette=None, saturation=.75,
     errcolor=".26", errwidth=None, capsize=None, dodge=True,
@@ -3068,8 +3043,8 @@ barplot.__doc__ = dedent("""\
 
     Parameters
     ----------
-    {input_params}
     {categorical_data}
+    {input_params}
     {order_vars}
     {stat_api_params}
     {orient}
@@ -3210,12 +3185,8 @@ barplot.__doc__ = dedent("""\
     """).format(**_categorical_docs)
 
 
-@_deprecate_positional_args
 def pointplot(
-    *,
-    x=None, y=None,
-    hue=None, data=None,
-    order=None, hue_order=None,
+    data=None, *, x=None, y=None, hue=None, order=None, hue_order=None,
     estimator=np.mean, ci=95, n_boot=1000, units=None, seed=None,
     markers="o", linestyles="-", dodge=False, join=True, scale=1,
     orient=None, color=None, palette=None, errwidth=None,
@@ -3263,8 +3234,8 @@ pointplot.__doc__ = dedent("""\
 
     Parameters
     ----------
-    {input_params}
     {categorical_data}
+    {input_params}
     {order_vars}
     {stat_api_params}
     markers : string or list of strings, optional
@@ -3418,12 +3389,8 @@ pointplot.__doc__ = dedent("""\
     """).format(**_categorical_docs)
 
 
-@_deprecate_positional_args
 def countplot(
-    *,
-    x=None, y=None,
-    hue=None, data=None,
-    order=None, hue_order=None,
+    data=None, *, x=None, y=None, hue=None, order=None, hue_order=None,
     orient=None, color=None, palette=None, saturation=.75,
     dodge=True, ax=None, **kwargs
 ):
@@ -3475,8 +3442,8 @@ countplot.__doc__ = dedent("""\
 
     Parameters
     ----------
-    {input_params}
     {categorical_data}
+    {input_params}
     {order_vars}
     {orient}
     {color}
@@ -3578,12 +3545,8 @@ def factorplot(*args, **kwargs):
     return catplot(*args, **kwargs)
 
 
-@_deprecate_positional_args
 def catplot(
-    *,
-    x=None, y=None,
-    hue=None, data=None,
-    row=None, col=None,  # TODO move in front of data when * is enforced
+    data=None, *, x=None, y=None, hue=None, row=None, col=None,
     col_wrap=None, estimator=np.mean, ci=95, n_boot=1000,
     units=None, seed=None, order=None, hue_order=None, row_order=None,
     col_order=None, kind="strip", height=5, aspect=1,
@@ -3895,9 +3858,9 @@ catplot.__doc__ = dedent("""\
 
     Parameters
     ----------
-    {string_input_params}
     {long_form_data}
-    row, col : names of variables in ``data``, optional
+    {string_input_params}
+    row, col : names of variables in `data`, optional
         Categorical variables that will determine the faceting of the grid.
     {col_wrap}
     {stat_api_params}
