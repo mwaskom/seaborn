@@ -4,6 +4,11 @@ v0.12.0 (Unreleased)
 
 A paper describing seaborn was published in the `Journal of Open Source Software <https://joss.theoj.org/papers/10.21105/joss.03021>`_. The paper serves as an introduction to the library and can be used to cite seaborn if it has been integral to a scientific publication.
 
+Keyword-only arguments
+~~~~~~~~~~~~~~~~~~~~~~
+
+|API| Seaborn's plotting functions now require explicit keywords for most arguments, following the deprecation of positional arguments in v0.11.0. With this enforcement, most functions have also had their parameter lists rearranged so that `data` is the first and only positional argument. This adds consistency across the various functions in the library. It also means that calling `func(data)` will do something for nearly all functions (those that support wide-form data) and that :class:`pandas.DataFrame` can be piped directly into a plot. It is possible that the signatures will be loosned a bit in future releases so that `x` and `y` can be positional, but minimal support for positional arguments after this change will reduce the chance of inadvertent mis-specification (:pr:`2804`).
+
 Modernization of categorical scatterplots
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
