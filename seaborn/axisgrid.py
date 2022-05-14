@@ -2147,8 +2147,8 @@ def pairplot(
 
 def jointplot(
     data=None, *, x=None, y=None, hue=None, kind="scatter",
-    color=None, height=6, ratio=5, space=.2, dropna=False, xlim=None, ylim=None,
-    palette=None, hue_order=None, hue_norm=None, marginal_ticks=False,
+    height=6, ratio=5, space=.2, dropna=False, xlim=None, ylim=None,
+    color=None, palette=None, hue_order=None, hue_norm=None, marginal_ticks=False,
     joint_kws=None, marginal_kws=None,
     **kwargs
 ):
@@ -2324,7 +2324,6 @@ Parameters
     Semantic variable that is mapped to determine the color of plot elements.
 kind : {{ "scatter" | "kde" | "hist" | "hex" | "reg" | "resid" }}
     Kind of plot to draw. See the examples for references to the underlying functions.
-{params.core.color}
 height : numeric
     Size of the figure (it will be square).
 ratio : numeric
@@ -2335,6 +2334,7 @@ dropna : bool
     If True, remove observations that are missing from ``x`` and ``y``.
 {{x, y}}lim : pairs of numbers
     Axis limits to set before plotting.
+{params.core.color}
 {params.core.palette}
 {params.core.hue_order}
 {params.core.hue_norm}
