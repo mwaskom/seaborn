@@ -2144,6 +2144,16 @@ _categorical_docs = dict(
     linewidth : float, optional
         Width of the gray lines that frame the plot elements.\
     """),
+    fixed_scale=dedent("""\
+    fixed_scale : bool, optional
+        When True, values on the categorical axis will be converted to strings
+        and plotted at fixed intervals (represented internally as 0-based indices.\
+    """),
+    formatter=dedent("""\
+    formatter : callable, optional
+        Function for converting categorical data into strings. Affects both grouping
+        and tick labels.\
+    """),
     ax_in=dedent("""\
     ax : matplotlib Axes, optional
         Axes object to draw the plot onto, otherwise uses the current Axes.\
@@ -2850,6 +2860,8 @@ stripplot.__doc__ = dedent("""\
         brightness is determined by the color palette used for the body
         of the points.
     {linewidth}
+    {fixed_scale}
+    {formatter}
     {ax_in}
     kwargs : key, value mappings
         Other keyword arguments are passed through to
@@ -2980,6 +2992,8 @@ swarmplot.__doc__ = dedent("""\
         brightness is determined by the color palette used for the body
         of the points.
     {linewidth}
+    {fixed_scale}
+    {formatter}
     {ax_in}
     kwargs : key, value mappings
         Other keyword arguments are passed through to

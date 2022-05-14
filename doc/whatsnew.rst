@@ -14,6 +14,7 @@
 .. |Feature| replace:: :raw-html:`<span class="badge badge-feature">Feature</span>` :raw-latex:`{\small\sc [Feature]}`
 .. |Enhancement| replace:: :raw-html:`<span class="badge badge-enhancement">Enhancement</span>` :raw-latex:`{\small\sc [Enhancement]}`
 .. |Fix| replace:: :raw-html:`<span class="badge badge-fix">Fix</span>` :raw-latex:`{\small\sc [Fix]}`
+.. |Dependencies| replace:: :raw-html:`<span class="badge badge-dependencies">Dependencies</span>` :raw-latex:`{\small\sc [Dependencies]}`
 
 What's new in each version
 ==========================

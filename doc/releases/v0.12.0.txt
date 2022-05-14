@@ -4,30 +4,56 @@ v0.12.0 (Unreleased)
 
 A paper describing seaborn was published in the `Journal of Open Source Software <https://joss.theoj.org/papers/10.21105/joss.03021>`_. The paper serves as an introduction to the library and can be used to cite seaborn if it has been integral to a scientific publication.
 
-- |API| |Feature| |Enhancement| TODO (Flesh this out further). Increased flexibility of what can be shown by the internally-calculated errorbars (:pr:2407).
+Modernization of categorical scatterplots
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-- TODO function specific categorical enhancements, including:
+This release begins the process of modernizing the :ref:`categorical plots <categorical_api>`, beginning with :func:`stripplot` and :func:`swarmplot`. These functions are sporting some enhancements that alleviate a few long-running frustrations (:pr:`2413`, :pr:`2447`):
 
-  - In :func:`stripplot`, a "strip" with a single observation will be plotted without jitter (:pr:`2413`)
+- |Feature| The new `fixed_scale` parameter allows numeric or datetime categories to be plotted with their original scale rather than converted to strings and plotted at fixed intervals.
 
-  - In :func:`swarmplot`, the points are now swarmed at draw time, meaning that the plot will adapt to further changes in axes scaling or tweaks to the plot layout (:pr:`2443`).
+- |Feature| The new `formatter` parameter allows more control over the string representation of values on the categorical axis. There should also be improved defaults for some types, such as dates.
 
-  - In :func:`swarmplot`, the order of the points in each swarm now matches the order in the original dataset; previously they were sorted. This affects only the underlying data stored in the matplotlib artist, not the visual representation (:pr:`2443`).
+- |Enhancement| It is now possible to assign `hue` when using only one coordinate variable (i.e. only `x` or `y`).
 
-  - In :func:`swarmplot`, the proportion of points that must overlap before issuing a warning can now be controlled with the `warn_thresh` parameter (:pr:`2447`).
+The updates also harmonize behavior with functions that have been more recently introduced. This should be relatively non-disruptive, although a few defaults will change:
 
-- |Fix| Fixed a regression in 0.11.2 that caused some functions to stall indefinitely or raise when the input data had a duplicate index (:pr:`2776`).
+- |Defaults| The functions now hook into matplotlib's unit system for plotting categorical data. (Seaborn's categorical functions actually predate support for categorical data in matplotlib.) This should mostly be transparent to the user, but it may resolve a few edge cases. For example, matplotlib interactivity should work better (e.g., for showing the data value under the cursor).
 
-- |Enhancement| |Fix| Improved integration with the matplotlib color cycle in most axes-level functions (:pr:`2449`).
+- |Defaults| A color palette is no longer applied to levels of the categorical variable by default. It is now necessary to explicitly assign `hue` to see multiple colors (i.e., assign the same variable to `x`/`y` and `hue`). Passing `palette` without `hue` will continue to be honored for one release cycle.
 
-- |Fix| In :func:`lineplot, allowed the `dashes` keyword to set the style of a line without mapping a `style` variable (:pr:`2449`).
+- |Defaults| Numeric `hue` variables now receive a continuous mapping by default, using the same rules as :func:`scatterplot`. Pass `palette="deep"` to reproduce previous defaults.
+
+- |Defaults| The plots now follow the default property cycle; i.e. calling an axes-level function multiple times with the same active axes will produce different-colored artists.
+
+- |API| Currently, assigning `hue` and then passing a `color` will produce a gradient palette. This is now deprecated, as it is easy to request a gradient with, e.g. `palette="light:blue"`.
+
+Similar enhancements / updates should be expected to roll out to other categorical plotting functions in future releases. There are also several function-specific enhancements:
+
+- |Enhancement| In :func:`stripplot`, a "strip" with a single observation will be plotted without jitter (:pr:`2413`)
+
+- |Enhancement| In :func:`swarmplot`, the points are now swarmed at draw time, meaning that the plot will adapt to further changes in axis scaling or tweaks to the plot layout (:pr:`2443`).
+
+- |Feature| In :func:`swarmplot`, the proportion of points that must overlap before issuing a warning can now be controlled with the `warn_thresh` parameter (:pr:`2447`).
+
+- |Fix| In :func:`swarmplot`, the order of the points in each swarm now matches the order in the original dataset; previously they were sorted. This affects only the underlying data stored in the matplotlib artist, not the visual representation (:pr:`2443`).
+
+Other updates
+~~~~~~~~~~~~~
+
+- |Feature| Increased the flexibility of what can be shown by the internally-calculated errorbars for :func:`lineplot`. With the new `errorbar` parameter, it is now possible to select bootstrap confidence intervals, percentile / predictive intervals, or intervals formed by scaled standard deviations or standard errors. As a consequence of this change, the `ci` parameter has been deprecated. Similar changes will be made to other functions that aggregate data points in future releases. (:pr:`2407`).
+
+- |Enhancement| Improved integration with the matplotlib color cycle in most axes-level functions (:pr:`2449`).
 
 - |Enhancement| Example datasets are now stored in an OS-specific cache location (as determined by `appdirs`) rather than in the user's home directory. Users should feel free to remove `~/seaborn-data` if desired (:pr:`2773`).
 
-- Made `scipy` an optional dependency and added `pip install seaborn[all]` as a method for ensuring the availability of compatible `scipy` and `statsmodels` libraries at install time. This has a few minor implications for existing code, which are explained in the Github pull request (:pr:`2398`).
+- |Fix| FacetGrid subplot titles will no longer be reset when calling :meth:`FacetGrid.map` or :meth:`FacetGrid.map_dataframe` after :meth:`FacetGrid.set_titles` (:pr:`2705`).
 
-- Following `NEP29 <https://numpy.org/neps/nep-0029-deprecation_policy.html>`_, dropped support for Python 3.6 and bumped the minimally-supported versions of the library dependencies.
+- |Fix| Fixed a regression in 0.11.2 that caused some functions to stall indefinitely or raise when the input data had a duplicate index (:pr:`2776`).
 
-- Removed several previously-deprecated utility functions (`iqr`, `percentiles`, `pmf_hist`, and `sort_df`).
+- |Fix| In :func:`lineplot`, allowed the `dashes` keyword to set the style of a line without mapping a `style` variable (:pr:`2449`).
 
-- FacetGrid subplot titles will no longer be reset when calling `FacetGrid.map()` or `FacetGrid.map_dataframe()` after `FacetGrid.set_titles()` (:pr:`2705`).
+- |Dependencies| Made `scipy` an optional dependency and added `pip install seaborn[all]` as a method for ensuring the availability of compatible `scipy` and `statsmodels` libraries at install time. This has a few minor implications for existing code, which are explained in the Github pull request (:pr:`2398`).
+
+- |Dependencies| Following `NEP29 <https://numpy.org/neps/nep-0029-deprecation_policy.html>`_, dropped support for Python 3.6 and bumped the minimally-supported versions of the library dependencies.
+
+- |API| Removed several previously-deprecated utility functions (`iqr`, `percentiles`, `pmf_hist`, and `sort_df`).
