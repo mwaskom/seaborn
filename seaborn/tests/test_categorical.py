@@ -1850,7 +1850,7 @@ class SharedScatterTests(SharedAxesLevelTests):
         if "stripplot" in str(self.func):  # can't use __name__ with partial
             kws["jitter"] = False
 
-        ax = self.func(data=long_df, x=cat_var, y="y", fixed_scale=False, **kws)
+        ax = self.func(data=long_df, x=cat_var, y="y", native_scale=True, **kws)
 
         for i, (cat_level, cat_data) in enumerate(long_df.groupby(cat_var)):
 
@@ -2051,7 +2051,7 @@ class SharedScatterTests(SharedAxesLevelTests):
 
         ax = plt.figure().subplots()
         ax.set_xscale("log")
-        self.func(x=x, y=y, fixed_scale=False)
+        self.func(x=x, y=y, native_scale=True)
         for i, point in enumerate(ax.collections):
             val = point.get_offsets()[0, 0]
             assert val == pytest.approx(x[i])
@@ -2067,7 +2067,7 @@ class SharedScatterTests(SharedAxesLevelTests):
 
         ax = plt.figure().subplots()
         ax.set_yscale("log")
-        self.func(x=x, y=y, orient="h", fixed_scale=False)
+        self.func(x=x, y=y, orient="h", native_scale=True)
         cat_points = ax.collections[0].get_offsets().copy()[:, 1]
         assert np.ptp(np.log10(cat_points)) <= .8
 
@@ -2082,7 +2082,7 @@ class SharedScatterTests(SharedAxesLevelTests):
             # dict(data="long", x="a", y="y", hue="z", edgecolor="w", linewidth=.5),
             # dict(data="long", x="a_cat", y="y", hue="z"),
             dict(data="long", x="y", y="s", hue="c", orient="h", dodge=True),
-            dict(data="long", x="s", y="y", hue="c", fixed_scale=False),
+            dict(data="long", x="s", y="y", hue="c", native_scale=True),
         ]
     )
     def test_vs_catplot(self, long_df, wide_df, kwargs):
@@ -2116,7 +2116,7 @@ class TestStripPlot(SharedScatterTests):
     def test_jitter_unfixed(self, long_df):
 
         ax1, ax2 = plt.figure().subplots(2)
-        kws = dict(data=long_df, x="y", orient="h", fixed_scale=False)
+        kws = dict(data=long_df, x="y", orient="h", native_scale=True)
 
         np.random.seed(0)
         stripplot(**kws, y="s", ax=ax1)

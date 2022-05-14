@@ -9,7 +9,7 @@ Modernization of categorical scatterplots
 
 This release begins the process of modernizing the :ref:`categorical plots <categorical_api>`, beginning with :func:`stripplot` and :func:`swarmplot`. These functions are sporting some enhancements that alleviate a few long-running frustrations (:pr:`2413`, :pr:`2447`):
 
-- |Feature| The new `fixed_scale` parameter allows numeric or datetime categories to be plotted with their original scale rather than converted to strings and plotted at fixed intervals.
+- |Feature| The new `native_scale` parameter allows numeric or datetime categories to be plotted with their original scale rather than converted to strings and plotted at fixed intervals.
 
 - |Feature| The new `formatter` parameter allows more control over the string representation of values on the categorical axis. There should also be improved defaults for some types, such as dates.
 

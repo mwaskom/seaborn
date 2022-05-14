@@ -352,7 +352,6 @@ class _CategoricalPlotterNew(VectorPlotter):
                     # the autoscale flag in its original setting. It may be better
                     # to disable autoscaling there to avoid needing to do this.
                     fixed_scale = self.var_types[self.cat_axis] == "categorical"
-
                     ax.update_datalim(points.get_datalim(ax.transData))
                     if not fixed_scale and (scalex or scaley):
                         ax.autoscale_view(scalex=scalex, scaley=scaley)
@@ -2144,10 +2143,10 @@ _categorical_docs = dict(
     linewidth : float, optional
         Width of the gray lines that frame the plot elements.\
     """),
-    fixed_scale=dedent("""\
-    fixed_scale : bool, optional
-        When True, values on the categorical axis will be converted to strings
-        and plotted at fixed intervals (represented internally as 0-based indices.\
+    native_scale=dedent("""\
+    native_scale : bool, optional
+        When True, numeric or datetime values on the categorical axis will maintain
+        their original scaling rather than being converted to fixed indices.\
     """),
     formatter=dedent("""\
     formatter : callable, optional
@@ -2768,7 +2767,7 @@ def stripplot(
     order=None, hue_order=None,
     jitter=True, dodge=False, orient=None, color=None, palette=None,
     size=5, edgecolor="gray", linewidth=0, ax=None,
-    hue_norm=None, fixed_scale=True, formatter=None,
+    hue_norm=None, native_scale=False, formatter=None,
     **kwargs
 ):
 
@@ -2785,7 +2784,7 @@ def stripplot(
     if ax is None:
         ax = plt.gca()
 
-    if fixed_scale or p.var_types[p.cat_axis] == "categorical":
+    if p.var_types.get(p.cat_axis) == "categorical" or not native_scale:
         p.scale_categorical(p.cat_axis, order=order, formatter=formatter)
 
     p._attach(ax)
@@ -2860,7 +2859,7 @@ stripplot.__doc__ = dedent("""\
         brightness is determined by the color palette used for the body
         of the points.
     {linewidth}
-    {fixed_scale}
+    {native_scale}
     {formatter}
     {ax_in}
     kwargs : key, value mappings
@@ -2894,7 +2893,7 @@ def swarmplot(
     order=None, hue_order=None,
     dodge=False, orient=None, color=None, palette=None,
     size=5, edgecolor="gray", linewidth=0, ax=None,
-    hue_norm=None, fixed_scale=True, formatter=None, warn_thresh=.05,
+    hue_norm=None, native_scale=False, formatter=None, warn_thresh=.05,
     **kwargs
 ):
 
@@ -2909,7 +2908,7 @@ def swarmplot(
     if ax is None:
         ax = plt.gca()
 
-    if fixed_scale or p.var_types[p.cat_axis] == "categorical":
+    if p.var_types.get(p.cat_axis) == "categorical" or not native_scale:
         p.scale_categorical(p.cat_axis, order=order, formatter=formatter)
 
     p._attach(ax)
@@ -2992,7 +2991,7 @@ swarmplot.__doc__ = dedent("""\
         brightness is determined by the color palette used for the body
         of the points.
     {linewidth}
-    {fixed_scale}
+    {native_scale}
     {formatter}
     {ax_in}
     kwargs : key, value mappings
@@ -3591,7 +3590,7 @@ def catplot(
     orient=None, color=None, palette=None,
     legend=True, legend_out=True, sharex=True, sharey=True,
     margin_titles=False, facet_kws=None,
-    hue_norm=None, fixed_scale=True, formatter=None,
+    hue_norm=None, native_scale=False, formatter=None,
     **kwargs
 ):
 
@@ -3656,7 +3655,7 @@ def catplot(
             **facet_kws,
         )
 
-        if fixed_scale or p.var_types[p.cat_axis] == "categorical":
+        if not native_scale or p.var_types[p.cat_axis] == "categorical":
             p.scale_categorical(p.cat_axis, order=order, formatter=formatter)
 
         p._attach(g)
@@ -3733,6 +3732,14 @@ def catplot(
             g.add_legend(title=hue, label_order=hue_order)
 
         return g
+
+    # Don't allow usage of forthcoming functionality
+    if native_scale is True:
+        err = f"native_scale not yet implemented for `kind={kind}`"
+        raise ValueError(err)
+    if formatter is not None:
+        err = f"formatter not yet implemented for `kind={kind}`"
+        raise ValueError(err)
 
     # Alias the input variables to determine categorical order and palette
     # correctly in the case of a count plot
@@ -3902,6 +3909,8 @@ catplot.__doc__ = dedent("""\
         The kind of plot to draw, corresponds to the name of a categorical
         axes-level plotting function. Options are: "strip", "swarm", "box", "violin",
         "boxen", "point", "bar", or "count".
+    {native_scale}
+    {formatter}
     {height}
     {aspect}
     {orient}
