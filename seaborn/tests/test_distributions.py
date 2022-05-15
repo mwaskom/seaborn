@@ -431,7 +431,7 @@ class TestKDEPlotUnivariate(SharedAxesLevelTests):
         f, ax = plt.subplots()
         kdeplot(data=long_df, y="x")
 
-        with pytest.warns(FutureWarning):
+        with pytest.warns(UserWarning):
             kdeplot(data=long_df, x="x", vertical=True)
 
         assert_array_equal(ax.lines[0].get_xydata(), ax.lines[1].get_xydata())
@@ -441,7 +441,7 @@ class TestKDEPlotUnivariate(SharedAxesLevelTests):
         f, ax = plt.subplots()
         kdeplot(data=long_df, x="x", bw_method="silverman")
 
-        with pytest.warns(FutureWarning):
+        with pytest.warns(UserWarning):
             kdeplot(data=long_df, x="x", bw="silverman")
 
         assert_array_equal(ax.lines[0].get_xydata(), ax.lines[1].get_xydata())
