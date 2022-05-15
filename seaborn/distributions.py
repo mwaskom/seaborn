@@ -2,6 +2,7 @@
 from numbers import Number
 from functools import partial
 import math
+import textwrap
 import warnings
 
 import numpy as np
@@ -2382,154 +2383,39 @@ def distplot(a=None, bins=None, hist=True, kde=True, rug=False, fit=None,
              hist_kws=None, kde_kws=None, rug_kws=None, fit_kws=None,
              color=None, vertical=False, norm_hist=False, axlabel=None,
              label=None, ax=None, x=None):
-    """DEPRECATED: Flexibly plot a univariate distribution of observations.
+    """
+    DEPRECATED
 
-    .. warning::
-       This function is deprecated and will be removed in a future version.
-       Please adapt your code to use one of two new functions:
+    This function has been deprecated and will be removed in seaborn v0.14.0.
+    It has been replaced by :func:`histplot` and :func:`displot`, two functions
+    with a modern API and many more capabilities.
 
-       - :func:`displot`, a figure-level function with a similar flexibility
-         over the kind of plot to draw
-       - :func:`histplot`, an axes-level function for plotting histograms,
-         including with kernel density smoothing
+    For a guide to updating, please see this notebook:
 
-    This function combines the matplotlib ``hist`` function (with automatic
-    calculation of a good default bin size) with the seaborn :func:`kdeplot`
-    and :func:`rugplot` functions. It can also fit ``scipy.stats``
-    distributions and plot the estimated PDF over the data.
-
-    Parameters
-    ----------
-    a : Series, 1d-array, or list.
-        Observed data. If this is a Series object with a ``name`` attribute,
-        the name will be used to label the data axis.
-    bins : argument for matplotlib hist(), or None, optional
-        Specification of hist bins. If unspecified, as reference rule is used
-        that tries to find a useful default.
-    hist : bool, optional
-        Whether to plot a (normed) histogram.
-    kde : bool, optional
-        Whether to plot a gaussian kernel density estimate.
-    rug : bool, optional
-        Whether to draw a rugplot on the support axis.
-    fit : random variable object, optional
-        An object with `fit` method, returning a tuple that can be passed to a
-        `pdf` method a positional arguments following a grid of values to
-        evaluate the pdf on.
-    hist_kws : dict, optional
-        Keyword arguments for :meth:`matplotlib.axes.Axes.hist`.
-    kde_kws : dict, optional
-        Keyword arguments for :func:`kdeplot`.
-    rug_kws : dict, optional
-        Keyword arguments for :func:`rugplot`.
-    color : matplotlib color, optional
-        Color to plot everything but the fitted curve in.
-    vertical : bool, optional
-        If True, observed values are on y-axis.
-    norm_hist : bool, optional
-        If True, the histogram height shows a density rather than a count.
-        This is implied if a KDE or fitted density is plotted.
-    axlabel : string, False, or None, optional
-        Name for the support axis label. If None, will try to get it
-        from a.name if False, do not set a label.
-    label : string, optional
-        Legend label for the relevant component of the plot.
-    ax : matplotlib axis, optional
-        If provided, plot on this axis.
-
-    Returns
-    -------
-    ax : matplotlib Axes
-        Returns the Axes object with the plot for further tweaking.
-
-    See Also
-    --------
-    kdeplot : Show a univariate or bivariate distribution with a kernel
-              density estimate.
-    rugplot : Draw small vertical lines to show each observation in a
-              distribution.
-
-    Examples
-    --------
-
-    Show a default plot with a kernel density estimate and histogram with bin
-    size determined automatically with a reference rule:
-
-    .. plot::
-        :context: close-figs
-
-        >>> import seaborn as sns, numpy as np
-        >>> sns.set_theme(); np.random.seed(0)
-        >>> x = np.random.randn(100)
-        >>> ax = sns.distplot(x)
-
-    Use Pandas objects to get an informative axis label:
-
-    .. plot::
-        :context: close-figs
-
-        >>> import pandas as pd
-        >>> x = pd.Series(x, name="x variable")
-        >>> ax = sns.distplot(x)
-
-    Plot the distribution with a kernel density estimate and rug plot:
-
-    .. plot::
-        :context: close-figs
-
-        >>> ax = sns.distplot(x, rug=True, hist=False)
-
-    Plot the distribution with a histogram and maximum likelihood gaussian
-    distribution fit:
-
-    .. plot::
-        :context: close-figs
-
-        >>> from scipy.stats import norm
-        >>> ax = sns.distplot(x, fit=norm, kde=False)
-
-    Plot the distribution on the vertical axis:
-
-    .. plot::
-        :context: close-figs
-
-        >>> ax = sns.distplot(x, vertical=True)
-
-    Change the color of all the plot elements:
-
-    .. plot::
-        :context: close-figs
-
-        >>> sns.set_color_codes()
-        >>> ax = sns.distplot(x, color="y")
-
-    Pass specific parameters to the underlying plot functions:
-
-    .. plot::
-        :context: close-figs
-
-        >>> ax = sns.distplot(x, rug=True, rug_kws={"color": "g"},
-        ...                   kde_kws={"color": "k", "lw": 3, "label": "KDE"},
-        ...                   hist_kws={"histtype": "step", "linewidth": 3,
-        ...                             "alpha": 1, "color": "g"})
+    https://gist.github.com/mwaskom/de44147ed2974457ad6372750bbe5751
 
     """
 
     if kde and not hist:
         axes_level_suggestion = (
-            "`kdeplot` (an axes-level function for kernel density plots)."
+            "`kdeplot` (an axes-level function for kernel density plots)"
         )
     else:
         axes_level_suggestion = (
-            "`histplot` (an axes-level function for histograms)."
+            "`histplot` (an axes-level function for histograms)"
         )
 
-    msg = (
-        "`distplot` is a deprecated function and will be removed in a future version. "
-        "Please adapt your code to use either `displot` (a figure-level function with "
-        "similar flexibility) or " + axes_level_suggestion
-    )
-    warnings.warn(msg, FutureWarning)
+    msg = textwrap.dedent(f"""
+
+    `distplot` is a deprecated function and will be removed in seaborn v0.14.0.
+
+    Please adapt your code to use either `displot` (a figure-level function with
+    similar flexibility) or {axes_level_suggestion}.
+
+    For a guide to updating your code to use the new functions, please see
+    https://gist.github.com/mwaskom/de44147ed2974457ad6372750bbe5751
+    """)
+    warnings.warn(msg, UserWarning, stacklevel=2)
 
     if ax is None:
         ax = plt.gca()
