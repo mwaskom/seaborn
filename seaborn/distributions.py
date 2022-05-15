@@ -2390,9 +2390,9 @@ def distplot(a=None, bins=None, hist=True, kde=True, rug=False, fit=None,
     It has been replaced by :func:`histplot` and :func:`displot`, two functions
     with a modern API and many more capabilities.
 
-    For a guide to updating see this notebook:
+    For a guide to updating, please see this notebook:
 
-    http://nbviewer.org/gist/mwaskom/de44147ed2974457ad6372750bbe5751
+    https://gist.github.com/mwaskom/de44147ed2974457ad6372750bbe5751
 
     """
 
@@ -2406,15 +2406,16 @@ def distplot(a=None, bins=None, hist=True, kde=True, rug=False, fit=None,
         )
 
     msg = textwrap.dedent(f"""
+
     `distplot` is a deprecated function and will be removed in seaborn v0.14.0.
 
     Please adapt your code to use either `displot` (a figure-level function with
     similar flexibility) or {axes_level_suggestion}.
 
     For a guide to updating your code to use the new functions, please see
-    http://nbviewer.org/gist/mwaskom/de44147ed2974457ad6372750bbe5751.
+    https://gist.github.com/mwaskom/de44147ed2974457ad6372750bbe5751
     """)
-    warnings.warn(msg, UserWarning)
+    warnings.warn(msg, UserWarning, stacklevel=2)
 
     if ax is None:
         ax = plt.gca()

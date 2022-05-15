@@ -1504,7 +1504,7 @@ class TestJointGrid:
 
         bins = 10
         g = ag.JointGrid(x="x", y="x", data=self.data)
-        with pytest.warns(FutureWarning):
+        with pytest.warns(UserWarning):
             g.plot_marginals(distplot, bins=bins)
         assert len(g.ax_marg_x.patches) == bins
         assert len(g.ax_marg_y.patches) == bins
