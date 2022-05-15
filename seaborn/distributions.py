@@ -1581,7 +1581,7 @@ def kdeplot(
     **kwargs,
 ):
 
-    # Start by handling deprecations introduced in v0.11.0.
+    # --- Start with backwards compatability for versions < 0.11.0 ----------------
 
     # Handle (past) deprecation of `data2`
     if "data2" in kwargs:
@@ -1965,13 +1965,7 @@ Examples
 
 def rugplot(
     data=None, *, x=None, y=None, hue=None, height=.025, expand_margins=True,
-    palette=None, hue_order=None, hue_norm=None, legend=True,
-
-    # Renamed/deprecated
-    a=None, axis=None,
-
-    ax=None,
-    **kwargs
+    palette=None, hue_order=None, hue_norm=None, legend=True, ax=None, **kwargs
 ):
 
     # A note: I think it would make sense to add multiple= to rugplot and allow
@@ -1984,29 +1978,45 @@ def rugplot(
     # A note, it would also be nice to offer some kind of histogram/density
     # rugplot, since alpha blending doesn't work great in the large n regime
 
-    # Handle deprecation of `a``
+    # --- Start with backwards compatability for versions < 0.11.0 ----------------
+
+    a = kwargs.pop("a", None)
+    axis = kwargs.pop("axis", None)
+
     if a is not None:
-        msg = "The `a` parameter is now called `x`. Please update your code."
-        warnings.warn(msg, FutureWarning)
-        x = a
-        del a
+        data = a
+        msg = textwrap.dedent("""\n
+        The `a` parameter has been replaced; use `x`, `y`, and/or `data` instead.
+        Please update your code; This will become an error in seaborn v0.13.0.
+        """)
+        warnings.warn(msg, UserWarning, stacklevel=2)
 
-    # Handle deprecation of "axis"
     if axis is not None:
-        msg = (
-            "The `axis` variable is no longer used and will be removed. "
-            "Instead, assign variables directly to `x` or `y`."
-        )
-        warnings.warn(msg, FutureWarning)
+        if axis == "x":
+            x = data
+        elif axis == "y":
+            y = data
+        msg = textwrap.dedent(f"""\n
+        The `axis` parameter has been deprecated; use the `{axis}` parameter instead.
+        Please update your code; this will become an error in seaborn v0.13.0.
+        """)
+        warnings.warn(msg, UserWarning, stacklevel=2)
 
-    # Handle deprecation of "vertical"
-    if data is not None and kwargs.pop("vertical", axis == "y"):
-        x, y = None, data
-        msg = (
-            "Using `vertical=True` to control the orientation of the plot  "
-            "is deprecated. Instead, assign the data directly to `y`. "
-        )
-        warnings.warn(msg, FutureWarning)
+    vertical = kwargs.pop("vertical", None)
+    if vertical is not None:
+        if vertical:
+            action_taken = "assigning data to `y`."
+            if x is None:
+                data, y = y, data
+            else:
+                x, y = y, x
+        else:
+            action_taken = "assigning data to `x`."
+        msg = textwrap.dedent(f"""\n
+        The `vertical` parameter is deprecated; {action_taken}
+        This will become an error in seaborn v0.13.0; please update your code.
+        """)
+        warnings.warn(msg, UserWarning, stacklevel=2)
 
     # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - #
 
