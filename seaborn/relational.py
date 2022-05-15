@@ -16,11 +16,7 @@ from .utils import (
 )
 from ._statistics import EstimateAggregator
 from .axisgrid import FacetGrid, _facet_docs
-from ._decorators import _deprecate_positional_args
-from ._docstrings import (
-    DocstringComponents,
-    _core_docs,
-)
+from ._docstrings import DocstringComponents, _core_docs
 
 
 __all__ = ["relplot", "scatterplot", "lineplot"]
@@ -604,20 +600,15 @@ class _ScatterPlotter(_RelationalPlotter):
                 adjust_legend_subtitles(legend)
 
 
-@_deprecate_positional_args
 def lineplot(
-    *,
-    x=None, y=None,
-    hue=None, size=None, style=None,
-    data=None,
+    data=None, *,
+    x=None, y=None, hue=None, size=None, style=None, units=None,
     palette=None, hue_order=None, hue_norm=None,
     sizes=None, size_order=None, size_norm=None,
     dashes=True, markers=None, style_order=None,
-    units=None, estimator="mean", ci="deprecated", n_boot=1000, seed=None,
-    sort=True, err_style="band", err_kws=None,
-    legend="auto",
-    errorbar=("ci", 95),
-    ax=None, **kwargs
+    estimator="mean", errorbar=("ci", 95), n_boot=1000, seed=None,
+    sort=True, err_style="band", err_kws=None, ci="deprecated",
+    legend="auto", ax=None, **kwargs
 ):
 
     # Handle deprecation of ci parameter
@@ -668,6 +659,7 @@ interval for that estimate.
 
 Parameters
 ----------
+{params.core.data}
 {params.core.xy}
 hue : vector or key in ``data``
     Grouping variable that will produce lines with different colors.
@@ -681,7 +673,7 @@ style : vector or key in ``data``
     Grouping variable that will produce lines with different dashes
     and/or markers. Can have a numeric dtype but will always be treated
     as categorical.
-{params.core.data}
+{params.rel.units}
 {params.core.palette}
 {params.core.hue_order}
 {params.core.hue_norm}
@@ -691,9 +683,8 @@ style : vector or key in ``data``
 {params.rel.dashes}
 {params.rel.markers}
 {params.rel.style_order}
-{params.rel.units}
 {params.rel.estimator}
-{params.rel.ci}
+{params.stat.errorbar}
 {params.rel.n_boot}
 {params.rel.seed}
 sort : boolean
@@ -707,7 +698,7 @@ err_kws : dict of keyword arguments
     kwargs are passed either to :meth:`matplotlib.axes.Axes.fill_between`
     or :meth:`matplotlib.axes.Axes.errorbar`, depending on ``err_style``.
 {params.rel.legend}
-{params.stat.errorbar}
+{params.rel.ci}
 {params.core.ax}
 kwargs : key, value mappings
     Other keyword arguments are passed down to
@@ -735,11 +726,9 @@ Examples
 )
 
 
-@_deprecate_positional_args
 def scatterplot(
-    *,
-    x=None, y=None,
-    hue=None, style=None, size=None, data=None,
+    data=None, *,
+    x=None, y=None, hue=None, size=None, style=None,
     palette=None, hue_order=None, hue_norm=None,
     sizes=None, size_order=None, size_norm=None,
     markers=True, style_order=None,
@@ -789,6 +778,7 @@ Draw a scatter plot with possibility of several semantic groupings.
 
 Parameters
 ----------
+{params.core.data}
 {params.core.xy}
 hue : vector or key in ``data``
     Grouping variable that will produce points with different colors.
@@ -801,7 +791,6 @@ size : vector or key in ``data``
 style : vector or key in ``data``
     Grouping variable that will produce points with different markers.
     Can have a numeric dtype but will always be treated as categorical.
-{params.core.data}
 {params.core.palette}
 {params.core.hue_order}
 {params.core.hue_norm}
@@ -853,19 +842,14 @@ Examples
 )
 
 
-@_deprecate_positional_args
 def relplot(
-    *,
-    x=None, y=None,
-    hue=None, size=None, style=None, data=None,
-    row=None, col=None,
-    col_wrap=None, row_order=None, col_order=None,
+    data=None, *,
+    x=None, y=None, hue=None, size=None, style=None, units=None,
+    row=None, col=None, col_wrap=None, row_order=None, col_order=None,
     palette=None, hue_order=None, hue_norm=None,
     sizes=None, size_order=None, size_norm=None,
     markers=None, dashes=None, style_order=None,
-    legend="auto", kind="scatter",
-    height=5, aspect=1, facet_kws=None,
-    units=None,
+    legend="auto", kind="scatter", height=5, aspect=1, facet_kws=None,
     **kwargs
 ):
 
@@ -1051,6 +1035,7 @@ passing strings to ``x``, ``y``, and other parameters.
 
 Parameters
 ----------
+{params.core.data}
 {params.core.xy}
 hue : vector or key in ``data``
     Grouping variable that will produce elements with different colors.
@@ -1063,7 +1048,7 @@ size : vector or key in ``data``
 style : vector or key in ``data``
     Grouping variable that will produce elements with different styles.
     Can have a numeric dtype but will always be treated as categorical.
-{params.core.data}
+{params.rel.units}
 {params.facets.rowcol}
 {params.facets.col_wrap}
 row_order, col_order : lists of strings
@@ -1086,7 +1071,6 @@ kind : string
 {params.facets.aspect}
 facet_kws : dict
     Dictionary of other keyword arguments to pass to :class:`FacetGrid`.
-{params.rel.units}
 kwargs : key, value pairings
     Other keyword arguments are passed through to the underlying plotting
     function.

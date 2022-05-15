@@ -22,7 +22,6 @@ from .utils import (
     to_utf8,
     _draw_figure,
 )
-from ._decorators import _deprecate_positional_args
 
 
 __all__ = ["heatmap", "clustermap"]
@@ -352,7 +351,6 @@ class _HeatMapper:
             self._annotate_heatmap(ax, mesh)
 
 
-@_deprecate_positional_args
 def heatmap(
     data, *,
     vmin=None, vmax=None, cmap=None, center=None, robust=False,
@@ -737,7 +735,6 @@ class _DendrogramPlotter(object):
         return self
 
 
-@_deprecate_positional_args
 def dendrogram(
     data, *,
     linkage=None, axis=1, label=True, metric='euclidean',
@@ -1242,7 +1239,6 @@ class ClusterGrid(Grid):
         return self
 
 
-@_deprecate_positional_args
 def clustermap(
     data, *,
     pivot_kws=None, method='average', metric='euclidean',

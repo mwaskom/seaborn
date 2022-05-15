@@ -35,7 +35,6 @@ from .utils import (
 from .palettes import color_palette
 from .external import husl
 from .external.kde import gaussian_kde
-from ._decorators import _deprecate_positional_args
 from ._docstrings import (
     DocstringComponents,
     _core_docs,
@@ -1571,34 +1570,21 @@ Examples
 )
 
 
-@_deprecate_positional_args
 def kdeplot(
-    x=None,  # Allow positional x, because behavior will not change with reorg
-    *,
-    y=None,
+    data=None, *, x=None, y=None, hue=None, weights=None,
+    palette=None, hue_order=None, hue_norm=None, color=None, fill=None,
+    multiple="layer", common_norm=True, common_grid=False, cumulative=False,
+    bw_method="scott", bw_adjust=1, warn_singular=True, log_scale=None,
+    levels=10, thresh=.05, gridsize=200, cut=3, clip=None,
+    legend=True, cbar=False, cbar_ax=None, cbar_kws=None, ax=None,
+
+    # TODO Deprecated parameters, remove from signature for v0.12.0
     shade=None,  # Note "soft" deprecation, explained below
     vertical=False,  # Deprecated
     kernel=None,  # Deprecated
     bw=None,  # Deprecated
-    gridsize=200,  # TODO maybe depend on uni/bivariate?
-    cut=3, clip=None, legend=True, cumulative=False,
     shade_lowest=None,  # Deprecated, controlled with levels now
-    cbar=False, cbar_ax=None, cbar_kws=None,
-    ax=None,
-
-    # New params
-    weights=None,  # TODO note that weights is grouped with semantics
-    hue=None, palette=None, hue_order=None, hue_norm=None,
-    multiple="layer", common_norm=True, common_grid=False,
-    levels=10, thresh=.05,
-    bw_method="scott", bw_adjust=1, log_scale=None,
-    color=None, fill=None,
-
-    # Renamed params
-    data=None, data2=None,
-
-    # New in v0.12
-    warn_singular=True,
+    data2=None,  # TODO remove
 
     **kwargs,
 ):
@@ -1764,49 +1750,18 @@ also depends on the selection of good smoothing parameters.
 
 Parameters
 ----------
+{params.core.data}
 {params.core.xy}
-shade : bool
-    Alias for ``fill``. Using ``fill`` is recommended.
-vertical : bool
-    Orientation parameter.
-
-    .. deprecated:: 0.11.0
-       specify orientation by assigning the ``x`` or ``y`` variables.
-
-kernel : str
-    Function that defines the kernel.
-
-    .. deprecated:: 0.11.0
-       support for non-Gaussian kernels has been removed.
-
-bw : str, number, or callable
-    Smoothing parameter.
-
-    .. deprecated:: 0.11.0
-       see ``bw_method`` and ``bw_adjust``.
-
-gridsize : int
-    Number of points on each dimension of the evaluation grid.
-{params.kde.cut}
-{params.kde.clip}
-{params.dist.legend}
-{params.kde.cumulative}
-shade_lowest : bool
-    If False, the area below the lowest contour will be transparent
-
-    .. deprecated:: 0.11.0
-       see ``thresh``.
-
-{params.dist.cbar}
-{params.dist.cbar_ax}
-{params.dist.cbar_kws}
-{params.core.ax}
+{params.core.hue}
 weights : vector or key in ``data``
     If provided, weight the kernel density estimation using these values.
-{params.core.hue}
 {params.core.palette}
 {params.core.hue_order}
 {params.core.hue_norm}
+{params.core.color}
+fill : bool or None
+    If True, fill in the area under univariate density curves or between
+    bivariate contours. If None, the default depends on ``multiple``.
 {params.dist.multiple}
 common_norm : bool
     If True, scale each conditional density by the number of observations
@@ -1815,6 +1770,13 @@ common_norm : bool
 common_grid : bool
     If True, use the same evaluation grid for each kernel density estimate.
     Only relevant with univariate data.
+{params.kde.cumulative}
+{params.kde.bw_method}
+{params.kde.bw_adjust}
+warn_singular : bool
+    If True, issue a warning when trying to estimate the density of data
+    with zero variance.
+{params.dist.log_scale}
 levels : int or vector
     Number of contour levels or values to draw contours at. A vector argument
     must have increasing values in [0, 1]. Levels correspond to iso-proportions
@@ -1823,17 +1785,15 @@ levels : int or vector
 thresh : number in [0, 1]
     Lowest iso-proportion level at which to draw a contour line. Ignored when
     ``levels`` is a vector. Only relevant with bivariate data.
-{params.kde.bw_method}
-{params.kde.bw_adjust}
-{params.dist.log_scale}
-{params.core.color}
-fill : bool or None
-    If True, fill in the area under univariate density curves or between
-    bivariate contours. If None, the default depends on ``multiple``.
-{params.core.data}
-warn_singular : bool
-    If True, issue a warning when trying to estimate the density of data
-    with zero variance.
+gridsize : int
+    Number of points on each dimension of the evaluation grid.
+{params.kde.cut}
+{params.kde.clip}
+{params.dist.legend}
+{params.dist.cbar}
+{params.dist.cbar_ax}
+{params.dist.cbar_kws}
+{params.core.ax}
 kwargs
     Other keyword arguments are passed to one of the following matplotlib
     functions:
@@ -2012,21 +1972,14 @@ Examples
 )
 
 
-@_deprecate_positional_args
 def rugplot(
-    x=None,  # Allow positional x, because behavior won't change
-    *,
-    height=.025, axis=None, ax=None,
+    data=None, *, x=None, y=None, hue=None, height=.025, expand_margins=True,
+    palette=None, hue_order=None, hue_norm=None, legend=True,
 
-    # New parameters
-    data=None, y=None, hue=None,
-    palette=None, hue_order=None, hue_norm=None,
-    expand_margins=True,
-    legend=True,  # TODO or maybe default to False?
+    # Renamed/deprecated
+    a=None, axis=None,
 
-    # Renamed parameter
-    a=None,
-
+    ax=None,
     **kwargs
 ):
 
@@ -2056,8 +2009,8 @@ def rugplot(
         warnings.warn(msg, FutureWarning)
 
     # Handle deprecation of "vertical"
-    if kwargs.pop("vertical", axis == "y"):
-        x, y = None, x
+    if data is not None and kwargs.pop("vertical", axis == "y"):
+        x, y = None, data
         msg = (
             "Using `vertical=True` to control the orientation of the plot  "
             "is deprecated. Instead, assign the data directly to `y`. "
@@ -2097,26 +2050,20 @@ of individual observations in an unobtrusive way.
 
 Parameters
 ----------
-{params.core.xy}
-height : number
-    Proportion of axes extent covered by each rug element.
-axis : {{"x", "y"}}
-    Axis to draw the rug on.
-
-    .. deprecated:: 0.11.0
-       specify axis by assigning the ``x`` or ``y`` variables.
-
-{params.core.ax}
 {params.core.data}
+{params.core.xy}
 {params.core.hue}
-{params.core.palette}
-{params.core.hue_order}
-{params.core.hue_norm}
+height : float
+    Proportion of axes extent covered by each rug element. Can be negative.
 expand_margins : bool
     If True, increase the axes margins by the height of the rug to avoid
     overlap with other elements.
+{params.core.palette}
+{params.core.hue_order}
+{params.core.hue_norm}
 legend : bool
     If False, do not add a legend for semantic variables.
+{params.core.ax}
 kwargs
     Other keyword arguments are passed to
     :meth:`matplotlib.collections.LineCollection`
