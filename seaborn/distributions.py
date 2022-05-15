@@ -2481,16 +2481,17 @@ def distplot(a=None, bins=None, hist=True, kde=True, rug=False, fit=None,
         if hist_color != color:
             hist_kws["color"] = hist_color
 
+    axis = "y" if vertical else "x"
+
     if kde:
         kde_color = kde_kws.pop("color", color)
-        kdeplot(a, vertical=vertical, ax=ax, color=kde_color, **kde_kws)
+        kdeplot(**{axis: a}, ax=ax, color=kde_color, **kde_kws)
         if kde_color != color:
             kde_kws["color"] = kde_color
 
     if rug:
         rug_color = rug_kws.pop("color", color)
-        axis = "y" if vertical else "x"
-        rugplot(a, axis=axis, ax=ax, color=rug_color, **rug_kws)
+        rugplot(**{axis: a}, ax=ax, color=rug_color, **rug_kws)
         if rug_color != color:
             rug_kws["color"] = rug_color
 
