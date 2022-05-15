@@ -1171,12 +1171,12 @@ class TestPairInterface:
         variables = {k: [v] if v is None else v for k, v in variables.items()}
         self.check_pair_grid(p, **variables)
 
-    def test_non_cartesian(self, long_df):
+    def test_non_cross(self, long_df):
 
         x = ["x", "y"]
         y = ["f", "z"]
 
-        p = Plot(long_df).pair(x, y, cartesian=False).plot()
+        p = Plot(long_df).pair(x, y, cross=False).plot()
 
         for i, subplot in enumerate(p._subplots):
             ax = subplot["ax"]
@@ -1325,7 +1325,7 @@ class TestPairInterface:
 
         # TODO test axis labels and visibility
 
-    def test_noncartesian_wrapping(self, long_df):
+    def test_non_cross_wrapping(self, long_df):
 
         x_vars = ["a", "b", "c", "t"]
         y_vars = ["f", "x", "y", "z"]
@@ -1333,7 +1333,7 @@ class TestPairInterface:
 
         p = (
             Plot(long_df, x="x")
-            .pair(x=x_vars, y=y_vars, wrap=wrap, cartesian=False)
+            .pair(x=x_vars, y=y_vars, wrap=wrap, cross=False)
             .plot()
         )
 
@@ -1473,11 +1473,11 @@ class TestLabelVisibility:
         assert not ax.yaxis.get_label().get_visible()
         assert not any(t.get_visible() for t in ax.get_yticklabels())
 
-    def test_1d_column_wrapped_noncartesian(self, long_df):
+    def test_1d_column_wrapped_non_cross(self, long_df):
 
         p = (
             Plot(long_df)
-            .pair(x=["a", "b", "c"], y=["x", "y", "z"], wrap=2, cartesian=False)
+            .pair(x=["a", "b", "c"], y=["x", "y", "z"], wrap=2, cross=False)
             .plot()
         )
         for s in p._subplots:

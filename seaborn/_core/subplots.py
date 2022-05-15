@@ -56,7 +56,7 @@ class Subplots:
             err = "Cannot wrap facets when specifying both `col` and `row`."
         elif (
             pair_spec.get("wrap")
-            and pair_spec.get("cartesian", True)
+            and pair_spec.get("cross", True)
             and len(pair_spec.get("structure", {}).get("x", [])) > 1
             and len(pair_spec.get("structure", {}).get("y", [])) > 1
         ):
@@ -95,7 +95,7 @@ class Subplots:
 
             self.subplot_spec[f"n{dim}s"] = len(self.grid_dimensions[dim])
 
-        if not pair_spec.get("cartesian", True):
+        if not pair_spec.get("cross", True):
             self.subplot_spec["nrows"] = 1
 
         self.n_subplots = self.subplot_spec["ncols"] * self.subplot_spec["nrows"]
@@ -130,7 +130,7 @@ class Subplots:
             if key not in self.subplot_spec:
                 if axis in pair_spec.get("structure", {}):
                     # Paired axes are shared along one dimension by default
-                    if self.wrap in [None, 1] and pair_spec.get("cartesian", True):
+                    if self.wrap in [None, 1] and pair_spec.get("cross", True):
                         val = axis_to_dim[axis]
                     else:
                         val = False
@@ -212,7 +212,7 @@ class Subplots:
         # Note that i, j are with respect to faceting/pairing,
         # not the subplot grid itself, (which only matters in the case of wrapping).
         iter_axs: np.ndenumerate | zip
-        if not pair_spec.get("cartesian", True):
+        if not pair_spec.get("cross", True):
             indices = np.arange(self.n_subplots)
             iter_axs = zip(zip(indices, indices), axs.flat)
         else:
@@ -240,7 +240,7 @@ class Subplots:
                 info["top"] = i % nrows == 0
                 info["bottom"] = ((i + 1) % nrows == 0) or ((i + 1) == self.n_subplots)
 
-            if not pair_spec.get("cartesian", True):
+            if not pair_spec.get("cross", True):
                 info["top"] = j < ncols
                 info["bottom"] = j >= self.n_subplots - ncols
 

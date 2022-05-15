@@ -15,7 +15,7 @@ class TestSpecificationChecks:
         with pytest.raises(RuntimeError, match=err):
             Subplots({}, facet_spec, {})
 
-    def test_cartesian_xy_pairing_and_wrap(self):
+    def test_cross_xy_pairing_and_wrap(self):
 
         err = "Cannot wrap subplots when pairing on both `x` and `y`."
         pair_spec = {"wrap": 3, "structure": {"x": ["a", "b"], "y": ["y", "z"]}}
@@ -221,11 +221,11 @@ class TestSubplotSpec:
         assert s.subplot_spec["sharex"] == "col"
         assert s.subplot_spec["sharey"] is True
 
-    def test_x_any_y_paired_non_cartesian(self):
+    def test_x_any_y_paired_non_cross(self):
 
         x = ["a", "b", "c"]
         y = ["x", "y", "z"]
-        spec = {"structure": {"x": x, "y": y}, "cartesian": False}
+        spec = {"structure": {"x": x, "y": y}, "cross": False}
         s = Subplots({}, {}, spec)
 
         assert s.n_subplots == len(x)
@@ -234,12 +234,12 @@ class TestSubplotSpec:
         assert s.subplot_spec["sharex"] is False
         assert s.subplot_spec["sharey"] is False
 
-    def test_x_any_y_paired_non_cartesian_wrapped(self):
+    def test_x_any_y_paired_non_cross_wrapped(self):
 
         x = ["a", "b", "c"]
         y = ["x", "y", "z"]
         wrap = 2
-        spec = {"structure": {"x": x, "y": y}, "cartesian": False, "wrap": wrap}
+        spec = {"structure": {"x": x, "y": y}, "cross": False, "wrap": wrap}
         s = Subplots({}, {}, spec)
 
         assert s.n_subplots == len(x)
@@ -452,11 +452,11 @@ class TestSubplotElements:
                 assert e["x"] == f"x{j}"
                 assert e["y"] == f"y{i}"
 
-    def test_both_paired_non_cartesian(self):
+    def test_both_paired_non_cross(self):
 
         pair_spec = {
             "structure": {"x": ["x0", "x1", "x2"], "y": ["y0", "y1", "y2"]},
-            "cartesian": False
+            "cross": False
         }
         s = Subplots({}, {}, pair_spec)
         s.init_figure(pair_spec)

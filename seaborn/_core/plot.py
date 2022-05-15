@@ -68,7 +68,7 @@ class PairSpec(TypedDict, total=False):
 
     variables: dict[str, VariableSpec]
     structure: dict[str, list[str]]
-    cartesian: bool
+    cross: bool
     wrap: int | None
 
 
@@ -100,7 +100,8 @@ def build_plot_signature(cls):
         ", ".join(PROPERTIES), 78, subsequent_indent=" " * 8,
     )
 
-    cls.__doc__ = cls.__doc__.format(known_properties=known_properties)
+    if cls.__doc__ is not None:  # support python -OO mode
+        cls.__doc__ = cls.__doc__.format(known_properties=known_properties)
 
     return cls
 
@@ -365,7 +366,7 @@ class Plot:
         x: list[Hashable] | Index[Hashable] | None = None,
         y: list[Hashable] | Index[Hashable] | None = None,
         wrap: int | None = None,
-        cartesian: bool = True,  # TODO bikeshed name, maybe cross?
+        cross: bool = True,
         # TODO other existing PairGrid things like corner?
         # TODO transpose, so that e.g. multiple y axes go across the columns
     ) -> Plot:
@@ -379,7 +380,7 @@ class Plot:
         wrap : int
             Maximum height/width of the grid, with additional subplots "wrapped"
             on the other dimension. Requires that only one of `x` or `y` are set here.
-        cartesian : bool
+        cross : bool
             When True, define a two-dimensional grid using the Cartesian product of `x`
             and `y`.  Otherwise, define a one-dimensional grid by pairing `x` and `y`
             entries in by position.
@@ -444,8 +445,8 @@ class Plot:
             if keys:
                 pair_spec["structure"][axis] = keys
 
-        # TODO raise here if cartesian is False and len(x) != len(y)?
-        pair_spec["cartesian"] = cartesian
+        # TODO raise here if cross is False and len(x) != len(y)?
+        pair_spec["cross"] = cross
         pair_spec["wrap"] = wrap
 
         new = self._clone()
@@ -603,7 +604,7 @@ class Plot:
 
     def plot(self, pyplot=False) -> Plotter:
         """
-        Render the plot and return the :class:`Plotter` engine.
+        Compile the plot and return the :class:`Plotter` engine.
 
         """
         # TODO if we have _target object, pyplot should be determined by whether it
@@ -788,7 +789,7 @@ class Plotter:
                 show_axis_label = (
                     sub[visible_side]
                     or axis in p._pair_spec and bool(p._pair_spec.get("wrap"))
-                    or not p._pair_spec.get("cartesian", True)
+                    or not p._pair_spec.get("cross", True)
                 )
                 axis_obj.get_label().set_visible(show_axis_label)
                 show_tick_labels = (

@@ -728,7 +728,7 @@ between variables:
 
     (
         so.Plot(tips)
-        .pair(x=["day", "time"], y=["total_bill", "tip"], cartesian=False)
+        .pair(x=["day", "time"], y=["total_bill", "tip"], cross=False)
         .add(so.Dot())
     )
 
