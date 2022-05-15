@@ -68,7 +68,7 @@ class TestDistPlot(object):
     def test_hist_bins(self):
 
         fd_edges = np.histogram_bin_edges(self.x, "fd")
-        with pytest.warns(FutureWarning):
+        with pytest.warns(UserWarning):
             ax = distplot(self.x)
         for edge, bar in zip(fd_edges, ax.patches):
             assert pytest.approx(edge) == bar.get_x()
@@ -76,14 +76,14 @@ class TestDistPlot(object):
         plt.close(ax.figure)
         n = 25
         n_edges = np.histogram_bin_edges(self.x, n)
-        with pytest.warns(FutureWarning):
+        with pytest.warns(UserWarning):
             ax = distplot(self.x, bins=n)
         for edge, bar in zip(n_edges, ax.patches):
             assert pytest.approx(edge) == bar.get_x()
 
     def test_elements(self):
 
-        with pytest.warns(FutureWarning):
+        with pytest.warns(UserWarning):
 
             n = 10
             ax = distplot(self.x, bins=n,
@@ -126,7 +126,7 @@ class TestDistPlot(object):
         f, (ax1, ax2) = plt.subplots(2)
         x_null = np.append(self.x, [np.nan])
 
-        with pytest.warns(FutureWarning):
+        with pytest.warns(UserWarning):
             distplot(self.x, ax=ax1)
             distplot(x_null, ax=ax2)
 
