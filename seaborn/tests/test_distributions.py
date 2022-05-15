@@ -233,7 +233,7 @@ class TestRugPlot(SharedAxesLevelTests):
 
         f, ax = plt.subplots()
 
-        with pytest.warns(FutureWarning):
+        with pytest.warns(UserWarning):
             rugplot(a=flat_series)
         rugplot(x=flat_series)
 
@@ -244,7 +244,7 @@ class TestRugPlot(SharedAxesLevelTests):
 
         f, ax = plt.subplots()
 
-        with pytest.warns(FutureWarning):
+        with pytest.warns(UserWarning):
             rugplot(flat_series, axis=variable)
         rugplot(**{variable: flat_series})
 
@@ -254,7 +254,7 @@ class TestRugPlot(SharedAxesLevelTests):
 
         f, ax = plt.subplots()
 
-        with pytest.warns(FutureWarning):
+        with pytest.warns(UserWarning):
             rugplot(flat_series, vertical=True)
         rugplot(y=flat_series)
 
@@ -431,7 +431,7 @@ class TestKDEPlotUnivariate(SharedAxesLevelTests):
         f, ax = plt.subplots()
         kdeplot(data=long_df, y="x")
 
-        with pytest.warns(FutureWarning):
+        with pytest.warns(UserWarning):
             kdeplot(data=long_df, x="x", vertical=True)
 
         assert_array_equal(ax.lines[0].get_xydata(), ax.lines[1].get_xydata())
@@ -441,7 +441,7 @@ class TestKDEPlotUnivariate(SharedAxesLevelTests):
         f, ax = plt.subplots()
         kdeplot(data=long_df, x="x", bw_method="silverman")
 
-        with pytest.warns(FutureWarning):
+        with pytest.warns(UserWarning):
             kdeplot(data=long_df, x="x", bw="silverman")
 
         assert_array_equal(ax.lines[0].get_xydata(), ax.lines[1].get_xydata())
@@ -459,7 +459,8 @@ class TestKDEPlotUnivariate(SharedAxesLevelTests):
     def test_shade_deprecation(self, long_df):
 
         f, ax = plt.subplots()
-        kdeplot(data=long_df, x="x", shade=True)
+        with pytest.warns(FutureWarning):
+            kdeplot(data=long_df, x="x", shade=True)
         kdeplot(data=long_df, x="x", fill=True)
         fill1, fill2 = ax.collections
         assert_array_equal(

@@ -1578,83 +1578,62 @@ def kdeplot(
     bw_method="scott", bw_adjust=1, warn_singular=True, log_scale=None,
     levels=10, thresh=.05, gridsize=200, cut=3, clip=None,
     legend=True, cbar=False, cbar_ax=None, cbar_kws=None, ax=None,
-
-    # TODO Deprecated parameters, remove from signature for v0.12.0
-    shade=None,  # Note "soft" deprecation, explained below
-    vertical=False,  # Deprecated
-    kernel=None,  # Deprecated
-    bw=None,  # Deprecated
-    shade_lowest=None,  # Deprecated, controlled with levels now
-    data2=None,  # TODO remove
-
     **kwargs,
 ):
 
-    # Handle deprecation of `data2` as name for y variable
-    if data2 is not None:
+    # --- Start with backwards compatability for versions < 0.11.0 ----------------
 
-        y = data2
-
-        # If `data2` is present, we need to check for the `data` kwarg being
-        # used to pass a vector for `x`. We'll reassign the vectors and warn.
-        # We need this check because just passing a vector to `data` is now
-        # technically valid.
-
-        x_passed_as_data = (
-            x is None
-            and data is not None
-            and np.ndim(data) == 1
-        )
-
-        if x_passed_as_data:
-            msg = "Use `x` and `y` rather than `data` `and `data2`"
-            x = data
-        else:
-            msg = "The `data2` param is now named `y`; please update your code"
-
-        warnings.warn(msg, FutureWarning)
+    # Handle (past) deprecation of `data2`
+    if "data2" in kwargs:
+        msg = "`data2` has been removed (replaced by `y`); please update your code."
+        TypeError(msg)
 
     # Handle deprecation of `vertical`
-    if vertical:
-        msg = (
-            "The `vertical` parameter is deprecated and will be removed in a "
-            "future version. Assign the data to the `y` variable instead."
-        )
-        warnings.warn(msg, FutureWarning)
-        x, y = y, x
+    vertical = kwargs.pop("vertical", None)
+    if vertical is not None:
+        if vertical:
+            action_taken = "assigning data to `y`."
+            if x is None:
+                data, y = y, data
+            else:
+                x, y = y, x
+        else:
+            action_taken = "assigning data to `x`."
+        msg = textwrap.dedent(f"""\n
+        The `vertical` parameter is deprecated; {action_taken}
+        This will become an error in seaborn v0.13.0; please update your code.
+        """)
+        warnings.warn(msg, UserWarning, stacklevel=2)
 
     # Handle deprecation of `bw`
+    bw = kwargs.pop("bw", None)
     if bw is not None:
-        msg = (
-            "The `bw` parameter is deprecated in favor of `bw_method` and "
-            f"`bw_adjust`. Using {bw} for `bw_method`, but please "
-            "see the docs for the new parameters and update your code."
-        )
-        warnings.warn(msg, FutureWarning)
+        msg = textwrap.dedent(f"""\n
+        The `bw` parameter is deprecated in favor of `bw_method` and `bw_adjust`.
+        Setting `bw_method={bw}`, but please see the docs for the new parameters
+        and update your code. This will become an error in seaborn v0.13.0.
+        """)
+        warnings.warn(msg, UserWarning, stacklevel=2)
         bw_method = bw
 
     # Handle deprecation of `kernel`
-    if kernel is not None:
-        msg = (
-            "Support for alternate kernels has been removed. "
-            "Using Gaussian kernel."
-        )
-        warnings.warn(msg, UserWarning)
+    if kwargs.pop("kernel", None) is not None:
+        msg = textwrap.dedent("""\n
+        Support for alternate kernels has been removed; using Gaussian kernel.
+        This will become an error in seaborn v0.13.0; please update your code.
+        """)
+        warnings.warn(msg, UserWarning, stacklevel=2)
 
     # Handle deprecation of shade_lowest
+    shade_lowest = kwargs.pop("shade_lowest", None)
     if shade_lowest is not None:
         if shade_lowest:
             thresh = 0
-        msg = (
-            "`shade_lowest` is now deprecated in favor of `thresh`. "
-            f"Setting `thresh={thresh}`, but please update your code."
-        )
-        warnings.warn(msg, UserWarning)
-
-    # Handle `n_levels`
-    # This was never in the formal API but it was processed, and appeared in an
-    # example. We can treat as an alias for `levels` now and deprecate later.
-    levels = kwargs.pop("n_levels", levels)
+        msg = textwrap.dedent(f"""\n
+        `shade_lowest` has been replaced by `thresh`; setting `thresh={thresh}.
+        This will become an error in seaborn v0.13.0; please update your code.
+        """)
+        warnings.warn(msg, UserWarning, stacklevel=2)
 
     # Handle "soft" deprecation of shade `shade` is not really the right
     # terminology here, but unlike some of the other deprecated parameters it
@@ -1664,8 +1643,19 @@ def kdeplot(
     # enforcement hits, we can remove the shade/shade_lowest out of the
     # function signature all together and pull them out of the kwargs. Then we
     # can actually fire a FutureWarning, and eventually remove.
+    shade = kwargs.pop("shade", None)
     if shade is not None:
         fill = shade
+        msg = textwrap.dedent(f"""\n
+        `shade` is now deprecated in favor of `fill`; setting `fill={shade}`.
+        This will become an error in seaborn v0.14.0; please update your code.
+        """)
+        warnings.warn(msg, FutureWarning, stacklevel=2)
+
+    # Handle `n_levels`
+    # This was never in the formal API but it was processed, and appeared in an
+    # example. We can treat as an alias for `levels` now and deprecate later.
+    levels = kwargs.pop("n_levels", levels)
 
     # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - #
 
@@ -1975,13 +1965,7 @@ Examples
 
 def rugplot(
     data=None, *, x=None, y=None, hue=None, height=.025, expand_margins=True,
-    palette=None, hue_order=None, hue_norm=None, legend=True,
-
-    # Renamed/deprecated
-    a=None, axis=None,
-
-    ax=None,
-    **kwargs
+    palette=None, hue_order=None, hue_norm=None, legend=True, ax=None, **kwargs
 ):
 
     # A note: I think it would make sense to add multiple= to rugplot and allow
@@ -1994,29 +1978,45 @@ def rugplot(
     # A note, it would also be nice to offer some kind of histogram/density
     # rugplot, since alpha blending doesn't work great in the large n regime
 
-    # Handle deprecation of `a``
+    # --- Start with backwards compatability for versions < 0.11.0 ----------------
+
+    a = kwargs.pop("a", None)
+    axis = kwargs.pop("axis", None)
+
     if a is not None:
-        msg = "The `a` parameter is now called `x`. Please update your code."
-        warnings.warn(msg, FutureWarning)
-        x = a
-        del a
+        data = a
+        msg = textwrap.dedent("""\n
+        The `a` parameter has been replaced; use `x`, `y`, and/or `data` instead.
+        Please update your code; This will become an error in seaborn v0.13.0.
+        """)
+        warnings.warn(msg, UserWarning, stacklevel=2)
 
-    # Handle deprecation of "axis"
     if axis is not None:
-        msg = (
-            "The `axis` variable is no longer used and will be removed. "
-            "Instead, assign variables directly to `x` or `y`."
-        )
-        warnings.warn(msg, FutureWarning)
+        if axis == "x":
+            x = data
+        elif axis == "y":
+            y = data
+        msg = textwrap.dedent(f"""\n
+        The `axis` parameter has been deprecated; use the `{axis}` parameter instead.
+        Please update your code; this will become an error in seaborn v0.13.0.
+        """)
+        warnings.warn(msg, UserWarning, stacklevel=2)
 
-    # Handle deprecation of "vertical"
-    if data is not None and kwargs.pop("vertical", axis == "y"):
-        x, y = None, data
-        msg = (
-            "Using `vertical=True` to control the orientation of the plot  "
-            "is deprecated. Instead, assign the data directly to `y`. "
-        )
-        warnings.warn(msg, FutureWarning)
+    vertical = kwargs.pop("vertical", None)
+    if vertical is not None:
+        if vertical:
+            action_taken = "assigning data to `y`."
+            if x is None:
+                data, y = y, data
+            else:
+                x, y = y, x
+        else:
+            action_taken = "assigning data to `x`."
+        msg = textwrap.dedent(f"""\n
+        The `vertical` parameter is deprecated; {action_taken}
+        This will become an error in seaborn v0.13.0; please update your code.
+        """)
+        warnings.warn(msg, UserWarning, stacklevel=2)
 
     # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - #
 
@@ -2481,16 +2481,17 @@ def distplot(a=None, bins=None, hist=True, kde=True, rug=False, fit=None,
         if hist_color != color:
             hist_kws["color"] = hist_color
 
+    axis = "y" if vertical else "x"
+
     if kde:
         kde_color = kde_kws.pop("color", color)
-        kdeplot(a, vertical=vertical, ax=ax, color=kde_color, **kde_kws)
+        kdeplot(**{axis: a}, ax=ax, color=kde_color, **kde_kws)
         if kde_color != color:
             kde_kws["color"] = kde_color
 
     if rug:
         rug_color = rug_kws.pop("color", color)
-        axis = "y" if vertical else "x"
-        rugplot(a, axis=axis, ax=ax, color=rug_color, **rug_kws)
+        rugplot(**{axis: a}, ax=ax, color=rug_color, **rug_kws)
         if rug_color != color:
             rug_kws["color"] = rug_color
 
