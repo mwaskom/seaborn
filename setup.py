@@ -30,15 +30,15 @@ VERSION = '0.12.0.dev0'
 PYTHON_REQUIRES = ">=3.7"
 
 INSTALL_REQUIRES = [
-    'numpy>=1.16',
-    'pandas>=0.24',
-    'matplotlib>=3.0',
+    'numpy>=1.21',
+    'pandas>=1.3',
+    'matplotlib>=3.4',
 ]
 
 EXTRAS_REQUIRE = {
     'all': [
-        'scipy>=1.2',
-        'statsmodels>=0.9',
+        'scipy>=1.7',
+        'statsmodels>=0.12',
     ]
 }
 
