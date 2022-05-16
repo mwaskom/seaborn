@@ -375,7 +375,7 @@ class _CategoricalFacetPlotter(_CategoricalPlotterNew):
     semantics = _CategoricalPlotterNew.semantics + ("col", "row")
 
 
-class _CategoricalPlotter(object):
+class _CategoricalPlotter:
 
     width = .8
     default_palette = "light"
@@ -475,7 +475,7 @@ class _CategoricalPlotter(object):
                 plot_data = [np.asarray(d, float) for d in plot_data]
 
                 # The group names will just be numeric indices
-                group_names = list(range((len(plot_data))))
+                group_names = list(range(len(plot_data)))
 
             # Figure out the plotting orientation
             orient = "h" if str(orient).startswith("h") else "v"
@@ -1819,7 +1819,7 @@ class _LVPlotter(_CategoricalPlotter):
         elif self.k_depth == 'proportion':
             k = int(np.log2(n)) - int(np.log2(n * p)) + 1
         elif self.k_depth == 'trustworthy':
-            point_conf = 2 * _normal_quantile_func((1 - self.trust_alpha / 2)) ** 2
+            point_conf = 2 * _normal_quantile_func(1 - self.trust_alpha / 2) ** 2
             k = int(np.log2(n / point_conf)) + 1
         else:
             k = int(self.k_depth)  # allow having k as input

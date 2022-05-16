@@ -79,7 +79,7 @@ from numpy import linalg
 __all__ = ['gaussian_kde']
 
 
-class gaussian_kde(object):
+class gaussian_kde:
     """Representation of a kernel-density estimate using Gaussian kernels.
 
     Kernel density estimation is a way to estimate the probability density

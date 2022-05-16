@@ -22,7 +22,7 @@ from .axisgrid import FacetGrid, _facet_docs
 __all__ = ["lmplot", "regplot", "residplot"]
 
 
-class _LinearPlotter(object):
+class _LinearPlotter:
     """Base class for plotting relational data in tidy format.
 
     To get anything useful done you'll have to inherit from this, but setup
@@ -617,8 +617,8 @@ def lmplot(
     if not isinstance(markers, list):
         markers = [markers] * n_markers
     if len(markers) != n_markers:
-        raise ValueError(("markers must be a singleton or a list of markers "
-                          "for each level of the hue variable"))
+        raise ValueError("markers must be a singleton or a list of markers "
+                          "for each level of the hue variable")
     facets.hue_kws = {"marker": markers}
 
     def update_datalim(data, x, y, ax, **kws):

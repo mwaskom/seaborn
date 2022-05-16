@@ -60,7 +60,7 @@ def get_contour_color(c):
             return c.get_edgecolor()
 
 
-class TestDistPlot(object):
+class TestDistPlot:
 
     rs = np.random.RandomState(0)
     x = rs.randn(100)
@@ -942,8 +942,8 @@ class TestKDEPlotBivariate:
         kdeplot(x=x, y=y, hue=hue, common_norm=True, ax=ax1)
         kdeplot(x=x, y=y, hue=hue, common_norm=False, ax=ax2)
 
-        n_seg_1 = sum([len(get_contour_coords(c)) > 0 for c in ax1.collections])
-        n_seg_2 = sum([len(get_contour_coords(c)) > 0 for c in ax2.collections])
+        n_seg_1 = sum(len(get_contour_coords(c)) > 0 for c in ax1.collections)
+        n_seg_2 = sum(len(get_contour_coords(c)) > 0 for c in ax2.collections)
         assert n_seg_2 > n_seg_1
 
     def test_log_scale(self, rng):

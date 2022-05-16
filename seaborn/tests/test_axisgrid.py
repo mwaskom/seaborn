@@ -757,7 +757,7 @@ class TestPairGrid:
 
         plot_vars = ["x", "y", "z"]
         g = ag.PairGrid(self.df, vars=plot_vars, corner=True)
-        corner_size = sum([i + 1 for i in range(len(plot_vars))])
+        corner_size = sum(i + 1 for i in range(len(plot_vars)))
         assert len(g.figure.axes) == corner_size
 
         g.map_diag(plt.hist)
@@ -1226,7 +1226,7 @@ class TestPairGrid:
         g1.map_diag(histplot)
         for i, ax in enumerate(g1.diag_axes):
             var = plot_vars[i]
-            count = sum([p.get_height() for p in ax.patches])
+            count = sum(p.get_height() for p in ax.patches)
             assert count == df[var].notna().sum()
 
     def test_histplot_legend(self):
