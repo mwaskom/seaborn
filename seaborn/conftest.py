@@ -75,6 +75,7 @@ def wide_array(wide_df):
     return wide_df.to_numpy()
 
 
+# TODO s/flat/thin?
 @pytest.fixture
 def flat_series(rng):
 

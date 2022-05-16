@@ -5,4 +5,9 @@ omit =
     seaborn/colors/*
     seaborn/cm.py
     seaborn/conftest.py
-    seaborn/tests/*
+
+[report]
+exclude_lines =
+    pragma: no cover
+    if TYPE_CHECKING:
+    raise NotImplementedError

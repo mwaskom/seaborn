@@ -1,3 +1,4 @@
+from __future__ import annotations
 from itertools import product
 from inspect import signature
 import warnings
@@ -8,7 +9,7 @@ import pandas as pd
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 
-from ._core import VectorPlotter, variable_type, categorical_order
+from ._oldcore import VectorPlotter, variable_type, categorical_order
 from . import utils
 from .utils import _check_argument, adjust_legend_subtitles, _draw_figure
 from .palettes import color_palette, blend_palette
@@ -16,7 +17,6 @@ from ._docstrings import (
     DocstringComponents,
     _core_docs,
 )
-
 
 __all__ = ["FacetGrid", "PairGrid", "JointGrid", "pairplot", "jointplot"]
 
@@ -308,6 +308,7 @@ _facet_docs = dict(
 
 class FacetGrid(Grid):
     """Multi-plot grid for plotting conditional relationships."""
+
     def __init__(
         self, data, *,
         row=None, col=None, hue=None, col_wrap=None,
@@ -315,7 +316,7 @@ class FacetGrid(Grid):
         row_order=None, col_order=None, hue_order=None, hue_kws=None,
         dropna=False, legend_out=True, despine=True,
         margin_titles=False, xlim=None, ylim=None, subplot_kws=None,
-        gridspec_kws=None, size=None
+        gridspec_kws=None, size=None,
     ):
 
         super(FacetGrid, self).__init__()

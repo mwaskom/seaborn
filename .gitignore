@@ -11,5 +11,6 @@ htmlcov/
 .idea/
 .vscode/
 .pytest_cache/
-notes/
 .DS_Store
+notes/
+notebooks/

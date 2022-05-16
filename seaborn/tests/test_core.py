@@ -9,7 +9,7 @@ from numpy.testing import assert_array_equal
 from pandas.testing import assert_frame_equal
 
 from ..axisgrid import FacetGrid
-from .._core import (
+from .._oldcore import (
     SemanticMapping,
     HueMapping,
     SizeMapping,
@@ -143,11 +143,6 @@ class TestHueMapping:
         m = HueMapping(p, palette=palette)
         assert m.palette == palette
         assert m.lookup_table == palette
-
-        # Test dict with missing keys
-        palette = dict(zip(wide_df.columns[:-1], colors))
-        with pytest.raises(ValueError):
-            HueMapping(p, palette=palette)
 
         # Test dict with missing keys
         palette = dict(zip(wide_df.columns[:-1], colors))
