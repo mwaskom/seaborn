@@ -52,6 +52,9 @@ PACKAGES = [
     'seaborn.colors',
     'seaborn.external',
     'seaborn.tests',
+    'seaborn._core',
+    'seaborn._marks',
+    'seaborn._stats',
 ]
 
 CLASSIFIERS = [
