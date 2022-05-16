@@ -3,11 +3,11 @@ Next-generation seaborn interface
 
 Over the past year, I have been developing an entirely new interface for
 making plots with seaborn. The new interface is designed to be
-declarative, compositional and extensible. If successful, it will both
+declarative, compositional and extensible. If successful, it will
 greatly expand the space of plots that can be created with seaborn while
-making the experience of doing so simpler and more delightful.
+making the experience of using it simpler and more delightful.
 
-To make that concrete, here is how you make a `hello world
+To make that concrete, here is a `hello world
 example <http://seaborn.pydata.org/introduction.html#our-first-seaborn-plot>`__
 with the new interface:
 
@@ -37,12 +37,13 @@ with the new interface:
 
 
 
-Installing the alpha
---------------------
+Testing the alpha release
+-------------------------
 
-If you’re interested, please install the alpha and kick the tires.
-Expect some rough edges and some instability! But feedback will be very
-helpful in pushing this towards a more stable broad release:
+If you’re interested, please install the alpha and kick the tires. It is
+very far from complete, so expect some rough edges and instability! But
+feedback will be very helpful in pushing this towards a more stable
+broad release:
 
 ::
 
@@ -77,19 +78,16 @@ graphics to be used alongside matplotlib. As the library grew, it became
 more common to reach for — or even learn — seaborn first. But one
 inevitably desires some customization that is not offered within the
 (already much-too-long) list of parameters in seaborn’s functions.
-Currently, this necessitates direct use of matplotlib.
-
-I’ve always thought that, if you’re comfortable with both libraries,
-this setup offers a powerful blend of convenience and flexibility. But
-it can be hard to know which library will let you accomplish some
-specific task. And, as seaborn has become more powerful, one has to
-write increasing amounts of matpotlib code to recreate what it is doing.
+Currently, this necessitates direct use of matplotlib. I’ve always
+thought that, if you’re comfortable with both libraries, this setup
+offers a powerful blend of convenience and flexibility. But it can be
+hard to know which library will let you accomplish some specific task.
 
 So the new interface is designed to provide a more comprehensive
 experience, such that all of the steps involved in the creation of a
 reasonably-customized plot can be accomplished in the same way. And the
 compositional nature of the objects provides much more flexibility than
-currently exists in seaborn with a similar level of abstraction that
+currently exists in seaborn with a similar level of abstraction: this
 lets you focus on *what* you want to show rather than *how* to show it.
 
 One will note that the result looks a bit (a lot?) like ggplot. That’s
