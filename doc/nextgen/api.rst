@@ -5,7 +5,7 @@
 API Reference
 =============
 
-.. note::
+.. warning::
 
     This is a provisional API that is under active development, incomplete, and subject to change before release.
 
