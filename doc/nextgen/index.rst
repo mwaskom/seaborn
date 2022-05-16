@@ -94,8 +94,8 @@ the plot:
 
 
 .. image:: index_files/index_8_0.png
-   :width: 489.59999999999997px
-   :height: 326.4px
+   :width: 509.15px
+   :height: 378.25px
 
 
 
@@ -110,8 +110,8 @@ For that you need to add some layers:
 
 
 .. image:: index_files/index_10_0.png
-   :width: 489.59999999999997px
-   :height: 326.4px
+   :width: 509.15px
+   :height: 378.25px
 
 
 
@@ -125,8 +125,8 @@ Variables can be defined globally, or for a specific layer:
 
 
 .. image:: index_files/index_12_0.png
-   :width: 489.59999999999997px
-   :height: 326.4px
+   :width: 509.15px
+   :height: 378.25px
 
 
 
@@ -144,8 +144,8 @@ Each layer can also have its own data:
 
 
 .. image:: index_files/index_14_0.png
-   :width: 489.59999999999997px
-   :height: 326.4px
+   :width: 509.15px
+   :height: 378.25px
 
 
 
@@ -163,8 +163,8 @@ object or vectors of various kinds:
 
 
 .. image:: index_files/index_16_0.png
-   :width: 489.59999999999997px
-   :height: 326.4px
+   :width: 509.15px
+   :height: 378.25px
 
 
 
@@ -180,8 +180,8 @@ parameter names:
 
 
 .. image:: index_files/index_18_0.png
-   :width: 489.59999999999997px
-   :height: 326.4px
+   :width: 600.9499999999999px
+   :height: 378.25px
 
 
 
@@ -198,8 +198,8 @@ It also offers a wider range of mappable features:
 
 
 .. image:: index_files/index_20_0.png
-   :width: 489.59999999999997px
-   :height: 326.4px
+   :width: 600.9499999999999px
+   :height: 378.25px
 
 
 
@@ -224,8 +224,8 @@ offering new functionality. But not many have been implemented yet:
 
 
 .. image:: index_files/index_23_0.png
-   :width: 489.59999999999997px
-   :height: 326.4px
+   :width: 509.15px
+   :height: 378.25px
 
 
 
@@ -240,8 +240,8 @@ than mapping them:
 
 
 .. image:: index_files/index_25_0.png
-   :width: 489.59999999999997px
-   :height: 326.4px
+   :width: 509.15px
+   :height: 378.25px
 
 
 
@@ -264,8 +264,8 @@ accept a ``Stat`` object that applies a data transformation:
 
 
 .. image:: index_files/index_27_0.png
-   :width: 489.59999999999997px
-   :height: 326.4px
+   :width: 509.15px
+   :height: 378.25px
 
 
 
@@ -280,8 +280,8 @@ mappings:
 
 
 .. image:: index_files/index_29_0.png
-   :width: 489.59999999999997px
-   :height: 326.4px
+   :width: 587.35px
+   :height: 378.25px
 
 
 
@@ -299,8 +299,8 @@ altering visual properties:
 
 
 .. image:: index_files/index_31_0.png
-   :width: 489.59999999999997px
-   :height: 326.4px
+   :width: 587.35px
+   :height: 378.25px
 
 
 
@@ -349,8 +349,8 @@ to pass pre-defined error-bars into seaborn):
 
 
 .. image:: index_files/index_35_0.png
-   :width: 489.59999999999997px
-   :height: 326.4px
+   :width: 509.15px
+   :height: 378.25px
 
 
 
@@ -377,8 +377,8 @@ representation into the concept of a ``Move``:
 
 
 .. image:: index_files/index_37_0.png
-   :width: 489.59999999999997px
-   :height: 326.4px
+   :width: 600.9499999999999px
+   :height: 378.25px
 
 
 
@@ -398,8 +398,8 @@ levels when dodging and for fine-tuning the adjustment.
 
 
 .. image:: index_files/index_39_0.png
-   :width: 489.59999999999997px
-   :height: 326.4px
+   :width: 600.9499999999999px
+   :height: 378.25px
 
 
 
@@ -416,8 +416,8 @@ By default, the ``move`` will resolve all overlapping semantic mappings:
 
 
 .. image:: index_files/index_41_0.png
-   :width: 489.59999999999997px
-   :height: 326.4px
+   :width: 606.05px
+   :height: 378.25px
 
 
 
@@ -434,8 +434,8 @@ But you can specify a subset:
 
 
 .. image:: index_files/index_43_0.png
-   :width: 489.59999999999997px
-   :height: 326.4px
+   :width: 600.9499999999999px
+   :height: 378.25px
 
 
 
@@ -456,8 +456,8 @@ a list:
 
 
 .. image:: index_files/index_45_0.png
-   :width: 489.59999999999997px
-   :height: 326.4px
+   :width: 600.9499999999999px
+   :height: 378.25px
 
 
 
@@ -498,8 +498,8 @@ seaborn allows one to apply a mathematical transformation, such as
 
 
 .. image:: index_files/index_49_0.png
-   :width: 489.59999999999997px
-   :height: 326.4px
+   :width: 509.15px
+   :height: 378.25px
 
 
 
@@ -519,8 +519,8 @@ specify the palette used for color variables:
 
 
 .. image:: index_files/index_51_0.png
-   :width: 489.59999999999997px
-   :height: 326.4px
+   :width: 612.0px
+   :height: 378.25px
 
 
 
@@ -547,8 +547,8 @@ that control the details of the mapping:
 
 
 .. image:: index_files/index_53_0.png
-   :width: 489.59999999999997px
-   :height: 326.4px
+   :width: 612.0px
+   :height: 378.25px
 
 
 
@@ -570,8 +570,8 @@ appropriate for categorical data:
 
 
 .. image:: index_files/index_55_0.png
-   :width: 489.59999999999997px
-   :height: 326.4px
+   :width: 646.425px
+   :height: 378.25px
 
 
 
@@ -590,8 +590,8 @@ values in the dataset are passed directly through to matplotlib:
 
 
 .. image:: index_files/index_57_0.png
-   :width: 489.59999999999997px
-   :height: 326.4px
+   :width: 509.15px
+   :height: 378.25px
 
 
 
@@ -607,8 +607,8 @@ adjustments take place in the appropriate space:
 
 
 .. image:: index_files/index_59_0.png
-   :width: 489.59999999999997px
-   :height: 326.4px
+   :width: 509.15px
+   :height: 378.25px
 
 
 
@@ -629,8 +629,8 @@ This is also true of the ``Move`` transformations:
 
 
 .. image:: index_files/index_61_0.png
-   :width: 489.59999999999997px
-   :height: 326.4px
+   :width: 595.0px
+   :height: 378.25px
 
 
 
@@ -655,8 +655,8 @@ interchangably with any ``Mark``/``Stat``/``Move``/``Scale`` spec:
 
 
 .. image:: index_files/index_64_0.png
-   :width: 489.59999999999997px
-   :height: 326.4px
+   :width: 509.15px
+   :height: 378.25px
 
 
 
@@ -677,8 +677,8 @@ so that a plot is simply replicated across each column (or row):
 
 
 .. image:: index_files/index_66_0.png
-   :width: 571.1999999999999px
-   :height: 244.79999999999998px
+   :width: 637.925px
+   :height: 231.625px
 
 
 
@@ -696,8 +696,8 @@ The ``Plot`` object *also* subsumes the ``PairGrid`` functionality:
 
 
 .. image:: index_files/index_68_0.png
-   :width: 489.59999999999997px
-   :height: 326.4px
+   :width: 505.325px
+   :height: 378.25px
 
 
 
@@ -716,8 +716,8 @@ Pairing and faceting can be combined in the same plot:
 
 
 .. image:: index_files/index_70_0.png
-   :width: 489.59999999999997px
-   :height: 326.4px
+   :width: 507.45px
+   :height: 378.25px
 
 
 
@@ -736,8 +736,8 @@ between variables:
 
 
 .. image:: index_files/index_72_0.png
-   :width: 489.59999999999997px
-   :height: 326.4px
+   :width: 508.72499999999997px
+   :height: 378.25px
 
 
 
@@ -760,8 +760,8 @@ be “wrapped”, and this works both columwise and rowwise:
 
 
 .. image:: index_files/index_74_0.png
-   :width: 489.59999999999997px
-   :height: 326.4px
+   :width: 509.15px
+   :height: 382.5px
 
 
 
@@ -793,8 +793,8 @@ showing it:
 
 
 .. image:: index_files/index_79_0.png
-   :width: 489.59999999999997px
-   :height: 326.4px
+   :width: 509.15px
+   :height: 378.25px
 
 
 
@@ -817,8 +817,8 @@ and then iterate on different versions of it.
 
 
 .. image:: index_files/index_82_0.png
-   :width: 489.59999999999997px
-   :height: 326.4px
+   :width: 587.35px
+   :height: 378.25px
 
 
 
@@ -830,8 +830,8 @@ and then iterate on different versions of it.
 
 
 .. image:: index_files/index_83_0.png
-   :width: 489.59999999999997px
-   :height: 326.4px
+   :width: 587.35px
+   :height: 378.25px
 
 
 
@@ -843,8 +843,8 @@ and then iterate on different versions of it.
 
 
 .. image:: index_files/index_84_0.png
-   :width: 489.59999999999997px
-   :height: 326.4px
+   :width: 587.35px
+   :height: 378.25px
 
 
 
@@ -860,8 +860,8 @@ and then iterate on different versions of it.
 
 
 .. image:: index_files/index_85_0.png
-   :width: 489.59999999999997px
-   :height: 326.4px
+   :width: 587.35px
+   :height: 378.25px
 
 
 
@@ -908,8 +908,8 @@ parameter. The ``Plot`` object *will* provide a similar functionality:
 
 
 .. image:: index_files/index_89_0.png
-   :width: 489.59999999999997px
-   :height: 326.4px
+   :width: 498.95px
+   :height: 335.75px
 
 
 
@@ -932,8 +932,8 @@ figure. That is no longer the case; ``Plot.on()`` also accepts a
 
 
 .. image:: index_files/index_91_0.png
-   :width: 489.59999999999997px
-   :height: 326.4px
+   :width: 498.95px
+   :height: 335.75px
 
 
 
@@ -965,8 +965,8 @@ small-multiples plot *within* a larger set of subplots:
 
 
 .. image:: index_files/index_93_0.png
-   :width: 652.8px
-   :height: 326.4px
+   :width: 729.3px
+   :height: 335.75px
 
 
 

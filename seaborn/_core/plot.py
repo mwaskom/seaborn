@@ -396,13 +396,15 @@ class Plot:
         # TODO lists of vectors currently work, but I'm not sure where best to test
         # Will need to update the signature typing to keep them
 
-        # TODO is is weird to call .pair() to create univariate plots?
+        # TODO is it weird to call .pair() to create univariate plots?
         # i.e. Plot(data).pair(x=[...]). The basic logic is fine.
         # But maybe a different verb (e.g. Plot.spread) would be more clear?
         # Then Plot(data).pair(x=[...]) would show the given x vars vs all.
 
         # TODO would like to add transpose=True, which would then draw
         # Plot(x=...).pair(y=[...]) across the rows
+        # This may also be possible by setting `wrap=1`, although currently the axes
+        # are shared and the interior labels are disabeled (this is a bug either way)
 
         pair_spec: PairSpec = {}
 
@@ -598,7 +600,7 @@ class Plot:
         Other keyword arguments are passed to :meth:`matplotlib.figure.Figure.savefig`.
 
         """
-        # TODO expose important keyword arugments in our signature?
+        # TODO expose important keyword arguments in our signature?
         self.plot().save(fname, **kwargs)
         return self
 
@@ -627,8 +629,7 @@ class Plot:
         for layer in layers:
             plotter._plot_layer(self, layer)
 
-        # TODO should this go here?
-        plotter._make_legend()  # TODO does this return?
+        plotter._make_legend()
 
         # TODO this should be configurable
         if not plotter._figure.get_constrained_layout():
@@ -648,11 +649,6 @@ class Plot:
         # figure to pyplot: https://github.com/matplotlib/matplotlib/pull/14024
 
         self.plot(pyplot=True).show(**kwargs)
-
-    # TODO? Have this print a textual summary of how the plot is defined?
-    # Could be nice to stick in the middle of a pipeline for debugging
-    # def tell(self) -> Plot:
-    #    return self
 
 
 # ---- The plot compilation engine ---------------------------------------------- #
@@ -716,14 +712,18 @@ class Plotter:
         #   either with 1x -> 72 or 1x -> 96 and the default scaling be .75?
         # - Listen to rcParams? InlineBackend behavior makes that so complicated :(
         # - Do we ever want to *not* use retina mode at this point?
+
+        from PIL import Image
+
         dpi = 96
         buffer = io.BytesIO()
         self._figure.savefig(buffer, dpi=dpi * 2, format="png", bbox_inches="tight")
         data = buffer.getvalue()
 
-        scaling = .85
-        w, h = self._figure.get_size_inches()
-        metadata = {"width": w * dpi * scaling, "height": h * dpi * scaling}
+        scaling = .85 / 2
+        # w, h = self._figure.get_size_inches()
+        w, h = Image.open(buffer).size
+        metadata = {"width": w * scaling, "height": h * scaling}
         return data, metadata
 
     def _extract_data(self, p: Plot) -> tuple[PlotData, list[Layer]]:
@@ -1144,7 +1144,6 @@ class Plotter:
             view_df = self._filter_subplot_data(df, view)
             axes_df = view_df[coord_cols]
             with pd.option_context("mode.use_inf_as_null", True):
-                # TODO Is this just removing infs (since nans get added back?)
                 axes_df = axes_df.dropna()
             for var, values in axes_df.items():
                 scale = view[f"{var[0]}scale"]
