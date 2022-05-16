@@ -2,8 +2,8 @@
 
 .. currentmodule:: seaborn.objects
 
-API
-===
+API Reference
+=============
 
 .. note::
 

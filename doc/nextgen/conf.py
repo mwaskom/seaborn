@@ -73,7 +73,7 @@ html_logo = "_static/logo.svg"
 
 html_sidebars = {
     # "**": [],
-    "index": ["page-toc"]
+    "demo": ["page-toc"]
 }
 
 
