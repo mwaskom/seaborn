@@ -304,14 +304,18 @@ class _DistributionPlotter(VectorPlotter):
         # Initialize the estimator object
         estimator = KDE(**estimate_kws)
 
-        all_data = self.plot_data.dropna()
-
         if set(self.variables) - {"x", "y"}:
             if common_grid:
                 all_observations = self.comp_data.dropna()
                 estimator.define_support(all_observations[data_variable])
         else:
             common_norm = False
+
+        all_data = self.plot_data.dropna()
+        if common_norm and "weights" in all_data:
+            whole_weight = all_data["weights"].sum()
+        else:
+            whole_weight = len(self.plot_data)
 
         densities = {}
 
@@ -333,8 +337,10 @@ class _DistributionPlotter(VectorPlotter):
             # Extract the weights for this subset of observations
             if "weights" in self.variables:
                 weights = sub_data["weights"]
+                part_weight = weights.sum()
             else:
                 weights = None
+                part_weight = len(sub_data)
 
             # Estimate the density of observations at this level
             density, support = estimator(observations, weights=weights)
@@ -344,7 +350,7 @@ class _DistributionPlotter(VectorPlotter):
 
             # Apply a scaling factor so that the integral over all subsets is 1
             if common_norm:
-                density *= len(sub_data) / len(all_data)
+                density *= part_weight / whole_weight
 
             # Store the density for this level
             key = tuple(sub_vars.items())
@@ -409,10 +415,8 @@ class _DistributionPlotter(VectorPlotter):
 
         # Do pre-compute housekeeping related to multiple groups
         # TODO best way to account for facet/semantic?
+        all_data = self.comp_data.dropna()
         if set(self.variables) - {"x", "y"}:
-
-            all_data = self.comp_data.dropna()
-
             if common_bins:
                 all_observations = all_data[self.data_variable]
                 estimator.define_bin_params(
@@ -422,6 +426,11 @@ class _DistributionPlotter(VectorPlotter):
 
         else:
             common_norm = False
+
+        if common_norm and "weights" in all_data:
+            whole_weight = all_data["weights"].sum()
+        else:
+            whole_weight = len(self.plot_data)
 
         # Estimate the smoothed kernel densities, for use later
         if kde:
@@ -447,8 +456,10 @@ class _DistributionPlotter(VectorPlotter):
 
             if "weights" in self.variables:
                 weights = sub_data["weights"]
+                part_weight = weights.sum()
             else:
                 weights = None
+                part_weight = len(sub_data)
 
             # Do the histogram computation
             heights, edges = estimator(observations, weights=weights)
@@ -478,7 +489,7 @@ class _DistributionPlotter(VectorPlotter):
 
             # Apply scaling to normalize across groups
             if common_norm:
-                hist *= len(sub_data) / len(all_data)
+                hist *= part_weight / whole_weight
 
             # Store the finalized histogram data for future plotting
             histograms[key] = hist
