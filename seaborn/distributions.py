@@ -315,7 +315,7 @@ class _DistributionPlotter(VectorPlotter):
         if common_norm and "weights" in all_data:
             whole_weight = all_data["weights"].sum()
         else:
-            whole_weight = len(self.plot_data)
+            whole_weight = len(all_data)
 
         densities = {}
 
@@ -414,23 +414,21 @@ class _DistributionPlotter(VectorPlotter):
         histograms = {}
 
         # Do pre-compute housekeeping related to multiple groups
-        # TODO best way to account for facet/semantic?
         all_data = self.comp_data.dropna()
-        if set(self.variables) - {"x", "y"}:
-            if common_bins:
-                all_observations = all_data[self.data_variable]
-                estimator.define_bin_params(
-                    all_observations,
-                    weights=all_data.get("weights", None),
-                )
+        all_weights = all_data.get("weights", None)
 
+        if set(self.variables) - {"x", "y"}:  # Check if we'll have multiple histograms
+            if common_bins:
+                estimator.define_bin_params(
+                    all_data[self.data_variable], weights=all_weights
+                )
         else:
             common_norm = False
 
-        if common_norm and "weights" in all_data:
-            whole_weight = all_data["weights"].sum()
+        if common_norm and all_weights is not None:
+            whole_weight = all_weights.sum()
         else:
-            whole_weight = len(self.plot_data)
+            whole_weight = len(all_data)
 
         # Estimate the smoothed kernel densities, for use later
         if kde:
