@@ -823,6 +823,19 @@ class TestKDEPlotUnivariate(SharedAxesLevelTests):
 
         assert y1 == pytest.approx(2 * y2)
 
+    def test_weight_norm(self, rng):
+
+        vals = rng.normal(0, 1, 50)
+        x = np.concatenate([vals, vals])
+        w = np.repeat([1, 2], 50)
+        ax = kdeplot(x=x, weights=w, hue=w, common_norm=True)
+
+        # Recall that artists are added in reverse of hue order
+        x1, y1 = ax.lines[0].get_xydata().T
+        x2, y2 = ax.lines[1].get_xydata().T
+
+        assert integrate(y1, x1) == pytest.approx(2 * integrate(y2, x2))
+
     def test_sticky_edges(self, long_df):
 
         f, (ax1, ax2) = plt.subplots(ncols=2)
@@ -1396,6 +1409,21 @@ class TestHistPlotUnivariate(SharedAxesLevelTests):
         bar_heights = [bar.get_height() for bar in ax.patches]
         total_weight = missing_df[["x", "s"]].dropna()["s"].sum()
         assert sum(bar_heights) == pytest.approx(total_weight)
+
+    def test_weight_norm(self, rng):
+
+        vals = rng.normal(0, 1, 50)
+        x = np.concatenate([vals, vals])
+        w = np.repeat([1, 2], 50)
+        ax = histplot(
+            x=x, weights=w, hue=w, common_norm=True, stat="density", bins=5
+        )
+
+        # Recall that artists are added in reverse of hue order
+        y1 = [bar.get_height() for bar in ax.patches[:5]]
+        y2 = [bar.get_height() for bar in ax.patches[5:]]
+
+        assert sum(y1) == 2 * sum(y2)
 
     def test_discrete(self, long_df):
 
