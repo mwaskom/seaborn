@@ -618,7 +618,7 @@ def lmplot(
         markers = [markers] * n_markers
     if len(markers) != n_markers:
         raise ValueError("markers must be a singleton or a list of markers "
-                          "for each level of the hue variable")
+                         "for each level of the hue variable")
     facets.hue_kws = {"marker": markers}
 
     def update_datalim(data, x, y, ax, **kws):
