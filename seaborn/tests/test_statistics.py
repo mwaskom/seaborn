@@ -282,6 +282,13 @@ class TestHistogram(DistributionFixtures):
         assert bin_kws["range"] == (x.min() - .5, x.max() + .5)
         assert bin_kws["bins"] == (x.max() - x.min() + 1)
 
+    def test_odd_single_observation(self):
+        # GH2721
+        x = np.array([0.49928])
+        h, e = Histogram(binwidth=0.03)(x)
+        assert len(h) == 1
+        assert (e[1] - e[0]) == pytest.approx(.03)
+
     def test_histogram(self, x):
 
         h = Histogram()
