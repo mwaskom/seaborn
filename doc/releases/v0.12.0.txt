@@ -55,6 +55,8 @@ Other updates
 
 - |Fix| Fixed a regression in 0.11.2 that caused some functions to stall indefinitely or raise when the input data had a duplicate index (:pr:`2776`).
 
+- |Fix| Fixed two edgecases in :func:`histplot` when only `binwidth` was provided (:pr:`2813').
+
 - |Fix| In :func:`lineplot`, allowed the `dashes` keyword to set the style of a line without mapping a `style` variable (:pr:`2449`).
 
 - |Dependencies| Made `scipy` an optional dependency and added `pip install seaborn[all]` as a method for ensuring the availability of compatible `scipy` and `statsmodels` libraries at install time. This has a few minor implications for existing code, which are explained in the Github pull request (:pr:`2398`).
