@@ -261,6 +261,9 @@ class Histogram:
         elif binwidth is not None:
             step = binwidth
             bin_edges = np.arange(start, stop + step, step)
+            # Handle roundoff error (maybe there is a less clumsy way?)
+            if bin_edges.max() < stop or len(bin_edges) < 2:
+                bin_edges = np.append(bin_edges, bin_edges.max() + step)
         else:
             bin_edges = np.histogram_bin_edges(
                 x, bins, binrange, weights,
