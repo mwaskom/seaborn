@@ -319,7 +319,7 @@ class FacetGrid(Grid):
         gridspec_kws=None, size=None,
     ):
 
-        super(FacetGrid, self).__init__()
+        super().__init__()
 
         # Handle deprecations
         if size is not None:
@@ -1191,7 +1191,7 @@ class PairGrid(Grid):
 
         """
 
-        super(PairGrid, self).__init__()
+        super().__init__()
 
         # Handle deprecations
         if size is not None:
@@ -2097,8 +2097,8 @@ def pairplot(
             if not isinstance(markers, list):
                 markers = [markers] * n_markers
             if len(markers) != n_markers:
-                raise ValueError(("markers must be a singleton or a list of "
-                                  "markers for each level of the hue variable"))
+                raise ValueError("markers must be a singleton or a list of "
+                                  "markers for each level of the hue variable")
             grid.hue_kws = {"marker": markers}
         elif kind == "scatter":
             if isinstance(markers, str):

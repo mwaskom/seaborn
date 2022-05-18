@@ -12,7 +12,7 @@ if __name__ == "__main__":
     nb_paths = glob("./**/*.ipynb", recursive=True)
     for path in nb_paths:
 
-        with open(path, "r") as f:
+        with open(path) as f:
             nb = nbformat.read(f, as_version=4)
 
         nb["metadata"]["kernelspec"]["name"] = kernel_name

@@ -556,7 +556,7 @@ def heatmap(
     return ax
 
 
-class _DendrogramPlotter(object):
+class _DendrogramPlotter:
     """Object for drawing tree of similarities between data rows/columns"""
 
     def __init__(self, data, linkage, metric, method, axis, label, rotate):

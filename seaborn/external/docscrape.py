@@ -46,7 +46,7 @@ def strip_blank_lines(l):
     return l
 
 
-class Reader(object):
+class Reader:
     """A line-based string reader.
 
     """
@@ -395,7 +395,7 @@ class NumpyDocString(Mapping):
         self._parse_summary()
 
         sections = list(self._read_sections())
-        section_names = set([section for section, content in sections])
+        section_names = {section for section, content in sections}
 
         has_returns = 'Returns' in section_names
         has_yields = 'Yields' in section_names
@@ -627,7 +627,7 @@ class FunctionDoc(NumpyDocString):
                 print(f"Warning: invalid role {self._role}")
             out += f".. {roles.get(self._role, '')}:: {func_name}\n    \n\n"
 
-        out += super(FunctionDoc, self).__str__(func_role=self._role)
+        out += super().__str__(func_role=self._role)
         return out
 
 

@@ -167,14 +167,14 @@ def indent(s, N=4):
     return s.replace('\n', '\n' + N * ' ')
 
 
-class ExampleGenerator(object):
+class ExampleGenerator:
     """Tools for generating an example page from a file"""
     def __init__(self, filename, target_dir):
         self.filename = filename
         self.target_dir = target_dir
         self.thumbloc = .5, .5
         self.extract_docstring()
-        with open(filename, "r") as fid:
+        with open(filename) as fid:
             self.filetext = fid.read()
 
         outfilename = op.join(target_dir, self.rstfilename)
@@ -322,10 +322,10 @@ class ExampleGenerator(object):
     def contents_entry(self):
         return (".. raw:: html\n\n"
                 "    <div class='figure align-center'>\n"
-                "    <a href=./{0}>\n"
-                "    <img src=../_static/{1}>\n"
+                "    <a href=./{}>\n"
+                "    <img src=../_static/{}>\n"
                 "    <span class='figure-label'>\n"
-                "    <p>{2}</p>\n"
+                "    <p>{}</p>\n"
                 "    </span>\n"
                 "    </a>\n"
                 "    </div>\n\n"

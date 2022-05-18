@@ -51,7 +51,7 @@ def _network(t=None, url="https://github.com"):
         # attempt to connect
         try:
             f = urlopen(url)
-        except (IOError, HTTPException):
+        except (OSError, HTTPException):
             pytest.skip("No internet connection")
         else:
             f.close()
@@ -121,7 +121,7 @@ def test_to_utf8(s, exp):
     assert u == exp
 
 
-class TestSpineUtils(object):
+class TestSpineUtils:
 
     sides = ["left", "right", "bottom", "top"]
     outer_sides = ["top", "right"]
