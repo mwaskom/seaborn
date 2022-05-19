@@ -1324,7 +1324,7 @@ class TestViolinPlotter(CategoricalFixture):
         p = cat._ViolinPlotter(**kws)
 
         _, ax = plt.subplots()
-        p.draw_box_lines(ax, self.y, p.support[0], p.density[0], 0)
+        p.draw_box_lines(ax, self.y, 0)
         assert len(ax.lines) == 2
 
         q25, q50, q75 = np.percentile(self.y, [25, 50, 75])
@@ -1342,7 +1342,7 @@ class TestViolinPlotter(CategoricalFixture):
         p = cat._ViolinPlotter(**kws)
 
         _, ax = plt.subplots()
-        p.draw_box_lines(ax, self.y, p.support[0], p.density[0], 0)
+        p.draw_box_lines(ax, self.y, 0)
         assert len(ax.lines) == 2
 
         q25, q50, q75 = np.percentile(self.y, [25, 50, 75])
