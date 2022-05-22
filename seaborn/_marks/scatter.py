@@ -67,7 +67,7 @@ class Scatter(Mark):
             filled_marker = [m.is_filled() for m in resolved["marker"]]
 
         resolved["linewidth"] = resolved["stroke"]
-        resolved["fill"] = resolved["fill"] & filled_marker
+        resolved["fill"] = resolved["fill"] * filled_marker
         resolved["size"] = resolved["pointsize"] ** 2
 
         resolved["edgecolor"] = resolve_color(self, data, "", scales)
@@ -91,7 +91,6 @@ class Scatter(Mark):
         # (That should be solved upstream by defaulting to "" for unset x/y?)
         # (Be mindful of xmin/xmax, etc!)
 
-        # TODO pass scales *into* split_gen?
         for keys, data, ax in split_gen():
 
             offsets = np.column_stack([data["x"], data["y"]])

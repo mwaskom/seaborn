@@ -1263,11 +1263,15 @@ class Plotter:
                 order = categorical_order(df[var])
             grouping_keys.append(order)
 
-        def split_generator() -> Generator:
+        def split_generator(dropna=True) -> Generator:
 
             for view in subplots:
 
                 axes_df = self._filter_subplot_data(df, view)
+
+                if dropna:
+                    with pd.option_context("mode.use_inf_as_null", True):
+                        axes_df = axes_df.dropna()
 
                 subplot_keys = {}
                 for dim in ["col", "row"]:

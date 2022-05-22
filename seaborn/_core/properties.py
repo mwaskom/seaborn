@@ -312,6 +312,7 @@ class ObjectProperty(Property):
     normed = False
 
     # Object representing null data, should appear invisible when drawn by matplotlib
+    # Note that we now drop nulls in Plot._plot_layer and thus may not need this
     null_value: Any = None
 
     def _default_values(self, n: int) -> list:
@@ -720,7 +721,11 @@ class Fill(Property):
             raise TypeError(msg)
 
         def mapping(x):
-            return np.take(values, np.asarray(x, np.intp))
+            ixs = np.asarray(x, np.intp)
+            return [
+                values[ix] if np.isfinite(x_i) else False
+                for x_i, ix in zip(x, ixs)
+            ]
 
         return mapping
 

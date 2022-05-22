@@ -1,5 +1,6 @@
 from matplotlib.colors import to_rgba, to_rgba_array
 
+import pytest
 from numpy.testing import assert_array_equal
 
 from seaborn._core.plot import Plot
@@ -139,3 +140,15 @@ class TestDot(ScatterBase):
 
         expected = [mark.edgewidth, mark.stroke]
         assert_array_equal(points.get_linewidths(), expected)
+
+    @pytest.mark.parametrize("prop", ["color", "fill", "marker", "pointsize"])
+    def test_missing_semantic_data(self, prop):
+
+        x = [1, 2, 3]
+        y = [5, 3, 4]
+        z = ["a", float("nan"), "b"]
+
+        p = Plot(x=x, y=y, **{prop: z}).add(Dot()).plot()
+        ax = p._figure.axes[0]
+        points, = ax.collections
+        self.check_offsets(points, [1, 3], [5, 4])
