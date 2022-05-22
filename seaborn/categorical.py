@@ -1136,7 +1136,7 @@ class _ViolinPlotter(_CategoricalPlotter):
 
                 # Draw box and whisker information
                 if self.inner.startswith("box"):
-                    self.draw_box_lines(ax, violin_data, support, density, i)
+                    self.draw_box_lines(ax, violin_data, i)
 
                 # Draw quartile lines
                 elif self.inner.startswith("quart"):
@@ -1217,7 +1217,7 @@ class _ViolinPlotter(_CategoricalPlotter):
 
                         # The box and point interior plots are drawn for
                         # all data at the group level, so we just do that once
-                        if not j:
+                        if j and any(self.plot_hues[0] == hue_level):
                             continue
 
                         # Get the whole vector for this group level
@@ -1225,8 +1225,7 @@ class _ViolinPlotter(_CategoricalPlotter):
 
                         # Draw box and whisker information
                         if self.inner.startswith("box"):
-                            self.draw_box_lines(ax, violin_data,
-                                                support, density, i)
+                            self.draw_box_lines(ax, violin_data, i)
 
                         # Draw point observations
                         elif self.inner.startswith("point"):
@@ -1252,9 +1251,7 @@ class _ViolinPlotter(_CategoricalPlotter):
 
                         # Draw box and whisker information
                         if self.inner.startswith("box"):
-                            self.draw_box_lines(ax, violin_data,
-                                                support, density,
-                                                i + offsets[j])
+                            self.draw_box_lines(ax, violin_data, i + offsets[j])
 
                         # Draw quartile lines
                         elif self.inner.startswith("quart"):
@@ -1286,7 +1283,7 @@ class _ViolinPlotter(_CategoricalPlotter):
                     color=self.gray,
                     linewidth=self.linewidth)
 
-    def draw_box_lines(self, ax, data, support, density, center):
+    def draw_box_lines(self, ax, data, center):
         """Draw boxplot information at center of the density."""
         # Compute the boxplot statistics
         q25, q50, q75 = np.percentile(data, [25, 50, 75])
