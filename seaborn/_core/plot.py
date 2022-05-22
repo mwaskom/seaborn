@@ -1042,12 +1042,12 @@ class Plotter:
                 axis = m["axis"]
 
             prop = PROPERTIES.get(var if axis is None else axis, Property())
-            scale = self._get_scale(p, var, prop, var_values)
+            scale_spec = self._get_scale(p, var, prop, var_values)
 
             # Initialize the data-dependent parameters of the scale
             # Note that this returns a copy and does not mutate the original
             # This dictionary is used by the semantic mappings
-            if scale is None:
+            if scale_spec is None:
                 # TODO what is the cleanest way to implement identity scale?
                 # We don't really need a ScaleSpec, and Identity() will be
                 # overloaded anyway (but maybe a general Identity object
@@ -1057,7 +1057,7 @@ class Plotter:
                 # doesn't make sense or is poorly defined, since we don't use pixels.)
                 self._scales[var] = Scale([], lambda x: x, None, "identity", None)
             else:
-                scale = scale.setup(var_values, prop)
+                scale = scale_spec.setup(var_values, prop)
                 if isinstance(prop, Coordinate):
                     # If we have a coordinate here, we didn't assign a scale for it
                     # in _transform_coords, which means it was added during compute_stat
