@@ -1350,7 +1350,7 @@ class TestPairInterface:
 
         orient_list = []
 
-        class CaptureMoveOrient(Move):
+        class CaptureOrientMove(Move):
             def __call__(self, data, groupby, orient):
                 orient_list.append(orient)
                 return data
@@ -1358,11 +1358,22 @@ class TestPairInterface:
         (
             Plot(long_df, x="x")
             .pair(y=["b", "z"])
-            .add(MockMark(), move=CaptureMoveOrient())
+            .add(MockMark(), move=CaptureOrientMove())
             .plot()
         )
 
         assert orient_list == ["y", "x"]
+
+    def test_computed_coordinate_orient_inference(self, long_df):
+
+        class MockComputeStat(Stat):
+            def __call__(self, df, groupby, orient, scales):
+                other = {"x": "y", "y": "x"}[orient]
+                return df.assign(**{other: df[orient] * 2})
+
+        m = MockMark()
+        Plot(long_df, y="y").add(m, MockComputeStat()).plot()
+        assert m.passed_orient == "y"
 
     def test_two_variables_single_order_error(self, long_df):
 

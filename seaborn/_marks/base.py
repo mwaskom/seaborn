@@ -187,10 +187,10 @@ class Mark:
         x_type = None if "x" not in scales else scales["x"].scale_type
         y_type = None if "y" not in scales else scales["y"].scale_type
 
-        if x_type is None:
+        if x_type is None or x_type == "computed":
             return "y"
 
-        elif y_type is None:
+        elif y_type is None or y_type == "computed":
             return "x"
 
         elif x_type != "nominal" and y_type == "nominal":
