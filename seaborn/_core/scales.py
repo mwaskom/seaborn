@@ -280,7 +280,7 @@ class ContinuousBase(ScaleSpec):
         ]
 
         def spacer(x):
-            return np.min(np.diff(np.sort(x.unique())))
+            return np.min(np.diff(np.sort(x.dropna().unique())))
 
         # TODO make legend optional on per-plot basis with ScaleSpec parameter?
         if prop.legend:

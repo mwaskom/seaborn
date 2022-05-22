@@ -141,6 +141,16 @@ class TestDot(ScatterBase):
         expected = [mark.edgewidth, mark.stroke]
         assert_array_equal(points.get_linewidths(), expected)
 
+    def test_missing_coordinate_data(self):
+
+        x = [1, float("nan"), 3]
+        y = [5, 3, 4]
+
+        p = Plot(x=x, y=y).add(Dot()).plot()
+        ax = p._figure.axes[0]
+        points, = ax.collections
+        self.check_offsets(points, [1, 3], [5, 4])
+
     @pytest.mark.parametrize("prop", ["color", "fill", "marker", "pointsize"])
     def test_missing_semantic_data(self, prop):
 
