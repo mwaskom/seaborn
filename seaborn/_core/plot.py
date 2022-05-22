@@ -1104,15 +1104,15 @@ class Plotter:
 
             if move is not None:
                 moves = move if isinstance(move, list) else [move]
-                for move in moves:
+                for move_step in moves:
                     move_groupers = [
                         orient,
-                        *(getattr(move, "by", None) or grouping_properties),
+                        *(getattr(move_step, "by", None) or grouping_properties),
                         *default_grouping_vars,
                     ]
                     order = {var: get_order(var) for var in move_groupers}
                     groupby = GroupBy(order)
-                    df = move(df, groupby, orient)
+                    df = move_step(df, groupby, orient)
 
             df = self._unscale_coords(subplots, df, orient)
 
