@@ -15,7 +15,7 @@ from numpy.testing import assert_array_equal
 from seaborn._core.plot import Plot
 from seaborn._core.scales import Nominal, Continuous
 from seaborn._core.rules import categorical_order
-from seaborn._core.moves import Move
+from seaborn._core.moves import Move, Shift
 from seaborn._marks.base import Mark
 from seaborn._stats.base import Stat
 from seaborn.external.version import Version
@@ -817,12 +817,8 @@ class TestPlotting:
 
         orig_df = long_df.copy(deep=True)
 
-        class MockMove(Move):
-            def __call__(self, data, groupby, orient):
-                return data.assign(x=data["x"] + 1)
-
         m = MockMark()
-        Plot(long_df, x="z", y="z").add(m, move=MockMove()).plot()
+        Plot(long_df, x="z", y="z").add(m, move=Shift(x=1)).plot()
         assert_vector_equal(m.passed_data[0]["x"], long_df["z"] + 1)
         assert_vector_equal(m.passed_data[0]["y"], long_df["z"])
 
@@ -830,15 +826,25 @@ class TestPlotting:
 
     def test_movement_log_scale(self, long_df):
 
-        class MockMove(Move):
-            def __call__(self, data, groupby, orient):
-                return data.assign(x=data["x"] - 1)
-
         m = MockMark()
         Plot(
             long_df, x="z", y="z"
-        ).scale(x="log").add(m, move=MockMove()).plot()
+        ).scale(x="log").add(m, move=Shift(x=-1)).plot()
         assert_vector_equal(m.passed_data[0]["x"], long_df["z"] / 10)
+
+    def test_multi_move(self, long_df):
+
+        m = MockMark()
+        move_stack = [Shift(1), Shift(2)]
+        Plot(long_df, x="x", y="y").add(m, move=move_stack).plot()
+        assert_vector_equal(m.passed_data[0]["x"], long_df["x"] + 3)
+
+    def test_multi_move_with_pairing(self, long_df):
+        m = MockMark()
+        move_stack = [Shift(1), Shift(2)]
+        Plot(long_df, x="x").pair(y=["y", "z"]).add(m, move=move_stack).plot()
+        for frame in m.passed_data:
+            assert_vector_equal(frame["x"], long_df["x"] + 3)
 
     def test_methods_clone(self, long_df):
 
