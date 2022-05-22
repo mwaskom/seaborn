@@ -1,6 +1,7 @@
 from __future__ import annotations
 from dataclasses import dataclass
 
+import numpy as np
 import matplotlib as mpl
 
 from seaborn._marks.base import (
@@ -35,13 +36,15 @@ class Line(Mark):
 
     def _plot(self, split_gen, scales, orient):
 
-        for keys, data, ax in split_gen():
+        for keys, data, ax in split_gen(dropna=False):
 
             keys = resolve_properties(self, keys, scales)
 
             if self.sort:
                 # TODO where to dropna?
-                data = data.dropna().sort_values(orient)
+                data = data.sort_values(orient)
+            else:
+                data.loc[data.isna().any(axis=1), ["x", "y"]] = np.nan
 
             line = mpl.lines.Line2D(
                 data["x"].to_numpy(),
