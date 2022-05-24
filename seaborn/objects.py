@@ -4,9 +4,9 @@ TODO Give this module a useful docstring
 from seaborn._core.plot import Plot  # noqa: F401
 
 from seaborn._marks.base import Mark  # noqa: F401
-from seaborn._marks.basic import Line  # noqa: F401
 from seaborn._marks.area import Area, Ribbon  # noqa: F401
 from seaborn._marks.bars import Bar  # noqa: F401
+from seaborn._marks.lines import Line, Path  # noqa: F401
 from seaborn._marks.scatter import Dot, Scatter  # noqa: F401
 
 from seaborn._stats.base import Stat  # noqa: F401
