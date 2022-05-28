@@ -1281,12 +1281,20 @@ class Plotter:
 
                 axes_df = self._filter_subplot_data(df, view)
 
-                orig_index = axes_df.index
                 with pd.option_context("mode.use_inf_as_null", True):
-                    axes_df = axes_df.dropna()
-                if keep_na:
-                    # TODO reset index otherwise?
-                    axes_df = axes_df.reindex(orig_index)
+                    if keep_na:
+                        # The simpler thing to do would be x.dropna().reindex(x.index).
+                        # But that doesn't work with the way that the subset iteration
+                        # is written below, which assumes data for grouping vars.
+                        # Matplotlib (usually?) masks nan data, so this should "work".
+                        # Downstream code can also drop these rows, at some speed cost.
+                        present = axes_df.notna().all(axis=1)
+                        axes_df = axes_df.assign(
+                            x=axes_df["x"].where(present),
+                            y=axes_df["y"].where(present),
+                        )
+                    else:
+                        axes_df = axes_df.dropna()
 
                 subplot_keys = {}
                 for dim in ["col", "row"]:
