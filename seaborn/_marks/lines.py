@@ -93,7 +93,7 @@ class Line(Path):
 @dataclass
 class Paths(Mark):
     """
-    TODO
+    A faster but less-flexible mark for drawing many paths.
     """
     color: MappableColor = Mappable("C0")
     alpha: MappableFloat = Mappable(1)
@@ -158,6 +158,6 @@ class Paths(Mark):
 @dataclass
 class Lines(Paths):
     """
-    TODO
+    A faster but less-flexible mark for drawing many lines.
     """
     _sort: ClassVar[bool] = True
