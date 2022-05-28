@@ -38,7 +38,9 @@ Marks
     Bar
     Dot
     Line
+    Lines
     Path
+    Paths
     Ribbon
     Scatter
 

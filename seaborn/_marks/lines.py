@@ -14,6 +14,7 @@ from seaborn._marks.base import (
     resolve_properties,
     resolve_color,
 )
+from seaborn.external.version import Version
 
 
 @dataclass
@@ -42,6 +43,10 @@ class Path(Mark):
             vals["fillcolor"] = resolve_color(self, keys, prefix="fill", scales=scales)
             vals["edgecolor"] = resolve_color(self, keys, prefix="edge", scales=scales)
 
+            # https://github.com/matplotlib/matplotlib/pull/16692
+            if Version(mpl.__version__) < Version("3.3.0"):
+                vals["marker"] = vals["marker"]._marker
+
             if self._sort:
                 data = data.sort_values(orient)
 
@@ -67,6 +72,10 @@ class Path(Mark):
         vals["color"] = resolve_color(self, keys, scales=scales)
         vals["fillcolor"] = resolve_color(self, keys, prefix="fill", scales=scales)
         vals["edgecolor"] = resolve_color(self, keys, prefix="edge", scales=scales)
+
+        # https://github.com/matplotlib/matplotlib/pull/16692
+        if Version(mpl.__version__) < Version("3.3.0"):
+            vals["marker"] = vals["marker"]._marker
 
         return mpl.lines.Line2D(
             [], [],
