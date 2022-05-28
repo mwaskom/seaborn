@@ -12,6 +12,7 @@ from seaborn._marks.base import (
     MappableString,
     MappableColor,
     resolve_properties,
+    resolve_color,
 )
 
 
@@ -20,8 +21,6 @@ class Path(Mark):
     """
     A mark connecting data points in the order they appear.
     """
-    # TODO other semantics (marker?)
-
     color: MappableColor = Mappable("C0")
     alpha: MappableFloat = Mappable(1)
     linewidth: MappableFloat = Mappable(rc="lines.linewidth")
@@ -36,46 +35,49 @@ class Path(Mark):
 
     def _plot(self, split_gen, scales, orient):
 
-        for keys, data, ax in split_gen(dropna=False):
+        for keys, data, ax in split_gen(keep_na=not self._sort):
 
-            keys = resolve_properties(self, keys, scales)
+            vals = resolve_properties(self, keys, scales)
+            vals["color"] = resolve_color(self, keys, scales=scales)
+            vals["fillcolor"] = resolve_color(self, keys, prefix="fill", scales=scales)
+            vals["edgecolor"] = resolve_color(self, keys, prefix="edge", scales=scales)
 
             if self._sort:
                 data = data.sort_values(orient)
-            else:
-                data.loc[data.isna().any(axis=1), ["x", "y"]] = np.nan
 
             line = mpl.lines.Line2D(
                 data["x"].to_numpy(),
                 data["y"].to_numpy(),
-                color=keys["color"],
-                alpha=keys["alpha"],
-                linewidth=keys["linewidth"],
-                linestyle=keys["linestyle"],
-                marker=keys["marker"],
-                markersize=keys["pointsize"],
-                markerfacecolor=keys["fillcolor"],
-                markeredgecolor=keys["edgecolor"],
-                markeredgewidth=keys["edgewidth"],
+                color=vals["color"],
+                linewidth=vals["linewidth"],
+                linestyle=vals["linestyle"],
+                marker=vals["marker"],
+                markersize=vals["pointsize"],
+                markerfacecolor=vals["fillcolor"],
+                markeredgecolor=vals["edgecolor"],
+                markeredgewidth=vals["edgewidth"],
                 **self.artist_kws,
             )
             ax.add_line(line)
 
     def _legend_artist(self, variables, value, scales):
 
-        key = resolve_properties(self, {v: value for v in variables}, scales)
+        keys = {v: value for v in variables}
+        vals = resolve_properties(self, keys, scales)
+        vals["color"] = resolve_color(self, keys, scales=scales)
+        vals["fillcolor"] = resolve_color(self, keys, prefix="fill", scales=scales)
+        vals["edgecolor"] = resolve_color(self, keys, prefix="edge", scales=scales)
 
         return mpl.lines.Line2D(
             [], [],
-            color=key["color"],
-            alpha=key["alpha"],
-            linewidth=key["linewidth"],
-            linestyle=key["linestyle"],
-            marker=key["marker"],
-            markersize=key["pointsize"],
-            markerfacecolor=key["fillcolor"],
-            markeredgecolor=key["edgecolor"],
-            markeredgewidth=key["edgewidth"],
+            color=vals["color"],
+            linewidth=vals["linewidth"],
+            linestyle=vals["linestyle"],
+            marker=vals["marker"],
+            markersize=vals["pointsize"],
+            markerfacecolor=vals["fillcolor"],
+            markeredgecolor=vals["edgecolor"],
+            markeredgewidth=vals["edgewidth"],
             **self.artist_kws,
         )
 
@@ -84,5 +86,78 @@ class Path(Mark):
 class Line(Path):
     """
     A mark connecting data points with sorting along the orientation axis.
+    """
+    _sort: ClassVar[bool] = True
+
+
+@dataclass
+class Paths(Mark):
+    """
+    TODO
+    """
+    color: MappableColor = Mappable("C0")
+    alpha: MappableFloat = Mappable(1)
+    linewidth: MappableFloat = Mappable(rc="lines.linewidth")
+    linestyle: MappableString = Mappable(rc="lines.linestyle")
+
+    _sort: ClassVar[bool] = False
+
+    def _plot(self, split_gen, scales, orient):
+
+        line_data = {}
+
+        for keys, data, ax in split_gen(keep_na=not self._sort):
+
+            if ax not in line_data:
+                line_data[ax] = {
+                    "segments": [],
+                    "colors": [],
+                    "linewidths": [],
+                    "linestyles": [],
+                }
+
+            vals = resolve_properties(self, keys, scales)
+            vals["color"] = resolve_color(self, keys, scales=scales)
+
+            if self._sort:
+                data = data.sort_values(orient)
+
+            # TODO comment about block consolidation
+            xy = np.column_stack([data["x"], data["y"]])
+            line_data[ax]["segments"].append(xy)
+            line_data[ax]["colors"].append(vals["color"])
+            line_data[ax]["linewidths"].append(vals["linewidth"])
+            line_data[ax]["linestyles"].append(vals["linestyle"])
+
+        for ax, ax_data in line_data.items():
+            lines = mpl.collections.LineCollection(
+                **ax_data,
+                **self.artist_kws,
+            )
+            ax.add_collection(lines, autolim=False)
+            # https://github.com/matplotlib/matplotlib/issues/23129
+            # TODO get paths from lines object?
+            xy = np.concatenate(ax_data["segments"])
+            ax.dataLim.update_from_data_xy(
+                xy, ax.ignore_existing_data_limits, updatex=True, updatey=True
+            )
+
+    def _legend_artist(self, variables, value, scales):
+
+        key = resolve_properties(self, {v: value for v in variables}, scales)
+
+        return mpl.lines.Line2D(
+            [], [],
+            color=key["color"],
+            linewidth=key["linewidth"],
+            linestyle=key["linestyle"],
+            **self.artist_kws,
+        )
+
+
+@dataclass
+class Lines(Paths):
+    """
+    TODO
     """
     _sort: ClassVar[bool] = True

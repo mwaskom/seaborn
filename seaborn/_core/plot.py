@@ -674,9 +674,14 @@ class Plotter:
         ] = []
         self._scales: dict[str, Scale] = {}
 
-    def save(self, fname, **kwargs) -> Plotter:
+    def save(self, loc, **kwargs) -> Plotter:  # TODO type args
         kwargs.setdefault("dpi", 96)
-        self._figure.savefig(os.path.expanduser(fname), **kwargs)
+        try:
+            loc = os.path.expanduser(loc)
+        except TypeError:
+            # loc may be a buffer in which case that would not work
+            pass
+        self._figure.savefig(loc, **kwargs)
         return self
 
     def show(self, **kwargs) -> None:
@@ -1270,15 +1275,18 @@ class Plotter:
                 order = categorical_order(df[var])
             grouping_keys.append(order)
 
-        def split_generator(dropna=True) -> Generator:
+        def split_generator(keep_na=False) -> Generator:
 
             for view in subplots:
 
                 axes_df = self._filter_subplot_data(df, view)
 
-                if dropna:
-                    with pd.option_context("mode.use_inf_as_null", True):
-                        axes_df = axes_df.dropna()
+                orig_index = axes_df.index
+                with pd.option_context("mode.use_inf_as_null", True):
+                    axes_df = axes_df.dropna()
+                if keep_na:
+                    # TODO reset index otherwise?
+                    axes_df = axes_df.reindex(orig_index)
 
                 subplot_keys = {}
                 for dim in ["col", "row"]:

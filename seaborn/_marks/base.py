@@ -261,7 +261,11 @@ def resolve_color(
 
     """
     color = mark._resolve(data, f"{prefix}color", scales)
-    alpha = mark._resolve(data, f"{prefix}alpha", scales)
+
+    if f"{prefix}alpha" in mark._mappable_props:
+        alpha = mark._resolve(data, f"{prefix}alpha", scales)
+    else:
+        alpha = mark._resolve(data, "alpha", scales)
 
     def visible(x, axis=None):
         """Detect "invisible" colors to set alpha appropriately."""
