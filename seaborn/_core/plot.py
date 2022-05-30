@@ -674,9 +674,14 @@ class Plotter:
         ] = []
         self._scales: dict[str, Scale] = {}
 
-    def save(self, fname, **kwargs) -> Plotter:
+    def save(self, loc, **kwargs) -> Plotter:  # TODO type args
         kwargs.setdefault("dpi", 96)
-        self._figure.savefig(os.path.expanduser(fname), **kwargs)
+        try:
+            loc = os.path.expanduser(loc)
+        except TypeError:
+            # loc may be a buffer in which case that would not work
+            pass
+        self._figure.savefig(loc, **kwargs)
         return self
 
     def show(self, **kwargs) -> None:
@@ -1270,14 +1275,25 @@ class Plotter:
                 order = categorical_order(df[var])
             grouping_keys.append(order)
 
-        def split_generator(dropna=True) -> Generator:
+        def split_generator(keep_na=False) -> Generator:
 
             for view in subplots:
 
                 axes_df = self._filter_subplot_data(df, view)
 
-                if dropna:
-                    with pd.option_context("mode.use_inf_as_null", True):
+                with pd.option_context("mode.use_inf_as_null", True):
+                    if keep_na:
+                        # The simpler thing to do would be x.dropna().reindex(x.index).
+                        # But that doesn't work with the way that the subset iteration
+                        # is written below, which assumes data for grouping vars.
+                        # Matplotlib (usually?) masks nan data, so this should "work".
+                        # Downstream code can also drop these rows, at some speed cost.
+                        present = axes_df.notna().all(axis=1)
+                        axes_df = axes_df.assign(
+                            x=axes_df["x"].where(present),
+                            y=axes_df["y"].where(present),
+                        )
+                    else:
                         axes_df = axes_df.dropna()
 
                 subplot_keys = {}

@@ -57,36 +57,6 @@ class TestBar:
         for i, bar in enumerate(bars):
             self.check_bar(bar, 0, y[i] - w / 2, x[i], w)
 
-    @pytest.mark.xfail(reason="new dodge api")
-    def test_categorical_dodge_vertical(self):
-
-        x = ["a", "a", "b", "b"]
-        y = [1, 2, 3, 4]
-        group = ["x", "y", "x", "y"]
-        w = .8
-        bars = self.plot_bars(
-            {"x": x, "y": y, "group": group}, {"multiple": "dodge"}, {}
-        )
-        for i, bar in enumerate(bars[:2]):
-            self.check_bar(bar, i - w / 2, 0, w / 2, y[i * 2])
-        for i, bar in enumerate(bars[2:]):
-            self.check_bar(bar, i, 0, w / 2, y[i * 2 + 1])
-
-    @pytest.mark.xfail(reason="new dodge api")
-    def test_categorical_dodge_horizontal(self):
-
-        x = [1, 2, 3, 4]
-        y = ["a", "a", "b", "b"]
-        group = ["x", "y", "x", "y"]
-        w = .8
-        bars = self.plot_bars(
-            {"x": x, "y": y, "group": group}, {"multiple": "dodge"}, {}
-        )
-        for i, bar in enumerate(bars[:2]):
-            self.check_bar(bar, 0, i - w / 2, x[i * 2], w / 2)
-        for i, bar in enumerate(bars[2:]):
-            self.check_bar(bar, 0, i, x[i * 2 + 1], w / 2)
-
     def test_direct_properties(self):
 
         x = ["a", "b", "c"]
