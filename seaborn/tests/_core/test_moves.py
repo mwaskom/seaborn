@@ -6,7 +6,7 @@ import pandas as pd
 from pandas.testing import assert_series_equal
 from numpy.testing import assert_array_equal, assert_array_almost_equal
 
-from seaborn._core.moves import Dodge, Jitter, Shift, Stack
+from seaborn._core.moves import Dodge, Jitter, Shift, Stack, Norm
 from seaborn._core.rules import categorical_order
 from seaborn._core.groupby import GroupBy
 
@@ -318,3 +318,35 @@ class TestShift(MoveFixtures):
         res = Shift(x=x, y=y)(toy_df, gb, "x")
         assert_array_equal(res["x"], toy_df["x"] + x)
         assert_array_equal(res["y"], toy_df["y"] + y)
+
+
+class TestNorm(MoveFixtures):
+
+    @pytest.mark.parametrize("orient", ["x", "y"])
+    def test_default_no_groups(self, df, orient):
+
+        other = {"x": "y", "y": "x"}[orient]
+        gb = GroupBy(["null"])
+        res = Norm()(df, gb, orient)
+        assert res[other].max() == pytest.approx(1)
+
+    @pytest.mark.parametrize("orient", ["x", "y"])
+    def test_default_groups(self, df, orient):
+
+        other = {"x": "y", "y": "x"}[orient]
+        gb = GroupBy(["grp2"])
+        res = Norm()(df, gb, orient)
+        for _, grp in res.groupby("grp2"):
+            assert grp[other].max() == pytest.approx(1)
+
+    def test_sum(self, df):
+
+        gb = GroupBy(["null"])
+        res = Norm("sum")(df, gb, "x")
+        assert res["y"].sum() == pytest.approx(1)
+
+    def test_where(self, df):
+
+        gb = GroupBy(["null"])
+        res = Norm(where="x == 2")(df, gb, "x")
+        assert res.loc[res["x"] == 2, "y"].max() == pytest.approx(1)
