@@ -350,3 +350,9 @@ class TestNorm(MoveFixtures):
         gb = GroupBy(["null"])
         res = Norm(where="x == 2")(df, gb, "x")
         assert res.loc[res["x"] == 2, "y"].max() == pytest.approx(1)
+
+    def test_percent(self, df):
+
+        gb = GroupBy(["null"])
+        res = Norm(percent=True)(df, gb, "x")
+        assert res["y"].max() == pytest.approx(100)

@@ -171,6 +171,7 @@ class Norm(Move):
     func: Union[Callable, str] = "max"
     where: Optional[str] = None
     by: Optional[list[str]] = None
+    percent: bool = False
 
     group_by_orient: ClassVar[bool] = False
 
@@ -181,6 +182,10 @@ class Norm(Move):
         else:
             denom_data = df.query(self.where)[var]
         df[var] = df[var] / denom_data.agg(self.func)
+
+        if self.percent:
+            df[var] = df[var] * 100
+
         return df
 
     def __call__(self, data: DataFrame, groupby: GroupBy, orient: str) -> DataFrame:
