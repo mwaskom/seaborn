@@ -279,7 +279,6 @@ class _CategoricalPlotterNew(_RelationalPlotter):
                 points.set_edgecolors(edgecolor)
 
         # Finalize the axes details
-        self._add_axis_labels(ax)
         if self.legend and not self._redundant_hue and self.input_format != "wide":
             self.add_legend_data(ax)
             handles, _ = ax.get_legend_handles_labels()
@@ -368,7 +367,6 @@ class _CategoricalPlotterNew(_RelationalPlotter):
         _draw_figure(ax.figure)
 
         # Finalize the axes details
-        self._add_axis_labels(ax)
         if self.legend and not self._redundant_hue and self.input_format != "wide":
             self.add_legend_data(ax)
             handles, _ = ax.get_legend_handles_labels()
