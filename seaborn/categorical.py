@@ -18,17 +18,17 @@ from matplotlib.collections import PatchCollection
 import matplotlib.patches as Patches
 import matplotlib.pyplot as plt
 
-from ._oldcore import (
-    VectorPlotter,
+from seaborn._oldcore import (
     variable_type,
     infer_orient,
     categorical_order,
 )
-from . import utils
-from .utils import remove_na, _normal_quantile_func, _draw_figure, _default_color
-from .algorithms import bootstrap
-from .palettes import color_palette, husl_palette, light_palette, dark_palette
-from .axisgrid import FacetGrid, _facet_docs
+from seaborn.relational import _RelationalPlotter
+from seaborn import utils
+from seaborn.utils import remove_na, _normal_quantile_func, _draw_figure, _default_color
+from seaborn.algorithms import bootstrap
+from seaborn.palettes import color_palette, husl_palette, light_palette, dark_palette
+from seaborn.axisgrid import FacetGrid, _facet_docs
 
 
 __all__ = [
@@ -39,12 +39,15 @@ __all__ = [
 ]
 
 
-class _CategoricalPlotterNew(VectorPlotter):
+class _CategoricalPlotterNew(_RelationalPlotter):
 
     semantics = "x", "y", "hue", "units"
 
     wide_structure = {"x": "@columns", "y": "@values", "hue": "@columns"}
     flat_structure = {"x": "@index", "y": "@values"}
+
+    _legend_func = "scatter"
+    _legend_attributes = ["color"]
 
     def __init__(
         self,
@@ -53,6 +56,7 @@ class _CategoricalPlotterNew(VectorPlotter):
         order=None,
         orient=None,
         require_numeric=False,
+        legend="auto",
     ):
 
         super().__init__(data=data, variables=variables)
@@ -100,6 +104,8 @@ class _CategoricalPlotterNew(VectorPlotter):
         # Categorical variables have discrete levels that we need to track
         cat_levels = categorical_order(self.plot_data[self.cat_axis], order)
         self.var_levels[self.cat_axis] = cat_levels
+
+        self.legend = legend
 
     def _hue_backcompat(self, color, palette, hue_order, force_hue=False):
         """Implement backwards compatibility for hue parametrization.
@@ -272,13 +278,13 @@ class _CategoricalPlotterNew(VectorPlotter):
             else:
                 points.set_edgecolors(edgecolor)
 
-        # TODO XXX fully implement legend
-        show_legend = not self._redundant_hue and self.input_format != "wide"
-        if "hue" in self.variables and show_legend:
-            for level in self._hue_map.levels:
-                color = self._hue_map(level)
-                ax.scatter([], [], s=60, color=mpl.colors.rgb2hex(color), label=level)
-            ax.legend(loc="best", title=self.variables["hue"])
+        # Finalize the axes details
+        self._add_axis_labels(ax)
+        if self.legend and not self._redundant_hue and self.input_format != "wide":
+            self.add_legend_data(ax)
+            handles, _ = ax.get_legend_handles_labels()
+            if handles:
+                ax.legend(title=self.legend_title)
 
     def plot_swarms(
         self,
@@ -361,13 +367,13 @@ class _CategoricalPlotterNew(VectorPlotter):
 
         _draw_figure(ax.figure)
 
-        # TODO XXX fully implement legend
-        show_legend = not self._redundant_hue and self.input_format != "wide"
-        if "hue" in self.variables and show_legend:  # TODO and legend:
-            for level in self._hue_map.levels:
-                color = self._hue_map(level)
-                ax.scatter([], [], s=60, color=mpl.colors.rgb2hex(color), label=level)
-            ax.legend(loc="best", title=self.variables["hue"])
+        # Finalize the axes details
+        self._add_axis_labels(ax)
+        if self.legend and not self._redundant_hue and self.input_format != "wide":
+            self.add_legend_data(ax)
+            handles, _ = ax.get_legend_handles_labels()
+            if handles:
+                ax.legend(title=self.legend_title)
 
 
 class _CategoricalFacetPlotter(_CategoricalPlotterNew):
@@ -2747,11 +2753,9 @@ def stripplot(
     data=None, *, x=None, y=None, hue=None, order=None, hue_order=None,
     jitter=True, dodge=False, orient=None, color=None, palette=None,
     size=5, edgecolor="gray", linewidth=0, ax=None,
-    hue_norm=None, native_scale=False, formatter=None,
+    hue_norm=None, native_scale=False, formatter=None, legend="auto",
     **kwargs
 ):
-
-    # TODO XXX we need to add a legend= param!!!
 
     p = _CategoricalPlotterNew(
         data=data,
@@ -2759,6 +2763,7 @@ def stripplot(
         order=order,
         orient=orient,
         require_numeric=False,
+        legend=legend,
     )
 
     if ax is None:
@@ -2869,7 +2874,7 @@ def swarmplot(
     data=None, *, x=None, y=None, hue=None, order=None, hue_order=None,
     dodge=False, orient=None, color=None, palette=None,
     size=5, edgecolor="gray", linewidth=0, ax=None,
-    hue_norm=None, native_scale=False, formatter=None, warn_thresh=.05,
+    hue_norm=None, native_scale=False, formatter=None, legend="auto", warn_thresh=.05,
     **kwargs
 ):
 
@@ -2879,6 +2884,7 @@ def swarmplot(
         order=order,
         orient=orient,
         require_numeric=False,
+        legend=legend,
     )
 
     if ax is None:
@@ -3548,7 +3554,7 @@ def catplot(
     units=None, seed=None, order=None, hue_order=None, row_order=None,
     col_order=None, kind="strip", height=5, aspect=1,
     orient=None, color=None, palette=None,
-    legend=True, legend_out=True, sharex=True, sharey=True,
+    legend="auto", legend_out=True, sharex=True, sharey=True,
     margin_titles=False, facet_kws=None,
     hue_norm=None, native_scale=False, formatter=None,
     **kwargs
@@ -3587,6 +3593,7 @@ def catplot(
             order=order,
             orient=orient,
             require_numeric=False,
+            legend=legend,
         )
 
         # XXX Copying a fair amount from displot, which is not ideal
