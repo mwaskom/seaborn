@@ -39,6 +39,8 @@ __all__ = [
 ]
 
 
+# Subclassing _RelationalPlotter for the legend machinery,
+# but probably should move that more centrally
 class _CategoricalPlotterNew(_RelationalPlotter):
 
     semantics = "x", "y", "hue", "units"
@@ -3582,7 +3584,6 @@ def catplot(
     refactored_kinds = [
         "strip", "swarm",
     ]
-
     if kind in refactored_kinds:
 
         p = _CategoricalFacetPlotter(
@@ -3620,12 +3621,17 @@ def catplot(
             **facet_kws,
         )
 
+        # Capture this here because scale_categorical is going to insert a (null)
+        # x variable even if it is empty. It's not clear whether that needs to
+        # happen or if disabling that is the cleaner solution.
+        has_xy_data = p.has_xy_data
+
         if not native_scale or p.var_types[p.cat_axis] == "categorical":
             p.scale_categorical(p.cat_axis, order=order, formatter=formatter)
 
         p._attach(g)
 
-        if not p.has_xy_data:
+        if not has_xy_data:
             return g
 
         palette, hue_order = p._hue_backcompat(color, palette, hue_order)
