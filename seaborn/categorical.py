@@ -79,6 +79,8 @@ class _CategoricalPlotterNew(_RelationalPlotter):
             require_numeric=require_numeric,
         )
 
+        self.legend = legend
+
         # Short-circuit in the case of an empty plot
         if not self.has_xy_data:
             return
@@ -104,8 +106,6 @@ class _CategoricalPlotterNew(_RelationalPlotter):
         # Categorical variables have discrete levels that we need to track
         cat_levels = categorical_order(self.plot_data[self.cat_axis], order)
         self.var_levels[self.cat_axis] = cat_levels
-
-        self.legend = legend
 
     def _hue_backcompat(self, color, palette, hue_order, force_hue=False):
         """Implement backwards compatibility for hue parametrization.
