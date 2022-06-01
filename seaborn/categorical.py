@@ -180,6 +180,12 @@ class _CategoricalPlotterNew(_RelationalPlotter):
         if self.var_types[axis] != "categorical":
             return
 
+        # If both x/y data are empty, the correct way to set up the plot is
+        # somewhat undefined; because we don't add null category data to the plot in
+        # this case we don't *have* a categorical axis (yet), so best to just bail.
+        if self.plot_data[axis].empty:
+            return
+
         # We can infer the total number of categories (including those from previous
         # plots that are not part of the plot we are currently making) from the number
         # of ticks, which matplotlib sets up while doing unit conversion. This feels
