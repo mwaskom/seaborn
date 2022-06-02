@@ -1117,11 +1117,12 @@ class Plotter:
             if move is not None:
                 moves = move if isinstance(move, list) else [move]
                 for move_step in moves:
-                    move_groupers = [
-                        orient,
-                        *(getattr(move_step, "by", None) or grouping_properties),
-                        *default_grouping_vars,
-                    ]
+                    move_by = getattr(move_step, "by", None)
+                    if move_by is None:
+                        move_by = grouping_properties
+                    move_groupers = [*move_by, *default_grouping_vars]
+                    if move_step.group_by_orient:
+                        move_groupers.insert(0, orient)
                     order = {var: get_order(var) for var in move_groupers}
                     groupby = GroupBy(order)
                     df = move_step(df, groupby, orient)
