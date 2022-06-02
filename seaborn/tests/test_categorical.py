@@ -1723,22 +1723,14 @@ class SharedScatterTests(SharedAxesLevelTests):
         ax = self.func(data=flat_series, orient=orient)
         _draw_figure(ax.figure)
 
-        cat_idx = 0 if orient == "v" else 1
+        cat_idx = ["v", "h"].index(orient)
         val_idx = int(not cat_idx)
 
-        axis_objs = ax.xaxis, ax.yaxis
-        cat_axis = axis_objs[cat_idx]
+        points = ax.collections[0]
+        pos = points.get_offsets().T
 
-        for i, label in enumerate(cat_axis.get_majorticklabels()):
-
-            points = ax.collections[i]
-            point_pos = points.get_offsets().T
-            val_pos = point_pos[val_idx]
-            cat_pos = point_pos[cat_idx]
-
-            key = int(label.get_text())  # because fixture has integer index
-            assert_array_equal(val_pos, flat_series[key])
-            assert_array_equal(cat_pos, i)
+        assert_array_equal(pos[cat_idx].round(), np.zeros(len(flat_series)))
+        assert_array_equal(pos[val_idx], flat_series)
 
     @pytest.mark.parametrize(
         "variables,orient",

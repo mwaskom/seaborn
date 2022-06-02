@@ -46,7 +46,9 @@ class _CategoricalPlotterNew(_RelationalPlotter):
     semantics = "x", "y", "hue", "units"
 
     wide_structure = {"x": "@columns", "y": "@values", "hue": "@columns"}
-    flat_structure = {"x": "@index", "y": "@values"}
+
+    # flat_structure = {"x": "@values", "y": "@values"}
+    flat_structure = {"y": "@values"}
 
     _legend_func = "scatter"
     _legend_attributes = ["color"]
@@ -69,6 +71,23 @@ class _CategoricalPlotterNew(_RelationalPlotter):
         # round of refactoring that moves the logic deeper, but this will keep things
         # relatively sensible for now.
 
+        # For wide data, orient determines assignment to x/y differently from the
+        # wide_structure rules in _core. If we do decide to make orient part of the
+        # _core variable assignment, we'll want to figure out how to express that.
+        if self.input_format == "wide" and orient == "h":
+            self.plot_data = self.plot_data.rename(columns={"x": "y", "y": "x"})
+            orig_variables = set(self.variables)
+            orig_x = self.variables.pop("x", None)
+            orig_y = self.variables.pop("y", None)
+            orig_x_type = self.var_types.pop("x", None)
+            orig_y_type = self.var_types.pop("y", None)
+            if "x" in orig_variables:
+                self.variables["y"] = orig_x
+                self.var_types["y"] = orig_x_type
+            if "y" in orig_variables:
+                self.variables["x"] = orig_y
+                self.var_types["x"] = orig_y_type
+
         # The concept of an "orientation" is important to the original categorical
         # plots, but there's no provision for it in _core, so we need to do it here.
         # Note that it could be useful for the other functions in at least two ways
@@ -86,16 +105,6 @@ class _CategoricalPlotterNew(_RelationalPlotter):
         # Short-circuit in the case of an empty plot
         if not self.has_xy_data:
             return
-
-        # For wide data, orient determines assignment to x/y differently from the
-        # wide_structure rules in _core. If we do decide to make orient part of the
-        # _core variable assignment, we'll want to figure out how to express that.
-        if self.input_format == "wide" and self.orient == "h":
-            self.plot_data = self.plot_data.rename(columns={"x": "y", "y": "x"})
-            orig_x, orig_y = self.variables["x"], self.variables["y"]
-            self.variables.update({"x": orig_y, "y": orig_x})
-            orig_x_type, orig_y_type = self.var_types["x"], self.var_types["y"]
-            self.var_types.update({"x": orig_y_type, "y": orig_x_type})
 
         # Categorical plots can be "univariate" in which case they get an anonymous
         # category label on the opposite axis. Note: this duplicates code in the core
