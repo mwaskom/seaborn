@@ -524,7 +524,7 @@ class _ScatterPlotter(_RelationalPlotter):
         legend=None
     ):
 
-        # TODO this is messy, we want the mapping to be agnoistic about
+        # TODO this is messy, we want the mapping to be agnostic about
         # the kind of plot to draw, but for the time being we need to set
         # this information so the SizeMapping can use it
         self._default_size_range = (

@@ -2028,6 +2028,24 @@ class SharedScatterTests(SharedAxesLevelTests):
         for point_color in ax.collections[0].get_facecolor():
             assert tuple(point_color) == to_rgba("C0")
 
+    def test_legend_categorical(self, long_df):
+
+        ax = self.func(data=long_df, x="y", y="a", hue="b")
+        legend_texts = [t.get_text() for t in ax.legend_.texts]
+        expected = categorical_order(long_df["b"])
+        assert legend_texts == expected
+
+    def test_legend_numeric(self, long_df):
+
+        ax = self.func(data=long_df, x="y", y="a", hue="z")
+        vals = [float(t.get_text()) for t in ax.legend_.texts]
+        assert (vals[1] - vals[0]) == pytest.approx(vals[2] - vals[1])
+
+    def test_legend_disabled(self, long_df):
+
+        ax = self.func(data=long_df, x="y", y="a", hue="b", legend=False)
+        assert ax.legend_ is None
+
     def test_palette_from_color_deprecation(self, long_df):
 
         color = (.9, .4, .5)
@@ -2085,9 +2103,8 @@ class SharedScatterTests(SharedAxesLevelTests):
             dict(data="wide", orient="h"),
             dict(data="long", x="x", color="C3"),
             dict(data="long", y="y", hue="a", jitter=False),
-            # TODO XXX full numeric hue legend crashes pinned mpl, disabling for now
-            # dict(data="long", x="a", y="y", hue="z", edgecolor="w", linewidth=.5),
-            # dict(data="long", x="a_cat", y="y", hue="z"),
+            dict(data="long", x="a", y="y", hue="z", edgecolor="w", linewidth=.5),
+            dict(data="long", x="a_cat", y="y", hue="z"),
             dict(data="long", x="y", y="s", hue="c", orient="h", dodge=True),
             dict(data="long", x="s", y="y", hue="c", native_scale=True),
         ]
