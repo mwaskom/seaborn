@@ -15,21 +15,21 @@ from numpy.testing import (
     assert_array_less,
 )
 
-from .. import categorical as cat
-from .. import palettes
+from seaborn import categorical as cat
+from seaborn import palettes
 
-from ..external.version import Version
-from .._oldcore import categorical_order
-from ..categorical import (
+from seaborn.external.version import Version
+from seaborn._oldcore import categorical_order
+from seaborn.categorical import (
     _CategoricalPlotterNew,
     Beeswarm,
     catplot,
     stripplot,
     swarmplot,
 )
-from ..palettes import color_palette
-from ..utils import _normal_quantile_func, _draw_figure
-from .._testing import assert_plots_equal
+from seaborn.palettes import color_palette
+from seaborn.utils import _normal_quantile_func, _draw_figure
+from seaborn._testing import assert_plots_equal
 
 
 PLOT_FUNCS = [

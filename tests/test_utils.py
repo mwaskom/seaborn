@@ -18,9 +18,9 @@ from pandas.testing import (
     assert_frame_equal,
 )
 
-from .. import utils, rcmod
-from ..external.version import Version
-from ..utils import (
+from seaborn import utils, rcmod
+from seaborn.external.version import Version
+from seaborn.utils import (
     get_dataset_names,
     get_color_cycle,
     remove_na,

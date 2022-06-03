@@ -8,8 +8,8 @@ import pytest
 from numpy.testing import assert_array_equal
 from pandas.testing import assert_frame_equal
 
-from ..axisgrid import FacetGrid
-from .._oldcore import (
+from seaborn.axisgrid import FacetGrid
+from seaborn._oldcore import (
     SemanticMapping,
     HueMapping,
     SizeMapping,
@@ -22,7 +22,7 @@ from .._oldcore import (
     categorical_order,
 )
 
-from ..palettes import color_palette
+from seaborn.palettes import color_palette
 
 
 try:

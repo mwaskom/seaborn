@@ -4,8 +4,8 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy.testing as npt
 
-from .. import rcmod, palettes, utils
-from ..conftest import has_verdana
+from seaborn import rcmod, palettes, utils
+from seaborn.conftest import has_verdana
 
 
 class RCParamTester:

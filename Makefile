@@ -1,10 +1,10 @@
 export SHELL := /bin/bash
 
 test:
-	pytest -n auto --doctest-modules --cov=seaborn --cov-config=.coveragerc seaborn
+	pytest -n auto --doctest-modules --cov=seaborn --cov-config=.coveragerc .
 
 unittests:
-	pytest -n auto --cov=seaborn --cov-config=.coveragerc seaborn
+	pytest -n auto --cov=seaborn --cov-config=.coveragerc .
 
 lint:
 	flake8 seaborn

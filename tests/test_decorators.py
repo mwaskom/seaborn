@@ -1,5 +1,5 @@
 import inspect
-from .._decorators import share_init_params_with_map
+from seaborn._decorators import share_init_params_with_map
 
 
 def test_share_init_params_with_map():

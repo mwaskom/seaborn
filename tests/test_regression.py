@@ -16,9 +16,9 @@ try:
 except ImportError:
     _no_statsmodels = True
 
-from .. import regression as lm
-from ..external.version import Version
-from ..palettes import color_palette
+from seaborn import regression as lm
+from seaborn.external.version import Version
+from seaborn.palettes import color_palette
 
 rs = np.random.RandomState(0)
 
