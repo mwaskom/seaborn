@@ -1718,3 +1718,9 @@ class TestLegend:
         s = pd.Series(["r", "g", "b", "g"])
         p = Plot(**xy).add(MockMark(), color=s).scale(color=None).plot()
         assert not p._legend_contents
+
+    def test_suppression_in_add_method(self, xy):
+
+        s = pd.Series(["a", "b", "a", "c"], name="s")
+        p = Plot(**xy).add(MockMark(), color=s, legend=False).plot()
+        assert not p._legend_contents

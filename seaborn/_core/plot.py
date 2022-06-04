@@ -55,6 +55,7 @@ class Layer(TypedDict, total=False):
     source: DataSource
     vars: dict[str, VariableSpec]
     orient: str
+    legend: bool
 
 
 class FacetSpec(TypedDict, total=False):
@@ -297,9 +298,10 @@ class Plot:
         self,
         mark: Mark,
         stat: Stat | None = None,
-        move: Move | None = None,  # TODO or list[Move]
+        move: Move | list[Move] | None = None,
         *,
         orient: str | None = None,
+        legend: bool = True,
         data: DataSource = None,
         **variables: VariableSpec,
     ) -> Plot:
@@ -318,6 +320,8 @@ class Plot:
             A transformation applied to the data before plotting.
         move : :class:`seaborn.objects.Move`
             Additional transformation(s) to handle over-plotting.
+        legend : bool
+            Option to suppress the mark/mappings for this layer from the legend.
         orient : "x", "y", "v", or "h"
             The orientation of the mark, which affects how the stat is computed.
             Typically corresponds to the axis that defines groups for aggregation.
@@ -356,6 +360,7 @@ class Plot:
             "move": move,
             "vars": variables,
             "source": data,
+            "legend": legend,
             "orient": {"v": "x", "h": "y"}.get(orient, orient),  # type: ignore
         })
 
@@ -1140,7 +1145,8 @@ class Plotter:
         for view in self._subplots:
             view["ax"].autoscale_view()
 
-        self._update_legend_contents(mark, data, scales)
+        if layer["legend"]:
+            self._update_legend_contents(mark, data, scales)
 
     def _scale_coords(self, subplots: list[dict], df: DataFrame) -> DataFrame:
         # TODO stricter type on subplots
