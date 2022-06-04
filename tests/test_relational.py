@@ -7,10 +7,10 @@ from matplotlib.colors import same_color, to_rgba
 import pytest
 from numpy.testing import assert_array_equal
 
-from ..external.version import Version
-from ..palettes import color_palette
+from seaborn.external.version import Version
+from seaborn.palettes import color_palette
 
-from ..relational import (
+from seaborn.relational import (
     _RelationalPlotter,
     _LinePlotter,
     _ScatterPlotter,
@@ -19,8 +19,8 @@ from ..relational import (
     scatterplot
 )
 
-from ..utils import _draw_figure
-from .._testing import assert_plots_equal
+from seaborn.utils import _draw_figure
+from seaborn._testing import assert_plots_equal
 
 
 @pytest.fixture(params=[

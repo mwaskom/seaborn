@@ -4,8 +4,8 @@ import numpy.random as npr
 import pytest
 from numpy.testing import assert_array_equal
 
-from .. import algorithms as algo
-from ..external.version import Version
+from seaborn import algorithms as algo
+from seaborn.external.version import Version
 
 
 @pytest.fixture

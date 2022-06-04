@@ -9,7 +9,7 @@ except ImportError:
 import pytest
 from numpy.testing import assert_array_equal, assert_array_almost_equal
 
-from .._statistics import (
+from seaborn._statistics import (
     KDE,
     Histogram,
     ECDF,

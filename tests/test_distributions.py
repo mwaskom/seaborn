@@ -8,20 +8,20 @@ from matplotlib.colors import to_rgb, to_rgba
 import pytest
 from numpy.testing import assert_array_equal, assert_array_almost_equal
 
-from .. import distributions as dist
-from ..palettes import (
+from seaborn import distributions as dist
+from seaborn.palettes import (
     color_palette,
     light_palette,
 )
-from .._oldcore import (
+from seaborn._oldcore import (
     categorical_order,
 )
-from .._statistics import (
+from seaborn._statistics import (
     KDE,
     Histogram,
     _no_scipy,
 )
-from ..distributions import (
+from seaborn.distributions import (
     _DistributionPlotter,
     displot,
     distplot,
@@ -30,9 +30,9 @@ from ..distributions import (
     kdeplot,
     rugplot,
 )
-from ..external.version import Version
-from ..axisgrid import FacetGrid
-from .._testing import (
+from seaborn.external.version import Version
+from seaborn.axisgrid import FacetGrid
+from seaborn._testing import (
     assert_plots_equal,
     assert_legends_equal,
     assert_colors_equal,

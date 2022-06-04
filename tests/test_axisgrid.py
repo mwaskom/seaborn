@@ -11,14 +11,14 @@ try:
 except ImportError:
     import pandas.util.testing as tm
 
-from .._oldcore import categorical_order
-from .. import rcmod
-from ..palettes import color_palette
-from ..relational import scatterplot
-from ..distributions import histplot, kdeplot, distplot
-from ..categorical import pointplot
-from .. import axisgrid as ag
-from .._testing import (
+from seaborn._oldcore import categorical_order
+from seaborn import rcmod
+from seaborn.palettes import color_palette
+from seaborn.relational import scatterplot
+from seaborn.distributions import histplot, kdeplot, distplot
+from seaborn.categorical import pointplot
+from seaborn import axisgrid as ag
+from seaborn._testing import (
     assert_plots_equal,
     assert_colors_equal,
 )

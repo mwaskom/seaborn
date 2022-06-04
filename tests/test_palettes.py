@@ -5,9 +5,9 @@ import matplotlib as mpl
 import pytest
 import numpy.testing as npt
 
-from .. import palettes, utils, rcmod
-from ..external import husl
-from ..colors import xkcd_rgb, crayons
+from seaborn import palettes, utils, rcmod
+from seaborn.external import husl
+from seaborn.colors import xkcd_rgb, crayons
 
 
 class TestColorPalettes:

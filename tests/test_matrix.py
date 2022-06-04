@@ -27,9 +27,9 @@ except ImportError:
     import pandas.util.testing as pdt
 import pytest
 
-from .. import matrix as mat
-from .. import color_palette
-from .._testing import assert_colors_equal
+from seaborn import matrix as mat
+from seaborn import color_palette
+from seaborn._testing import assert_colors_equal
 
 
 class TestHeatmap:

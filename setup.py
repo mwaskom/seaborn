@@ -51,7 +51,6 @@ PACKAGES = [
     'seaborn._stats',
     'seaborn.colors',
     'seaborn.external',
-    'seaborn.tests',
     'seaborn._core',
     'seaborn._marks',
     'seaborn._stats',
