@@ -122,7 +122,7 @@ if __name__ == "__main__":
     ep = ExecutePreprocessor(
         timeout=600,
         kernel_name=kernel,
-        extra_arguments=["--InlineBackend.rc={'figure.dpi': 88}"]
+        extra_arguments=["--rc figure.dpi=88"]
     )
     ep.preprocess(nb, {"metadata": {"path": basedir}})
 

@@ -5,10 +5,6 @@
 Installing and getting started
 ------------------------------
 
-.. raw:: html
-
-   <div class="col-md-9">
-
 Official releases of seaborn can be installed from `PyPI <https://pypi.org/project/seaborn/>`_:
 
     pip install seaborn

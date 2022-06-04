@@ -112,6 +112,13 @@ html_theme_options = {
             "href": "_static/favicon.ico",
         },
     ],
+    "show_prev_next": False,
+
+}
+
+html_sidebars = {
+    "index": [],
+    "examples/index": [],  # TODO maybe also individual example pages?
 }
 
 # -- Intersphinx ------------------------------------------------

@@ -36,10 +36,6 @@ RST_TEMPLATE = """
 
 **seaborn components used:** {components}
 
-.. raw:: html
-
-    <div class="col-md-9">
-
 .. literalinclude:: {fname}
     :lines: {end_line}-
 
