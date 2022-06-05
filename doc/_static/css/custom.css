@@ -1,0 +1,119 @@
+/**** Overriding theme defaults ****/
+
+:root {
+  --pst-color-inline-code: 74, 105, 145;
+  --pst-color-link: 52, 54, 99;
+}
+
+/* Syntax highlighting */
+
+/* string literals */
+.highlight .s2 {  
+  color: rgb(107, 161, 174);
+  font-weight: normal;
+}
+/* number literals */
+.highlight .mi {  
+  color: rgb(130, 114, 160);
+  font-weight: normal;
+}
+/* operators */
+.highlight .o { 
+  color: rgb(180, 124, 80);
+  font-weight: bold;
+}
+/* builtins */
+.highlight .kc {
+  color: rgb(74, 105, 145);
+  font-weight: normal;
+}
+
+/**** DataFrame display, from pandas ****/
+/* (Possibly non-functional with this pydata theme - not sure why */
+
+.dataframe table {
+  /*Uncomment to center tables horizontally*/
+  /* margin-left: auto; */
+  /* margin-right: auto; */
+  border: none;
+  border-collapse: collapse;
+  border-spacing: 0;
+  font-size: 12px;
+  table-layout: fixed;
+}
+
+.dataframe thead {
+  border-bottom: 1px solid;
+  vertical-align: bottom;
+}
+
+.dataframe tr, th, td {
+  text-align: left;
+  vertical-align: middle;
+  padding: 0.5em 0.5em;
+  line-height: normal;
+  white-space: normal;
+  max-width: none;
+  border: none;
+}
+
+.dataframe th {
+  font-weight: bold;
+}
+
+table {
+  margin-bottom: 20px;
+}
+
+tbody tr:nth-child(odd) {
+  background: #f5f5f5;
+}
+
+tbody tr:hover {
+  background: rgba(66, 165, 245, 0.2);
+}
+
+/* --- Badges for categorizing release notes --- */
+
+.label,
+.badge {
+  display: inline-block;
+  padding: 2px 4px;
+  font-size: 11.844px;
+  /* font-weight: bold; */
+  line-height: 13px;
+  color: #ffffff;
+  vertical-align: baseline;
+  white-space: nowrap;
+  /* text-shadow: 0 -1px 0 rgba(0, 0, 0, 0.25); */
+  background-color: #999999;
+}
+.badge {
+  padding-left: 9px;
+  padding-right: 9px;
+  -webkit-border-radius: 9px;
+  -moz-border-radius: 9px;
+  border-radius: 9px;
+  opacity: 70%;
+}
+.badge-api {
+  background-color: #c44e52;
+}
+.badge-defaults {
+  background-color: #dd8452;
+}
+.badge-docs {
+  background-color: #8172b3;
+}
+.badge-feature {
+  background-color: #55a868;
+}
+.badge-enhancement {
+  background-color: #4c72b0;
+}
+.badge-fix {
+    background-color: #ccb974;
+}
+.badge-dependencies {
+    background-color: #937860;
+}

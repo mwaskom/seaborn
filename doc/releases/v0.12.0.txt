@@ -76,7 +76,7 @@ Other updates
 
 - |Fix| Fixed a bug in :func:`histplot` and :func:`kdeplot` where weights were not factored into the normalization (:pr:`2812`).
 
-- |Fix| Fixed two edgecases in :func:`histplot` when only `binwidth` was provided (:pr:`2813').
+- |Fix| Fixed two edgecases in :func:`histplot` when only `binwidth` was provided (:pr:`2813`).
 
 - |Fix| Fixed a bug in :func:`violinplot` where inner boxes/points could be missing with unpaired split violins (:pr:`2814`).
 
