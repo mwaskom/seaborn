@@ -5,6 +5,11 @@
   --pst-color-link: 52, 54, 99;
 }
 
+/* highlight over function signature after link */
+dt:target, span.highlighted {
+  background-color: #fdebba;
+}
+
 /* Syntax highlighting */
 
 /* string literals */
@@ -14,6 +19,10 @@
 }
 /* number literals */
 .highlight .mi {  
+  color: rgb(130, 114, 160);
+  font-weight: normal;
+}
+.highlight .mf {
   color: rgb(130, 114, 160);
   font-weight: normal;
 }
