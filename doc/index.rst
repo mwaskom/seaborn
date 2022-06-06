@@ -99,7 +99,7 @@ have dedicated channels for seaborn.
    :maxdepth: 1
 
    Introduction <introduction>
-   Release notes <whatsnew>
+   Release notes <whatsnew/index>
    Installing <installing>
    Example gallery <examples/index>
    Tutorial <tutorial>

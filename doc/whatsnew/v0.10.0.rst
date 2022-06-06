@@ -15,14 +15,3 @@ This release also removes a few previously-deprecated features:
 - The ``seaborn.apionly`` entry-point has been removed.
 
 - The ``seaborn.linearmodels`` module (previously renamed to ``seaborn.regression``) has been removed.
-
-Looking forward
-~~~~~~~~~~~~~~~
-
-Now that seaborn is a Python 3 library, it can take advantage of `keyword-only arguments <https://www.python.org/dev/peps/pep-3102/>`_. It is likely that future versions will introduce this syntax, potentially in a breaking way. For guidance, most seaborn functions have a signature that looks like
-
-::
-
-    func(x, y, ..., data=None, **kwargs)
-
-where the ``**kwargs`` are specified in the function. Going forward it will likely be necessary to specify ``data`` and all subsequent arguments with an explicit ``key=value`` mapping. This style has long been used throughout the documentation, and the formal requirement will not be introduced until at least the next major release. Adding this feature will make it possible to enhance some older functions with more modern capabilities (e.g., adding a native ``hue`` semantic within functions like :func:`jointplot` and :func:`regplot`) and will allow parameters that control new features to be situated nearby related, making them more discoverable.

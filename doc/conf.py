@@ -70,6 +70,24 @@ plot_formats = [('png', 90)]
 plot_html_show_formats = False
 plot_html_show_source_link = False
 
+# Define replacements (used in whatsnew bullets)
+rst_epilog = """
+
+.. role:: raw-html(raw)
+   :format: html
+
+.. role:: raw-latex(raw)
+   :format: latex
+
+.. |API| replace:: :raw-html:`<span class="badge badge-api">API</span>` :raw-latex:`{\small\sc [API]}`
+.. |Defaults| replace:: :raw-html:`<span class="badge badge-defaults">Defaults</span>` :raw-latex:`{\small\sc [Defaults]}`
+.. |Docs| replace:: :raw-html:`<span class="badge badge-docs">Docs</span>` :raw-latex:`{\small\sc [Docs]}`
+.. |Feature| replace:: :raw-html:`<span class="badge badge-feature">Feature</span>` :raw-latex:`{\small\sc [Feature]}`
+.. |Enhancement| replace:: :raw-html:`<span class="badge badge-enhancement">Enhancement</span>` :raw-latex:`{\small\sc [Enhancement]}`
+.. |Fix| replace:: :raw-html:`<span class="badge badge-fix">Fix</span>` :raw-latex:`{\small\sc [Fix]}`
+.. |Deps| replace:: :raw-html:`<span class="badge badge-dependencies">Deps</span>` :raw-latex:`{\small\sc [Deps]}`
+
+"""  # noqa
 
 # -- Options for HTML output -------------------------------------------------
 
