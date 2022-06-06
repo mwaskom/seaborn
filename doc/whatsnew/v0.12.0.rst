@@ -94,15 +94,15 @@ Other updates
 
 - |Fix| Improved robustness to numerical errors in :func:`kdeplot` (:pr:`2862`).
 
-- |Defaults| The `patch.facecolor` rc param is no longer set by :func:`set_palette` (or :func:`set_theme`). This should have no effect, because the matplotlib default is now `"C0"` (:pr:`2906`).
+- |Defaults| The `patch.facecolor` rc param is no longer set by :func:`set_palette` (or :func:`set_theme`). This should have no general effect, because the matplotlib default is now `"C0"` (:pr:`2906`).
 
-- |Dependencies| Made `scipy` an optional dependency and added `pip install seaborn[all]` as a method for ensuring the availability of compatible `scipy` and `statsmodels` libraries at install time. This has a few minor implications for existing code, which are explained in the Github pull request (:pr:`2398`).
+- |Deps| Made `scipy` an optional dependency and added `pip install seaborn[all]` as a method for ensuring the availability of compatible `scipy` and `statsmodels` libraries at install time. This has a few minor implications for existing code, which are explained in the Github pull request (:pr:`2398`).
 
-- |Dependencies| Following `NEP29 <https://numpy.org/neps/nep-0029-deprecation_policy.html>`_, dropped support for Python 3.6 and bumped the minimally-supported versions of the library dependencies.
+- |Deps| Example datasets are now stored in an OS-specific cache location (as determined by `appdirs`) rather than in the user's home directory. Users should feel free to remove `~/seaborn-data` if desired (:pr:`2773`).
 
-- |Dependencies| Example datasets are now stored in an OS-specific cache location (as determined by `appdirs`) rather than in the user's home directory. Users should feel free to remove `~/seaborn-data` if desired (:pr:`2773`).
+- |Deps| The unit test suite is no longer part of the source or wheel distribution. Seaborn has never had a runtime API for exercising the tests, so this should not have workflow implications (:pr:`2833`).
 
-- |Dependencies| The unit test suite is no longer part of the source or wheel distribution. Seaborn has never had a runtime API for exercising the tests, so this should not have workflow implications (:pr:`2833`).
+- |Deps| Following `NEP29 <https://numpy.org/neps/nep-0029-deprecation_policy.html>`_, dropped support for Python 3.6 and bumped the minimally-supported versions of the library dependencies.
 
 - |API| Removed the previously-deprecated `factorplot` along with several previously-deprecated utility functions (`iqr`, `percentiles`, `pmf_hist`, and `sort_df`).
 
