@@ -130,7 +130,3 @@ will be higher if you include `runnable code
 <https://stackoverflow.com/help/minimal-reproducible-example>`_, a precise
 statement of what you are hoping to achieve, and a clear explanation of the
 problems that you have encountered.
-
-.. raw:: html
-
-   </div>
