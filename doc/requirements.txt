@@ -3,3 +3,4 @@ numpydoc
 nbconvert
 ipykernel
 sphinx-issues
+sphinx-design

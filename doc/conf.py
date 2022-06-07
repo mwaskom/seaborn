@@ -41,6 +41,7 @@ extensions = [
     'gallery_generator',
     'numpydoc',
     'sphinx_issues',
+    'sphinx_design',
 ]
 
 # Add any paths that contain templates here, relative to this directory.

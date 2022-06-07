@@ -37,6 +37,14 @@ dt:target, span.highlighted {
   font-weight: normal;
 }
 
+/* If no-sidebar is present, hide the div entirely to prevent taking space */
+.no-sidebar {
+  display: none;
+}
+
+
+/* *********************************************************************** */
+
 /**** DataFrame display, from pandas ****/
 /* (Possibly non-functional with this pydata theme - not sure why */
 
@@ -126,3 +134,23 @@ tbody tr:hover {
 .badge-dependencies {
     background-color: #937860;
 }
+
+
+/* Example thumbnails in gallery and homepage */
+/*
+.thumbnail {
+    position: relative;
+    float: left;
+    margin: 10px;
+    width: 180px;
+    height: 200px;
+}
+
+.thumbnail img {
+    position: absolute;
+    display: inline;
+    left: 0;
+    width: 170px;
+    height: 170px;
+}
+*/
