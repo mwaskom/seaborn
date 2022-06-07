@@ -16,7 +16,7 @@ Most plotting functions now require all of their parameters to be specified usin
 Modernization of distribution functions
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The distribution module has been completely overhauled, modernizing the API and introducing several new functions and features within existing functions. Some new features are explained here; the :doc:`tutorial documentation <tutorial/distributions>` has also been rewritten and serves as a good introduction to the functions.
+The distribution module has been completely overhauled, modernizing the API and introducing several new functions and features within existing functions. Some new features are explained here; the :doc:`tutorial documentation </tutorial/distributions>` has also been rewritten and serves as a good introduction to the functions.
 
 New plotting functions
 ^^^^^^^^^^^^^^^^^^^^^^
@@ -96,7 +96,7 @@ These changes should be transparent for most use-cases, although they allow a fe
 - A wide-form data object can have a mixture of types; the non-numeric types will be removed before plotting. Previously, this caused an error.
 - There are better error messages for other instances of data mis-specification.
 
-See the new user guide chapter on :doc:`data formats <tutorial/data_structure>` for more information about what is supported.
+See the new user guide chapter on :doc:`data formats </tutorial/data_structure>` for more information about what is supported.
 
 Other changes
 ~~~~~~~~~~~~~
@@ -104,11 +104,11 @@ Other changes
 Documentation improvements
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- |Docs| Added two new chapters to the user guide, one giving an overview of the :doc:`types of functions in seaborn <tutorial/function_overview>`, and one discussing the different :doc:`data formats <tutorial/data_structure>` that seaborn understands.
+- |Docs| Added two new chapters to the user guide, one giving an overview of the :doc:`types of functions in seaborn </tutorial/function_overview>`, and one discussing the different :doc:`data formats </tutorial/data_structure>` that seaborn understands.
 
-- |Docs| Expanded the :doc:`color palette tutorial <tutorial/color_palettes>` to give more background on color theory and better motivate the use of color in statistical graphics.
+- |Docs| Expanded the :doc:`color palette tutorial </tutorial/color_palettes>` to give more background on color theory and better motivate the use of color in statistical graphics.
 
-- |Docs| Added more information to the :doc:`installation guidelines <installing>` and streamlined the :doc:`introduction <introduction>` page.
+- |Docs| Added more information to the :doc:`installation guidelines </installing>` and streamlined the :doc:`introduction </introduction>` page.
 
 - |Docs| Improved cross-linking within the seaborn docs and between the seaborn and matplotlib docs.
 
@@ -183,7 +183,7 @@ Multi-plot grids
 Color palettes
 ~~~~~~~~~~~~~~
 
-- |Docs| Improved and modernized the :doc:`color palettes chapter <tutorial/color_palettes>` of the seaborn tutorial.
+- |Docs| Improved and modernized the :doc:`color palettes chapter </tutorial/color_palettes>` of the seaborn tutorial.
 
 - |Feature| Added two new perceptually-uniform colormaps: "flare" and "crest". The new colormaps are similar to "rocket" and "mako", but their luminance range is reduced. This makes them well suited to numeric mappings of line or scatter plots, which need contrast with the axes background at the extremes (:pr:`2237`).
 
