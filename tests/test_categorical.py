@@ -2788,6 +2788,10 @@ class TestCatPlot(CategoricalFixture):
         assert len(g.ax.patches) == want_elements
         assert len(g.ax.lines) == 0
 
+        g = cat.catplot(y="y", data=self.df, kind="box")
+        want_artists = 1
+        assert len(self.get_box_artists(g.ax)) == want_artists
+
         g = cat.catplot(x="g", y="y", data=self.df, kind="box")
         want_artists = self.g.unique().size
         assert len(self.get_box_artists(g.ax)) == want_artists

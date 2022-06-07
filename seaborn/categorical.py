@@ -3605,9 +3605,7 @@ def catplot(
         warnings.warn(msg, UserWarning)
         kwargs.pop("ax")
 
-    refactored_kinds = [
-        "strip", "swarm",
-    ]
+    refactored_kinds = ["strip", "swarm"]
     if kind in refactored_kinds:
 
         p = _CategoricalFacetPlotter(
@@ -3785,17 +3783,8 @@ def catplot(
     # so we need to define ``palette`` to get default behavior for the
     # categorical functions
     p.establish_colors(color, palette, 1)
-    if (
-        (kind != "point" or hue is not None)
-        # XXX changing this to temporarily support bad sharex=False behavior where
-        # cat variables could take different colors, which we already warned
-        # about "breaking" (aka fixing) in the future
-        and ((sharex and p.orient == "v") or (sharey and p.orient == "h"))
-    ):
-        if p.hue_names is None:
-            palette = dict(zip(p.group_names, p.colors))
-        else:
-            palette = dict(zip(p.hue_names, p.colors))
+    if kind != "point" or hue is not None:
+        palette = p.colors
 
     # Determine keyword arguments for the facets
     facet_kws = {} if facet_kws is None else facet_kws
