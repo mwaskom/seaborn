@@ -2,13 +2,16 @@
 {%- block footer %}
 <footer class="footer">
   <div class="container">
-    <p class="pull-right">
-      <a href="#">Back to top</a>
-      {% if theme_source_link_position == "footer" %}
-        <br/>
-        {% include "sourcelink.html" %}
-      {% endif %}
-    </p>
+    <div class="dropdown show" style="float:right">
+        <a class="btn btn-secondary dropdown-toggle" href="#" role="button" id="dropdownMenuLink" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+            Archive
+        </a>
+        <div class="dropdown-menu" aria-labelledby="dropdownMenuLink">
+          <a class="dropdown-item" href="./archive/0.10/index.html">v0.10</a>
+          <a class="dropdown-item" href="./archive/0.9/index.html">v0.9</a>
+        </div>
+    </div>
+    <!-- <p class="pull-right">  <a href="#">Back to top</a> </p> -->
     <p>
     {% trans copyright=copyright|e %}&#169; Copyright {{ copyright }}, <a href="https://mwaskom.github.io/">Michael Waskom</a>.{% endtrans %}
     {%- if last_updated %}

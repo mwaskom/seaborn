@@ -71,11 +71,11 @@ seaborn: statistical data visualization
       :maxdepth: 1
 
       Introduction <introduction>
-      Release notes <whatsnew/index>
       Installing <installing>
-      Example gallery <examples/index>
+      Gallery <examples/index>
       Tutorial <tutorial>
-      API reference <api>
+      Reference <api>
+      Releases <whatsnew/index>
 
   .. grid-item-card:: Features
     :columns: 3
@@ -84,7 +84,6 @@ seaborn: statistical data visualization
       :hidden:
 
       Citing <citing>
-      Archive <archive>
 
     * Relational: :ref:`API <relational_api>` | :doc:`Tutorial <tutorial/relational>`
     * Distribution: :ref:`API <distribution_api>` | :doc:`Tutorial <tutorial/distributions>`

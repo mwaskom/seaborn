@@ -138,12 +138,14 @@ html_theme_options = {
         },
     ],
     "show_prev_next": False,
+    "navbar_end": ["search-field", "navbar-icon-links"],
 
 }
 
 html_sidebars = {
     "index": [],
-    "examples/index": [],  # TODO maybe also individual example pages?
+    "examples/index": [],
+    "**": ["sidebar-nav-bs.html"],
 }
 
 # -- Intersphinx ------------------------------------------------
