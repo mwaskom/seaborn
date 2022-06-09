@@ -71,6 +71,10 @@ plot_formats = [('png', 90)]
 plot_html_show_formats = False
 plot_html_show_source_link = False
 
+# Control the appearance of type hints
+autodoc_typehints = "description"
+autodoc_typehints_format = "short"
+
 rst_prolog = """
 .. currentmodule:: seaborn
 """

@@ -1,9 +1,75 @@
 .. _api_ref:
 
-.. currentmodule:: seaborn
-
 API reference
 =============
+
+.. currentmodule:: seaborn.objects
+
+Plot object
+-----------
+
+.. autosummary::
+    :toctree: generated/
+    :nosignatures:
+
+    Plot
+
+Mark objects
+------------
+
+.. autosummary::
+    :toctree: generated/
+    :template: object
+    :nosignatures:
+
+    Area
+    Bar
+    Dot
+    Path
+    Paths
+    Line
+    Lines
+    Ribbon
+    Scatter
+
+Stat objects
+------------
+
+.. autosummary::
+    :toctree: generated/
+    :template: object
+    :nosignatures:
+
+    Agg
+    Hist
+    PolyFit
+
+Move objects
+------------
+
+.. autosummary::
+    :toctree: generated/
+    :template: object
+    :nosignatures:
+
+    Dodge
+    Jitter
+    Norm
+    Stack
+    Shift
+
+Scale objects
+-------------
+
+.. autosummary::
+    :toctree: generated/
+    :nosignatures:
+
+    Continuous
+    Nominal
+    Temporal
+
+.. currentmodule:: seaborn
 
 .. _relational_api:
 
