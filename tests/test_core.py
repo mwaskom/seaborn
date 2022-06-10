@@ -316,6 +316,12 @@ class TestHueMapping:
         with pytest.raises(ValueError):
             HueMapping(p, norm="not a norm")
 
+    def test_hue_map_without_hue_dataa(self, long_df):
+
+        p = VectorPlotter(data=long_df, variables=dict(x="x", y="y"))
+        with pytest.warns(UserWarning, match="Ignoring `palette`"):
+            HueMapping(p, palette="viridis")
+
 
 class TestSizeMapping:
 

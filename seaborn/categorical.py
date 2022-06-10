@@ -3659,6 +3659,11 @@ def catplot(
         palette, hue_order = p._hue_backcompat(color, palette, hue_order)
         p.map_hue(palette=palette, order=hue_order, norm=hue_norm)
 
+        # Set a default color
+        # Otherwise each artist will be plotted separately and trip the color cycle
+        if hue is None and color is None:
+            color = "C0"
+
         if kind == "strip":
 
             # TODO get these defaults programmatically?

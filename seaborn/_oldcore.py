@@ -93,7 +93,11 @@ class HueMapping(SemanticMapping):
 
         data = plotter.plot_data.get("hue", pd.Series(dtype=float))
 
-        if data.notna().any():
+        if data.isna().all():
+            if palette is not None:
+                msg = "Ignoring `palette` because no `hue` variable has been assigned."
+                warnings.warn(msg, stacklevel=4)
+        else:
 
             map_type = self.infer_map_type(
                 palette, norm, plotter.input_format, plotter.var_types["hue"]

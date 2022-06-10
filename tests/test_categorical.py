@@ -2813,6 +2813,8 @@ class TestCatPlot(CategoricalFixture):
         g = cat.catplot(x="g", y="y", data=self.df, kind="strip")
         want_elements = self.g.unique().size
         assert len(g.ax.collections) == want_elements
+        for strip in g.ax.collections:
+            assert same_color(strip.get_facecolors(), "C0")
 
         g = cat.catplot(x="g", y="y", hue="h", data=self.df, kind="strip")
         want_elements = self.g.unique().size + self.h.unique().size
