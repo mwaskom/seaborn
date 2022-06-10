@@ -1,3 +1,4 @@
+:notoc:
 
 seaborn: statistical data visualization
 =======================================

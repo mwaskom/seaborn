@@ -38,9 +38,7 @@ dt:target, span.highlighted {
 }
 
 /* If no-sidebar is present, hide the div entirely to prevent taking space */
-.no-sidebar {
-  display: none;
-}
+/* .no-sidebar {display: none;} */
 
 
 /* *********************************************************************** */

@@ -113,6 +113,7 @@ html_static_path = ['_static', 'example_thumbs']
 html_css_files = ['css/custom.css']
 
 html_logo = "_static/logo-wide-lightbg.svg"
+html_favicon = "_static/favicon.ico"
 
 html_theme_options = {
     "icon_links": [
@@ -129,21 +130,12 @@ html_theme_options = {
             "type": "fontawesome",
         },
     ],
-    "favicons": [
-        {
-            "rel": "icon",
-            "sizes": "16x16",
-            "href": "_static/favicon.ico",
-        },
-        {
-            "rel": "icon",
-            "sizes": "32x32",
-            "href": "_static/favicon.ico",
-        },
-    ],
     "show_prev_next": False,
     "navbar_end": ["search-field", "navbar-icon-links"],
+}
 
+html_context = {
+    "default_mode": "light",
 }
 
 html_sidebars = {
@@ -156,7 +148,7 @@ html_sidebars = {
 
 intersphinx_mapping = {
     'numpy': ('https://numpy.org/doc/stable/', None),
-    'scipy': ('https://docs.scipy.org/doc/scipy/reference/', None),
+    'scipy': ('https://docs.scipy.org/doc/scipy/', None),
     'matplotlib': ('https://matplotlib.org/stable', None),
     'pandas': ('https://pandas.pydata.org/pandas-docs/stable/', None),
     'statsmodels': ('https://www.statsmodels.org/stable/', None)

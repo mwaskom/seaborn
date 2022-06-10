@@ -1,8 +1,27 @@
 {% extends "!layout.html" %}
+
+{% block docs_main %}
+{% set content_xl_width = "col-xl-7" if sidebars else "col-xl-11" %}
+<div class="bd-content col-12 col-md-9 {{ content_xl_width }}">
+    {% block docs_body %}
+    <article class="bd-article" role="main">
+      {% block body %} {% endblock %}
+    </article>
+    {% endblock %}
+
+    {% if theme_show_prev_next %}
+    <footer class="bd-footer-article">
+        {% include "sections/footer-article.html" %}
+    </footer>
+    {% endif %}
+</div>
+{% endblock %}
+
+
 {%- block footer %}
 <footer class="footer">
   <div class="container">
-    <div class="dropdown show" style="float:right">
+    <div class="dropup show" style="float:right">
         <a class="btn btn-secondary dropdown-toggle" href="#" role="button" id="dropdownMenuLink" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
             Archive
         </a>
