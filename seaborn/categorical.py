@@ -2934,11 +2934,11 @@ def swarmplot(
     if not p.has_xy_data:
         return ax
 
+    hue_order = p._palette_without_hue_backcompat(palette, hue_order)
     palette, hue_order = p._hue_backcompat(color, palette, hue_order)
 
     color = _default_color(ax.scatter, hue, color, kwargs)
 
-    hue_order = p._palette_without_hue_backcompat(palette, hue_order)
     p.map_hue(palette=palette, order=hue_order, norm=hue_norm)
 
     # XXX Copying possibly bad default decisions from original code for now
@@ -3669,6 +3669,7 @@ def catplot(
         if not has_xy_data:
             return g
 
+        hue_order = p._palette_without_hue_backcompat(palette, hue_order)
         palette, hue_order = p._hue_backcompat(color, palette, hue_order)
         p.map_hue(palette=palette, order=hue_order, norm=hue_norm)
 
