@@ -167,6 +167,18 @@ class _CategoricalPlotterNew(_RelationalPlotter):
 
         return palette, hue_order
 
+    def _palette_without_hue_backcompat(self, palette, hue_order):
+        """Provide one cycle where palette= implies hue= when not provided"""
+        if "hue" not in self.variables and palette is not None:
+            msg = "Passing `palette` without assigning `hue` is deprecated."
+            warnings.warn(msg, FutureWarning, stacklevel=3)
+            self.legend = False
+            self.plot_data["hue"] = self.plot_data[self.cat_axis]
+            self.variables["hue"] = self.variables.get(self.cat_axis)
+            self.var_types["hue"] = self.var_types.get(self.cat_axis)
+            hue_order = self.var_levels.get(self.cat_axis)
+        return hue_order
+
     @property
     def cat_axis(self):
         return {"v": "x", "h": "y"}[self.orient]
@@ -2797,6 +2809,7 @@ def stripplot(
 
     p._attach(ax)
 
+    hue_order = p._palette_without_hue_backcompat(palette, hue_order)
     palette, hue_order = p._hue_backcompat(color, palette, hue_order)
 
     color = _default_color(ax.scatter, hue, color, kwargs)
@@ -2925,6 +2938,7 @@ def swarmplot(
 
     color = _default_color(ax.scatter, hue, color, kwargs)
 
+    hue_order = p._palette_without_hue_backcompat(palette, hue_order)
     p.map_hue(palette=palette, order=hue_order, norm=hue_norm)
 
     # XXX Copying possibly bad default decisions from original code for now

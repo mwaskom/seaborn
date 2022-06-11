@@ -2054,6 +2054,15 @@ class SharedScatterTests(SharedAxesLevelTests):
         for point_color in points.get_facecolors():
             assert to_rgb(point_color) in palette
 
+    def test_palette_with_hue_deprecation(self, long_df):
+        palette = "Blues"
+        with pytest.warns(FutureWarning, match="Passing `palette` without"):
+            ax = self.func(data=long_df, x="a", y=long_df["y"], palette=palette)
+        strips = ax.collections
+        colors = color_palette(palette, len(strips))
+        for strip, color in zip(strips, colors):
+            assert same_color(strip.get_facecolor()[0], color)
+
     def test_log_scale(self):
 
         x = [1, 10, 100, 1000]
