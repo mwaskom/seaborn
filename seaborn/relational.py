@@ -951,7 +951,11 @@ def relplot(
 
     # Pass the row/col variables to FacetGrid with their original
     # names so that the axes titles render correctly
-    grid_kws = {v: p.variables.get(v, None) for v in grid_semantics}
+    for var in ["row", "col"]:
+        # Handle faceting variables that lack name information
+        if var in p.variables and p.variables[var] is None:
+            p.variables[var] = f"_{var}_"
+    grid_kws = {v: p.variables.get(v) for v in grid_semantics}
 
     # Rename the columns of the plot_data structure appropriately
     new_cols = plot_variables.copy()
@@ -971,10 +975,8 @@ def relplot(
     # Draw the plot
     g.map_dataframe(func, **plot_kws)
 
-    # Label the axes
-    g.set_axis_labels(
-        variables.get("x", None), variables.get("y", None)
-    )
+    # Label the axes, using the original variables
+    g.set(xlabel=variables.get("x"), ylabel=variables.get("y"))
 
     # Show the legend
     if legend:
