@@ -517,6 +517,7 @@ class TestRelationalPlotter(Helpers):
         g = relplot(data=wide_df)
         x, y = g.ax.collections[0].get_offsets().T
         assert_array_equal(y, wide_df.to_numpy().T.ravel())
+        assert not g.ax.get_ylabel()
 
     def test_relplot_hues(self, long_df):
 

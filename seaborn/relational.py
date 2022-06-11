@@ -971,10 +971,8 @@ def relplot(
     # Draw the plot
     g.map_dataframe(func, **plot_kws)
 
-    # Label the axes
-    g.set_axis_labels(
-        variables.get("x", None), variables.get("y", None)
-    )
+    # Label the axes, using the original variables
+    g.set(xlabel=variables.get("x"), ylabel=variables.get("y"))
 
     # Show the legend
     if legend:
