@@ -9,6 +9,7 @@ from numpy.testing import assert_array_equal
 
 from seaborn.external.version import Version
 from seaborn.palettes import color_palette
+from seaborn._oldcore import categorical_order
 
 from seaborn.relational import (
     _RelationalPlotter,
@@ -1622,6 +1623,16 @@ class TestScatterPlotter(SharedAxesLevelTests, Helpers):
         scatterplot(data=long_df, x="x", y="y", c=long_df["y"], cmap=cmap)
         _draw_figure(ax.figure)
         assert_array_equal(ax.collections[0].get_facecolors(), colors)
+
+    def test_hue_order(self, long_df):
+
+        order = categorical_order(long_df["a"])
+        unused = order.pop()
+
+        ax = scatterplot(data=long_df, x="x", y="y", hue="a", hue_order=order)
+        points = ax.collections[0]
+        assert (points.get_facecolors()[long_df["a"] == unused] == 0).all()
+        assert [t.get_text() for t in ax.legend_.texts] == order
 
     def test_linewidths(self, long_df):
 

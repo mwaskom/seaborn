@@ -149,6 +149,13 @@ class HueMapping(SemanticMapping):
             # Use a value that's in the original data vector
             value = self.lookup_table[key]
         except KeyError:
+
+            if self.norm is None:
+                # Currently we only get here in scatterplot with hue_order,
+                # because scatterplot does not consider hue a grouping variable
+                # So unused hue levels are in the data, but not the lookup table
+                return (0, 0, 0, 0)
+
             # Use the colormap to interpolate between existing datapoints
             # (e.g. in the context of making a continuous legend)
             try:
