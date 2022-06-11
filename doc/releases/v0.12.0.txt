@@ -51,6 +51,8 @@ Other updates
 
 - |Enhancement| Example datasets are now stored in an OS-specific cache location (as determined by `appdirs`) rather than in the user's home directory. Users should feel free to remove `~/seaborn-data` if desired (:pr:`2773`).
 
+- |Enhancement| When using :func:`pairplot` with `corner=True` and `diag_kind=None`, the top left y axis label is no longer hidden (:pr:2850`).
+
 - |Fix| Fixed a regression in 0.11.2 that caused some functions to stall indefinitely or raise when the input data had a duplicate index (:pr:`2776`).
 
 - |Fix| Fixed a bug in :func:`histplot` and :func:`kdeplot` where weights were not factored into the normalization (:pr:`2812`).

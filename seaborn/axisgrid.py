@@ -1623,8 +1623,6 @@ class PairGrid(Grid):
             ax.set_xlabel(label)
         for ax, label in zip(self.axes[:, 0], self.y_vars):
             ax.set_ylabel(label)
-        if self._corner:
-            self.axes[0, 0].set_ylabel("")
 
     def _find_numeric_cols(self, data):
         """Find which variables in a DataFrame are numeric."""

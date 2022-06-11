@@ -765,12 +765,12 @@ class TestPairGrid:
 
         for ax in np.diag(g.axes):
             assert not ax.yaxis.get_visible()
-            assert not g.axes[0, 0].get_ylabel()
 
         plot_vars = ["x", "y", "z"]
         g = ag.PairGrid(self.df, vars=plot_vars, corner=True)
         g.map(scatterplot)
         assert len(g.figure.axes) == corner_size
+        assert g.axes[0, 0].get_ylabel() == "x"
 
     def test_size(self):
 
