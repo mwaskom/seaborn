@@ -2054,6 +2054,15 @@ class SharedScatterTests(SharedAxesLevelTests):
         for point_color in points.get_facecolors():
             assert to_rgb(point_color) in palette
 
+    def test_palette_with_hue_deprecation(self, long_df):
+        palette = "Blues"
+        with pytest.warns(FutureWarning, match="Passing `palette` without"):
+            ax = self.func(data=long_df, x="a", y=long_df["y"], palette=palette)
+        strips = ax.collections
+        colors = color_palette(palette, len(strips))
+        for strip, color in zip(strips, colors):
+            assert same_color(strip.get_facecolor()[0], color)
+
     def test_log_scale(self):
 
         x = [1, 10, 100, 1000]
@@ -2813,6 +2822,8 @@ class TestCatPlot(CategoricalFixture):
         g = cat.catplot(x="g", y="y", data=self.df, kind="strip")
         want_elements = self.g.unique().size
         assert len(g.ax.collections) == want_elements
+        for strip in g.ax.collections:
+            assert same_color(strip.get_facecolors(), "C0")
 
         g = cat.catplot(x="g", y="y", hue="h", data=self.df, kind="strip")
         want_elements = self.g.unique().size + self.h.unique().size

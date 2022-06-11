@@ -167,6 +167,18 @@ class _CategoricalPlotterNew(_RelationalPlotter):
 
         return palette, hue_order
 
+    def _palette_without_hue_backcompat(self, palette, hue_order):
+        """Provide one cycle where palette= implies hue= when not provided"""
+        if "hue" not in self.variables and palette is not None:
+            msg = "Passing `palette` without assigning `hue` is deprecated."
+            warnings.warn(msg, FutureWarning, stacklevel=3)
+            self.legend = False
+            self.plot_data["hue"] = self.plot_data[self.cat_axis]
+            self.variables["hue"] = self.variables.get(self.cat_axis)
+            self.var_types["hue"] = self.var_types.get(self.cat_axis)
+            hue_order = self.var_levels.get(self.cat_axis)
+        return hue_order
+
     @property
     def cat_axis(self):
         return {"v": "x", "h": "y"}[self.orient]
@@ -352,19 +364,18 @@ class _CategoricalPlotterNew(_RelationalPlotter):
                 points.set_edgecolors(edgecolor)
 
             if not sub_data.empty:
-                point_collections[sub_data[self.cat_axis].iloc[0]] = points
+                point_collections[(ax, sub_data[self.cat_axis].iloc[0])] = points
 
         beeswarm = Beeswarm(
             width=width, orient=self.orient, warn_thresh=warn_thresh,
         )
-        for center, points in point_collections.items():
+        for (ax, center), points in point_collections.items():
             if points.get_offsets().shape[0] > 1:
 
                 def draw(points, renderer, *, center=center):
 
                     beeswarm(points, center)
 
-                    ax = points.axes
                     if self.orient == "h":
                         scalex = False
                         scaley = ax.get_autoscaley_on()
@@ -2798,6 +2809,7 @@ def stripplot(
 
     p._attach(ax)
 
+    hue_order = p._palette_without_hue_backcompat(palette, hue_order)
     palette, hue_order = p._hue_backcompat(color, palette, hue_order)
 
     color = _default_color(ax.scatter, hue, color, kwargs)
@@ -2922,6 +2934,7 @@ def swarmplot(
     if not p.has_xy_data:
         return ax
 
+    hue_order = p._palette_without_hue_backcompat(palette, hue_order)
     palette, hue_order = p._hue_backcompat(color, palette, hue_order)
 
     color = _default_color(ax.scatter, hue, color, kwargs)
@@ -3656,8 +3669,14 @@ def catplot(
         if not has_xy_data:
             return g
 
+        hue_order = p._palette_without_hue_backcompat(palette, hue_order)
         palette, hue_order = p._hue_backcompat(color, palette, hue_order)
         p.map_hue(palette=palette, order=hue_order, norm=hue_norm)
+
+        # Set a default color
+        # Otherwise each artist will be plotted separately and trip the color cycle
+        if hue is None and color is None:
+            color = "C0"
 
         if kind == "strip":
 
