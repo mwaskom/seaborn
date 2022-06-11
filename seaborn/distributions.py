@@ -280,18 +280,18 @@ class _DistributionPlotter(VectorPlotter):
             for key in curves:
                 level = dict(key)["hue"]
                 hist = curves[key].reset_index(name="heights")
+                level_idx = hue_levels.index(level)
                 if self._log_scaled(self.data_variable):
-                    level_idx = hue_levels.index(level)
-                    left_scaled = np.log10(hist["edges"])
-                    right_scaled = np.log10(hist["edges"] + hist["widths"])
-                    w_scaled = (right_scaled - left_scaled) / n
-                    new_left = np.power(10, left_scaled + level_idx * w_scaled)
-                    new_right = np.power(10, left_scaled + (level_idx + 1) * w_scaled)
-                    hist["widths"] = new_right - new_left
-                    hist["edges"] = new_left
+                    log_min = np.log10(hist["edges"])
+                    log_max = np.log10(hist["edges"] + hist["widths"])
+                    log_width = (log_max - log_min) / n
+                    new_min = np.power(10, log_min + level_idx * log_width)
+                    new_max = np.power(10, log_min + (level_idx + 1) * log_width)
+                    hist["widths"] = new_max - new_min
+                    hist["edges"] = new_min
                 else:
                     hist["widths"] /= n
-                    hist["edges"] += hue_levels.index(level) * hist["widths"]
+                    hist["edges"] += level_idx * hist["widths"]
 
                 curves[key] = hist.set_index(["edges", "widths"])["heights"]
 

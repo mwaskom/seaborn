@@ -1722,6 +1722,15 @@ class TestHistPlotUnivariate(SharedAxesLevelTests):
         steps = np.divide(bar_widths[1:], bar_widths[:-1])
         assert np.allclose(steps, 10)
 
+    def test_log_scale_dodge(self, rng):
+
+        x = rng.lognormal(0, 2, 100)
+        hue = np.repeat(["a", "b"], 50)
+        ax = histplot(x=x, hue=hue, bins=5, log_scale=True, multiple="dodge")
+        x_min = np.log([b.get_x() for b in ax.patches])
+        x_max = np.log([b.get_x() + b.get_width() for b in ax.patches])
+        assert np.unique(np.round(x_max - x_min, 10)).size == 1
+
     @pytest.mark.parametrize(
         "fill", [True, False],
     )

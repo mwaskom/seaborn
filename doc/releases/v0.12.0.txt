@@ -63,11 +63,13 @@ Other updates
 
 - |Fix| Fixed a bug in :func:`scatterplot` where an error would be raised when `hue_order` was a subset of the hue levels (:pr:`2848`).
 
-- |Fix| Subplot titles will no longer be reset when calling :meth:`FacetGrid.map` or :meth:`FacetGrid.map_dataframe` (:pr:`2705`).
+- |Fix| Fixed a bug in :func:`histplot` where dodged bars would have different widths on a log scale (:pr:`2849`).
 
 - |Fix| In :func:`lineplot`, allowed the `dashes` keyword to set the style of a line without mapping a `style` variable (:pr:`2449`).
 
 - |Fix| Improved support in :func:`relplot` for "wide" data and for faceting variables passed as non-pandas objects (:pr:`2846`).
+
+- |Fix| Subplot titles will no longer be reset when calling :meth:`FacetGrid.map` or :meth:`FacetGrid.map_dataframe` (:pr:`2705`).
 
 - |Dependencies| Made `scipy` an optional dependency and added `pip install seaborn[all]` as a method for ensuring the availability of compatible `scipy` and `statsmodels` libraries at install time. This has a few minor implications for existing code, which are explained in the Github pull request (:pr:`2398`).
 
