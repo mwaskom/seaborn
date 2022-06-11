@@ -352,19 +352,18 @@ class _CategoricalPlotterNew(_RelationalPlotter):
                 points.set_edgecolors(edgecolor)
 
             if not sub_data.empty:
-                point_collections[sub_data[self.cat_axis].iloc[0]] = points
+                point_collections[(ax, sub_data[self.cat_axis].iloc[0])] = points
 
         beeswarm = Beeswarm(
             width=width, orient=self.orient, warn_thresh=warn_thresh,
         )
-        for center, points in point_collections.items():
+        for (ax, center), points in point_collections.items():
             if points.get_offsets().shape[0] > 1:
 
                 def draw(points, renderer, *, center=center):
 
                     beeswarm(points, center)
 
-                    ax = points.axes
                     if self.orient == "h":
                         scalex = False
                         scaley = ax.get_autoscaley_on()
