@@ -2137,8 +2137,8 @@ def displot(
     grid_data = p.plot_data.rename(columns=p.variables)
     grid_data = grid_data.loc[:, ~grid_data.columns.duplicated()]
 
-    col_name = p.variables.get("col", None)
-    row_name = p.variables.get("row", None)
+    col_name = p.variables.get("col")
+    row_name = p.variables.get("row")
 
     if facet_kws is None:
         facet_kws = {}

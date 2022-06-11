@@ -507,6 +507,7 @@ class TestRelationalPlotter(Helpers):
         kws = {key: long_df[val] for key, val in semantics.items()}
         g = relplot(data=long_df, **kws)
         grouped = long_df.groupby("c")
+        assert len(g.axes_dict) == len(grouped)
         for (_, grp_df), ax in zip(grouped, g.axes.flat):
             x, y = ax.collections[0].get_offsets().T
             assert_array_equal(x, grp_df["x"])
