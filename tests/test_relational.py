@@ -497,14 +497,15 @@ class TestRelationalPlotter(Helpers):
                 assert_array_equal(x, grp_df["x"])
                 assert_array_equal(y, grp_df["y"])
 
-    @pytest.mark.parametrize(
-        "vector_type",
-        ["series", "numpy", "list"],
-    )
+    @pytest.mark.parametrize("vector_type", ["series", "numpy", "list"])
     def test_relplot_vectors(self, long_df, vector_type):
 
         semantics = dict(x="x", y="y", hue="f", col="c")
         kws = {key: long_df[val] for key, val in semantics.items()}
+        if vector_type == "numpy":
+            kws = {k: v.to_numpy() for k, v in kws.items()}
+        elif vector_type == "list":
+            kws = {k: v.to_list() for k, v in kws.items()}
         g = relplot(data=long_df, **kws)
         grouped = long_df.groupby("c")
         assert len(g.axes_dict) == len(grouped)
