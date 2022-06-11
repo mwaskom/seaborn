@@ -1170,6 +1170,14 @@ class TestPairGrid:
 
         plt.close("all")
 
+    def test_hue_in_map(self, long_df):
+
+        g = ag.PairGrid(long_df, vars=["x", "y"])
+        g.map(scatterplot, hue=long_df["a"])
+        ax = g.axes.flat[0]
+        points = ax.collections[0]
+        assert len(set(map(tuple, points.get_facecolors()))) == 3
+
     def test_nondefault_index(self):
 
         df = self.df.copy().set_index("b")

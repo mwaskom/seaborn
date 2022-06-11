@@ -1565,9 +1565,10 @@ class PairGrid(Grid):
         else:
             hue = data.get(self._hue_var)
 
-        kwargs.setdefault("hue", hue)
-        kwargs.setdefault("hue_order", self._hue_order)
-        kwargs.setdefault("palette", self._orig_palette)
+        if "hue" not in kwargs:
+            kwargs.update({
+                "hue": hue, "hue_order": self._hue_order, "palette": self._orig_palette,
+            })
         func(x=x, y=y, **kwargs)
 
         self._update_legend_data(ax)
