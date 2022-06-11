@@ -61,6 +61,8 @@ Other updates
 
 - |Fix| Fixed a bug in :class:`PairGrid` where and error would be raised when defining `hue` only in the mapping methods (:pr:`2847`).
 
+- |Fix| Fixed a bug in :func:`scatterplot` where an error would be raised when `hue_order` was a subset of the hue levels (:pr:`2848`).
+
 - |Fix| Subplot titles will no longer be reset when calling :meth:`FacetGrid.map` or :meth:`FacetGrid.map_dataframe` (:pr:`2705`).
 
 - |Fix| In :func:`lineplot`, allowed the `dashes` keyword to set the style of a line without mapping a `style` variable (:pr:`2449`).
