@@ -522,6 +522,14 @@ class TestRegressionPlots:
                         scatter_kws={'color': color})
         assert ax.collections[0]._alpha == 0.8
 
+        f, ax = plt.subplots()
+        alpha = .3
+        ax = lm.regplot(x="x", y="y", data=self.df,
+                        x_bins=5, fit_reg=False,
+                        scatter_kws={"alpha": alpha})
+        for line in ax.lines:
+            assert line.get_alpha() == alpha
+
     def test_regplot_binned(self):
 
         ax = lm.regplot(x="x", y="y", data=self.df, x_bins=5)
