@@ -316,17 +316,10 @@ class FacetGrid(Grid):
         row_order=None, col_order=None, hue_order=None, hue_kws=None,
         dropna=False, legend_out=True, despine=True,
         margin_titles=False, xlim=None, ylim=None, subplot_kws=None,
-        gridspec_kws=None, size=None,
+        gridspec_kws=None,
     ):
 
         super().__init__()
-
-        # Handle deprecations
-        if size is not None:
-            height = size
-            msg = ("The `size` parameter has been renamed to `height`; "
-                   "please update your code.")
-            warnings.warn(msg, UserWarning)
 
         # Determine the hue facet layer information
         hue_var = hue
@@ -1138,7 +1131,7 @@ class PairGrid(Grid):
     def __init__(
         self, data, *, hue=None, vars=None, x_vars=None, y_vars=None,
         hue_order=None, palette=None, hue_kws=None, corner=False, diag_sharey=True,
-        height=2.5, aspect=1, layout_pad=.5, despine=True, dropna=False, size=None
+        height=2.5, aspect=1, layout_pad=.5, despine=True, dropna=False,
     ):
         """Initialize the plot figure and PairGrid object.
 
@@ -1192,13 +1185,6 @@ class PairGrid(Grid):
         """
 
         super().__init__()
-
-        # Handle deprecations
-        if size is not None:
-            height = size
-            msg = ("The `size` parameter has been renamed to `height`; "
-                   "please update your code.")
-            warnings.warn(UserWarning(msg))
 
         # Sort out the variables that define the grid
         numeric_cols = self._find_numeric_cols(data)
@@ -1643,17 +1629,11 @@ class JointGrid(_BaseGrid):
 
     def __init__(
         self, data=None, *,
-        x=None, y=None,
+        x=None, y=None, hue=None,
         height=6, ratio=5, space=.2,
-        dropna=False, xlim=None, ylim=None, size=None, marginal_ticks=False,
-        hue=None, palette=None, hue_order=None, hue_norm=None,
+        palette=None, hue_order=None, hue_norm=None,
+        dropna=False, xlim=None, ylim=None, marginal_ticks=False,
     ):
-        # Handle deprecations
-        if size is not None:
-            height = size
-            msg = ("The `size` parameter has been renamed to `height`; "
-                   "please update your code.")
-            warnings.warn(msg, UserWarning)
 
         # Set up the subplot grid
         f = plt.figure(figsize=(height, height))

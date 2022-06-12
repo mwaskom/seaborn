@@ -32,7 +32,7 @@ from seaborn.axisgrid import FacetGrid, _facet_docs
 
 
 __all__ = [
-    "catplot", "factorplot",
+    "catplot",
     "stripplot", "swarmplot",
     "boxplot", "violinplot", "boxenplot",
     "pointplot", "barplot", "countplot",
@@ -2787,9 +2787,9 @@ boxenplot.__doc__ = dedent("""\
 def stripplot(
     data=None, *, x=None, y=None, hue=None, order=None, hue_order=None,
     jitter=True, dodge=False, orient=None, color=None, palette=None,
-    size=5, edgecolor="gray", linewidth=0, ax=None,
+    size=5, edgecolor="gray", linewidth=0,
     hue_norm=None, native_scale=False, formatter=None, legend="auto",
-    **kwargs
+    ax=None, **kwargs
 ):
 
     p = _CategoricalPlotterNew(
@@ -2909,9 +2909,9 @@ stripplot.__doc__ = dedent("""\
 def swarmplot(
     data=None, *, x=None, y=None, hue=None, order=None, hue_order=None,
     dodge=False, orient=None, color=None, palette=None,
-    size=5, edgecolor="gray", linewidth=0, ax=None,
-    hue_norm=None, native_scale=False, formatter=None, legend="auto", warn_thresh=.05,
-    **kwargs
+    size=5, edgecolor="gray", linewidth=0, hue_norm=None,
+    native_scale=False, formatter=None, legend="auto", warn_thresh=.05,
+    ax=None, **kwargs
 ):
 
     p = _CategoricalPlotterNew(
@@ -3563,28 +3563,6 @@ countplot.__doc__ = dedent("""\
     """).format(**_categorical_docs)
 
 
-def factorplot(*args, **kwargs):
-    """Deprecated; please use `catplot` instead."""
-
-    msg = (
-        "The `factorplot` function has been renamed to `catplot`. The "
-        "original name will be removed in a future release. Please update "
-        "your code. Note that the default `kind` in `factorplot` (`'point'`) "
-        "has changed `'strip'` in `catplot`."
-    )
-    warnings.warn(msg)
-
-    if "size" in kwargs:
-        kwargs["height"] = kwargs.pop("size")
-        msg = ("The `size` parameter has been renamed to `height`; "
-               "please update your code.")
-        warnings.warn(msg, UserWarning)
-
-    kwargs.setdefault("kind", "point")
-
-    return catplot(*args, **kwargs)
-
-
 def catplot(
     data=None, *, x=None, y=None, hue=None, row=None, col=None,
     col_wrap=None, estimator=np.mean, ci=95, n_boot=1000,
@@ -3596,13 +3574,6 @@ def catplot(
     hue_norm=None, native_scale=False, formatter=None,
     **kwargs
 ):
-
-    # Handle deprecations
-    if "size" in kwargs:
-        height = kwargs.pop("size")
-        msg = ("The `size` parameter has been renamed to `height`; "
-               "please update your code.")
-        warnings.warn(msg, UserWarning)
 
     # Determine the plotting function
     try:
@@ -3689,7 +3660,7 @@ def catplot(
 
             # XXX Copying possibly bad default decisions from original code for now
             plot_kws.setdefault("zorder", 3)
-            plot_kws.setdefault("s", 25)
+            plot_kws.setdefault("s", plot_kws.pop("size", 5) ** 2)
             plot_kws.setdefault("linewidth", 0)
 
             p.plot_strips(
@@ -3711,7 +3682,7 @@ def catplot(
 
             # XXX Copying possibly bad default decisions from original code for now
             plot_kws.setdefault("zorder", 3)
-            plot_kws.setdefault("s", 25)
+            plot_kws.setdefault("s", plot_kws.pop("size", 5) ** 2)
 
             if plot_kws.setdefault("linewidth", 0) is None:
                 plot_kws["linewidth"] = np.sqrt(plot_kws["s"]) / 10

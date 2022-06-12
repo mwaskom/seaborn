@@ -565,15 +565,8 @@ def lmplot(
     units=None, seed=None, order=1, logistic=False, lowess=False,
     robust=False, logx=False, x_partial=None, y_partial=None,
     truncate=True, x_jitter=None, y_jitter=None, scatter_kws=None,
-    line_kws=None, facet_kws=None, size=None,
+    line_kws=None, facet_kws=None,
 ):
-
-    # Handle deprecations
-    if size is not None:
-        height = size
-        msg = ("The `size` parameter has been renamed to `height`; "
-               "please update your code.")
-        warnings.warn(msg, UserWarning)
 
     if facet_kws is None:
         facet_kws = {}
