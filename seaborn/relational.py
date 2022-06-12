@@ -352,7 +352,7 @@ class _LinePlotter(_RelationalPlotter):
     def __init__(
         self, *,
         data=None, variables={},
-        estimator=None, ci=None, n_boot=None, seed=None, errorbar=None,
+        estimator=None, n_boot=None, seed=None, errorbar=None,
         sort=True, orient="x", err_style=None, err_kws=None, legend=None
     ):
 
@@ -367,7 +367,6 @@ class _LinePlotter(_RelationalPlotter):
 
         self.estimator = estimator
         self.errorbar = errorbar
-        self.ci = ci
         self.n_boot = n_boot
         self.seed = seed
         self.sort = sort
@@ -625,7 +624,7 @@ def lineplot(
     variables = _LinePlotter.get_semantics(locals())
     p = _LinePlotter(
         data=data, variables=variables,
-        estimator=estimator, ci=ci, n_boot=n_boot, seed=seed, errorbar=errorbar,
+        estimator=estimator, n_boot=n_boot, seed=seed, errorbar=errorbar,
         sort=sort, orient=orient, err_style=err_style, err_kws=err_kws,
         legend=legend,
     )
