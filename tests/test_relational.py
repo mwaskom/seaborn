@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 from matplotlib.colors import same_color, to_rgba
 
 import pytest
-from numpy.testing import assert_array_equal
+from numpy.testing import assert_array_equal, assert_array_almost_equal
 
 from seaborn.external.version import Version
 from seaborn.palettes import color_palette
@@ -1001,48 +1001,6 @@ class TestLinePlotter(SharedAxesLevelTests, Helpers):
             assert isinstance(c, mpl.collections.LineCollection)
 
         p = _LinePlotter(
-            data=long_df,
-            variables=dict(x="y", y="x", hue="a"),
-            sort_dim="y",
-            estimator="mean", err_style="band", ci="sd"
-        )
-
-        ax.clear()
-        p.plot(ax, {})
-        assert len(ax.lines) == len(ax.collections) == len(p._hue_map.levels)
-        for c in ax.collections:
-            assert isinstance(c, mpl.collections.PolyCollection)
-        for line in ax.lines:
-            x, y = line.get_data()
-            assert((y == sorted(y)).all())
-
-        p = _LinePlotter(
-            data=long_df,
-            variables=dict(x="y", y="x", hue="a"),
-            sort_dim="y",
-            estimator="mean", err_style="bars", ci="sd"
-        )
-
-        ax.clear()
-        p.plot(ax, {})
-        n_lines = len(ax.lines)
-        assert n_lines / 2 == len(ax.collections) == len(p._hue_map.levels)
-        assert len(ax.collections) == len(p._hue_map.levels)
-        for c in ax.collections:
-            assert isinstance(c, mpl.collections.LineCollection)
-        for line in ax.lines:
-            x, y = line.get_data()
-            assert((y == sorted(y)).all())
-
-        with pytest.raises(ValueError):
-            p = _LinePlotter(
-                data=long_df,
-                variables=dict(x="y", y="x", hue="a"),
-                sort_dim="bad"
-            )
-            p.plot(ax, {})
-
-        p = _LinePlotter(
             data=repeated_df,
             variables=dict(x="x", y="y", units="u"),
             estimator=None
@@ -1108,6 +1066,31 @@ class TestLinePlotter(SharedAxesLevelTests, Helpers):
         )
         ax.clear()
         p.plot(ax, {})
+
+    def test_orient(self, long_df):
+
+        long_df = long_df.drop("x", axis=1).rename(columns={"s": "y", "y": "x"})
+
+        ax1 = plt.figure().subplots()
+        lineplot(data=long_df, x="x", y="y", orient="y", errorbar="sd")
+        assert len(ax1.lines) == len(ax1.collections)
+        line, = ax1.lines
+        expected = long_df.groupby("y").agg({"x": "mean"}).reset_index()
+        assert_array_almost_equal(line.get_xdata(), expected["x"])
+        assert_array_almost_equal(line.get_ydata(), expected["y"])
+        ribbon_y = ax1.collections[0].get_paths()[0].vertices[:, 1]
+        assert_array_equal(np.unique(ribbon_y), long_df["y"].sort_values().unique())
+
+        ax2 = plt.figure().subplots()
+        lineplot(
+            data=long_df, x="x", y="y", orient="y", errorbar="sd", err_style="bars"
+        )
+        segments = ax2.collections[0].get_segments()
+        for i, val in enumerate(sorted(long_df["y"].unique())):
+            assert (segments[i][:, 1] == val).all()
+
+        with pytest.raises(ValueError, match="`orient` must be either 'x' or 'y'"):
+            lineplot(long_df, x="y", y="x", orient="bad")
 
     def test_log_scale(self):
 
