@@ -53,6 +53,8 @@ Other updates
 
 - |Enhancement| When using :func:`pairplot` with `corner=True` and `diag_kind=None`, the top left y axis label is no longer hidden (:pr:2850`).
 
+- |Enhancement| Error bars in :func:`regplot` now inherit the alpha value of the points they correspond to (:pr:`2540`).
+
 - |Fix| Fixed a regression in 0.11.2 that caused some functions to stall indefinitely or raise when the input data had a duplicate index (:pr:`2776`).
 
 - |Fix| Fixed a bug in :func:`histplot` and :func:`kdeplot` where weights were not factored into the normalization (:pr:`2812`).
