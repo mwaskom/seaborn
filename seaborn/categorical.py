@@ -3682,7 +3682,7 @@ def catplot(
 
             # XXX Copying possibly bad default decisions from original code for now
             plot_kws.setdefault("zorder", 3)
-            plot_kws.setdefault("s", 2 ** plot_kws.pop("size", 5))
+            plot_kws.setdefault("s", plot_kws.pop("size", 5) ** 2)
             plot_kws.setdefault("linewidth", 0)
 
             p.plot_strips(
@@ -3704,7 +3704,7 @@ def catplot(
 
             # XXX Copying possibly bad default decisions from original code for now
             plot_kws.setdefault("zorder", 3)
-            plot_kws.setdefault("s", plot_kws.pop("size", 5))
+            plot_kws.setdefault("s", plot_kws.pop("size", 5) ** 2)
 
             if plot_kws.setdefault("linewidth", 0) is None:
                 plot_kws["linewidth"] = np.sqrt(plot_kws["s"]) / 10
