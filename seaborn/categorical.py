@@ -32,7 +32,7 @@ from seaborn.axisgrid import FacetGrid, _facet_docs
 
 
 __all__ = [
-    "catplot", "factorplot",
+    "catplot",
     "stripplot", "swarmplot",
     "boxplot", "violinplot", "boxenplot",
     "pointplot", "barplot", "countplot",
@@ -3561,28 +3561,6 @@ countplot.__doc__ = dedent("""\
         ...                 height=4, aspect=.7);
 
     """).format(**_categorical_docs)
-
-
-def factorplot(*args, **kwargs):
-    """Deprecated; please use `catplot` instead."""
-
-    msg = (
-        "The `factorplot` function has been renamed to `catplot`. The "
-        "original name will be removed in a future release. Please update "
-        "your code. Note that the default `kind` in `factorplot` (`'point'`) "
-        "has changed `'strip'` in `catplot`."
-    )
-    warnings.warn(msg)
-
-    if "size" in kwargs:
-        kwargs["height"] = kwargs.pop("size")
-        msg = ("The `size` parameter has been renamed to `height`; "
-               "please update your code.")
-        warnings.warn(msg, UserWarning)
-
-    kwargs.setdefault("kind", "point")
-
-    return catplot(*args, **kwargs)
 
 
 def catplot(

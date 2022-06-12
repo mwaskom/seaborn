@@ -2887,15 +2887,6 @@ class TestCatPlot(CategoricalFixture):
         assert len(ax.collections) == 0
         assert len(g.ax.collections) > 0
 
-    def test_factorplot(self):
-
-        with pytest.warns(UserWarning):
-            g = cat.factorplot(x="g", y="y", data=self.df)
-
-        assert len(g.ax.collections) == 1
-        want_lines = self.g.unique().size + 1
-        assert len(g.ax.lines) == want_lines
-
     def test_share_xy(self):
 
         # Test default behavior works
