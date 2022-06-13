@@ -55,6 +55,31 @@ class SemanticMapping:
         setattr(plotter, method_name, cls(plotter, *args, **kwargs))
         return plotter
 
+    def _check_list_length(self, levels, values, variable):
+        """Input check when values are provided as a list."""
+        # Copied from _core/properties; eventually will be replaced for that.
+        message = ""
+        if len(levels) > len(values):
+            message = " ".join([
+                f"\nThe {variable} list has fewer values ({len(values)})",
+                f"than needed ({len(levels)}) and will cycle, which may",
+                "produce an uninterpretable plot."
+            ])
+            values = [x for _, x in zip(levels, itertools.cycle(values))]
+
+        elif len(values) > len(levels):
+            message = " ".join([
+                f"The {variable} list has more values ({len(values)})",
+                f"than needed ({len(levels)}), which may not be intended.",
+            ])
+            values = values[:len(levels)]
+
+        # TODO look into custom PlotSpecWarning with better formatting
+        if message:
+            warnings.warn(message, UserWarning)
+
+        return values
+
     def _lookup_single(self, key):
         """Apply the mapping to a single data value."""
         return self.lookup_table[key]
@@ -65,7 +90,6 @@ class SemanticMapping:
             return [self._lookup_single(k, *args, **kwargs) for k in key]
         else:
             return self._lookup_single(key, *args, **kwargs)
-
 
 @share_init_params_with_map
 class HueMapping(SemanticMapping):
@@ -212,10 +236,7 @@ class HueMapping(SemanticMapping):
                 else:
                     colors = color_palette("husl", n_colors)
             elif isinstance(palette, list):
-                if len(palette) != n_colors:
-                    err = "The palette list has the wrong number of colors."
-                    raise ValueError(err)
-                colors = palette
+                colors = self._check_list_length(levels, palette, "palette")
             else:
                 colors = color_palette(palette, n_colors)
 
@@ -367,10 +388,7 @@ class SizeMapping(SemanticMapping):
         elif isinstance(sizes, list):
 
             # List inputs give size values in the same order as the levels
-            if len(sizes) != len(levels):
-                err = "The `sizes` list has the wrong number of values."
-                raise ValueError(err)
-
+            sizes = self._check_list_length(levels, sizes, "sizes")
             lookup_table = dict(zip(levels, sizes))
 
         else:
@@ -578,9 +596,7 @@ class StyleMapping(SemanticMapping):
                 raise ValueError(err)
             lookup_table = arg
         elif isinstance(arg, Sequence):
-            if len(levels) != len(arg):
-                err = f"The `{attr}` argument has the wrong number of values"
-                raise ValueError(err)
+            arg = self._check_list_length(levels, arg, attr)
             lookup_table = dict(zip(levels, arg))
         elif arg:
             err = f"This `{attr}` argument was not understood: {arg}"
