@@ -3231,7 +3231,6 @@ def pointplot(
     markers="o", linestyles="-", dodge=False, join=True, scale=1,
     orient=None, color=None, palette=None, errwidth=None,
     capsize=None, ax=None,
-    **kwargs
 ):
 
     plotter = _PointPlotter(x, y, hue, data, order, hue_order,
