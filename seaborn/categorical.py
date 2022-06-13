@@ -2070,38 +2070,32 @@ _categorical_docs = dict(
 
     # Shared narrative docs
     categorical_narrative=dedent("""\
-    This function always treats one of the variables as categorical and
-    draws data at ordinal positions (0, 1, ... n) on the relevant axis, even
-    when the data has a numeric or date type.
+    .. note::
+        This function always treats one of the variables as categorical and
+        draws data at ordinal positions (0, 1, ... n) on the relevant axis,
+        even when the data has a numeric or date type.
 
-    See the :ref:`tutorial <categorical_tutorial>` for more information.\
+        See the :ref:`tutorial <categorical_tutorial>` for more information.\
     """),
-    main_api_narrative=dedent("""\
 
-    Input data can be passed in a variety of formats, including:
+    new_categorical_narrative=dedent("""\
+    .. note::
+        By default, this function treats one of the variables as categorical
+        and draws data at ordinal positions (0, 1, ... n) on the relevant axis.
+        This can be disabled with the `native_scale` parameter.
 
-    - Vectors of data represented as lists, numpy arrays, or pandas Series
-      objects passed directly to the ``x``, ``y``, and/or ``hue`` parameters.
-    - A "long-form" DataFrame, in which case the ``x``, ``y``, and ``hue``
-      variables will determine how the data are plotted.
-    - A "wide-form" DataFrame, such that each numeric column will be plotted.
-    - An array or list of vectors.
-
-    In most cases, it is possible to use numpy or Python objects, but pandas
-    objects are preferable because the associated names will be used to
-    annotate the axes. Additionally, you can use Categorical types for the
-    grouping variables to control the order of plot elements.\
+        See the :ref:`tutorial <categorical_tutorial>` for more information.\
     """),
 
     # Shared function parameters
     input_params=dedent("""\
     x, y, hue : names of variables in ``data`` or vector data, optional
         Inputs for plotting long-form data. See examples for interpretation.\
-        """),
+    """),
     string_input_params=dedent("""\
     x, y, hue : names of variables in ``data``
         Inputs for plotting long-form data. See examples for interpretation.\
-        """),
+    """),
     categorical_data=dedent("""\
     data : DataFrame, array, or list of arrays, optional
         Dataset for plotting. If ``x`` and ``y`` are absent, this is
@@ -2114,9 +2108,9 @@ _categorical_docs = dict(
     """),
     order_vars=dedent("""\
     order, hue_order : lists of strings, optional
-        Order to plot the categorical levels in, otherwise the levels are
+        Order to plot the categorical levels in; otherwise the levels are
         inferred from the data objects.\
-        """),
+    """),
     stat_api_params=dedent("""\
     estimator : callable that maps vector -> scalar, optional
         Statistical function to estimate within each categorical bin.
@@ -2126,8 +2120,7 @@ _categorical_docs = dict(
         observations. If ``None``, no bootstrapping will be performed, and
         error bars will not be drawn.
     n_boot : int, optional
-        Number of bootstrap iterations to use when computing confidence
-        intervals.
+        Number of bootstrap samples used to compute confidence intervals.
     units : name of variable in ``data`` or vector data, optional
         Identifier of sampling units, which will be used to perform a
         multilevel bootstrap and account for repeated measures design.
@@ -2143,29 +2136,32 @@ _categorical_docs = dict(
     """),
     color=dedent("""\
     color : matplotlib color, optional
-        Color for all of the elements, or seed for a gradient palette.\
+        Single color for the elements in the plot.\
     """),
     palette=dedent("""\
     palette : palette name, list, or dict, optional
-        Color palette that maps either the grouping variable or the hue
-        variable. If the palette is a dictionary, keys should be names of
-        levels and values should be matplotlib colors.\
+        Color palette that maps the hue variable. If the palette is a dictionary,
+        keys should be names of levels and values should be matplotlib colors.\
+    """),
+    hue_norm=dedent("""\
+    hue_norm : tuple or :class:`matplotlib.colors.Normalize` object
+        Normalization in data units for colormap applied to the `hue`
+        variable when it is numeric. Not relevant if `hue` is categorical.\
     """),
     saturation=dedent("""\
     saturation : float, optional
         Proportion of the original saturation to draw colors at. Large patches
         often look better with slightly desaturated colors, but set this to
-        ``1`` if you want the plot colors to perfectly match the input color
-        spec.\
+        `1` if you want the plot colors to perfectly match the input color.\
     """),
     capsize=dedent("""\
-         capsize : float, optional
-             Width of the "caps" on error bars.
-         """),
+    capsize : float, optional
+        Width of the "caps" on error bars./
+    """),
     errwidth=dedent("""\
-         errwidth : float, optional
-             Thickness of error bar lines (and caps).\
-         """),
+    errwidth : float, optional
+        Thickness of error bar lines (and caps).\
+    """),
     width=dedent("""\
     width : float, optional
         Width of a full element when not using hue nesting, or width of all the
@@ -2238,9 +2234,8 @@ _categorical_docs.update(_facet_docs)
 
 def boxplot(
     data=None, *, x=None, y=None, hue=None, order=None, hue_order=None,
-    orient=None, color=None, palette=None, saturation=.75,
-    width=.8, dodge=True, fliersize=5, linewidth=None,
-    whis=1.5, ax=None,
+    orient=None, color=None, palette=None, saturation=.75, width=.8,
+    dodge=True, fliersize=5, linewidth=None, whis=1.5, ax=None,
     **kwargs
 ):
 
@@ -2265,8 +2260,6 @@ boxplot.__doc__ = dedent("""\
     dataset while the whiskers extend to show the rest of the distribution,
     except for points that are determined to be "outliers" using a method
     that is a function of the inter-quartile range.
-
-    {main_api_narrative}
 
     {categorical_narrative}
 
@@ -2423,8 +2416,6 @@ violinplot.__doc__ = dedent("""\
     of data at once, but keep in mind that the estimation procedure is
     influenced by the sample size, and violins for relatively small samples
     might look misleadingly smooth.
-
-    {main_api_narrative}
 
     {categorical_narrative}
 
@@ -2652,8 +2643,6 @@ boxenplot.__doc__ = dedent("""\
 
     https://vita.had.co.nz/papers/letter-value-plot.html
 
-    {main_api_narrative}
-
     {categorical_narrative}
 
     Parameters
@@ -2844,15 +2833,13 @@ def stripplot(
 
 
 stripplot.__doc__ = dedent("""\
-    Draw a scatterplot where one variable is categorical.
+    Draw a categorical scatterplot using jitter to reduce overplotting.
 
     A strip plot can be drawn on its own, but it is also a good complement
     to a box or violin plot in cases where you want to show all observations
     along with some representation of the underlying distribution.
 
-    {main_api_narrative}
-
-    {categorical_narrative}
+    {new_categorical_narrative}
 
     Parameters
     ----------
@@ -2961,9 +2948,6 @@ def swarmplot(
         plot_kws=kwargs,
     )
 
-    # XXX this happens inside a plotting method in the distribution plots
-    # but maybe it's better out here? Alternatively, we have an open issue
-    # suggesting that _attach could add default axes labels, which seems smart.
     p._add_axis_labels(ax)
     p._adjust_cat_axis(ax, axis=p.cat_axis)
 
@@ -2971,7 +2955,7 @@ def swarmplot(
 
 
 swarmplot.__doc__ = dedent("""\
-    Draw a categorical scatterplot with non-overlapping points.
+    Draw a categorical scatterplot with points adjusted to be non-overlapping.
 
     This function is similar to :func:`stripplot`, but the points are adjusted
     (only along the categorical axis) so that they don't overlap. This gives a
@@ -2983,13 +2967,7 @@ swarmplot.__doc__ = dedent("""\
     to a box or violin plot in cases where you want to show all observations
     along with some representation of the underlying distribution.
 
-    Arranging the points properly requires an accurate transformation between
-    data and point coordinates. This means that non-default axis limits must
-    be set *before* drawing the plot.
-
-    {main_api_narrative}
-
-    {categorical_narrative}
+    {new_categorical_narrative}
 
     Parameters
     ----------
@@ -3077,8 +3055,6 @@ barplot.__doc__ = dedent("""\
     In that case, other approaches such as a box or violin plot may be more
     appropriate.
 
-    {main_api_narrative}
-
     {categorical_narrative}
 
     Parameters
@@ -3092,7 +3068,7 @@ barplot.__doc__ = dedent("""\
     {palette}
     {saturation}
     errcolor : matplotlib color
-        Color for the lines that represent the confidence interval.
+        Color used for the error bar lines.
     {errwidth}
     {capsize}
     {dodge}
@@ -3246,17 +3222,17 @@ def pointplot(
 
 
 pointplot.__doc__ = dedent("""\
-    Show point estimates and confidence intervals using scatter plot glyphs.
+    Show point estimates and confidence intervals using dot marks.
 
     A point plot represents an estimate of central tendency for a numeric
-    variable by the position of scatter plot points and provides some
-    indication of the uncertainty around that estimate using error bars.
+    variable by the position of the dot and provides some indication of the
+    uncertainty around that estimate using error bars.
 
     Point plots can be more useful than bar plots for focusing comparisons
     between different levels of one or more categorical variables. They are
     particularly adept at showing interactions: how the relationship between
     levels of one categorical variable changes across levels of a second
-    categorical variable. The lines that join each point from the same ``hue``
+    categorical variable. The lines that join each point from the same `hue`
     level allow interactions to be judged by differences in slope, which is
     easier for the eyes than comparing the heights of several groups of points
     or bars.
@@ -3266,8 +3242,6 @@ pointplot.__doc__ = dedent("""\
     show the distribution of values at each level of the categorical variables.
     In that case, other approaches such as a box or violin plot may be more
     appropriate.
-
-    {main_api_narrative}
 
     {categorical_narrative}
 
@@ -3475,8 +3449,6 @@ countplot.__doc__ = dedent("""\
     of quantitative, variable. The basic API and options are identical to those
     for :func:`barplot`, so you can compare counts across nested variables.
 
-    {main_api_narrative}
-
     {categorical_narrative}
 
     Parameters
@@ -3566,11 +3538,10 @@ def catplot(
     data=None, *, x=None, y=None, hue=None, row=None, col=None,
     col_wrap=None, estimator=np.mean, ci=95, n_boot=1000,
     units=None, seed=None, order=None, hue_order=None, row_order=None,
-    col_order=None, kind="strip", height=5, aspect=1,
-    orient=None, color=None, palette=None,
+    col_order=None, height=5, aspect=1, kind="strip", native_scale=False,
+    formatter=None, orient=None, color=None, palette=None, hue_norm=None,
     legend="auto", legend_out=True, sharex=True, sharey=True,
     margin_titles=False, facet_kws=None,
-    hue_norm=None, native_scale=False, formatter=None,
     **kwargs
 ):
 
@@ -3828,38 +3799,32 @@ catplot.__doc__ = dedent("""\
 
     This function provides access to several axes-level functions that
     show the relationship between a numerical and one or more categorical
-    variables using one of several visual representations. The ``kind``
+    variables using one of several visual representations. The `kind`
     parameter selects the underlying axes-level function to use:
 
     Categorical scatterplots:
 
-    - :func:`stripplot` (with ``kind="strip"``; the default)
-    - :func:`swarmplot` (with ``kind="swarm"``)
+    - :func:`stripplot` (with `kind="strip"`; the default)
+    - :func:`swarmplot` (with `kind="swarm"`)
 
     Categorical distribution plots:
 
-    - :func:`boxplot` (with ``kind="box"``)
-    - :func:`violinplot` (with ``kind="violin"``)
-    - :func:`boxenplot` (with ``kind="boxen"``)
+    - :func:`boxplot` (with `kind="box"`)
+    - :func:`violinplot` (with `kind="violin"`)
+    - :func:`boxenplot` (with `kind="boxen"`)
 
     Categorical estimate plots:
 
-    - :func:`pointplot` (with ``kind="point"``)
-    - :func:`barplot` (with ``kind="bar"``)
-    - :func:`countplot` (with ``kind="count"``)
+    - :func:`pointplot` (with `kind="point"`)
+    - :func:`barplot` (with `kind="bar"`)
+    - :func:`countplot` (with `kind="count"`)
 
     Extra keyword arguments are passed to the underlying function, so you
     should refer to the documentation for each to see kind-specific options.
 
     Note that unlike when using the axes-level functions directly, data must be
     passed in a long-form DataFrame with variables specified by passing strings
-    to ``x``, ``y``, ``hue``, etc.
-
-    As in the case with the underlying plot functions, if variables have a
-    ``categorical`` data type, the levels of the categorical variables, and
-    their order will be inferred from the objects. Otherwise you may have to
-    use alter the dataframe sorting or use the function parameters (``orient``,
-    ``order``, ``hue_order``, etc.) to set up the plot correctly.
+    to `x`, `y`, `hue`, etc.
 
     {categorical_narrative}
 
@@ -3878,17 +3843,18 @@ catplot.__doc__ = dedent("""\
     row_order, col_order : lists of strings, optional
         Order to organize the rows and/or columns of the grid in, otherwise the
         orders are inferred from the data objects.
+    {height}
+    {aspect}
     kind : str, optional
         The kind of plot to draw, corresponds to the name of a categorical
         axes-level plotting function. Options are: "strip", "swarm", "box", "violin",
         "boxen", "point", "bar", or "count".
     {native_scale}
     {formatter}
-    {height}
-    {aspect}
     {orient}
     {color}
     {palette}
+    {hue_norm}
     legend : bool, optional
         If ``True`` and there is a ``hue`` variable, draw a legend on the plot.
     {legend_out}

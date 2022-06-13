@@ -26,20 +26,20 @@ _relational_narrative = DocstringComponents(dict(
 
     # ---  Introductory prose
     main_api="""
-The relationship between ``x`` and ``y`` can be shown for different subsets
-of the data using the ``hue``, ``size``, and ``style`` parameters. These
+The relationship between `x` and `y` can be shown for different subsets
+of the data using the `hue`, `size`, and `style` parameters. These
 parameters control what visual semantics are used to identify the different
 subsets. It is possible to show up to three dimensions independently by
 using all three semantic types, but this style of plot can be hard to
 interpret and is often ineffective. Using redundant semantics (i.e. both
-``hue`` and ``style`` for the same variable) can be helpful for making
+`hue` and `style` for the same variable) can be helpful for making
 graphics more accessible.
 
 See the :ref:`tutorial <relational_tutorial>` for more information.
     """,
 
     relational_semantic="""
-The default treatment of the ``hue`` (and to a lesser extent, ``size``)
+The default treatment of the `hue` (and to a lesser extent, `size`)
 semantic, if present, depends on whether the variable is inferred to
 represent "numeric" or "categorical" data. In particular, numeric variables
 are represented with a sequential colormap by default, and the legend
@@ -53,13 +53,13 @@ _relational_docs = dict(
 
     # --- Shared function parameters
     data_vars="""
-x, y : names of variables in ``data`` or vector data
+x, y : names of variables in `data` or vector data
     Input data variables; must be numeric. Can pass data directly or
-    reference columns in ``data``.
+    reference columns in `data`.
     """,
     data="""
 data : DataFrame, array, or list of arrays
-    Input data structure. If ``x`` and ``y`` are specified as names, this
+    Input data structure. If `x` and `y` are specified as names, this
     should be a "long-form" DataFrame containing those columns. Otherwise
     it is treated as "wide-form" data and grouping variables are ignored.
     See the examples for the various ways this parameter can be specified
@@ -67,66 +67,65 @@ data : DataFrame, array, or list of arrays
     """,
     palette="""
 palette : string, list, dict, or matplotlib colormap
-    An object that determines how colors are chosen when ``hue`` is used.
+    An object that determines how colors are chosen when `hue` is used.
     It can be the name of a seaborn palette or matplotlib colormap, a list
     of colors (anything matplotlib understands), a dict mapping levels
-    of the ``hue`` variable to colors, or a matplotlib colormap object.
+    of the `hue` variable to colors, or a matplotlib colormap object.
     """,
     hue_order="""
 hue_order : list
-    Specified order for the appearance of the ``hue`` variable levels,
+    Specified order for the appearance of the `hue` variable levels,
     otherwise they are determined from the data. Not relevant when the
-    ``hue`` variable is numeric.
+    `hue` variable is numeric.
     """,
     hue_norm="""
 hue_norm : tuple or :class:`matplotlib.colors.Normalize` object
-    Normalization in data units for colormap applied to the ``hue``
-    variable when it is numeric. Not relevant if it is categorical.
+    Normalization in data units for colormap applied to the `hue`
+    variable when it is numeric. Not relevant if `hue` is categorical.
     """,
     sizes="""
 sizes : list, dict, or tuple
-    An object that determines how sizes are chosen when ``size`` is used.
-    It can always be a list of size values or a dict mapping levels of the
-    ``size`` variable to sizes. When ``size``  is numeric, it can also be
-    a tuple specifying the minimum and maximum size to use such that other
-    values are normalized within this range.
+    An object that determines how sizes are chosen when `size` is used.
+    List or dict arguments should provide a size for each unique data value,
+    which forces a categorical interpretation. The argument may also be a
+    min, max tuple.
     """,
     size_order="""
 size_order : list
-    Specified order for appearance of the ``size`` variable levels,
+    Specified order for appearance of the `size` variable levels,
     otherwise they are determined from the data. Not relevant when the
-    ``size`` variable is numeric.
+    `size` variable is numeric.
     """,
     size_norm="""
 size_norm : tuple or Normalize object
     Normalization in data units for scaling plot objects when the
-    ``size`` variable is numeric.
+    `size` variable is numeric.
     """,
     dashes="""
 dashes : boolean, list, or dictionary
     Object determining how to draw the lines for different levels of the
-    ``style`` variable. Setting to ``True`` will use default dash codes, or
+    `style` variable. Setting to `True` will use default dash codes, or
     you can pass a list of dash codes or a dictionary mapping levels of the
-    ``style`` variable to dash codes. Setting to ``False`` will use solid
+    `style` variable to dash codes. Setting to `False` will use solid
     lines for all subsets. Dashes are specified as in matplotlib: a tuple
-    of ``(segment, gap)`` lengths, or an empty string to draw a solid line.
+    of `(segment, gap)` lengths, or an empty string to draw a solid line.
     """,
     markers="""
 markers : boolean, list, or dictionary
     Object determining how to draw the markers for different levels of the
-    ``style`` variable. Setting to ``True`` will use default markers, or
+    `style` variable. Setting to `True` will use default markers, or
     you can pass a list of markers or a dictionary mapping levels of the
-    ``style`` variable to markers. Setting to ``False`` will draw
+    `style` variable to markers. Setting to `False` will draw
     marker-less lines.  Markers are specified as in matplotlib.
     """,
     style_order="""
 style_order : list
-    Specified order for appearance of the ``style`` variable levels
+    Specified order for appearance of the `style` variable levels
     otherwise they are determined from the data. Not relevant when the
-    ``style`` variable is numeric.
+    `style` variable is numeric.
     """,
     units="""
-units : vector or key in ``data``
+units : vector or key in `data`
     Grouping variable identifying sampling units. When used, a separate
     line will be drawn for each unit with appropriate semantics, but no
     legend entry will be added. Useful for showing distribution of
@@ -134,8 +133,8 @@ units : vector or key in ``data``
     """,
     estimator="""
 estimator : name of pandas method or callable or None
-    Method for aggregating across multiple observations of the ``y``
-    variable at the same ``x`` level. If ``None``, all observations will
+    Method for aggregating across multiple observations of the `y`
+    variable at the same `x` level. If `None`, all observations will
     be drawn.
     """,
     ci="""
@@ -156,11 +155,11 @@ seed : int, numpy.random.Generator, or numpy.random.RandomState
     """,
     legend="""
 legend : "auto", "brief", "full", or False
-    How to draw the legend. If "brief", numeric ``hue`` and ``size``
+    How to draw the legend. If "brief", numeric `hue` and `size`
     variables will be represented with a sample of evenly spaced values.
     If "full", every group will get an entry in the legend. If "auto",
     choose between brief or full representation based on number of levels.
-    If ``False``, no legend data is added and no legend is drawn.
+    If `False`, no legend data is added and no legend is drawn.
     """,
     ax_in="""
 ax : matplotlib Axes
@@ -384,7 +383,7 @@ class _LinePlotter(_RelationalPlotter):
         # honor both (a) the current state of the plot cycler and (b) the
         # specified kwargs on all the lines we will draw, overriding when
         # relevant with the data semantics. Note that we won't cycle
-        # internally; in other words, if ``hue`` is not used, all elements will
+        # internally; in other words, if `hue` is not used, all elements will
         # have the same color, but they will have the color that you would have
         # gotten from the corresponding matplotlib function, and calling the
         # function will advance the axes property cycle.
@@ -661,23 +660,23 @@ Draw a line plot with possibility of several semantic groupings.
 
 {narrative.relational_semantic}
 
-By default, the plot aggregates over multiple ``y`` values at each value of
-``x`` and shows an estimate of the central tendency and a confidence
+By default, the plot aggregates over multiple `y` values at each value of
+`x` and shows an estimate of the central tendency and a confidence
 interval for that estimate.
 
 Parameters
 ----------
 {params.core.data}
 {params.core.xy}
-hue : vector or key in ``data``
+hue : vector or key in `data`
     Grouping variable that will produce lines with different colors.
     Can be either categorical or numeric, although color mapping will
     behave differently in latter case.
-size : vector or key in ``data``
+size : vector or key in `data`
     Grouping variable that will produce lines with different widths.
     Can be either categorical or numeric, although size mapping will
     behave differently in latter case.
-style : vector or key in ``data``
+style : vector or key in `data`
     Grouping variable that will produce lines with different dashes
     and/or markers. Can have a numeric dtype but will always be treated
     as categorical.
@@ -707,7 +706,7 @@ err_style : "band" or "bars"
 err_kws : dict of keyword arguments
     Additional parameters to control the aesthetics of the error bars. The
     kwargs are passed either to :meth:`matplotlib.axes.Axes.fill_between`
-    or :meth:`matplotlib.axes.Axes.errorbar`, depending on ``err_style``.
+    or :meth:`matplotlib.axes.Axes.errorbar`, depending on `err_style`.
 {params.rel.legend}
 {params.rel.ci}
 {params.core.ax}
@@ -791,15 +790,15 @@ Parameters
 ----------
 {params.core.data}
 {params.core.xy}
-hue : vector or key in ``data``
+hue : vector or key in `data`
     Grouping variable that will produce points with different colors.
     Can be either categorical or numeric, although color mapping will
     behave differently in latter case.
-size : vector or key in ``data``
+size : vector or key in `data`
     Grouping variable that will produce points with different sizes.
     Can be either categorical or numeric, although size mapping will
     behave differently in latter case.
-style : vector or key in ``data``
+style : vector or key in `data`
     Grouping variable that will produce points with different markers.
     Can have a numeric dtype but will always be treated as categorical.
 {params.core.palette}
@@ -1026,11 +1025,11 @@ Figure-level interface for drawing relational plots onto a FacetGrid.
 
 This function provides access to several different axes-level functions
 that show the relationship between two variables with semantic mappings
-of subsets. The ``kind`` parameter selects the underlying axes-level
+of subsets. The `kind` parameter selects the underlying axes-level
 function to use:
 
-- :func:`scatterplot` (with ``kind="scatter"``; the default)
-- :func:`lineplot` (with ``kind="line"``)
+- :func:`scatterplot` (with `kind="scatter"`; the default)
+- :func:`lineplot` (with `kind="line"`)
 
 Extra keyword arguments are passed to the underlying function, so you
 should refer to the documentation for each to see kind-specific options.
@@ -1044,21 +1043,21 @@ be used directly to tweak supporting plot details or add other layers.
 
 Note that, unlike when using the underlying plotting functions directly,
 data must be passed in a long-form DataFrame with variables specified by
-passing strings to ``x``, ``y``, and other parameters.
+passing strings to `x`, `y`, and other parameters.
 
 Parameters
 ----------
 {params.core.data}
 {params.core.xy}
-hue : vector or key in ``data``
+hue : vector or key in `data`
     Grouping variable that will produce elements with different colors.
     Can be either categorical or numeric, although color mapping will
     behave differently in latter case.
-size : vector or key in ``data``
+size : vector or key in `data`
     Grouping variable that will produce elements with different sizes.
     Can be either categorical or numeric, although size mapping will
     behave differently in latter case.
-style : vector or key in ``data``
+style : vector or key in `data`
     Grouping variable that will produce elements with different styles.
     Can have a numeric dtype but will always be treated as categorical.
 {params.rel.units}
@@ -1079,7 +1078,7 @@ row_order, col_order : lists of strings
 {params.rel.legend}
 kind : string
     Kind of plot to draw, corresponding to a seaborn relational plot.
-    Options are {{``scatter`` and ``line``}}.
+    Options are `"scatter"` or `"line"`.
 {params.facets.height}
 {params.facets.aspect}
 facet_kws : dict
