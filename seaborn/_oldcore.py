@@ -74,7 +74,6 @@ class SemanticMapping:
             ])
             values = values[:len(levels)]
 
-        # TODO look into custom PlotSpecWarning with better formatting
         if message:
             warnings.warn(message, UserWarning)
 
@@ -90,6 +89,7 @@ class SemanticMapping:
             return [self._lookup_single(k, *args, **kwargs) for k in key]
         else:
             return self._lookup_single(key, *args, **kwargs)
+
 
 @share_init_params_with_map
 class HueMapping(SemanticMapping):
