@@ -352,9 +352,8 @@ class _LinePlotter(_RelationalPlotter):
     def __init__(
         self, *,
         data=None, variables={},
-        estimator=None, ci=None, n_boot=None, seed=None,
-        sort=True, err_style=None, err_kws=None, legend=None,
-        errorbar=None,
+        estimator=None, ci=None, n_boot=None, seed=None, errorbar=None,
+        sort=True, orient="x", err_style=None, err_kws=None, legend=None
     ):
 
         # TODO this is messy, we want the mapping to be agnostic about
@@ -372,6 +371,7 @@ class _LinePlotter(_RelationalPlotter):
         self.n_boot = n_boot
         self.seed = seed
         self.sort = sort
+        self.orient = orient
         self.err_style = err_style
         self.err_kws = {} if err_kws is None else err_kws
 
@@ -408,8 +408,11 @@ class _LinePlotter(_RelationalPlotter):
         )
 
         # TODO abstract variable to aggregate over here-ish. Better name?
-        agg_var = "y"
-        grouper = ["x"]
+        orient = self.orient
+        if orient not in {"x", "y"}:
+            err = f"`orient` must be either 'x' or 'y', not {orient!r}."
+            raise ValueError(err)
+        other = {"x": "y", "y": "x"}[orient]
 
         # TODO How to handle NA? We don't want NA to propagate through to the
         # estimate/CI when some values are present, but we would also like
@@ -422,7 +425,7 @@ class _LinePlotter(_RelationalPlotter):
         for sub_vars, sub_data in self.iter_data(grouping_vars, from_comp_data=True):
 
             if self.sort:
-                sort_vars = ["units", "x", "y"]
+                sort_vars = ["units", orient, other]
                 sort_cols = [var for var in sort_vars if var in self.variables]
                 sub_data = sub_data.sort_values(sort_cols)
 
@@ -431,10 +434,10 @@ class _LinePlotter(_RelationalPlotter):
                     # TODO eventually relax this constraint
                     err = "estimator must be None when specifying units"
                     raise ValueError(err)
-                grouped = sub_data.groupby(grouper, sort=self.sort)
+                grouped = sub_data.groupby(orient, sort=self.sort)
                 # Could pass as_index=False instead of reset_index,
                 # but that fails on a corner case with older pandas.
-                sub_data = grouped.apply(agg, agg_var).reset_index()
+                sub_data = grouped.apply(agg, other).reset_index()
 
             # TODO this is pretty ad hoc ; see GH2409
             for var in "xy":
@@ -478,19 +481,23 @@ class _LinePlotter(_RelationalPlotter):
 
                 if self.err_style == "band":
 
-                    ax.fill_between(
-                        sub_data["x"], sub_data["ymin"], sub_data["ymax"],
+                    func = {"x": ax.fill_between, "y": ax.fill_betweenx}[orient]
+                    func(
+                        sub_data[orient],
+                        sub_data[f"{other}min"], sub_data[f"{other}max"],
                         color=line_color, **err_kws
                     )
 
                 elif self.err_style == "bars":
 
-                    error_deltas = (
-                        sub_data["y"] - sub_data["ymin"],
-                        sub_data["ymax"] - sub_data["y"],
-                    )
+                    error_param = {
+                        f"{other}err": (
+                            sub_data[other] - sub_data[f"{other}min"],
+                            sub_data[f"{other}max"] - sub_data[other],
+                        )
+                    }
                     ebars = ax.errorbar(
-                        sub_data["x"], sub_data["y"], error_deltas,
+                        sub_data["x"], sub_data["y"], **error_param,
                         linestyle="", color=line_color, alpha=line_alpha,
                         **err_kws
                     )
@@ -608,8 +615,8 @@ def lineplot(
     sizes=None, size_order=None, size_norm=None,
     dashes=True, markers=None, style_order=None,
     estimator="mean", errorbar=("ci", 95), n_boot=1000, seed=None,
-    sort=True, err_style="band", err_kws=None, ci="deprecated",
-    legend="auto", ax=None, **kwargs
+    orient="x", sort=True, err_style="band", err_kws=None,
+    legend="auto", ci="deprecated", ax=None, **kwargs
 ):
 
     # Handle deprecation of ci parameter
@@ -618,9 +625,9 @@ def lineplot(
     variables = _LinePlotter.get_semantics(locals())
     p = _LinePlotter(
         data=data, variables=variables,
-        estimator=estimator, ci=ci, n_boot=n_boot, seed=seed,
-        sort=sort, err_style=err_style, err_kws=err_kws, legend=legend,
-        errorbar=errorbar,
+        estimator=estimator, ci=ci, n_boot=n_boot, seed=seed, errorbar=errorbar,
+        sort=sort, orient=orient, err_style=err_style, err_kws=err_kws,
+        legend=legend,
     )
 
     p.map_hue(palette=palette, order=hue_order, norm=hue_norm)
@@ -688,6 +695,9 @@ style : vector or key in ``data``
 {params.stat.errorbar}
 {params.rel.n_boot}
 {params.rel.seed}
+orient : "x" or "y"
+    Dimension along which the data are sorted / aggregated. Equivalently,
+    the "independent variable" of the resulting function.
 sort : boolean
     If True, the data will be sorted by the x and y variables, otherwise
     lines will connect points in the order they appear in the dataset.
