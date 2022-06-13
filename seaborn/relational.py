@@ -1006,10 +1006,6 @@ should refer to the documentation for each to see kind-specific options.
 After plotting, the :class:`FacetGrid` with the plot is returned and can
 be used directly to tweak supporting plot details or add other layers.
 
-Note that, unlike when using the underlying plotting functions directly,
-data must be passed in a long-form DataFrame with variables specified by
-passing strings to ``x``, ``y``, and other parameters.
-
 Parameters
 ----------
 {params.core.data}
