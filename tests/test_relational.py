@@ -1278,13 +1278,13 @@ class TestLinePlotter(SharedAxesLevelTests, Helpers):
 
         axs = plt.figure().subplots(2)
         lineplot(data=long_df, x="x", y="y", errorbar=("ci", 95), seed=0, ax=axs[0])
-        with pytest.warns(UserWarning, match="The `ci` parameter is deprecated"):
+        with pytest.warns(FutureWarning, match="\n\nThe `ci` parameter is deprecated"):
             lineplot(data=long_df, x="x", y="y", ci=95, seed=0, ax=axs[1])
         assert_plots_equal(*axs)
 
         axs = plt.figure().subplots(2)
         lineplot(data=long_df, x="x", y="y", errorbar="sd", ax=axs[0])
-        with pytest.warns(UserWarning, match="The `ci` parameter is deprecated"):
+        with pytest.warns(FutureWarning, match="\n\nThe `ci` parameter is deprecated"):
             lineplot(data=long_df, x="x", y="y", ci="sd", ax=axs[1])
         assert_plots_equal(*axs)
 
