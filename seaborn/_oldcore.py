@@ -75,7 +75,7 @@ class SemanticMapping:
             values = values[:len(levels)]
 
         if message:
-            warnings.warn(message, UserWarning)
+            warnings.warn(message, UserWarning, stacklevel=6)
 
         return values
 
