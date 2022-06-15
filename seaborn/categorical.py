@@ -2075,7 +2075,7 @@ _categorical_docs = dict(
         draws data at ordinal positions (0, 1, ... n) on the relevant axis,
         even when the data has a numeric or date type.
 
-        See the :ref:`tutorial <categorical_tutorial>` for more information.\
+    See the :ref:`tutorial <categorical_tutorial>` for more information.\
     """),
 
     new_categorical_narrative=dedent("""\
@@ -2300,84 +2300,7 @@ boxplot.__doc__ = dedent("""\
     Examples
     --------
 
-    Draw a single horizontal boxplot:
-
-    .. plot::
-        :context: close-figs
-
-        >>> import seaborn as sns
-        >>> sns.set_theme(style="whitegrid")
-        >>> tips = sns.load_dataset("tips")
-        >>> ax = sns.boxplot(x=tips["total_bill"])
-
-    Draw a vertical boxplot grouped by a categorical variable:
-
-    .. plot::
-        :context: close-figs
-
-        >>> ax = sns.boxplot(x="day", y="total_bill", data=tips)
-
-    Draw a boxplot with nested grouping by two categorical variables:
-
-    .. plot::
-        :context: close-figs
-
-        >>> ax = sns.boxplot(x="day", y="total_bill", hue="smoker",
-        ...                  data=tips, palette="Set3")
-
-    Draw a boxplot with nested grouping when some bins are empty:
-
-    .. plot::
-        :context: close-figs
-
-        >>> ax = sns.boxplot(x="day", y="total_bill", hue="time",
-        ...                  data=tips, linewidth=2.5)
-
-    Control box order by passing an explicit order:
-
-    .. plot::
-        :context: close-figs
-
-        >>> ax = sns.boxplot(x="time", y="tip", data=tips,
-        ...                  order=["Dinner", "Lunch"])
-
-    Draw a boxplot for each numeric variable in a DataFrame:
-
-    .. plot::
-        :context: close-figs
-
-        >>> iris = sns.load_dataset("iris")
-        >>> ax = sns.boxplot(data=iris, orient="h", palette="Set2")
-
-    Use ``hue`` without changing box position or width:
-
-    .. plot::
-        :context: close-figs
-
-        >>> tips["weekend"] = tips["day"].isin(["Sat", "Sun"])
-        >>> ax = sns.boxplot(x="day", y="total_bill", hue="weekend",
-        ...                  data=tips, dodge=False)
-
-    Use :func:`swarmplot` to show the datapoints on top of the boxes:
-
-    .. plot::
-        :context: close-figs
-
-        >>> ax = sns.boxplot(x="day", y="total_bill", data=tips)
-        >>> ax = sns.swarmplot(x="day", y="total_bill", data=tips, color=".25")
-
-    Use :func:`catplot` to combine a :func:`boxplot` and a
-    :class:`FacetGrid`. This allows grouping within additional categorical
-    variables. Using :func:`catplot` is safer than using :class:`FacetGrid`
-    directly, as it ensures synchronization of variable order across facets:
-
-    .. plot::
-        :context: close-figs
-
-        >>> g = sns.catplot(x="sex", y="total_bill",
-        ...                 hue="smoker", col="time",
-        ...                 data=tips, kind="box",
-        ...                 height=4, aspect=.7);
+    .. include:: ../docstrings/boxplot.rst
 
     """).format(**_categorical_docs)
 
@@ -2479,133 +2402,7 @@ violinplot.__doc__ = dedent("""\
     Examples
     --------
 
-    Draw a single horizontal violinplot:
-
-    .. plot::
-        :context: close-figs
-
-        >>> import seaborn as sns
-        >>> sns.set_theme(style="whitegrid")
-        >>> tips = sns.load_dataset("tips")
-        >>> ax = sns.violinplot(x=tips["total_bill"])
-
-    Draw a vertical violinplot grouped by a categorical variable:
-
-    .. plot::
-        :context: close-figs
-
-        >>> ax = sns.violinplot(x="day", y="total_bill", data=tips)
-
-    Draw a violinplot with nested grouping by two categorical variables:
-
-    .. plot::
-        :context: close-figs
-
-        >>> ax = sns.violinplot(x="day", y="total_bill", hue="smoker",
-        ...                     data=tips, palette="muted")
-
-    Draw split violins to compare the across the hue variable:
-
-    .. plot::
-        :context: close-figs
-
-        >>> ax = sns.violinplot(x="day", y="total_bill", hue="smoker",
-        ...                     data=tips, palette="muted", split=True)
-
-    Control violin order by passing an explicit order:
-
-    .. plot::
-        :context: close-figs
-
-        >>> ax = sns.violinplot(x="time", y="tip", data=tips,
-        ...                     order=["Dinner", "Lunch"])
-
-    Scale the violin width by the number of observations in each bin:
-
-    .. plot::
-        :context: close-figs
-
-        >>> ax = sns.violinplot(x="day", y="total_bill", hue="sex",
-        ...                     data=tips, palette="Set2", split=True,
-        ...                     scale="count")
-
-    Draw the quartiles as horizontal lines instead of a mini-box:
-
-    .. plot::
-        :context: close-figs
-
-        >>> ax = sns.violinplot(x="day", y="total_bill", hue="sex",
-        ...                     data=tips, palette="Set2", split=True,
-        ...                     scale="count", inner="quartile")
-
-    Show each observation with a stick inside the violin:
-
-    .. plot::
-        :context: close-figs
-
-        >>> ax = sns.violinplot(x="day", y="total_bill", hue="sex",
-        ...                     data=tips, palette="Set2", split=True,
-        ...                     scale="count", inner="stick")
-
-    Scale the density relative to the counts across all bins:
-
-    .. plot::
-        :context: close-figs
-
-        >>> ax = sns.violinplot(x="day", y="total_bill", hue="sex",
-        ...                     data=tips, palette="Set2", split=True,
-        ...                     scale="count", inner="stick", scale_hue=False)
-
-    Use a narrow bandwidth to reduce the amount of smoothing:
-
-    .. plot::
-        :context: close-figs
-
-        >>> ax = sns.violinplot(x="day", y="total_bill", hue="sex",
-        ...                     data=tips, palette="Set2", split=True,
-        ...                     scale="count", inner="stick",
-        ...                     scale_hue=False, bw=.2)
-
-    Draw horizontal violins:
-
-    .. plot::
-        :context: close-figs
-
-        >>> planets = sns.load_dataset("planets")
-        >>> ax = sns.violinplot(x="orbital_period", y="method",
-        ...                     data=planets[planets.orbital_period < 1000],
-        ...                     scale="width", palette="Set3")
-
-    Don't let density extend past extreme values in the data:
-
-    .. plot::
-        :context: close-figs
-
-        >>> ax = sns.violinplot(x="orbital_period", y="method",
-        ...                     data=planets[planets.orbital_period < 1000],
-        ...                     cut=0, scale="width", palette="Set3")
-
-    Use ``hue`` without changing violin position or width:
-
-    .. plot::
-        :context: close-figs
-
-        >>> tips["weekend"] = tips["day"].isin(["Sat", "Sun"])
-        >>> ax = sns.violinplot(x="day", y="total_bill", hue="weekend",
-        ...                     data=tips, dodge=False)
-
-    Use :func:`catplot` to combine a :func:`violinplot` and a
-    :class:`FacetGrid`. This allows grouping within additional categorical
-    variables. Using :func:`catplot` is safer than using :class:`FacetGrid`
-    directly, as it ensures synchronization of variable order across facets:
-
-    .. plot::
-        :context: close-figs
-
-        >>> g = sns.catplot(x="sex", y="total_bill",
-        ...                 hue="smoker", col="time",
-        ...                 data=tips, kind="violin", split=True,
-        ...                 height=4, aspect=.7);
+    .. include:: ../docstrings/violinplot.rst
 
     """).format(**_categorical_docs)
 
@@ -2656,8 +2453,7 @@ boxenplot.__doc__ = dedent("""\
     {saturation}
     {width}
     {dodge}
-    k_depth : {{"tukey", "proportion", "trustworthy", "full"}} or scalar,\
-    optional
+    k_depth : {{"tukey", "proportion", "trustworthy", "full"}} or scalar
         The number of boxes, and by extension number of percentiles, to draw.
         All methods are detailed in Wickham's paper. Each makes different
         assumptions about the number of outliers and leverages different
@@ -2698,77 +2494,7 @@ boxenplot.__doc__ = dedent("""\
     Examples
     --------
 
-    Draw a single horizontal boxen plot:
-
-    .. plot::
-        :context: close-figs
-
-        >>> import seaborn as sns
-        >>> sns.set_theme(style="whitegrid")
-        >>> tips = sns.load_dataset("tips")
-        >>> ax = sns.boxenplot(x=tips["total_bill"])
-
-    Draw a vertical boxen plot grouped by a categorical variable:
-
-    .. plot::
-        :context: close-figs
-
-        >>> ax = sns.boxenplot(x="day", y="total_bill", data=tips)
-
-    Draw a letter value plot with nested grouping by two categorical variables:
-
-    .. plot::
-        :context: close-figs
-
-        >>> ax = sns.boxenplot(x="day", y="total_bill", hue="smoker",
-        ...                    data=tips, palette="Set3")
-
-    Draw a boxen plot with nested grouping when some bins are empty:
-
-    .. plot::
-        :context: close-figs
-
-        >>> ax = sns.boxenplot(x="day", y="total_bill", hue="time",
-        ...                    data=tips, linewidth=2.5)
-
-    Control box order by passing an explicit order:
-
-    .. plot::
-        :context: close-figs
-
-        >>> ax = sns.boxenplot(x="time", y="tip", data=tips,
-        ...                    order=["Dinner", "Lunch"])
-
-    Draw a boxen plot for each numeric variable in a DataFrame:
-
-    .. plot::
-        :context: close-figs
-
-        >>> iris = sns.load_dataset("iris")
-        >>> ax = sns.boxenplot(data=iris, orient="h", palette="Set2")
-
-    Use :func:`stripplot` to show the datapoints on top of the boxes:
-
-    .. plot::
-        :context: close-figs
-
-        >>> ax = sns.boxenplot(x="day", y="total_bill", data=tips,
-        ...                    showfliers=False)
-        >>> ax = sns.stripplot(x="day", y="total_bill", data=tips,
-        ...                    size=4, color=".26")
-
-    Use :func:`catplot` to combine :func:`boxenplot` and a :class:`FacetGrid`.
-    This allows grouping within additional categorical variables. Using
-    :func:`catplot` is safer than using :class:`FacetGrid` directly, as it
-    ensures synchronization of variable order across facets:
-
-    .. plot::
-        :context: close-figs
-
-        >>> g = sns.catplot(x="sex", y="total_bill",
-        ...                 hue="smoker", col="time",
-        ...                 data=tips, kind="boxen",
-        ...                 height=4, aspect=.7);
+    .. include:: ../docstrings/boxenplot.rst
 
     """).format(**_categorical_docs)
 
@@ -3090,113 +2816,8 @@ barplot.__doc__ = dedent("""\
     Examples
     --------
 
-    Draw a set of vertical bar plots grouped by a categorical variable:
+    .. include:: ../docstrings/barplot.rst
 
-    .. plot::
-        :context: close-figs
-
-        >>> import seaborn as sns
-        >>> sns.set_theme(style="whitegrid")
-        >>> tips = sns.load_dataset("tips")
-        >>> ax = sns.barplot(x="day", y="total_bill", data=tips)
-
-    Draw a set of vertical bars with nested grouping by a two variables:
-
-    .. plot::
-        :context: close-figs
-
-        >>> ax = sns.barplot(x="day", y="total_bill", hue="sex", data=tips)
-
-    Draw a set of horizontal bars:
-
-    .. plot::
-        :context: close-figs
-
-        >>> ax = sns.barplot(x="tip", y="day", data=tips)
-
-    Control bar order by passing an explicit order:
-
-    .. plot::
-        :context: close-figs
-
-        >>> ax = sns.barplot(x="time", y="tip", data=tips,
-        ...                  order=["Dinner", "Lunch"])
-
-    Use median as the estimate of central tendency:
-
-    .. plot::
-        :context: close-figs
-
-        >>> from numpy import median
-        >>> ax = sns.barplot(x="day", y="tip", data=tips, estimator=median)
-
-    Show the standard error of the mean with the error bars:
-
-    .. plot::
-        :context: close-figs
-
-        >>> ax = sns.barplot(x="day", y="tip", data=tips, ci=68)
-
-    Show standard deviation of observations instead of a confidence interval:
-
-    .. plot::
-        :context: close-figs
-
-        >>> ax = sns.barplot(x="day", y="tip", data=tips, ci="sd")
-
-    Add "caps" to the error bars:
-
-    .. plot::
-        :context: close-figs
-
-        >>> ax = sns.barplot(x="day", y="tip", data=tips, capsize=.2)
-
-    Use a different color palette for the bars:
-
-    .. plot::
-        :context: close-figs
-
-        >>> ax = sns.barplot(x="size", y="total_bill", data=tips,
-        ...                  palette="Blues_d")
-
-    Use ``hue`` without changing bar position or width:
-
-    .. plot::
-        :context: close-figs
-
-        >>> tips["weekend"] = tips["day"].isin(["Sat", "Sun"])
-        >>> ax = sns.barplot(x="day", y="total_bill", hue="weekend",
-        ...                  data=tips, dodge=False)
-
-    Plot all bars in a single color:
-
-    .. plot::
-        :context: close-figs
-
-        >>> ax = sns.barplot(x="size", y="total_bill", data=tips,
-        ...                  color="salmon", saturation=.5)
-
-    Use :meth:`matplotlib.axes.Axes.bar` parameters to control the style.
-
-    .. plot::
-        :context: close-figs
-
-        >>> ax = sns.barplot(x="day", y="total_bill", data=tips,
-        ...                  linewidth=2.5, facecolor=(1, 1, 1, 0),
-        ...                  errcolor=".2", edgecolor=".2")
-
-    Use :func:`catplot` to combine a :func:`barplot` and a :class:`FacetGrid`.
-    This allows grouping within additional categorical variables. Using
-    :func:`catplot` is safer than using :class:`FacetGrid` directly, as it
-    ensures synchronization of variable order across facets:
-
-    .. plot::
-        :context: close-figs
-
-        >>> g = sns.catplot(x="sex", y="total_bill",
-        ...                 hue="smoker", col="time",
-        ...                 data=tips, kind="bar",
-        ...                 height=4, aspect=.7);
 
     """).format(**_categorical_docs)
 
@@ -3282,122 +2903,7 @@ pointplot.__doc__ = dedent("""\
     Examples
     --------
 
-    Draw a set of vertical point plots grouped by a categorical variable:
-
-    .. plot::
-        :context: close-figs
-
-        >>> import seaborn as sns
-        >>> sns.set_theme(style="darkgrid")
-        >>> tips = sns.load_dataset("tips")
-        >>> ax = sns.pointplot(x="time", y="total_bill", data=tips)
-
-    Draw a set of vertical points with nested grouping by a two variables:
-
-    .. plot::
-        :context: close-figs
-
-        >>> ax = sns.pointplot(x="time", y="total_bill", hue="smoker",
-        ...                    data=tips)
-
-    Separate the points for different hue levels along the categorical axis:
-
-    .. plot::
-        :context: close-figs
-
-        >>> ax = sns.pointplot(x="time", y="total_bill", hue="smoker",
-        ...                    data=tips, dodge=True)
-
-    Use a different marker and line style for the hue levels:
-
-    .. plot::
-        :context: close-figs
-
-        >>> ax = sns.pointplot(x="time", y="total_bill", hue="smoker",
-        ...                    data=tips,
-        ...                    markers=["o", "x"],
-        ...                    linestyles=["-", "--"])
-
-    Draw a set of horizontal points:
-
-    .. plot::
-        :context: close-figs
-
-        >>> ax = sns.pointplot(x="tip", y="day", data=tips)
-
-    Don't draw a line connecting each point:
-
-    .. plot::
-        :context: close-figs
-
-        >>> ax = sns.pointplot(x="tip", y="day", data=tips, join=False)
-
-    Use a different color for a single-layer plot:
-
-    .. plot::
-        :context: close-figs
-
-        >>> ax = sns.pointplot(x="time", y="total_bill", data=tips,
-        ...                    color="#bb3f3f")
-
-    Use a different color palette for the points:
-
-    .. plot::
-        :context: close-figs
-
-        >>> ax = sns.pointplot(x="time", y="total_bill", hue="smoker",
-        ...                    data=tips, palette="Set2")
-
-    Control point order by passing an explicit order:
-
-    .. plot::
-        :context: close-figs
-
-        >>> ax = sns.pointplot(x="time", y="tip", data=tips,
-        ...                    order=["Dinner", "Lunch"])
-
-    Use median as the estimate of central tendency:
-
-    .. plot::
-        :context: close-figs
-
-        >>> from numpy import median
-        >>> ax = sns.pointplot(x="day", y="tip", data=tips, estimator=median)
-
-    Show the standard error of the mean with the error bars:
-
-    .. plot::
-        :context: close-figs
-
-        >>> ax = sns.pointplot(x="day", y="tip", data=tips, ci=68)
-
-    Show standard deviation of observations instead of a confidence interval:
-
-    .. plot::
-        :context: close-figs
-
-        >>> ax = sns.pointplot(x="day", y="tip", data=tips, ci="sd")
-
-    Add "caps" to the error bars:
-
-    .. plot::
-        :context: close-figs
-
-        >>> ax = sns.pointplot(x="day", y="tip", data=tips, capsize=.2)
-
-    Use :func:`catplot` to combine a :func:`pointplot` and a
-    :class:`FacetGrid`. This allows grouping within additional categorical
-    variables. Using :func:`catplot` is safer than using :class:`FacetGrid`
-    directly, as it ensures synchronization of variable order across facets:
-
-    .. plot::
-        :context: close-figs
-
-        >>> g = sns.catplot(x="sex", y="total_bill",
-        ...                 hue="smoker", col="time",
-        ...                 data=tips, kind="point",
-        ...                 dodge=True,
-        ...                 height=4, aspect=.7);
+    .. include:: ../docstrings/pointplot.rst
 
     """).format(**_categorical_docs)
 
@@ -3449,6 +2955,9 @@ countplot.__doc__ = dedent("""\
     of quantitative, variable. The basic API and options are identical to those
     for :func:`barplot`, so you can compare counts across nested variables.
 
+    Note that the newer :func:`histplot` function offers more functionality, although
+    its default behavior is somewhat different.
+
     {categorical_narrative}
 
     Parameters
@@ -3478,58 +2987,7 @@ countplot.__doc__ = dedent("""\
     Examples
     --------
 
-    Show value counts for a single categorical variable:
-
-    .. plot::
-        :context: close-figs
-
-        >>> import seaborn as sns
-        >>> sns.set_theme(style="darkgrid")
-        >>> titanic = sns.load_dataset("titanic")
-        >>> ax = sns.countplot(x="class", data=titanic)
-
-    Show value counts for two categorical variables:
-
-    .. plot::
-        :context: close-figs
-
-        >>> ax = sns.countplot(x="class", hue="who", data=titanic)
-
-    Plot the bars horizontally:
-
-    .. plot::
-        :context: close-figs
-
-        >>> ax = sns.countplot(y="class", hue="who", data=titanic)
-
-    Use a different color palette:
-
-    .. plot::
-        :context: close-figs
-
-        >>> ax = sns.countplot(x="who", data=titanic, palette="Set3")
-
-    Use :meth:`matplotlib.axes.Axes.bar` parameters to control the style.
-
-    .. plot::
-        :context: close-figs
-
-        >>> ax = sns.countplot(x="who", data=titanic,
-        ...                    facecolor=(0, 0, 0, 0),
-        ...                    linewidth=5,
-        ...                    edgecolor=sns.color_palette("dark", 3))
-
-    Use :func:`catplot` to combine a :func:`countplot` and a
-    :class:`FacetGrid`. This allows grouping within additional categorical
-    variables. Using :func:`catplot` is safer than using :class:`FacetGrid`
-    directly, as it ensures synchronization of variable order across facets:
-
-    .. plot::
-        :context: close-figs
-
-        >>> g = sns.catplot(x="class", hue="who", col="survived",
-        ...                 data=titanic, kind="count",
-        ...                 height=4, aspect=.7);
+    .. include:: ../docstrings/countplot.rst
 
     """).format(**_categorical_docs)
 
@@ -3875,76 +3333,7 @@ catplot.__doc__ = dedent("""\
     Examples
     --------
 
-    Draw a single facet to use the :class:`FacetGrid` legend placement:
-
-    .. plot::
-        :context: close-figs
-
-        >>> import seaborn as sns
-        >>> sns.set_theme(style="ticks")
-        >>> exercise = sns.load_dataset("exercise")
-        >>> g = sns.catplot(x="time", y="pulse", hue="kind", data=exercise)
-
-    Use a different plot kind to visualize the same data:
-
-    .. plot::
-        :context: close-figs
-
-        >>> g = sns.catplot(x="time", y="pulse", hue="kind",
-        ...                data=exercise, kind="violin")
-
-    Facet along the columns to show a third categorical variable:
-
-    .. plot::
-        :context: close-figs
-
-        >>> g = sns.catplot(x="time", y="pulse", hue="kind",
-        ...                 col="diet", data=exercise)
-
-    Use a different height and aspect ratio for the facets:
-
-    .. plot::
-        :context: close-figs
-
-        >>> g = sns.catplot(x="time", y="pulse", hue="kind",
-        ...                 col="diet", data=exercise,
-        ...                 height=5, aspect=.8)
-
-    Make many column facets and wrap them into the rows of the grid:
-
-    .. plot::
-        :context: close-figs
-
-        >>> titanic = sns.load_dataset("titanic")
-        >>> g = sns.catplot(x="alive", col="deck", col_wrap=4,
-        ...                 data=titanic[titanic.deck.notnull()],
-        ...                 kind="count", height=2.5, aspect=.8)
-
-    Plot horizontally and pass other keyword arguments to the plot function:
-
-    .. plot::
-        :context: close-figs
-
-        >>> g = sns.catplot(x="age", y="embark_town",
-        ...                 hue="sex", row="class",
-        ...                 data=titanic[titanic.embark_town.notnull()],
-        ...                 orient="h", height=2, aspect=3, palette="Set3",
-        ...                 kind="violin", dodge=True, cut=0, bw=.2)
-
-    Use methods on the returned :class:`FacetGrid` to tweak the presentation:
-
-    .. plot::
-        :context: close-figs
-
-        >>> g = sns.catplot(x="who", y="survived", col="class",
-        ...                 data=titanic, saturation=.5,
-        ...                 kind="bar", ci=None, aspect=.6)
-        >>> (g.set_axis_labels("", "Survival Rate")
-        ...   .set_xticklabels(["Men", "Women", "Children"])
-        ...   .set_titles("{{col_name}} {{col_var}}")
-        ...   .set(ylim=(0, 1))
-        ...   .despine(left=True))  #doctest: +ELLIPSIS
-        <seaborn.axisgrid.FacetGrid object at 0x...>
+    .. include:: ../docstrings/catplot.rst
 
     """).format(**_categorical_docs)
 
