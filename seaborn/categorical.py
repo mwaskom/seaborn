@@ -2912,7 +2912,7 @@ pointplot.__doc__ = dedent("""\
 
 def countplot(
     data=None, *, x=None, y=None, hue=None, order=None, hue_order=None,
-    orient=None, color=None, palette=None, saturation=.75,
+    orient=None, color=None, palette=None, saturation=.75, width=.8,
     dodge=True, ax=None, **kwargs
 ):
 
@@ -2938,7 +2938,7 @@ def countplot(
         x, y, hue, data, order, hue_order,
         estimator, ci, n_boot, units, seed,
         orient, color, palette, saturation,
-        errcolor, errwidth, capsize, dodge
+        width, errcolor, errwidth, capsize, dodge
     )
 
     plotter.value_label = "count"
