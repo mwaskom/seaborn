@@ -1385,7 +1385,7 @@ class TestPairGrid:
         m2 = g._legend.legendHandles[1].get_paths()[0]
         assert m1 != m2
 
-        with pytest.raises(ValueError):
+        with pytest.warns(UserWarning):
             g = ag.pairplot(self.df, hue="a", vars=vars, markers=markers[:-2])
 
     def test_corner_despine(self):
