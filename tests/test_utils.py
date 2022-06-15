@@ -560,16 +560,16 @@ def test_draw_figure():
 
 def test_deprecate_ci():
 
-    msg = "The `ci` parameter is deprecated; use `errorbar="
+    msg = "\n\nThe `ci` parameter is deprecated. Use `errorbar="
 
-    with pytest.warns(UserWarning, match=msg + "None"):
+    with pytest.warns(FutureWarning, match=msg + "None"):
         out = _deprecate_ci(None, None)
     assert out is None
 
-    with pytest.warns(UserWarning, match=msg + "'sd'"):
+    with pytest.warns(FutureWarning, match=msg + "'sd'"):
         out = _deprecate_ci(None, "sd")
     assert out == "sd"
 
-    with pytest.warns(UserWarning, match=msg + r"\('ci', 68\)"):
+    with pytest.warns(FutureWarning, match=msg + r"\('ci', 68\)"):
         out = _deprecate_ci(None, 68)
     assert out == ("ci", 68)

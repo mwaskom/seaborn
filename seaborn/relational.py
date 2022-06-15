@@ -352,7 +352,7 @@ class _LinePlotter(_RelationalPlotter):
     def __init__(
         self, *,
         data=None, variables={},
-        estimator=None, ci=None, n_boot=None, seed=None, errorbar=None,
+        estimator=None, n_boot=None, seed=None, errorbar=None,
         sort=True, orient="x", err_style=None, err_kws=None, legend=None
     ):
 
@@ -367,7 +367,6 @@ class _LinePlotter(_RelationalPlotter):
 
         self.estimator = estimator
         self.errorbar = errorbar
-        self.ci = ci
         self.n_boot = n_boot
         self.seed = seed
         self.sort = sort
@@ -522,14 +521,7 @@ class _ScatterPlotter(_RelationalPlotter):
     _legend_attributes = ["color", "s", "marker"]
     _legend_func = "scatter"
 
-    def __init__(
-        self, *,
-        data=None, variables={},
-        x_bins=None, y_bins=None,
-        estimator=None, ci=None, n_boot=None,
-        alpha=None, x_jitter=None, y_jitter=None,
-        legend=None
-    ):
+    def __init__(self, *, data=None, variables={}, legend=None):
 
         # TODO this is messy, we want the mapping to be agnostic about
         # the kind of plot to draw, but for the time being we need to set
@@ -540,7 +532,6 @@ class _ScatterPlotter(_RelationalPlotter):
 
         super().__init__(data=data, variables=variables)
 
-        self.alpha = alpha
         self.legend = legend
 
     def plot(self, ax, kws):
@@ -572,10 +563,6 @@ class _ScatterPlotter(_RelationalPlotter):
             m = mpl.markers.MarkerStyle(m)
         if m.is_filled():
             kws.setdefault("edgecolor", "w")
-
-        # TODO this makes it impossible to vary alpha with hue which might
-        # otherwise be useful? Should we just pass None?
-        kws["alpha"] = 1 if self.alpha == "auto" else self.alpha
 
         # Draw the scatter plot
         points = ax.scatter(x=x, y=y, **kws)
@@ -625,7 +612,7 @@ def lineplot(
     variables = _LinePlotter.get_semantics(locals())
     p = _LinePlotter(
         data=data, variables=variables,
-        estimator=estimator, ci=ci, n_boot=n_boot, seed=seed, errorbar=errorbar,
+        estimator=estimator, n_boot=n_boot, seed=seed, errorbar=errorbar,
         sort=sort, orient=orient, err_style=err_style, err_kws=err_kws,
         legend=legend,
     )
@@ -742,21 +729,12 @@ def scatterplot(
     x=None, y=None, hue=None, size=None, style=None,
     palette=None, hue_order=None, hue_norm=None,
     sizes=None, size_order=None, size_norm=None,
-    markers=True, style_order=None,
-    x_bins=None, y_bins=None,
-    units=None, estimator=None, ci=95, n_boot=1000,
-    alpha=None, x_jitter=None, y_jitter=None,
-    legend="auto", ax=None,
+    markers=True, style_order=None, legend="auto", ax=None,
     **kwargs
 ):
 
     variables = _ScatterPlotter.get_semantics(locals())
-    p = _ScatterPlotter(
-        data=data, variables=variables,
-        x_bins=x_bins, y_bins=y_bins,
-        estimator=estimator, ci=ci, n_boot=n_boot,
-        alpha=alpha, x_jitter=x_jitter, y_jitter=y_jitter, legend=legend,
-    )
+    p = _ScatterPlotter(data=data, variables=variables, legend=legend)
 
     p.map_hue(palette=palette, order=hue_order, norm=hue_norm)
     p.map_size(sizes=sizes, order=size_order, norm=size_norm)
@@ -810,20 +788,6 @@ style : vector or key in ``data``
 {params.rel.size_norm}
 {params.rel.markers}
 {params.rel.style_order}
-{{x,y}}_bins : lists or arrays or functions
-    *Currently non-functional.*
-{params.rel.units}
-    *Currently non-functional.*
-{params.rel.estimator}
-    *Currently non-functional.*
-{params.rel.ci}
-    *Currently non-functional.*
-{params.rel.n_boot}
-    *Currently non-functional.*
-alpha : float
-    Proportional opacity of the points.
-{{x,y}}_jitter : booleans or floats
-    *Currently non-functional.*
 {params.rel.legend}
 {params.core.ax}
 kwargs : key, value mappings
@@ -1041,10 +1005,6 @@ should refer to the documentation for each to see kind-specific options.
 
 After plotting, the :class:`FacetGrid` with the plot is returned and can
 be used directly to tweak supporting plot details or add other layers.
-
-Note that, unlike when using the underlying plotting functions directly,
-data must be passed in a long-form DataFrame with variables specified by
-passing strings to ``x``, ``y``, and other parameters.
 
 Parameters
 ----------
