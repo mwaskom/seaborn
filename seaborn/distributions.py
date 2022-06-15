@@ -398,9 +398,6 @@ class _DistributionPlotter(VectorPlotter):
         _check_argument("multiple", ["layer", "stack", "fill", "dodge"], multiple)
         _check_argument("element", ["bars", "step", "poly"], element)
 
-        if estimate_kws["discrete"] and element != "bars":
-            raise ValueError("`element` must be 'bars' when `discrete` is True")
-
         auto_bins_with_weights = (
             "weights" in self.variables
             and estimate_kws["bins"] == "auto"

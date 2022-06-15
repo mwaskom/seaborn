@@ -1449,11 +1449,6 @@ class TestHistPlotUnivariate(SharedAxesLevelTests):
         ymax, ymin = ax.get_ylim()
         assert ymax > ymin
 
-    def test_discrete_requires_bars(self, long_df):
-
-        with pytest.raises(ValueError, match="`element` must be 'bars'"):
-            histplot(long_df, x="s", discrete=True, element="poly")
-
     @pytest.mark.skipif(
         Version(np.__version__) < Version("1.17"),
         reason="Histogram over datetime64 requires numpy >= 1.17",
