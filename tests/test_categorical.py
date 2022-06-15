@@ -2203,7 +2203,8 @@ class TestBarPlotter(CategoricalFixture):
         estimator=np.mean, ci=95, n_boot=100, units=None, seed=None,
         order=None, hue_order=None,
         orient=None, color=None, palette=None,
-        saturation=.75, errcolor=".26", errwidth=None,
+        saturation=.75, width=0.8,
+        errcolor=".26", errwidth=None,
         capsize=None, dodge=True
     )
 
