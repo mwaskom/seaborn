@@ -1576,8 +1576,8 @@ class _BarPlotter(_CategoricalStatPlotter):
 
     def __init__(self, x, y, hue, data, order, hue_order,
                  estimator, ci, n_boot, units, seed,
-                 orient, color, palette, saturation, errcolor,
-                 errwidth, capsize, dodge):
+                 orient, color, palette, saturation, width,
+                 errcolor, errwidth, capsize, dodge):
         """Initialize the plotter."""
         self.establish_variables(x, y, hue, data, orient,
                                  order, hue_order, units)
@@ -1585,6 +1585,7 @@ class _BarPlotter(_CategoricalStatPlotter):
         self.estimate_statistic(estimator, ci, n_boot, seed)
 
         self.dodge = dodge
+        self.width = width
 
         self.errcolor = errcolor
         self.errwidth = errwidth
@@ -2743,7 +2744,7 @@ swarmplot.__doc__ = dedent("""\
 def barplot(
     data=None, *, x=None, y=None, hue=None, order=None, hue_order=None,
     estimator=np.mean, ci=95, n_boot=1000, units=None, seed=None,
-    orient=None, color=None, palette=None, saturation=.75,
+    orient=None, color=None, palette=None, saturation=.75, width=.8,
     errcolor=".26", errwidth=None, capsize=None, dodge=True,
     ax=None,
     **kwargs,
@@ -2752,7 +2753,7 @@ def barplot(
     plotter = _BarPlotter(x, y, hue, data, order, hue_order,
                           estimator, ci, n_boot, units, seed,
                           orient, color, palette, saturation,
-                          errcolor, errwidth, capsize, dodge)
+                          width, errcolor, errwidth, capsize, dodge)
 
     if ax is None:
         ax = plt.gca()
@@ -2793,6 +2794,7 @@ barplot.__doc__ = dedent("""\
     {color}
     {palette}
     {saturation}
+    {width}
     errcolor : matplotlib color
         Color used for the error bar lines.
     {errwidth}
