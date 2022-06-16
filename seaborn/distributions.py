@@ -344,22 +344,23 @@ class _DistributionPlotter(VectorPlotter):
 
             # Estimate the density of observations at this level
             variance = np.nan_to_num(observations.var())
-            skip = math.isclose(variance, 0)
+            singular = len(observations) < 2 or math.isclose(variance, 0)
             try:
-                density, support = estimator(observations, weights=weights)
+                if not singular:
+                    # Convoluted approach needed because numerical failures
+                    # can manifest in a few different ways.
+                    density, support = estimator(observations, weights=weights)
             except np.linalg.LinAlgError:
-                # Convoluted approach needed because numerical failures
-                # can manifest in a few different ways.
-                skip = True
-            finally:
-                if skip:
-                    msg = (
-                        "Dataset has 0 variance; skipping density estimate. "
-                        "Pass `warn_singular=False` to disable this warning."
-                    )
-                    if warn_singular:
-                        warnings.warn(msg, UserWarning)
-                    continue
+                singular = True
+
+            if singular:
+                msg = (
+                    "Dataset has 0 variance; skipping density estimate. "
+                    "Pass `warn_singular=False` to disable this warning."
+                )
+                if warn_singular:
+                    warnings.warn(msg, UserWarning)
+                continue
 
             if log_scale:
                 support = np.power(10, support)
@@ -1062,7 +1063,7 @@ class _DistributionPlotter(VectorPlotter):
 
             # Extract the data points from this sub set
             observations = sub_data[["x", "y"]]
-            variance = observations.var().fillna(0).min()
+            min_variance = observations.var().fillna(0).min()
             observations = observations["x"], observations["y"]
 
             # Extract the weights for this subset of observations
@@ -1072,22 +1073,23 @@ class _DistributionPlotter(VectorPlotter):
                 weights = None
 
             # Estimate the density of observations at this level
-            skip = math.isclose(variance, 0)
+            singular = math.isclose(min_variance, 0)
             try:
-                density, support = estimator(*observations, weights=weights)
+                if not singular:
+                    density, support = estimator(*observations, weights=weights)
             except np.linalg.LinAlgError:
                 # Testing for 0 variance doesn't catch all cases where scipy raises,
                 # but we can also get a ValueError, so we need this convoluted approach
-                skip = True
-            finally:
-                if skip:
-                    msg = (
-                        "KDE cannot be estimated (0 variance or perfect covariance). "
-                        "Pass `warn_singular=False` to disable this warning."
-                    )
-                    if warn_singular:
-                        warnings.warn(msg, UserWarning, stacklevel=3)
-                    continue
+                singular = True
+
+            if singular:
+                msg = (
+                    "KDE cannot be estimated (0 variance or perfect covariance). "
+                    "Pass `warn_singular=False` to disable this warning."
+                )
+                if warn_singular:
+                    warnings.warn(msg, UserWarning, stacklevel=3)
+                continue
 
             # Transform the support grid back to the original scale
             xx, yy = support
