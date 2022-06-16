@@ -2137,12 +2137,9 @@ def jointplot(
     from .regression import regplot, residplot
     from .distributions import histplot, kdeplot, _freedman_diaconis_bins
 
-    # Handle deprecations
-    if "size" in kwargs:
-        height = kwargs.pop("size")
-        msg = ("The `size` parameter has been renamed to `height`; "
-               "please update your code.")
-        warnings.warn(msg, UserWarning)
+    if kwargs.pop("ax", None) is not None:
+        msg = "Ignoring `ax`; jointplot is a figure-level function."
+        warnings.warn(msg, UserWarning, stacklevel=2)
 
     # Set up empty default kwarg dicts
     joint_kws = {} if joint_kws is None else joint_kws.copy()
@@ -2284,6 +2281,9 @@ def jointplot(
         marginal_kws.setdefault("color", color)
         histplot(x=x, hue=hue, ax=grid.ax_marg_x, **marginal_kws)
         histplot(y=y, hue=hue, ax=grid.ax_marg_y, **marginal_kws)
+
+    # Make the main axes active in the matplotlib state machine
+    plt.sca(grid.ax_joint)
 
     return grid
 
