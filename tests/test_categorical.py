@@ -2203,26 +2203,27 @@ class TestBarPlotter(CategoricalFixture):
         estimator=np.mean, ci=95, n_boot=100, units=None, seed=None,
         order=None, hue_order=None,
         orient=None, color=None, palette=None,
-        saturation=.75, errcolor=".26", errwidth=None,
+        saturation=.75, width=0.8,
+        errcolor=".26", errwidth=None,
         capsize=None, dodge=True
     )
 
     def test_nested_width(self):
 
-        kws = self.default_kws.copy()
+        ax = cat.barplot(data=self.df, x="g", y="y", hue="h")
+        for bar in ax.patches:
+            assert bar.get_width() == pytest.approx(.8 / 2)
+        ax.clear()
 
-        p = cat._BarPlotter(**kws)
-        p.establish_variables("g", "y", hue="h", data=self.df)
-        assert p.nested_width == .8 / 2
+        ax = cat.barplot(data=self.df, x="g", y="y", hue="g", width=.5)
+        for bar in ax.patches:
+            assert bar.get_width() == pytest.approx(.5 / 3)
+        ax.clear()
 
-        p = cat._BarPlotter(**kws)
-        p.establish_variables("h", "y", "g", data=self.df)
-        assert p.nested_width == .8 / 3
-
-        kws["dodge"] = False
-        p = cat._BarPlotter(**kws)
-        p.establish_variables("h", "y", "g", data=self.df)
-        assert p.nested_width == .8
+        ax = cat.barplot(data=self.df, x="g", y="y", hue="g", dodge=False)
+        for bar in ax.patches:
+            assert bar.get_width() == pytest.approx(.8)
+        ax.clear()
 
     def test_draw_vertical_bars(self):
 
