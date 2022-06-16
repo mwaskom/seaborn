@@ -359,7 +359,7 @@ class _DistributionPlotter(VectorPlotter):
                     "Pass `warn_singular=False` to disable this warning."
                 )
                 if warn_singular:
-                    warnings.warn(msg, UserWarning)
+                    warnings.warn(msg, UserWarning, stacklevel=4)
                 continue
 
             if log_scale:

@@ -937,6 +937,10 @@ class TestKDEPlotBivariate:
             ax = dist.kdeplot(x=[5], y=[6])
         assert not ax.lines
 
+        with pytest.warns(UserWarning):
+            ax = kdeplot(x=[1929245168.06679] * 18, y=np.arange(18))
+        assert not ax.lines
+
         with warnings.catch_warnings():
             warnings.simplefilter("error", UserWarning)
             ax = kdeplot(x=[5], y=[7], warn_singular=False)
