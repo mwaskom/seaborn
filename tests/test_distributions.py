@@ -1,4 +1,5 @@
 import itertools
+import warnings
 
 import numpy as np
 import matplotlib as mpl
@@ -411,9 +412,15 @@ class TestKDEPlotUnivariate(SharedAxesLevelTests):
             ax = kdeplot(x=[5])
         assert not ax.lines
 
-        with pytest.warns(None) as record:
+        with pytest.warns(UserWarning):
+            # https://github.com/mwaskom/seaborn/issues/2762
+            ax = kdeplot(x=[1929245168.06679] * 18)
+        assert not ax.lines
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", UserWarning)
             ax = kdeplot(x=[5], warn_singular=False)
-        assert not record
+        assert not ax.lines
 
     def test_variable_assignment(self, long_df):
 
@@ -930,9 +937,14 @@ class TestKDEPlotBivariate:
             ax = dist.kdeplot(x=[5], y=[6])
         assert not ax.lines
 
-        with pytest.warns(None) as record:
+        with pytest.warns(UserWarning):
+            ax = kdeplot(x=[1929245168.06679] * 18, y=np.arange(18))
+        assert not ax.lines
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", UserWarning)
             ax = kdeplot(x=[5], y=[7], warn_singular=False)
-        assert not record
+        assert not ax.lines
 
     def test_fill_artists(self, long_df):
 
