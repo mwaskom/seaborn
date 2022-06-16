@@ -161,6 +161,10 @@ legend : "auto", "brief", "full", or False
     choose between brief or full representation based on number of levels.
     If `False`, no legend data is added and no legend is drawn.
     """,
+    loop="""
+loop : Boolean
+    If True, the ends of the line will be plotted as connected.
+    """,
     ax_in="""
 ax : matplotlib Axes
     Axes object to draw the plot onto, otherwise uses the current Axes.
