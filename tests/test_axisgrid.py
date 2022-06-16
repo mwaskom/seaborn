@@ -1788,4 +1788,11 @@ class TestJointPlot:
 
         with pytest.warns(UserWarning):
             g = ag.jointplot(data=long_df, x="x", y="y", marginal_kws=dict(rug=True))
-            assert g.ax_marg_x.patches
+        assert g.ax_marg_x.patches
+
+    def test_ax_warning(self, long_df):
+
+        ax = plt.gca()
+        with pytest.warns(UserWarning):
+            g = ag.jointplot(data=long_df, x="x", y="y", ax=ax)
+        assert g.ax_joint.collections
