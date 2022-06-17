@@ -462,8 +462,7 @@ class EstimateAggregator:
         errorbar : string, (string, number) tuple, or callable
             Name of errorbar method (either "ci", "pi", "se", or "sd"), or a tuple
             with a method name and a level parameter, or a function that maps from a
-            vector to a (min, max) interval. See the :ref:`tutorial <errorbar_tutorial>`
-            for more information.
+            vector to a (min, max) interval.
         boot_kws
             Additional keywords are passed to bootstrap when error_method is "ci".
 

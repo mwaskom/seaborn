@@ -1468,7 +1468,13 @@ class _CategoricalStatPlotter(_CategoricalPlotter):
             # ----------------------------------------
 
             else:
-                for j, hue_level in enumerate(self.hue_names):
+                for hue_level in self.hue_names:
+
+                    if not self.plot_hues[i].size:
+                        statistic[i].append(np.nan)
+                        if errorbar is not None:
+                            confint[i].append((np.nan, np.nan))
+                        continue
 
                     hue_mask = self.plot_hues[i] == hue_level
                     df = pd.DataFrame({var: group_data[hue_mask]})
@@ -1515,7 +1521,6 @@ class _CategoricalStatPlotter(_CategoricalPlotter):
 
 
 class _BarPlotter(_CategoricalStatPlotter):
-    """Show point estimates and confidence intervals with bars."""
 
     def __init__(self, x, y, hue, data, order, hue_order,
                  estimator, errorbar, n_boot, units, seed,
@@ -1588,16 +1593,15 @@ class _PointPlotter(_CategoricalStatPlotter):
 
     default_palette = "dark"
 
-    """Show point estimates and confidence intervals with (joined) points."""
     def __init__(self, x, y, hue, data, order, hue_order,
-                 estimator, ci, n_boot, units, seed,
+                 estimator, errorbar, n_boot, units, seed,
                  markers, linestyles, dodge, join, scale,
                  orient, color, palette, errwidth=None, capsize=None):
         """Initialize the plotter."""
         self.establish_variables(x, y, hue, data, orient,
                                  order, hue_order, units)
         self.establish_colors(color, palette, 1)
-        self.estimate_statistic(estimator, ci, n_boot, seed)
+        self.estimate_statistic(estimator, errorbar, n_boot, seed)
 
         # Override the default palette for single-color plots
         if hue is None and color is None and palette is None:
@@ -2056,13 +2060,12 @@ _categorical_docs = dict(
         inferred from the data objects.\
     """),
     stat_api_params=dedent("""\
-    estimator : callable that maps vector -> scalar, optional
+    estimator : string or callable that maps vector -> scalar, optional
         Statistical function to estimate within each categorical bin.
-    ci : float or "sd" or None, optional
-        Size of confidence intervals to draw around estimated values.  If
-        "sd", skip bootstrapping and draw the standard deviation of the
-        observations. If ``None``, no bootstrapping will be performed, and
-        error bars will not be drawn.
+    errorbar : string, (string, number) tuple, or callable
+        Name of errorbar method (either "ci", "pi", "se", or "sd"), or a tuple
+        with a method name and a level parameter, or a function that maps from a
+        vector to a (min, max) interval.
     n_boot : int, optional
         Number of bootstrap samples used to compute confidence intervals.
     units : name of variable in ``data`` or vector data, optional
@@ -2686,7 +2689,7 @@ swarmplot.__doc__ = dedent("""\
 
 def barplot(
     data=None, *, x=None, y=None, hue=None, order=None, hue_order=None,
-    estimator=np.mean, errorbar=("ci", 95), n_boot=1000, units=None, seed=None,
+    estimator="mean", errorbar=("ci", 95), n_boot=1000, units=None, seed=None,
     orient=None, color=None, palette=None, saturation=.75, width=.8,
     errcolor=".26", errwidth=None, capsize=None, dodge=True, ci="deprecated",
     ax=None,
@@ -2694,6 +2697,11 @@ def barplot(
 ):
 
     errorbar = utils._deprecate_ci(errorbar, ci)
+
+    # Be backwards compatible with len passed directly, which
+    # does not work in Series.agg (maybe a pandas bug?)
+    if estimator is len:
+        estimator = "size"
 
     plotter = _BarPlotter(x, y, hue, data, order, hue_order,
                           estimator, errorbar, n_boot, units, seed,
@@ -2708,7 +2716,7 @@ def barplot(
 
 
 barplot.__doc__ = dedent("""\
-    Show point estimates and confidence intervals as rectangular bars.
+    Show point estimates and errors as rectangular bars.
 
     A bar plot represents an estimate of central tendency for a numeric
     variable with the height of each rectangle and provides some indication of
@@ -2771,14 +2779,16 @@ barplot.__doc__ = dedent("""\
 
 def pointplot(
     data=None, *, x=None, y=None, hue=None, order=None, hue_order=None,
-    estimator=np.mean, ci=95, n_boot=1000, units=None, seed=None,
+    estimator="mean", errorbar=("ci", 95), n_boot=1000, units=None, seed=None,
     markers="o", linestyles="-", dodge=False, join=True, scale=1,
-    orient=None, color=None, palette=None, errwidth=None,
+    orient=None, color=None, palette=None, errwidth=None, ci="deprecated",
     capsize=None, ax=None,
 ):
 
+    errorbar = utils._deprecate_ci(errorbar, ci)
+
     plotter = _PointPlotter(x, y, hue, data, order, hue_order,
-                            estimator, ci, n_boot, units, seed,
+                            estimator, errorbar, n_boot, units, seed,
                             markers, linestyles, dodge, join, scale,
                             orient, color, palette, errwidth, capsize)
 
@@ -2790,7 +2800,7 @@ def pointplot(
 
 
 pointplot.__doc__ = dedent("""\
-    Show point estimates and confidence intervals using dot marks.
+    Show point estimates and errors using dot marks.
 
     A point plot represents an estimate of central tendency for a numeric
     variable by the position of the dot and provides some indication of the
@@ -2861,8 +2871,8 @@ def countplot(
     dodge=True, ax=None, **kwargs
 ):
 
-    estimator = len
-    ci = None
+    estimator = "size"
+    errorbar = None
     n_boot = 0
     units = None
     seed = None
@@ -2881,7 +2891,7 @@ def countplot(
 
     plotter = _CountPlotter(
         x, y, hue, data, order, hue_order,
-        estimator, ci, n_boot, units, seed,
+        estimator, errorbar, n_boot, units, seed,
         orient, color, palette, saturation,
         width, errcolor, errwidth, capsize, dodge
     )
@@ -2941,12 +2951,12 @@ countplot.__doc__ = dedent("""\
 
 def catplot(
     data=None, *, x=None, y=None, hue=None, row=None, col=None,
-    col_wrap=None, estimator=np.mean, ci=95, n_boot=1000,
+    col_wrap=None, estimator="mean", errorbar=("ci", 95), n_boot=1000,
     units=None, seed=None, order=None, hue_order=None, row_order=None,
     col_order=None, height=5, aspect=1, kind="strip", native_scale=False,
     formatter=None, orient=None, color=None, palette=None, hue_norm=None,
     legend="auto", legend_out=True, sharex=True, sharey=True,
-    margin_titles=False, facet_kws=None,
+    margin_titles=False, facet_kws=None, ci="deprecated",
     **kwargs
 ):
 
@@ -3170,8 +3180,10 @@ def catplot(
     plot_kws.update(kwargs)
 
     if kind in ["bar", "point"]:
+        errorbar = utils._deprecate_ci(errorbar, ci)
         plot_kws.update(
-            estimator=estimator, ci=ci, n_boot=n_boot, units=units, seed=seed,
+            estimator=estimator, errorbar=errorbar,
+            n_boot=n_boot, units=units, seed=seed,
         )
 
     # Initialize the facets
