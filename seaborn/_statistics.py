@@ -487,7 +487,7 @@ class EstimateAggregator:
         elif len(data) <= 1:
             err_min = err_max = np.nan
 
-        # Generic errorbars from use-supplied function
+        # Generic errorbars from user-supplied function
         elif callable(self.error_method):
             err_min, err_max = self.error_method(vals)
 
@@ -514,7 +514,7 @@ def _percentile_interval(data, width):
     """Return a percentile interval from data of a given width."""
     edge = (100 - width) / 2
     percentiles = edge, 100 - edge
-    return np.percentile(data, percentiles)
+    return np.nanpercentile(data, percentiles)
 
 
 def _validate_errorbar_arg(arg):

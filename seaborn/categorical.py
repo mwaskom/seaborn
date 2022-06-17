@@ -26,7 +26,7 @@ from seaborn._oldcore import (
 from seaborn.relational import _RelationalPlotter
 from seaborn import utils
 from seaborn.utils import remove_na, _normal_quantile_func, _draw_figure, _default_color
-from seaborn.algorithms import bootstrap
+from seaborn._statistics import EstimateAggregator
 from seaborn.palettes import color_palette, husl_palette, light_palette, dark_palette
 from seaborn.axisgrid import FacetGrid, _facet_docs
 
@@ -1435,7 +1435,7 @@ class _CategoricalStatPlotter(_CategoricalPlotter):
             width = self.width
         return width
 
-    def estimate_statistic(self, estimator, ci, n_boot, seed):
+    def estimate_statistic(self, estimator, errorbar, n_boot, seed):
 
         if self.hue_names is None:
             statistic = []
@@ -1444,48 +1444,25 @@ class _CategoricalStatPlotter(_CategoricalPlotter):
             statistic = [[] for _ in self.plot_data]
             confint = [[] for _ in self.plot_data]
 
+        var = {"v": "y", "h": "x"}[self.orient]
+
+        agg = EstimateAggregator(estimator, errorbar, n_boot=n_boot, seed=seed)
+
         for i, group_data in enumerate(self.plot_data):
 
             # Option 1: we have a single layer of grouping
             # --------------------------------------------
-
             if self.plot_hues is None:
 
-                if self.plot_units is None:
-                    stat_data = remove_na(group_data)
-                    unit_data = None
-                else:
-                    unit_data = self.plot_units[i]
-                    have = pd.notnull(np.c_[group_data, unit_data]).all(axis=1)
-                    stat_data = group_data[have]
-                    unit_data = unit_data[have]
+                df = pd.DataFrame({var: group_data})
+                if self.plot_units is not None:
+                    df["units"] = self.plot_units[i]
 
-                # Estimate a statistic from the vector of data
-                if not stat_data.size:
-                    statistic.append(np.nan)
-                else:
-                    statistic.append(estimator(stat_data))
+                res = agg(df, var)
 
-                # Get a confidence interval for this estimate
-                if ci is not None:
-
-                    if stat_data.size < 2:
-                        confint.append([np.nan, np.nan])
-                        continue
-
-                    if ci == "sd":
-
-                        estimate = estimator(stat_data)
-                        sd = np.std(stat_data)
-                        confint.append((estimate - sd, estimate + sd))
-
-                    else:
-
-                        boots = bootstrap(stat_data, func=estimator,
-                                          n_boot=n_boot,
-                                          units=unit_data,
-                                          seed=seed)
-                        confint.append(utils.ci(boots, ci))
+                statistic.append(res[var])
+                if errorbar is not None:
+                    confint.append((res[f"{var}min"], res[f"{var}max"]))
 
             # Option 2: we are grouping by a hue layer
             # ----------------------------------------
@@ -1493,50 +1470,16 @@ class _CategoricalStatPlotter(_CategoricalPlotter):
             else:
                 for j, hue_level in enumerate(self.hue_names):
 
-                    if not self.plot_hues[i].size:
-                        statistic[i].append(np.nan)
-                        if ci is not None:
-                            confint[i].append((np.nan, np.nan))
-                        continue
-
                     hue_mask = self.plot_hues[i] == hue_level
-                    if self.plot_units is None:
-                        stat_data = remove_na(group_data[hue_mask])
-                        unit_data = None
-                    else:
-                        group_units = self.plot_units[i]
-                        have = pd.notnull(
-                            np.c_[group_data, group_units]
-                        ).all(axis=1)
-                        stat_data = group_data[hue_mask & have]
-                        unit_data = group_units[hue_mask & have]
+                    df = pd.DataFrame({var: group_data[hue_mask]})
+                    if self.plot_units is not None:
+                        df["units"] = self.plot_units[i][hue_mask]
 
-                    # Estimate a statistic from the vector of data
-                    if not stat_data.size:
-                        statistic[i].append(np.nan)
-                    else:
-                        statistic[i].append(estimator(stat_data))
+                    res = agg(df, var)
 
-                    # Get a confidence interval for this estimate
-                    if ci is not None:
-
-                        if stat_data.size < 2:
-                            confint[i].append([np.nan, np.nan])
-                            continue
-
-                        if ci == "sd":
-
-                            estimate = estimator(stat_data)
-                            sd = np.std(stat_data)
-                            confint[i].append((estimate - sd, estimate + sd))
-
-                        else:
-
-                            boots = bootstrap(stat_data, func=estimator,
-                                              n_boot=n_boot,
-                                              units=unit_data,
-                                              seed=seed)
-                            confint[i].append(utils.ci(boots, ci))
+                    statistic[i].append(res[var])
+                    if errorbar is not None:
+                        confint[i].append((res[f"{var}min"], res[f"{var}max"]))
 
         # Save the resulting values for plotting
         self.statistic = np.array(statistic)
@@ -1575,14 +1518,14 @@ class _BarPlotter(_CategoricalStatPlotter):
     """Show point estimates and confidence intervals with bars."""
 
     def __init__(self, x, y, hue, data, order, hue_order,
-                 estimator, ci, n_boot, units, seed,
+                 estimator, errorbar, n_boot, units, seed,
                  orient, color, palette, saturation, width,
                  errcolor, errwidth, capsize, dodge):
         """Initialize the plotter."""
         self.establish_variables(x, y, hue, data, orient,
                                  order, hue_order, units)
         self.establish_colors(color, palette, saturation)
-        self.estimate_statistic(estimator, ci, n_boot, seed)
+        self.estimate_statistic(estimator, errorbar, n_boot, seed)
 
         self.dodge = dodge
         self.width = width
@@ -2743,15 +2686,17 @@ swarmplot.__doc__ = dedent("""\
 
 def barplot(
     data=None, *, x=None, y=None, hue=None, order=None, hue_order=None,
-    estimator=np.mean, ci=95, n_boot=1000, units=None, seed=None,
+    estimator=np.mean, errorbar=("ci", 95), n_boot=1000, units=None, seed=None,
     orient=None, color=None, palette=None, saturation=.75, width=.8,
-    errcolor=".26", errwidth=None, capsize=None, dodge=True,
+    errcolor=".26", errwidth=None, capsize=None, dodge=True, ci="deprecated",
     ax=None,
     **kwargs,
 ):
 
+    errorbar = utils._deprecate_ci(errorbar, ci)
+
     plotter = _BarPlotter(x, y, hue, data, order, hue_order,
-                          estimator, ci, n_boot, units, seed,
+                          estimator, errorbar, n_boot, units, seed,
                           orient, color, palette, saturation,
                           width, errcolor, errwidth, capsize, dodge)
 
