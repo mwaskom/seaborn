@@ -517,7 +517,7 @@ class TestCategoricalStatPlotter(CategoricalFixture):
 
         p = cat._CategoricalStatPlotter()
         p.establish_variables("g", "y", data=self.df)
-        p.estimate_statistic(np.mean, None, 100, None)
+        p.estimate_statistic("mean", None, 100, None)
         npt.assert_array_equal(p.confint, np.array([]))
 
         p.establish_variables("g", "y", hue="h", data=self.df)
@@ -2468,7 +2468,8 @@ class TestPointPlotter(CategoricalFixture):
 
     default_kws = dict(
         x=None, y=None, hue=None, data=None,
-        estimator=np.mean, ci=95, n_boot=100, units=None, seed=None,
+        estimator="mean", errorbar=("ci", 95),
+        n_boot=100, units=None, seed=None,
         order=None, hue_order=None,
         markers="o", linestyles="-", dodge=0,
         join=True, scale=1,
