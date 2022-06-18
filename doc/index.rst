@@ -3,6 +3,7 @@ seaborn: statistical data visualization
 =======================================
 
 .. grid:: 6
+  :gutter: 1
 
   .. grid-item::
 

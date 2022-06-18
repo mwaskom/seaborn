@@ -51,7 +51,7 @@ More flexible errorbars
 
 Increased the flexibility of what can be shown by the internally-calculated errorbars for :func:`lineplot`, :func:`barplot`, and :func:`pointplot`.
 
-With the new `errorbar` parameter, it is now possible to select bootstrap confidence intervals, percentile / predictive intervals, or intervals formed by scaled standard deviations or standard errors. The parameter also accepts an arbitrary function that maps from a vector to an interval. There is a new :doc:`user guide chapter <errorbar_tutorial>` demonstrating these options and explaining when you might want to use each one.
+With the new `errorbar` parameter, it is now possible to select bootstrap confidence intervals, percentile / predictive intervals, or intervals formed by scaled standard deviations or standard errors. The parameter also accepts an arbitrary function that maps from a vector to an interval. There is a new :doc:`user guide chapter </tutorial/error_bars>` demonstrating these options and explaining when you might want to use each one.
 
 As a consequence of this change, the `ci` parameter has been deprecated. Note that :func:`regplot` does not yet have access to this feature, but it likely will be added there in a future release (:pr:`2407`, :pr:`2866`).
 

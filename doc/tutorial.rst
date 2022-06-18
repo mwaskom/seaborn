@@ -56,7 +56,7 @@ User guide and tutorial
           <div class="col-md-6">
             <div class="col-md-4">
               <a href=./tutorial/error_bars.html>
-                <img src="_images/error_bars_4_0.png" class="img-responsive center-block">
+                <img src="_images/error_bars_3_0.png" class="img-responsive center-block">
               </a>
             </div>
             <div class="col-md-8">

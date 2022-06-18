@@ -2,7 +2,7 @@
 v0.4.0 (September 2014)
 -----------------------
 
-This is a major release from 0.3. Highlights include new approaches for :ref:`quick, high-level dataset exploration <scatterplot_matrix>` (along with a more :ref:`flexible interface <pair_grid_with_kde>`) and easy creation of :ref:`perceptually-appropriate color palettes <cubehelix_palette>` using the cubehelix system. Along with these additions, there are a number of smaller changes that make visualizing data with seaborn easier and more powerful.
+This is a major release from 0.3. Highlights include new approaches for :ref:`quick, high-level dataset exploration <scatterplot_matrix>` (along with a more :ref:`flexible interface <pair_grid_with_kde>`) and easy creation of :ref:`perceptually-appropriate color palettes <cubehelix_palettes>` using the cubehelix system. Along with these additions, there are a number of smaller changes that make visualizing data with seaborn easier and more powerful.
 
 Plotting functions
 ~~~~~~~~~~~~~~~~~~
