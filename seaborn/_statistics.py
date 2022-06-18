@@ -462,8 +462,7 @@ class EstimateAggregator:
         errorbar : string, (string, number) tuple, or callable
             Name of errorbar method (either "ci", "pi", "se", or "sd"), or a tuple
             with a method name and a level parameter, or a function that maps from a
-            vector to a (min, max) interval. See the :ref:`tutorial <errorbar_tutorial>`
-            for more information.
+            vector to a (min, max) interval.
         boot_kws
             Additional keywords are passed to bootstrap when error_method is "ci".
 
@@ -487,7 +486,7 @@ class EstimateAggregator:
         elif len(data) <= 1:
             err_min = err_max = np.nan
 
-        # Generic errorbars from use-supplied function
+        # Generic errorbars from user-supplied function
         elif callable(self.error_method):
             err_min, err_max = self.error_method(vals)
 
@@ -514,7 +513,7 @@ def _percentile_interval(data, width):
     """Return a percentile interval from data of a given width."""
     edge = (100 - width) / 2
     percentiles = edge, 100 - edge
-    return np.percentile(data, percentiles)
+    return np.nanpercentile(data, percentiles)
 
 
 def _validate_errorbar_arg(arg):
