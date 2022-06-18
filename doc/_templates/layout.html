@@ -1,8 +1,11 @@
 {% extends "!layout.html" %}
 
 {% block docs_main %}
-{% set content_xl_width = "col-xl-7" if sidebars else "col-xl-11" %}
-<div class="bd-content col-12 col-md-9 {{ content_xl_width }}">
+{% if sidebars %}
+<div class="bd-content col-12 col-md-9 col-xl-7">
+{% else %}
+<div class="bd-content col-12 col-md-12 col-xl-11">
+{% endif %}
     {% block docs_body %}
     <article class="bd-article" role="main">
       {% block body %} {% endblock %}

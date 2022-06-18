@@ -1,7 +1,7 @@
 {% block docs_toc %}
 {# Define content / TOC behavior depending on whether we have sidebars #}
-{% set toc_show_width = "xl" if sidebars else "md" %}
-<div class="bd-sidebar-secondary d-none d-{{ toc_show_width }}-block col-{{ toc_show_width }}-2 bd-toc">
+{% if sidebars %}
+<div class="bd-sidebar-secondary d-none d-xl-block col-xl-2 bd-toc">
   {% if meta is defined and not (meta is not none and 'notoc' in meta) %}
     {% for toc_item in theme_page_sidebar_items %}
     <div class="toc-item">
@@ -10,4 +10,5 @@
     {% endfor %}
   {% endif %}
 </div>
+{% endif %}
 {% endblock %}

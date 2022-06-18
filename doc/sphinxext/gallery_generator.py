@@ -39,10 +39,6 @@ RST_TEMPLATE = """
 .. literalinclude:: {fname}
     :lines: {end_line}-
 
-.. raw:: html
-
-    </div>
-
 """
 
 
