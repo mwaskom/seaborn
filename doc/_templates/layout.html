@@ -22,29 +22,21 @@
 
 
 {%- block footer %}
-<footer class="footer">
+<footer class="footer" style="border-top: 1px solid #ccc; padding-top: 10px">
   <div class="container">
     <div class="dropup show" style="float:right">
         <a class="btn btn-secondary dropdown-toggle" href="#" role="button" id="dropdownMenuLink" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
             Archive
         </a>
-        <div class="dropdown-menu" aria-labelledby="dropdownMenuLink">
+        <div class="dropdown-menu dropdown-menu-right" aria-labelledby="dropdownMenuLink">
           <a class="dropdown-item" href="./archive/0.10/index.html">v0.10</a>
           <a class="dropdown-item" href="./archive/0.9/index.html">v0.9</a>
         </div>
     </div>
-    <div id="version" style="color: #999; float:right">
-      {{ version }}
-    </div>
-    <!-- <p class="pull-right">  <a href="#">Back to top</a> </p> -->
+    <div id="version" style="color: #999; float:right">{{ version }}</div>
     <p>
-    {% trans copyright=copyright|e %}&#169; Copyright {{ copyright }}, <a href="https://mwaskom.github.io/">Michael Waskom</a>.{% endtrans %}
-    {%- if last_updated %}
-      {% trans last_updated=last_updated|e %}Last updated on {{ last_updated }}.{% endtrans %}<br/>
-    {%- endif %}
-    {%- if show_sphinx %}
-      {% trans sphinx_version=sphinx_version|e %}Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> {{ sphinx_version }}.{% endtrans %}<br/>
-    {%- endif %}
+    {% trans copyright=copyright|e %}&#169; Copyright {{ copyright }}, <a href="https://mwaskom.github.io/">Michael Waskom</a>.{% endtrans %}<br/>
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> and the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/">PyData Theme</a>.<br/>
     </p>
   </div>
 </footer>

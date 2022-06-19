@@ -47,15 +47,15 @@ INDEX_TEMPLATE = """
 .. raw:: html
 
     <style type="text/css">
-    .figure {{
+    .thumb {{
         position: relative;
         float: left;
-        margin: 10px;
         width: 180px;
-        height: 200px;
+        height: 180px;
+        margin: 0;
     }}
 
-    .figure img {{
+    .thumb img {{
         position: absolute;
         display: inline;
         left: 0;
@@ -65,7 +65,7 @@ INDEX_TEMPLATE = """
         filter:alpha(opacity=100); /* For IE8 and earlier */
     }}
 
-    .figure:hover img {{
+    .thumb:hover img {{
         -webkit-filter: blur(3px);
         -moz-filter: blur(3px);
         -o-filter: blur(3px);
@@ -75,7 +75,7 @@ INDEX_TEMPLATE = """
         filter:alpha(opacity=100); /* For IE8 and earlier */
     }}
 
-    .figure span {{
+    .thumb span {{
         position: absolute;
         display: inline;
         left: 0;
@@ -88,14 +88,15 @@ INDEX_TEMPLATE = """
         z-index: 100;
     }}
 
-    .figure p {{
+    .thumb p {{
         position: absolute;
         top: 45%;
         width: 170px;
         font-size: 110%;
+        color: #fff;
     }}
 
-    .figure:hover span {{
+    .thumb:hover span {{
         visibility: visible;
         opacity: .4;
     }}
@@ -313,10 +314,10 @@ class ExampleGenerator:
 
     def contents_entry(self):
         return (".. raw:: html\n\n"
-                "    <div class='figure align-center'>\n"
+                "    <div class='thumb align-center'>\n"
                 "    <a href=./{}>\n"
                 "    <img src=../_static/{}>\n"
-                "    <span class='figure-label'>\n"
+                "    <span class='thumb-label'>\n"
                 "    <p>{}</p>\n"
                 "    </span>\n"
                 "    </a>\n"

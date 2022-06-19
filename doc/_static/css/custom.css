@@ -37,56 +37,7 @@ dt:target, span.highlighted {
   font-weight: normal;
 }
 
-/* If no-sidebar is present, hide the div entirely to prevent taking space */
-/* .no-sidebar {display: none;} */
-
-
 /* *********************************************************************** */
-
-/**** DataFrame display, from pandas ****/
-/* (Possibly non-functional with this pydata theme - not sure why */
-
-.dataframe table {
-  /*Uncomment to center tables horizontally*/
-  /* margin-left: auto; */
-  /* margin-right: auto; */
-  border: none;
-  border-collapse: collapse;
-  border-spacing: 0;
-  font-size: 12px;
-  table-layout: fixed;
-}
-
-.dataframe thead {
-  border-bottom: 1px solid;
-  vertical-align: bottom;
-}
-
-.dataframe tr, th, td {
-  text-align: left;
-  vertical-align: middle;
-  padding: 0.5em 0.5em;
-  line-height: normal;
-  white-space: normal;
-  max-width: none;
-  border: none;
-}
-
-.dataframe th {
-  font-weight: bold;
-}
-
-table {
-  margin-bottom: 20px;
-}
-
-tbody tr:nth-child(odd) {
-  background: #f5f5f5;
-}
-
-tbody tr:hover {
-  background: rgba(66, 165, 245, 0.2);
-}
 
 /* --- Badges for categorizing release notes --- */
 

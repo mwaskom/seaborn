@@ -53,7 +53,7 @@ Increased the flexibility of what can be shown by the internally-calculated erro
 
 With the new `errorbar` parameter, it is now possible to select bootstrap confidence intervals, percentile / predictive intervals, or intervals formed by scaled standard deviations or standard errors. The parameter also accepts an arbitrary function that maps from a vector to an interval. There is a new :doc:`user guide chapter </tutorial/error_bars>` demonstrating these options and explaining when you might want to use each one.
 
-As a consequence of this change, the `ci` parameter has been deprecated. Note that :func:`regplot` does not yet have access to this feature, but it likely will be added there in a future release (:pr:`2407`, :pr:`2866`).
+As a consequence of this change, the `ci` parameter has been deprecated. Note that :func:`regplot` retains the previous API, but it will likely be updated in a future release (:pr:`2407`, :pr:`2866`).
 
 Other updates
 ~~~~~~~~~~~~~
@@ -66,11 +66,11 @@ Other updates
 
 - |Enhancement| Error bars in :func:`regplot` now inherit the alpha value of the points they correspond to (:pr:`2540`).
 
-- |Enhancement| When using :func:`pairplot` with `corner=True` and `diag_kind=None`, the top left y axis label is no longer hidden (:pr:2850`).
-
-- |Enhancement| |Fix| Improved integration with the matplotlib color cycle in most axes-level functions (:pr:`2449`).
+- |Enhancement| When using :func:`pairplot` with `corner=True` and `diag_kind=None`, the top left y axis label is no longer hidden (:pr:`2850`).
 
 - |Enhancement| It is now possible to plot a discrete :func:`histplot` as a step function or polygon (:pr:`2859`).
+
+- |Fix| Improved integration with the matplotlib color cycle in most axes-level functions (:pr:`2449`).
 
 - |Fix| Fixed a regression in 0.11.2 that caused some functions to stall indefinitely or raise when the input data had a duplicate index (:pr:`2776`).
 

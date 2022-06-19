@@ -108,7 +108,7 @@ Documentation improvements
 
 - |Docs| Expanded the :doc:`color palette tutorial </tutorial/color_palettes>` to give more background on color theory and better motivate the use of color in statistical graphics.
 
-- |Docs| Added more information to the :doc:`installation guidelines </installing>` and streamlined the :doc:`introduction </introduction>` page.
+- |Docs| Added more information to the :doc:`installation guidelines </installing>` and streamlined the :doc:`introduction </tutorial/introduction>` page.
 
 - |Docs| Improved cross-linking within the seaborn docs and between the seaborn and matplotlib docs.
 
