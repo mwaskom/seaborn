@@ -86,8 +86,8 @@ def set_theme(context="notebook", style="darkgrid", palette="deep",
     Set aspects of the visual theme for all matplotlib and seaborn plots.
 
     This function changes the global defaults for all plots using the
-    :ref:`matplotlib rcParams system <matplotlib:users/customizing>`.
-    The themeing is decomposed into several distinct sets of parameter values.
+    matplotlib rcParams system. The themeing is decomposed into several distinct
+    sets of parameter values.
 
     The options are illustrated in the :doc:`aesthetics <../tutorial/aesthetics>`
     and :doc:`color palette <../tutorial/color_palettes>` tutorials.

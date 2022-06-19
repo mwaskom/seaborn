@@ -9,42 +9,36 @@ seaborn: statistical data visualization
 
       .. image:: example_thumbs/scatterplot_matrix_thumb.png
         :target: ./examples/scatterplot_matrix.html
-        :class: thumbnail
 
   .. grid-item::
 
       .. image:: example_thumbs/errorband_lineplots_thumb.png
         :target: examples/errorband_lineplots.html
-        :class: thumbnail
 
   .. grid-item::
 
       .. image:: example_thumbs/scatterplot_sizes_thumb.png
         :target: examples/scatterplot_sizes.html
-        :class: thumbnail
 
   .. grid-item::
 
       .. image:: example_thumbs/timeseries_facets_thumb.png
         :target: examples/timeseries_facets.html
-        :class: thumbnail
 
   .. grid-item::
 
       .. image:: example_thumbs/horizontal_boxplot_thumb.png
         :target: examples/horizontal_boxplot.html
-        :class: thumbnail
 
   .. grid-item::
 
       .. image:: example_thumbs/regression_marginals_thumb.png
         :target: examples/regression_marginals.html
-        :class: thumbnail
 
-.. grid:: 3
+.. grid:: 1 1 3 3
 
   .. grid-item::
-    :columns: 6
+    :columns: 12 12 6 6
 
     Seaborn is a Python data visualization library based on `matplotlib
     <https://matplotlib.org>`_. It provides a high-level interface for drawing
@@ -66,7 +60,7 @@ seaborn: statistical data visualization
     have dedicated channels for seaborn.
 
   .. grid-item-card:: Contents
-    :columns: 3
+    :columns: 12 12 3 3
 
     .. toctree::
       :maxdepth: 1
@@ -79,7 +73,7 @@ seaborn: statistical data visualization
       Releases <whatsnew/index>
 
   .. grid-item-card:: Features
-    :columns: 3
+    :columns: 12 12 3 3
 
     .. toctree::
       :hidden:
