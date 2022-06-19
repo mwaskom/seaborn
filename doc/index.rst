@@ -45,7 +45,7 @@ seaborn: statistical data visualization
     attractive and informative statistical graphics.
 
     For a brief introduction to the ideas behind the library, you can read the
-    :doc:`introductory notes <introduction>` or the `paper
+    :doc:`introductory notes <tutorial/introduction>` or the `paper
     <https://joss.theoj.org/papers/10.21105/joss.03021>`_. Visit the
     :doc:`installation page <installing>` to see how you can download the package
     and get started with it. You can browse the :doc:`example gallery
@@ -65,7 +65,6 @@ seaborn: statistical data visualization
     .. toctree::
       :maxdepth: 1
 
-      Introduction <introduction>
       Installing <installing>
       Gallery <examples/index>
       Tutorial <tutorial>

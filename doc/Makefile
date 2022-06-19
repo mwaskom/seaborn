@@ -45,8 +45,6 @@ clean:
 	-rm -rf examples/*
 	-rm -rf example_thumbs/*
 	-rm -rf generated/*
-	-rm -rf introduction_files/*
-	-rm introduction.rst
 	-make -C docstrings clean
 	-make -C tutorial clean
 
@@ -58,10 +56,7 @@ tutorials:
 docstrings:
 	make -C docstrings
 
-introduction.rst: introduction.ipynb
-	tools/nb_to_doc.py ./introduction.ipynb
-
-notebooks: tutorials docstrings introduction.rst
+notebooks: tutorials docstrings
 
 html:
 	$(SPHINXBUILD) -b html $(ALLSPHINXOPTS) $(BUILDDIR)/html
