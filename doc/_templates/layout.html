@@ -24,7 +24,13 @@
 {%- block footer %}
 <footer class="footer" style="border-top: 1px solid #ccc; padding-top: 10px">
   <div class="container">
-    <div class="dropup show" style="float:right">
+    <div id="credits" style="width: 50%; float: left">
+      <p>
+      {% trans copyright=copyright|e %}&#169; Copyright {{ copyright }}, <a href="https://mwaskom.github.io/">Michael Waskom</a>.{% endtrans %}<br/>
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> and the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/">PyData Theme</a>.<br/>
+      </p>
+    </div>
+    <div class="dropup show" style="float: right; margin: 10px">
         <a class="btn btn-secondary dropdown-toggle" href="#" role="button" id="dropdownMenuLink" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
             Archive
         </a>
@@ -33,11 +39,8 @@
           <a class="dropdown-item" href="./archive/0.9/index.html">v0.9</a>
         </div>
     </div>
-    <div id="version" style="color: #999; float:right">{{ version }}</div>
-    <p>
-    {% trans copyright=copyright|e %}&#169; Copyright {{ copyright }}, <a href="https://mwaskom.github.io/">Michael Waskom</a>.{% endtrans %}<br/>
-    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> and the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/">PyData Theme</a>.<br/>
-    </p>
+    <div id="version" style="color: #999; float: right; margin: 15px">v{{ version }}</div>
+    </div>
   </div>
 </footer>
 {%- endblock %}

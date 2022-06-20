@@ -1,8 +1,20 @@
 /**** Overriding theme defaults ****/
 
+html[data-theme=light]{
+  --pst-color-primary: rgb(52, 54, 99);
+  --pst-color-secondary: rgb(107, 161, 174);
+  --pst-color-link: rgb(74, 105, 145);
+  --pst-color-inline-code: rgb(96, 141, 130);
+}
+
 :root {
-  --pst-color-inline-code: 74, 105, 145;
-  --pst-color-link: 52, 54, 99;
+  --pst-font-size-h1: 34px;
+  --pst-font-size-h2: 28px;
+  --pst-font-size-h3: 23px;
+  --pst-font-size-h4: 19px;
+  --pst-font-size-h5: 17px;
+  --pst-font-size-h6: 16px;
+
 }
 
 /* highlight over function signature after link */
@@ -13,28 +25,28 @@ dt:target, span.highlighted {
 /* Syntax highlighting */
 
 /* string literals */
-.highlight .s2 {  
-  color: rgb(107, 161, 174);
+html[data-theme=light] .highlight .s2 {
+  color: rgb(74, 105, 145);
   font-weight: normal;
 }
 /* number literals */
-.highlight .mi {  
-  color: rgb(130, 114, 160);
+html[data-theme=light] .highlight .mi {
+  color: rgb(136, 97, 153);
   font-weight: normal;
 }
-.highlight .mf {
-  color: rgb(130, 114, 160);
+html[data-theme=light] .highlight .mf {
+  color: rgb(136, 97, 153);
   font-weight: normal;
 }
 /* operators */
-.highlight .o { 
-  color: rgb(180, 124, 80);
+html[data-theme=light] .highlight .o {
+  color: rgb(219, 164, 117);
   font-weight: bold;
 }
 /* builtins */
-.highlight .kc {
-  color: rgb(74, 105, 145);
-  font-weight: normal;
+html[data-theme=light] .highlight .kc {
+  color: rgb(107, 161, 174);
+  font-weight: bold;
 }
 
 /* *********************************************************************** */
