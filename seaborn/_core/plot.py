@@ -23,7 +23,7 @@ from seaborn._marks.base import Mark
 from seaborn._stats.base import Stat
 from seaborn._core.data import PlotData
 from seaborn._core.moves import Move
-from seaborn._core.scales import ScaleSpec, Scale
+from seaborn._core.scales import Scale, ScaleTransform
 from seaborn._core.subplots import Subplots
 from seaborn._core.groupby import GroupBy
 from seaborn._core.properties import PROPERTIES, Property, Coordinate
@@ -146,7 +146,7 @@ class Plot:
 
     _data: PlotData
     _layers: list[Layer]
-    _scales: dict[str, ScaleSpec]
+    _scales: dict[str, Scale]
 
     _subplot_spec: dict[str, Any]  # TODO values type
     _facet_spec: FacetSpec
@@ -520,7 +520,7 @@ class Plot:
 
     # TODO def twin()?
 
-    def scale(self, **scales: ScaleSpec) -> Plot:
+    def scale(self, **scales: Scale) -> Plot:
         """
         Control mappings from data units to visual properties.
 
@@ -677,7 +677,7 @@ class Plotter:
         self._legend_contents: list[
             tuple[str, str | int], list[Artist], list[str],
         ] = []
-        self._scales: dict[str, Scale] = {}
+        self._scales: dict[str, ScaleTransform] = {}
 
     def save(self, loc, **kwargs) -> Plotter:  # TODO type args
         kwargs.setdefault("dpi", 96)
@@ -1000,11 +1000,11 @@ class Plotter:
 
     def _get_scale(
         self, spec: Plot, var: str, prop: Property, values: Series
-    ) -> ScaleSpec:
+    ) -> Scale:
 
         if var in spec._scales:
             arg = spec._scales[var]
-            if arg is None or isinstance(arg, ScaleSpec):
+            if arg is None or isinstance(arg, Scale):
                 scale = arg
             else:
                 scale = prop.infer_scale(arg, values)
@@ -1059,13 +1059,15 @@ class Plotter:
             # This dictionary is used by the semantic mappings
             if scale_spec is None:
                 # TODO what is the cleanest way to implement identity scale?
-                # We don't really need a ScaleSpec, and Identity() will be
+                # We don't really need a Scale, and Identity() will be
                 # overloaded anyway (but maybe a general Identity object
                 # that can be used as Scale/Mark/Stat/Move?)
                 # Note that this may not be the right spacer to use
                 # (but that is only relevant for coordinates, where identity scale
                 # doesn't make sense or is poorly defined, since we don't use pixels.)
-                self._scales[var] = Scale([], lambda x: x, None, "identity", None)
+                self._scales[var] = ScaleTransform(
+                    [], lambda x: x, None, "identity", None
+                )
             else:
                 scale = scale_spec.setup(var_values, prop)
                 if isinstance(prop, Coordinate):
@@ -1205,7 +1207,7 @@ class Plotter:
     def _generate_pairings(
         self, data: PlotData, pair_variables: dict,
     ) -> Generator[
-        tuple[list[dict], DataFrame, dict[str, Scale]], None, None
+        tuple[list[dict], DataFrame, dict[str, ScaleTransform]], None, None
     ]:
         # TODO retype return with subplot_spec or similar
 
@@ -1341,7 +1343,7 @@ class Plotter:
         return split_generator
 
     def _update_legend_contents(
-        self, mark: Mark, data: PlotData, scales: dict[str, Scale]
+        self, mark: Mark, data: PlotData, scales: dict[str, ScaleTransform]
     ) -> None:
         """Add legend artists / labels for one layer in the plot."""
         if data.frame.empty and data.frames:

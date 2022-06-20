@@ -45,7 +45,7 @@ if TYPE_CHECKING:
     Pipeline = Sequence[Optional[Callable[[Union[Series, ArrayLike]], ArrayLike]]]
 
 
-class Scale:
+class ScaleTransform:
 
     def __init__(
         self,
@@ -104,7 +104,7 @@ class Scale:
 
 
 @dataclass
-class ScaleSpec:
+class Scale:
 
     values: tuple | str | list | dict | None = None
 
@@ -130,7 +130,7 @@ class ScaleSpec:
 
     def setup(
         self, data: Series, prop: Property, axis: Axis | None = None,
-    ) -> Scale:
+    ) -> ScaleTransform:
         ...
 
     # TODO typing
@@ -154,7 +154,7 @@ class ScaleSpec:
 
 
 @dataclass
-class Nominal(ScaleSpec):
+class Nominal(Scale):
     """
     A categorical scale without relative importance / magnitude.
     """
@@ -224,19 +224,19 @@ class Nominal(ScaleSpec):
 
 
 @dataclass
-class Ordinal(ScaleSpec):
+class Ordinal(Scale):
     # Categorical (convert to strings), sortable, can skip ticklabels
     ...
 
 
 @dataclass
-class Discrete(ScaleSpec):
+class Discrete(Scale):
     # Numeric, integral, can skip ticks/ticklabels
     ...
 
 
 @dataclass
-class ContinuousBase(ScaleSpec):
+class ContinuousBase(Scale):
 
     values: tuple | str | None = None
     norm: tuple | None = None
@@ -282,7 +282,7 @@ class ContinuousBase(ScaleSpec):
         def spacer(x):
             return np.min(np.diff(np.sort(x.dropna().unique())))
 
-        # TODO make legend optional on per-plot basis with ScaleSpec parameter?
+        # TODO make legend optional on per-plot basis with Scale parameter?
         if prop.legend:
             axis.set_view_interval(vmin, vmax)
             locs = axis.major.locator()
@@ -523,12 +523,12 @@ class Temporal(ContinuousBase):
 # ----------------------------------------------------------------------------------- #
 
 
-class Calendric(ScaleSpec):
+class Calendric(Scale):
     # TODO have this separate from Temporal or have Temporal(date=True) or similar?
     ...
 
 
-class Binned(ScaleSpec):
+class Binned(Scale):
     # Needed? Or handle this at layer (in stat or as param, eg binning=)
     ...
 
