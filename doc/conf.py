@@ -131,7 +131,7 @@ html_theme_options = {
         },
     ],
     "show_prev_next": False,
-    "navbar_start": ["navbar-logo", "version"],
+    "navbar_start": ["navbar-logo"],
     "navbar_end": ["search-field", "navbar-icon-links"],
 }
 
