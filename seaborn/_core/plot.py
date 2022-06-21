@@ -23,7 +23,7 @@ from seaborn._marks.base import Mark
 from seaborn._stats.base import Stat
 from seaborn._core.data import PlotData
 from seaborn._core.moves import Move
-from seaborn._core.scales import Scale, ScaleTransform
+from seaborn._core.scales import Scale
 from seaborn._core.subplots import Subplots
 from seaborn._core.groupby import GroupBy
 from seaborn._core.properties import PROPERTIES, Property, Coordinate
@@ -677,7 +677,7 @@ class Plotter:
         self._legend_contents: list[
             tuple[str, str | int], list[Artist], list[str],
         ] = []
-        self._scales: dict[str, ScaleTransform] = {}
+        self._scales: dict[str, Scale] = {}
 
     def save(self, loc, **kwargs) -> Plotter:  # TODO type args
         kwargs.setdefault("dpi", 96)
@@ -873,7 +873,7 @@ class Plotter:
                 var_df = pd.DataFrame(columns=cols)
 
             prop = Coordinate(axis)
-            scale_spec = self._get_scale(p, prefix, prop, var_df[var])
+            scale = self._get_scale(p, prefix, prop, var_df[var])
 
             # Shared categorical axes are broken on matplotlib<3.4.0.
             # https://github.com/matplotlib/matplotlib/pull/18308
@@ -882,7 +882,7 @@ class Plotter:
             if Version(mpl.__version__) < Version("3.4.0"):
                 from seaborn._core.scales import Nominal
                 paired_axis = axis in p._pair_spec
-                cat_scale = isinstance(scale_spec, Nominal)
+                cat_scale = isinstance(scale, Nominal)
                 ok_dim = {"x": "col", "y": "row"}[axis]
                 shared_axes = share_state not in [False, "none", ok_dim]
                 if paired_axis and cat_scale and shared_axes:
@@ -897,7 +897,7 @@ class Plotter:
             # Setup the scale on all of the data and plug it into self._scales
             # We do this because by the time we do self._setup_scales, coordinate data
             # will have been converted to floats already, so scale inference fails
-            self._scales[var] = scale_spec.setup(var_df[var], prop)
+            self._scales[var] = scale._setup(var_df[var], prop)
 
             # Set up an empty series to receive the transformed values.
             # We need this to handle piecemeal tranforms of categories -> floats.
@@ -927,7 +927,7 @@ class Plotter:
 
                     seed_values = var_df.loc[idx, var]
 
-                scale = scale_spec.setup(seed_values, prop, axis=axis_obj)
+                scale = scale._setup(seed_values, prop, axis=axis_obj)
 
                 for layer, new_series in zip(layers, transformed_data):
                     layer_df = layer["data"].frame
@@ -936,7 +936,7 @@ class Plotter:
                         new_series.loc[idx] = scale(layer_df.loc[idx, var])
 
                 # TODO need decision about whether to do this or modify axis transform
-                set_scale_obj(view["ax"], axis, scale.matplotlib_scale)
+                set_scale_obj(view["ax"], axis, scale._matplotlib_scale)
 
             # Now the transformed data series are complete, set update the layer data
             for layer, new_series in zip(layers, transformed_data):
@@ -1052,12 +1052,12 @@ class Plotter:
                 axis = m["axis"]
 
             prop = PROPERTIES.get(var if axis is None else axis, Property())
-            scale_spec = self._get_scale(p, var, prop, var_values)
+            scale = self._get_scale(p, var, prop, var_values)
 
             # Initialize the data-dependent parameters of the scale
             # Note that this returns a copy and does not mutate the original
             # This dictionary is used by the semantic mappings
-            if scale_spec is None:
+            if scale is None:
                 # TODO what is the cleanest way to implement identity scale?
                 # We don't really need a Scale, and Identity() will be
                 # overloaded anyway (but maybe a general Identity object
@@ -1065,18 +1065,16 @@ class Plotter:
                 # Note that this may not be the right spacer to use
                 # (but that is only relevant for coordinates, where identity scale
                 # doesn't make sense or is poorly defined, since we don't use pixels.)
-                self._scales[var] = ScaleTransform(
-                    [], lambda x: x, None, "identity", None
-                )
+                self._scales[var] = Scale._identity()
             else:
-                scale = scale_spec.setup(var_values, prop)
+                transform = scale._setup(var_values, prop)
                 if isinstance(prop, Coordinate):
                     # If we have a coordinate here, we didn't assign a scale for it
                     # in _transform_coords, which means it was added during compute_stat
                     # This allows downstream orientation inference to work properly.
                     # But it feels a little hacky, so perhaps revisit.
-                    scale.scale_type = "computed"
-                self._scales[var] = scale
+                    transform._priority = 0
+                self._scales[var] = transform
 
     def _plot_layer(self, p: Plot, layer: Layer) -> None:
 
@@ -1106,7 +1104,7 @@ class Plotter:
             else:
                 width = df.get("width", 0.8)  # TODO what default
             if orient in df:
-                df["width"] = width * scales[orient].spacing(df[orient])
+                df["width"] = width * scales[orient]._spacing(df[orient])
 
             if "baseline" in mark._mappable_props:
                 # TODO what marks should have this?
@@ -1207,7 +1205,7 @@ class Plotter:
     def _generate_pairings(
         self, data: PlotData, pair_variables: dict,
     ) -> Generator[
-        tuple[list[dict], DataFrame, dict[str, ScaleTransform]], None, None
+        tuple[list[dict], DataFrame, dict[str, Scale]], None, None
     ]:
         # TODO retype return with subplot_spec or similar
 
@@ -1279,7 +1277,7 @@ class Plotter:
             v for v in grouping_vars if v in df and v not in ["col", "row"]
         ]
         for var in grouping_vars:
-            order = self._scales[var].order
+            order = getattr(self._scales[var], "order", None)
             if order is None:
                 order = categorical_order(df[var])
             grouping_keys.append(order)
@@ -1343,7 +1341,7 @@ class Plotter:
         return split_generator
 
     def _update_legend_contents(
-        self, mark: Mark, data: PlotData, scales: dict[str, ScaleTransform]
+        self, mark: Mark, data: PlotData, scales: dict[str, Scale]
     ) -> None:
         """Add legend artists / labels for one layer in the plot."""
         if data.frame.empty and data.frames:
@@ -1359,7 +1357,7 @@ class Plotter:
         ]] = []
         schema = []
         for var in legend_vars:
-            var_legend = scales[var].legend
+            var_legend = scales[var]._legend
             if var_legend is not None:
                 values, labels = var_legend
                 for (_, part_id), part_vars, _ in schema:

@@ -1,11 +1,12 @@
 from __future__ import annotations
 import re
 from copy import copy
+from collections.abc import Sequence
 from dataclasses import dataclass
 from functools import partial
+from typing import Any, Callable, Tuple, Optional, Union
 
 import numpy as np
-import pandas as pd
 import matplotlib as mpl
 from matplotlib.ticker import (
     Locator,
@@ -25,17 +26,15 @@ from matplotlib.dates import (
     ConciseDateFormatter,
 )
 from matplotlib.axis import Axis
+from matplotlib.scale import ScaleBase
+from pandas import Series
 
 from seaborn._core.rules import categorical_order
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from typing import Any, Callable, Tuple, Optional, Union
-    from collections.abc import Sequence
-    from matplotlib.scale import ScaleBase as MatplotlibScale
-    from pandas import Series
-    from numpy.typing import ArrayLike
     from seaborn._core.properties import Property
+    from numpy.typing import ArrayLike
 
     Transforms = Tuple[
         Callable[[ArrayLike], ArrayLike], Callable[[ArrayLike], ArrayLike]
@@ -45,72 +44,15 @@ if TYPE_CHECKING:
     Pipeline = Sequence[Optional[Callable[[Union[Series, ArrayLike]], ArrayLike]]]
 
 
-class ScaleTransform:
-
-    def __init__(
-        self,
-        forward_pipe: Pipeline,
-        spacer: Callable[[Series], float],
-        legend: tuple[list[Any], list[str]] | None,
-        scale_type: str,
-        matplotlib_scale: MatplotlibScale,
-    ):
-
-        self.forward_pipe = forward_pipe
-        self.spacer = spacer
-        self.legend = legend
-        self.scale_type = scale_type
-        self.matplotlib_scale = matplotlib_scale
-
-        # TODO need to make this work
-        self.order = None
-
-    def __call__(self, data: Series) -> ArrayLike:
-
-        return self._apply_pipeline(data, self.forward_pipe)
-
-    # TODO def as_identity(cls):  ?
-
-    def _apply_pipeline(
-        self, data: ArrayLike, pipeline: Pipeline,
-    ) -> ArrayLike:
-
-        # TODO sometimes we need to handle scalars (e.g. for Line)
-        # but what is the best way to do that?
-        scalar_data = np.isscalar(data)
-        if scalar_data:
-            data = np.array([data])
-
-        for func in pipeline:
-            if func is not None:
-                data = func(data)
-
-        if scalar_data:
-            data = data[0]
-
-        return data
-
-    def spacing(self, data: Series) -> float:
-        return self.spacer(data)
-
-    def invert_axis_transform(self, x):
-        # TODO we may no longer need this method as we use the axis
-        # transform directly in Plotter._unscale_coords
-        finv = self.matplotlib_scale.get_transform().inverted().transform
-        out = finv(x)
-        if isinstance(x, pd.Series):
-            return pd.Series(out, index=x.index, name=x.name)
-        return out
-
-
-@dataclass
 class Scale:
 
-    values: tuple | str | list | dict | None = None
+    values: tuple | str | list | dict | None
 
-    ...
-    # TODO have Scale define width (/height?) ('space'?) (using data?), so e.g. nominal
-    # scale sets width=1, continuous scale sets width min(diff(unique(data))), etc.
+    _priority: int
+    _pipeline: Pipeline
+    _matplotlib_scale: ScaleBase
+    _spacer: staticmethod
+    _legend: tuple[list[str], list[Any]] | None
 
     def __post_init__(self):
 
@@ -128,11 +70,6 @@ class Scale:
         self._major_formatter: Formatter
         return self
 
-    def setup(
-        self, data: Series, prop: Property, axis: Axis | None = None,
-    ) -> ScaleTransform:
-        ...
-
     # TODO typing
     def _get_scale(self, name, forward, inverse):
 
@@ -143,14 +80,50 @@ class Scale:
         major_formatter = getattr(self, "_major_formatter", ScalarFormatter())
         # major_formatter = self._major_formatter
 
-        class Scale(mpl.scale.FuncScale):
+        class InternalScale(mpl.scale.FuncScale):
             def set_default_locators_and_formatters(self, axis):
                 axis.set_major_locator(major_locator)
                 if minor_locator is not None:
                     axis.set_minor_locator(minor_locator)
                 axis.set_major_formatter(major_formatter)
 
-        return Scale(name, (forward, inverse))
+        return InternalScale(name, (forward, inverse))
+
+    def _spacing(self, x: Series) -> float:
+        return self._spacer(x)
+
+    def _setup(
+        self, data: Series, prop: Property, axis: Axis | None = None,
+    ) -> Scale:
+        ...
+
+    def __call__(self, data: Series) -> ArrayLike:
+
+        # TODO sometimes we need to handle scalars (e.g. for Line)
+        # but what is the best way to do that?
+        scalar_data = np.isscalar(data)
+        if scalar_data:
+            data = np.array([data])
+
+        for func in self._pipeline:
+            if func is not None:
+                data = func(data)
+
+        if scalar_data:
+            data = data[0]
+
+        return data
+
+    @staticmethod
+    def _identity():
+
+        class Identity(Scale):
+            _pipeline = []
+            _spacer = None
+            _legend = None
+            _matplotlib_scale = None
+
+        return Identity()
 
 
 @dataclass
@@ -160,9 +133,12 @@ class Nominal(Scale):
     """
     # Categorical (convert to strings), un-sortable
 
+    values: tuple | str | list | dict | None = None
     order: list | None = None
 
-    def setup(
+    _priority: int = 3
+
+    def _setup(
         self, data: Series, prop: Property, axis: Axis | None = None,
     ) -> Scale:
 
@@ -187,6 +163,8 @@ class Nominal(Scale):
             # and (B) allow the values parameter for a Coordinate to set xlim/ylim
             axis.set_view_interval(0, len(units_seed) - 1)
 
+        self._matplotlib_scale = mpl_scale
+
         # TODO array cast necessary to handle float/int mixture, which we need
         # to solve in a more systematic way probably
         # (i.e. if we have [1, 2.5], do we want [1.0, 2.5]? Unclear)
@@ -204,7 +182,7 @@ class Nominal(Scale):
             out[keep] = axis.convert_units(stringify(x[keep]))
             return out
 
-        forward_pipe = [
+        self._pipeline = [
             convert_units,
             prop.get_mapping(self, data),
             # TODO how to handle color representation consistency?
@@ -213,14 +191,15 @@ class Nominal(Scale):
         def spacer(x):
             return 1
 
-        if prop.legend:
-            legend = units_seed, list(stringify(units_seed))
-        else:
-            legend = None
+        self._spacer = spacer
 
-        scale_type = self.__class__.__name__.lower()
-        scale = Scale(forward_pipe, spacer, legend, scale_type, mpl_scale)
-        return scale
+        if prop.legend:
+            self._legend = units_seed, list(stringify(units_seed))
+        else:
+            # TODO initialize with this?
+            self._legend = None
+
+        return self
 
 
 @dataclass
@@ -241,7 +220,7 @@ class ContinuousBase(Scale):
     values: tuple | str | None = None
     norm: tuple | None = None
 
-    def setup(
+    def _setup(
         self, data: Series, prop: Property, axis: Axis | None = None,
     ) -> Scale:
 
@@ -255,6 +234,7 @@ class ContinuousBase(Scale):
             axis.update_units(data)
 
         mpl_scale.set_default_locators_and_formatters(axis)
+        self._matplotlib_scale = mpl_scale
 
         normalize: Optional[Callable[[ArrayLike], ArrayLike]]
         if prop.normed:
@@ -272,7 +252,7 @@ class ContinuousBase(Scale):
         else:
             normalize = vmin = vmax = None
 
-        forward_pipe = [
+        self._pipeline = [
             axis.convert_units,
             forward,
             normalize,
@@ -281,6 +261,7 @@ class ContinuousBase(Scale):
 
         def spacer(x):
             return np.min(np.diff(np.sort(x.dropna().unique())))
+        self._spacer = spacer
 
         # TODO make legend optional on per-plot basis with Scale parameter?
         if prop.legend:
@@ -288,13 +269,12 @@ class ContinuousBase(Scale):
             locs = axis.major.locator()
             locs = locs[(vmin <= locs) & (locs <= vmax)]
             labels = axis.major.formatter.format_ticks(locs)
-            legend = list(locs), list(labels)
+            self._legend = list(locs), list(labels)
 
         else:
-            legend = None
+            self._legend = None
 
-        scale_type = self.__class__.__name__.lower()
-        return Scale(forward_pipe, spacer, legend, scale_type, mpl_scale)
+        return self
 
     def _get_transform(self):
 
@@ -336,13 +316,13 @@ class Continuous(ContinuousBase):
     """
     A numeric scale supporting norms and functional transforms.
     """
+    values: tuple | str | None = None
     transform: str | Transforms | None = None
 
     # TODO Add this to deal with outliers?
     # outside: Literal["keep", "drop", "clip"] = "keep"
 
-    # TODO maybe expose matplotlib more directly like this?
-    # def using(self, scale: mpl.scale.ScaleBase) ?
+    _priority: int = 1
 
     def tick(
         self,
@@ -474,6 +454,8 @@ class Temporal(ContinuousBase):
     # may be more useful.
 
     transform = None
+
+    _priority: int = 2
 
     def tick(
         self, locator: Locator | None = None, *,
@@ -652,7 +634,8 @@ class PseudoAxis:
         return self.major.locator()
 
 
-# ------------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------------ #
+# Transform function creation
 
 
 def _make_identity_transforms() -> Transforms:

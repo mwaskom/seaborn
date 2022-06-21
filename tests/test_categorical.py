@@ -1952,7 +1952,7 @@ class SharedScatterTests(SharedAxesLevelTests):
 
     @pytest.mark.parametrize(
         "val_var,val_col,hue_col",
-        itertools.product(["x", "y"], ["b", "y", "t"], [None, "a"]),
+        list(itertools.product(["x", "y"], ["b", "y", "t"], [None, "a"])),
     )
     def test_single(self, long_df, val_var, val_col, hue_col):
 

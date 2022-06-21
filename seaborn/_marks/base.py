@@ -1,19 +1,24 @@
 from __future__ import annotations
 from dataclasses import dataclass, fields, field
+from typing import Any, Callable, Union
+from collections.abc import Generator
 
 import numpy as np
 import pandas as pd
 import matplotlib as mpl
 
-from seaborn._core.properties import PROPERTIES, Property
-
-from typing import Any, Callable, Union
-from collections.abc import Generator
 from numpy import ndarray
 from pandas import DataFrame
 from matplotlib.artist import Artist
-from seaborn._core.properties import RGBATuple, DashPattern, DashPatternWithOffset
+
 from seaborn._core.scales import Scale
+from seaborn._core.properties import (
+    PROPERTIES,
+    Property,
+    RGBATuple,
+    DashPattern,
+    DashPatternWithOffset,
+)
 
 
 class Mappable:
@@ -184,27 +189,11 @@ class Mark:
         # TODO rethink this to map from scale type to "DV priority" and use that?
         # e.g. Nominal > Discrete > Continuous
 
-        x_type = None if "x" not in scales else scales["x"].scale_type
-        y_type = None if "y" not in scales else scales["y"].scale_type
+        x = 0 if "x" not in scales else scales["x"]._priority
+        y = 0 if "y" not in scales else scales["y"]._priority
 
-        if x_type is None or x_type == "computed":
+        if y > x:
             return "y"
-
-        elif y_type is None or y_type == "computed":
-            return "x"
-
-        elif x_type != "nominal" and y_type == "nominal":
-            return "y"
-
-        elif x_type != "continuous" and y_type == "continuous":
-
-            # TODO should we try to orient based on number of unique values?
-
-            return "x"
-
-        elif x_type == "continuous" and y_type != "continuous":
-            return "y"
-
         else:
             return "x"
 
