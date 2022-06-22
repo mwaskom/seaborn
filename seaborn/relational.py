@@ -590,6 +590,15 @@ class _ScatterPlotter(_RelationalPlotter):
             self.add_legend_data(ax)
             handles, _ = ax.get_legend_handles_labels()
             if handles:
+                for h in handles:
+                    if 'markersize' in kws:
+                        h.set_markersize(kws['markersize'])
+                    if 'markeredgewidth' in kws:
+                        h.set_markeredgewidth(kws['markeredgewidth'])
+                    if 'linewidth' in kws:
+                        h.set_linewidth(kws['linewidth'])
+                    if 'markeredgecolor' in kws:
+                        h.set_markeredgecolor(kws['markeredgecolor'])
                 legend = ax.legend(title=self.legend_title)
                 adjust_legend_subtitles(legend)
 
