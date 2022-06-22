@@ -1097,7 +1097,7 @@ class Plotter:
                 # sorted unique numbers will correctly reconstruct intended order
                 # TODO This is tricky, make sure we add some tests for this
                 if var not in "xy" and var in scales:
-                    return scales[var].order
+                    return getattr(scales[var], "order", None)
 
             if "width" in mark._mappable_props:
                 width = mark._resolve(df, "width", None)

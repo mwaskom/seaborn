@@ -58,27 +58,25 @@ class Scale:
 
         # TODO do we need anything else here?
         self.tick()
-        self.format()
+        self.label()
 
     def tick(self):
-        # TODO what is the right base method?
-        self._major_locator: Locator
-        self._minor_locator: Locator
+        self._tick_params = {}
         return self
 
-    def format(self):
+    def label(self):
         self._major_formatter: Formatter
+        return self
+
+    def _get_ticks(self):
+        # TODO raise NotImplementedError?
         return self
 
     # TODO typing
     def _get_scale(self, name, forward, inverse):
 
-        major_locator = self._major_locator
-        minor_locator = self._minor_locator
-
-        # TODO hack, need to add default to Continuous
-        major_formatter = getattr(self, "_major_formatter", ScalarFormatter())
-        # major_formatter = self._major_formatter
+        major_locator, minor_locator = self._get_ticks(**self._tick_params)
+        major_formatter = self._get_labels(major_locator, **self._label_params)
 
         class InternalScale(mpl.scale.FuncScale):
             def set_default_locators_and_formatters(self, axis):
@@ -359,6 +357,46 @@ class Continuous(ContinuousBase):
         Returns self with new tick configuration.
 
         """
+        # Input checks
+        if locator is not None and not isinstance(locator, Locator):
+            err = (
+                f"Tick locator must be an instance of {Locator!r}, "
+                f"not {type(locator)!r}."
+            )
+            raise TypeError(err)
+
+        # Note: duplicating some logic from _get_ticks so that we can raise input checks
+        # from the function the user actually calls rather than from within _setup
+        log_transform = (
+            isinstance(self.transform, str)
+            and re.match(r"log(\d*)", self.transform)
+        )
+
+        if count is not None and between is None and log_transform:
+            msg = "`count` requires `between` with log transform."
+            raise RuntimeError(msg)
+
+        if every is not None and log_transform:
+            msg = "`every` not supported with log transform."
+            raise RuntimeError(msg)
+
+        self._tick_params = {
+            "locator": locator,
+            "at": at,
+            "upto": upto,
+            "count": count,
+            "every": every,
+            "between": between,
+            "minor": minor,
+        }
+        # TODO much easier to copy now
+        return self
+
+    def label(self, formatter=None):
+        self._label_params = {"formatter": formatter}
+        return self
+
+    def _get_ticks(self, locator, at, upto, count, every, between, minor):
 
         # TODO what about symlog?
         if isinstance(self.transform, str):
@@ -371,13 +409,6 @@ class Continuous(ContinuousBase):
             log_base = forward = inverse = None
 
         if locator is not None:
-            # TODO accept tuple for major, minor?
-            if not isinstance(locator, Locator):
-                err = (
-                    f"Tick locator must be an instance of {Locator!r}, "
-                    f"not {type(locator)!r}."
-                )
-                raise TypeError(err)
             major_locator = locator
 
         # TODO raise if locator is passed with any other parameters
@@ -390,9 +421,6 @@ class Continuous(ContinuousBase):
 
         elif count is not None:
             if between is None:
-                if log_transform:
-                    msg = "`count` requires `between` with log transform."
-                    raise RuntimeError(msg)
                 # This is rarely useful (unless you are setting limits)
                 major_locator = LinearLocator(count)
             else:
@@ -404,9 +432,6 @@ class Continuous(ContinuousBase):
                 major_locator = FixedLocator(ticks)
 
         elif every is not None:
-            if log_transform:
-                msg = "`every` not supported with log transform."
-                raise RuntimeError(msg)
             if between is None:
                 major_locator = MultipleLocator(every)
             else:
@@ -429,13 +454,12 @@ class Continuous(ContinuousBase):
             else:
                 minor_locator = AutoMinorLocator(minor + 1)
 
-        self._major_locator = major_locator
-        self._minor_locator = minor_locator
+        return major_locator, minor_locator
 
-        return self
+    def _get_labels(self, locator, formatter):
 
-    # TODO need to fill this out
-    # def format(self, ...):
+        # TODO fill this out
+        return ScalarFormatter()
 
 
 @dataclass
@@ -458,47 +482,51 @@ class Temporal(ContinuousBase):
     _priority: int = 2
 
     def tick(
-        self, locator: Locator | None = None, *,
-        upto: int | None = None,
+        self, locator: Locator | None = None, *, upto: int | None = None,
     ) -> Temporal:
 
-        if locator is not None:
-            # TODO accept tuple for major, minor?
-            if not isinstance(locator, Locator):
-                err = (
-                    f"Tick locator must be an instance of {Locator!r}, "
-                    f"not {type(locator)!r}."
-                )
-                raise TypeError(err)
-            major_locator = locator
+        if locator is not None and not isinstance(locator, Locator):
+            err = (
+                f"Tick locator must be an instance of {Locator!r}, "
+                f"not {type(locator)!r}."
+            )
+            raise TypeError(err)
 
+        self._tick_params = {"locator": locator, "upto": upto}
+        return self
+
+    def _get_ticks(self, locator, upto):
+
+        if locator is not None:
+            major_locator = locator
         elif upto is not None:
             # TODO atleast for minticks?
             major_locator = AutoDateLocator(minticks=2, maxticks=upto)
 
         else:
             major_locator = AutoDateLocator(minticks=2, maxticks=6)
+        minor_locator = None
 
-        self._major_locator = major_locator
-        self._minor_locator = None
+        return major_locator, minor_locator
 
-        self.format()
+    def _get_labels(self, locator, formatter, concise):
 
-        return self
+        # TODO handle formatter
 
-    def format(
-        self, formater: Formatter | None = None, *,
-        concise: bool = False,
+        if concise:
+            # TODO ideally we would have concise coordinate ticks,
+            # but full semantic ticks. Is that possible?
+            formatter = ConciseDateFormatter(locator)
+        else:
+            formatter = AutoDateFormatter(locator)
+
+        return formatter
+
+    def label(
+        self, formatter: Formatter | None = None, *, concise: bool = False,
     ) -> Temporal:
 
-        # TODO ideally we would have concise coordinate ticks,
-        # but full semantic ticks. Is that possible?
-        if concise:
-            major_formatter = ConciseDateFormatter(self._major_locator)
-        else:
-            major_formatter = AutoDateFormatter(self._major_locator)
-        self._major_formatter = major_formatter
-
+        self._label_params = {"formatter": formatter, "concise": concise}
         return self
 
 
