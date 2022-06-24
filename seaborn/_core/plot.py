@@ -1067,14 +1067,14 @@ class Plotter:
                 # doesn't make sense or is poorly defined, since we don't use pixels.)
                 self._scales[var] = Scale._identity()
             else:
-                transform = scale._setup(var_values, prop)
+                scale = scale._setup(var_values, prop)
                 if isinstance(prop, Coordinate):
                     # If we have a coordinate here, we didn't assign a scale for it
                     # in _transform_coords, which means it was added during compute_stat
                     # This allows downstream orientation inference to work properly.
                     # But it feels a little hacky, so perhaps revisit.
-                    transform._priority = 0
-                self._scales[var] = transform
+                    scale._priority = 0
+                self._scales[var] = scale
 
     def _plot_layer(self, p: Plot, layer: Layer) -> None:
 

@@ -18,7 +18,11 @@ from matplotlib.ticker import (
     LogLocator,
     MaxNLocator,
     MultipleLocator,
+    EngFormatter,
+    FuncFormatter,
+    LogFormatterSciNotation,
     ScalarFormatter,
+    StrMethodFormatter,
 )
 from matplotlib.dates import (
     AutoDateLocator,
@@ -56,27 +60,32 @@ class Scale:
 
     def __post_init__(self):
 
-        # TODO do we need anything else here?
-        self.tick()
-        self.label()
+        # TODO clumsy way to set up defaults needed after we changed these
+        # to not operate in place
+        new = self.tick().label()
+        self._tick_params = new._tick_params
+        self._label_params = new._label_params
 
     def tick(self):
+        # TODO any reason for this with new approach?
         self._tick_params = {}
         return self
 
+    def _get_locators(self):
+        raise NotImplementedError()
+
     def label(self):
-        self._major_formatter: Formatter
+        self._label_params = {}
         return self
 
-    def _get_ticks(self):
-        # TODO raise NotImplementedError?
-        return self
+    def _get_formatter(self):
+        raise NotImplementedError()
 
     # TODO typing
     def _get_scale(self, name, forward, inverse):
 
-        major_locator, minor_locator = self._get_ticks(**self._tick_params)
-        major_formatter = self._get_labels(major_locator, **self._label_params)
+        major_locator, minor_locator = self._get_locators(**self._tick_params)
+        major_formatter = self._get_formatter(major_locator, **self._label_params)
 
         class InternalScale(mpl.scale.FuncScale):
             def set_default_locators_and_formatters(self, axis):
@@ -134,7 +143,7 @@ class Nominal(Scale):
     values: tuple | str | list | dict | None = None
     order: list | None = None
 
-    _priority: int = 3
+    _priority: int = 3  # TODO need to hide from dataclass
 
     def _setup(
         self, data: Series, prop: Property, axis: Axis | None = None,
@@ -354,7 +363,7 @@ class Continuous(ContinuousBase):
 
         Returns
         -------
-        Returns self with new tick configuration.
+        Copy of self with new tick configuration.
 
         """
         # Input checks
@@ -365,8 +374,8 @@ class Continuous(ContinuousBase):
             )
             raise TypeError(err)
 
-        # Note: duplicating some logic from _get_ticks so that we can raise input checks
-        # from the function the user actually calls rather than from within _setup
+        # Note: duplicating some logic from _get_locators so that we can do input checks
+        # in the function the user actually calls rather than from within _setup
         log_transform = (
             isinstance(self.transform, str)
             and re.match(r"log(\d*)", self.transform)
@@ -380,7 +389,8 @@ class Continuous(ContinuousBase):
             msg = "`every` not supported with log transform."
             raise RuntimeError(msg)
 
-        self._tick_params = {
+        new = copy(self)
+        new._tick_params = {
             "locator": locator,
             "at": at,
             "upto": upto,
@@ -389,14 +399,9 @@ class Continuous(ContinuousBase):
             "between": between,
             "minor": minor,
         }
-        # TODO much easier to copy now
-        return self
+        return new
 
-    def label(self, formatter=None):
-        self._label_params = {"formatter": formatter}
-        return self
-
-    def _get_ticks(self, locator, at, upto, count, every, between, minor):
+    def _get_locators(self, locator, at, upto, count, every, between, minor):
 
         # TODO what about symlog?
         if isinstance(self.transform, str):
@@ -456,10 +461,53 @@ class Continuous(ContinuousBase):
 
         return major_locator, minor_locator
 
-    def _get_labels(self, locator, formatter):
+    def label(
+        self,
+        formatter=None, *,
+        like: str | Callable | None = None,
+        unit: str | None = None,
+        base: int | None = None,
+    ) -> Continuous:
 
-        # TODO fill this out
-        return ScalarFormatter()
+        # TODO input check on like
+
+        new = copy(self)
+        new._label_params = {
+            "formatter": formatter,
+            "like": like,
+            "unit": unit,
+            "base": base,
+        }
+        return new
+
+    def _get_formatter(self, locator, formatter, like, unit, base):
+
+        if formatter is not None:
+            return formatter
+
+        if like is not None:
+            if isinstance(like, str):
+                if "{x" in like or "{pos" in like:
+                    fmt = like
+                else:
+                    fmt = f"{{x:{like}}}"
+                formatter = StrMethodFormatter(fmt)
+            else:
+                formatter = FuncFormatter(like)
+
+        elif unit is not None:
+            # TODO use like with unit to set places=?
+            # TODO accept (sep, unit) tuple?
+            formatter = EngFormatter(unit)
+
+        elif base is not None:
+            # TODO what about other log options?
+            formatter = LogFormatterSciNotation(base)
+
+        else:
+            formatter = ScalarFormatter()
+
+        return formatter
 
 
 @dataclass
@@ -492,10 +540,11 @@ class Temporal(ContinuousBase):
             )
             raise TypeError(err)
 
-        self._tick_params = {"locator": locator, "upto": upto}
-        return self
+        new = copy(self)
+        new._tick_params = {"locator": locator, "upto": upto}
+        return new
 
-    def _get_ticks(self, locator, upto):
+    def _get_locators(self, locator, upto):
 
         if locator is not None:
             major_locator = locator
@@ -509,7 +558,7 @@ class Temporal(ContinuousBase):
 
         return major_locator, minor_locator
 
-    def _get_labels(self, locator, formatter, concise):
+    def _get_formatter(self, locator, formatter, concise):
 
         # TODO handle formatter
 
@@ -526,8 +575,9 @@ class Temporal(ContinuousBase):
         self, formatter: Formatter | None = None, *, concise: bool = False,
     ) -> Temporal:
 
-        self._label_params = {"formatter": formatter, "concise": concise}
-        return self
+        new = copy(self)
+        new._label_params = {"formatter": formatter, "concise": concise}
+        return new
 
 
 # ----------------------------------------------------------------------------------- #
