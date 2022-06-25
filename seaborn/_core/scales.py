@@ -470,8 +470,32 @@ class Continuous(ContinuousBase):
         base: int | None = None,
         unit: str | None = None,
     ) -> Continuous:
+        """
+        Configure the appearance of tick labels for the scale's axis or legend.
 
-        # TODO input check on like
+        Parameters
+        ----------
+        formatter : matplotlib Formatter
+            Pre-configured formatter to use; other parameters will be ignored.
+        like : str or callable
+            Either a format pattern (e.g., `".2f"`), a format string with fields named
+            `x` and/or `pos` (e.g., `"${x.2f}"`), or a callable that consumes a number
+            and returns a string.
+        base : number
+            Use log formatter (with scientific notation) having this value as the base.
+        unit : str or (str, str) tuple
+            Use engineering formatter with SI units (e.g., tick values in the 1000s
+            with `unit="g"` will have a `"kg"` suffix). When a tuple, the first
+            element gives the seperator between the number and unit.
+
+        Returns
+        -------
+        Copy of self with new label configuration.
+
+        """
+        if like is not None and not isinstance(like, str) or callable(like):
+            msg = f"`like` must be a string or callable, not {type(like).__name__}."
+            raise TypeError(msg)
 
         new = copy(self)
         new._label_params = {
@@ -497,18 +521,16 @@ class Continuous(ContinuousBase):
             else:
                 formatter = FuncFormatter(like)
 
+        elif base is not None:
+            # We could add other log options if necessary
+            formatter = LogFormatterSciNotation(base)
+
         elif unit is not None:
-            # TODO use like with unit to set places=?
-            # TODO accept (sep, unit) tuple?
             if isinstance(unit, tuple):
                 sep, unit = unit
             else:
                 sep = " "
             formatter = EngFormatter(unit, sep=sep)
-
-        elif base is not None:
-            # TODO what about other log options?
-            formatter = LogFormatterSciNotation(base)
 
         else:
             formatter = ScalarFormatter()
