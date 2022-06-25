@@ -71,10 +71,14 @@ plot_formats = [('png', 90)]
 plot_html_show_formats = False
 plot_html_show_source_link = False
 
+# Don't add a source link in the sidebar
+html_show_sourcelink = False
+
 # Control the appearance of type hints
 autodoc_typehints = "description"
 autodoc_typehints_format = "short"
 
+# Allow shorthand references for main function interface
 rst_prolog = """
 .. currentmodule:: seaborn
 """
@@ -120,19 +124,19 @@ html_theme_options = {
         {
             "name": "GitHub",
             "url": "https://github.com/mwaskom/seaborn",
-            "icon": "fab fa-github-square",
+            "icon": "fab fa-github",
             "type": "fontawesome",
         },
         {
             "name": "Twitter",
             "url": "https://twitter.com/michaelwaskom",
-            "icon": "fab fa-twitter-square",
+            "icon": "fab fa-twitter",
             "type": "fontawesome",
         },
     ],
     "show_prev_next": False,
     "navbar_start": ["navbar-logo"],
-    "navbar_end": ["search-field", "navbar-icon-links"],
+    "navbar_end": ["search-button", "navbar-icon-links"],
 }
 
 html_context = {

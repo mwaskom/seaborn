@@ -236,5 +236,3 @@ Figure aesthetics
           :maxdepth: 2
 
           tutorial/color_palettes
-
-    .

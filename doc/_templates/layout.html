@@ -1,26 +1,5 @@
 {% extends "!layout.html" %}
 
-{% block docs_main %}
-{% if sidebars %}
-<div class="bd-content col-12 col-md-9 col-xl-7">
-{% else %}
-<div class="bd-content col-12 col-md-12 col-xl-11">
-{% endif %}
-    {% block docs_body %}
-    <article class="bd-article" role="main">
-      {% block body %} {% endblock %}
-    </article>
-    {% endblock %}
-
-    {% if theme_show_prev_next %}
-    <footer class="bd-footer-article">
-        {% include "sections/footer-article.html" %}
-    </footer>
-    {% endif %}
-</div>
-{% endblock %}
-
-
 {%- block footer %}
 <footer class="footer" style="border-top: 1px solid #ccc; padding-top: 10px">
   <div class="container">
