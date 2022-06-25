@@ -62,6 +62,8 @@ class Scale:
 
         # TODO clumsy way to set up defaults needed after we changed these
         # to not operate in place
+        # Alternatively, could we have _setup call the methods to get default
+        # values when they are unset? Might be cleaner
         new = self.tick().label()
         self._tick_params = new._tick_params
         self._label_params = new._label_params
