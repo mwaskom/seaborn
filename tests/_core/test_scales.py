@@ -221,7 +221,7 @@ class TestContinuous:
 
     def test_label_like_pattern(self, x):
 
-        a, locs = self.setup_labels(x, like="4f")
+        a, locs = self.setup_labels(x, like=".4f")
         labels = a.major.formatter.format_ticks(locs)
         for text in labels:
             assert re.match(r"^\d\.\d{4}$", text)
@@ -260,6 +260,23 @@ class TestContinuous:
         labels = a.major.formatter.format_ticks(locs)
         for text in labels[1:-1]:
             assert re.match(r"^\d+mg$", text)
+
+    def test_label_base_from_transform(self, x):
+
+        s = Continuous(transform="log")
+        a = PseudoAxis(s._setup(x, Coordinate())._matplotlib_scale)
+        a.set_view_interval(10, 1000)
+        label, = a.major.formatter.format_ticks([100])
+        assert r"10^{2}" in label
+
+    def test_label_type_checks(self):
+
+        s = Continuous()
+        with pytest.raises(TypeError, match="Label formatter must be"):
+            s.label("{x}")
+
+        with pytest.raises(TypeError, match="`like` must be"):
+            s.label(like=2)
 
 
 class TestNominal:
@@ -568,10 +585,10 @@ class TestTemporal:
         assert isinstance(locator, mpl.dates.AutoDateLocator)
         assert isinstance(formatter, mpl.dates.AutoDateFormatter)
 
-    def test_concise_format(self, t, x):
+    def test_label_concise(self, t, x):
 
         ax = mpl.figure.Figure().subplots()
-        Temporal().format(concise=True)._setup(t, Coordinate(), ax.xaxis)
+        Temporal().label(concise=True)._setup(t, Coordinate(), ax.xaxis)
         formatter = ax.xaxis.get_major_formatter()
         assert isinstance(formatter, mpl.dates.ConciseDateFormatter)
 

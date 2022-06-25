@@ -370,11 +370,10 @@ class Continuous(ContinuousBase):
         """
         # Input checks
         if locator is not None and not isinstance(locator, Locator):
-            err = (
+            raise TypeError(
                 f"Tick locator must be an instance of {Locator!r}, "
                 f"not {type(locator)!r}."
             )
-            raise TypeError(err)
 
         # Note: duplicating some logic from _get_locators so that we can do input checks
         # in the function the user actually calls rather than from within _setup
@@ -484,16 +483,22 @@ class Continuous(ContinuousBase):
         base : number
             Use log formatter (with scientific notation) having this value as the base.
         unit : str or (str, str) tuple
-            Use engineering formatter with SI units (e.g., tick values in the 1000s
-            with `unit="g"` will have a `"kg"` suffix). When a tuple, the first
-            element gives the seperator between the number and unit.
+            Use engineering formatter with SI units (e.g., with `unit="g"`, a tick value
+            of 5000 will appear as `5 kg`). When a tuple, the first element gives the
+            seperator between the number and unit.
 
         Returns
         -------
         Copy of self with new label configuration.
 
         """
-        if like is not None and not isinstance(like, str) or callable(like):
+        if formatter is not None and not isinstance(formatter, Formatter):
+            raise TypeError(
+                f"Label formatter must be an instance of {Formatter!r}, "
+                f"not {type(formatter)!r}"
+            )
+
+        if like is not None and not (isinstance(like, str) or callable(like)):
             msg = f"`like` must be a string or callable, not {type(like).__name__}."
             raise TypeError(msg)
 
@@ -507,6 +512,12 @@ class Continuous(ContinuousBase):
         return new
 
     def _get_formatter(self, locator, formatter, like, base, unit):
+
+        # TODO this has now been copied in a few places
+        if base is None and isinstance(self.transform, str):
+            # TODO handle symlog too
+            m = re.match(r"log(\d*)", self.transform)
+            base = m[1] or 10 if m is not None else None
 
         if formatter is not None:
             return formatter
