@@ -1,3 +1,4 @@
+import re
 
 import numpy as np
 import pandas as pd
@@ -29,6 +30,21 @@ class TestContinuous:
     @pytest.fixture
     def x(self):
         return pd.Series([1, 3, 9], name="x", dtype=float)
+
+    def setup_ticks(self, x, *args, **kwargs):
+
+        s = Continuous().tick(*args, **kwargs)._setup(x, Coordinate())
+        a = PseudoAxis(s._matplotlib_scale)
+        a.set_view_interval(0, 1)
+        return a
+
+    def setup_labels(self, x, *args, **kwargs):
+
+        s = Continuous().label(*args, **kwargs)._setup(x, Coordinate())
+        a = PseudoAxis(s._matplotlib_scale)
+        a.set_view_interval(0, 1)
+        locs = a.major.locator()
+        return a, locs
 
     def test_coordinate_defaults(self, x):
 
@@ -103,13 +119,6 @@ class TestContinuous:
         cmap = color_palette("ch:", as_cmap=True)
         s = Continuous(transform="log")._setup(x, Color())
         assert_array_equal(s(x), cmap([0, .5, 1])[:, :3])  # FIXME RGBA
-
-    def setup_ticks(self, x, *args, **kwargs):
-
-        s = Continuous().tick(*args, **kwargs)._setup(x, Coordinate())
-        a = PseudoAxis(s._matplotlib_scale)
-        a.set_view_interval(0, 1)
-        return a
 
     def test_tick_locator(self, x):
 
@@ -201,6 +210,56 @@ class TestContinuous:
 
         with pytest.raises(RuntimeError, match="`every` not supported"):
             Continuous(transform="log").tick(every=2)
+
+    def test_label_formatter(self, x):
+
+        fmt = mpl.ticker.FormatStrFormatter("%.3f")
+        a, locs = self.setup_labels(x, fmt)
+        labels = a.major.formatter.format_ticks(locs)
+        for text in labels:
+            assert re.match(r"^\d\.\d{3}$", text)
+
+    def test_label_like_pattern(self, x):
+
+        a, locs = self.setup_labels(x, like="4f")
+        labels = a.major.formatter.format_ticks(locs)
+        for text in labels:
+            assert re.match(r"^\d\.\d{4}$", text)
+
+    def test_label_like_string(self, x):
+
+        a, locs = self.setup_labels(x, like="x = {x:.1f}")
+        labels = a.major.formatter.format_ticks(locs)
+        for text in labels:
+            assert re.match(r"^x = \d\.\d$", text)
+
+    def test_label_like_function(self, x):
+
+        a, locs = self.setup_labels(x, like="{:^5.1f}".format)
+        labels = a.major.formatter.format_ticks(locs)
+        for text in labels:
+            assert re.match(r"^ \d\.\d $", text)
+
+    def test_label_base(self, x):
+
+        a, locs = self.setup_labels(100 * x, base=2)
+        labels = a.major.formatter.format_ticks(locs)
+        for text in labels[1:]:
+            assert not text or "2^" in text
+
+    def test_label_unit(self, x):
+
+        a, locs = self.setup_labels(1000 * x, unit="g")
+        labels = a.major.formatter.format_ticks(locs)
+        for text in labels[1:-1]:
+            assert re.match(r"^\d+ mg$", text)
+
+    def test_label_unit_with_sep(self, x):
+
+        a, locs = self.setup_labels(1000 * x, unit=("", "g"))
+        labels = a.major.formatter.format_ticks(locs)
+        for text in labels[1:-1]:
+            assert re.match(r"^\d+mg$", text)
 
 
 class TestNominal:

@@ -467,8 +467,8 @@ class Continuous(ContinuousBase):
         self,
         formatter=None, *,
         like: str | Callable | None = None,
-        unit: str | None = None,
         base: int | None = None,
+        unit: str | None = None,
     ) -> Continuous:
 
         # TODO input check on like
@@ -477,12 +477,12 @@ class Continuous(ContinuousBase):
         new._label_params = {
             "formatter": formatter,
             "like": like,
-            "unit": unit,
             "base": base,
+            "unit": unit,
         }
         return new
 
-    def _get_formatter(self, locator, formatter, like, unit, base):
+    def _get_formatter(self, locator, formatter, like, base, unit):
 
         if formatter is not None:
             return formatter
@@ -500,7 +500,11 @@ class Continuous(ContinuousBase):
         elif unit is not None:
             # TODO use like with unit to set places=?
             # TODO accept (sep, unit) tuple?
-            formatter = EngFormatter(unit)
+            if isinstance(unit, tuple):
+                sep, unit = unit
+            else:
+                sep = " "
+            formatter = EngFormatter(unit, sep=sep)
 
         elif base is not None:
             # TODO what about other log options?
