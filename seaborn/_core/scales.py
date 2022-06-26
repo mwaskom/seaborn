@@ -60,25 +60,18 @@ class Scale:
 
     def __post_init__(self):
 
-        # TODO clumsy way to set up defaults needed after we changed these
-        # to not operate in place
-        # Alternatively, could we have _setup call the methods to get default
-        # values when they are unset? Might be cleaner
-        new = self.tick().label()
-        self._tick_params = new._tick_params
-        self._label_params = new._label_params
+        self._tick_params = None
+        self._label_params = None
+        self._legend = None
 
     def tick(self):
-        # TODO any reason for this with new approach?
-        self._tick_params = {}
-        return self
+        raise NotImplementedError()
 
     def _get_locators(self):
         raise NotImplementedError()
 
     def label(self):
-        self._label_params = {}
-        return self
+        raise NotImplementedError()
 
     def _get_formatter(self):
         raise NotImplementedError()
@@ -104,7 +97,7 @@ class Scale:
     def _setup(
         self, data: Series, prop: Property, axis: Axis | None = None,
     ) -> Scale:
-        ...
+        raise NotImplementedError()
 
     def __call__(self, data: Series) -> ArrayLike:
 
@@ -151,17 +144,39 @@ class Nominal(Scale):
         self, data: Series, prop: Property, axis: Axis | None = None,
     ) -> Scale:
 
+        new = copy(self)
+        if new._tick_params is None:
+            new = new.tick()
+        if new._label_params is None:
+            new = new.label()
+
+        # TODO flexibility over format() which isn't great for numbers / dates
+        stringify = np.vectorize(format)
+
+        units_seed = categorical_order(data, new.order)
+
+        # TODO move to new._get_scale?
+        # TODO this needs some more complicated rethinking about how to pass
+        # a unit dictionary down to these methods, along with how much we want
+        # to invest in their API. What is it useful for tick() to do here?
+        # (Ordinal may be different if we draw that contrast).
+        # Any customization we do to allow, e.g., label wrapping will probably
+        # require defining our own Formatter subclass.
+        # We could also potentially implement auto-wrapping in an Axis subclass
+        # (see Axis.draw ... it already is computing the bboxes).
+        # major_locator, minor_locator = new._get_locators(**new._tick_params)
+        # major_formatter = new._get_formatter(major_locator, **new._label_params)
+
         class CatScale(mpl.scale.LinearScale):
             # TODO turn this into a real thing I guess
             name = None  # To work around mpl<3.4 compat issues
 
             def set_default_locators_and_formatters(self, axis):
-                pass
-
-        # TODO flexibility over format() which isn't great for numbers / dates
-        stringify = np.vectorize(format)
-
-        units_seed = categorical_order(data, self.order)
+                ...
+                # axis.set_major_locator(major_locator)
+                # if minor_locator is not None:
+                #     axis.set_minor_locator(minor_locator)
+                # axis.set_major_formatter(major_formatter)
 
         mpl_scale = CatScale(data.name)
         if axis is None:
@@ -172,7 +187,7 @@ class Nominal(Scale):
             # and (B) allow the values parameter for a Coordinate to set xlim/ylim
             axis.set_view_interval(0, len(units_seed) - 1)
 
-        self._matplotlib_scale = mpl_scale
+        new._matplotlib_scale = mpl_scale
 
         # TODO array cast necessary to handle float/int mixture, which we need
         # to solve in a more systematic way probably
@@ -191,24 +206,55 @@ class Nominal(Scale):
             out[keep] = axis.convert_units(stringify(x[keep]))
             return out
 
-        self._pipeline = [
+        new._pipeline = [
             convert_units,
-            prop.get_mapping(self, data),
+            prop.get_mapping(new, data),
             # TODO how to handle color representation consistency?
         ]
 
         def spacer(x):
             return 1
 
-        self._spacer = spacer
+        new._spacer = spacer
 
         if prop.legend:
-            self._legend = units_seed, list(stringify(units_seed))
-        else:
-            # TODO initialize with this?
-            self._legend = None
+            new._legend = units_seed, list(stringify(units_seed))
 
-        return self
+        return new
+
+    def tick(self, locator=None):
+
+        new = copy(self)
+        new._tick_params = {
+            "locator": locator,
+        }
+        return new
+
+    def _get_locators(self, locator):
+
+        if locator is not None:
+            return locator, None
+
+        locator = mpl.category.StrCategoryLocator({})
+
+        return locator, None
+
+    def label(self, formatter=None):
+
+        new = copy(self)
+        new._label_params = {
+            "formatter": formatter,
+        }
+        return new
+
+    def _get_formatter(self, locator, formatter):
+
+        if formatter is not None:
+            return formatter
+
+        formatter = mpl.category.StrCategoryFormatter({})
+
+        return formatter
 
 
 @dataclass
@@ -234,23 +280,28 @@ class ContinuousBase(Scale):
     ) -> Scale:
 
         new = copy(self)
-        forward, inverse = self._get_transform()
+        if new._tick_params is None:
+            new = new.tick()
+        if new._label_params is None:
+            new = new.label()
 
-        mpl_scale = self._get_scale(data.name, forward, inverse)
+        forward, inverse = new._get_transform()
+
+        mpl_scale = new._get_scale(data.name, forward, inverse)
 
         if axis is None:
             axis = PseudoAxis(mpl_scale)
             axis.update_units(data)
 
         mpl_scale.set_default_locators_and_formatters(axis)
-        self._matplotlib_scale = mpl_scale
+        new._matplotlib_scale = mpl_scale
 
         normalize: Optional[Callable[[ArrayLike], ArrayLike]]
         if prop.normed:
-            if self.norm is None:
+            if new.norm is None:
                 vmin, vmax = data.min(), data.max()
             else:
-                vmin, vmax = self.norm
+                vmin, vmax = new.norm
             vmin, vmax = axis.convert_units((vmin, vmax))
             a = forward(vmin)
             b = forward(vmax) - forward(vmin)
@@ -261,7 +312,7 @@ class ContinuousBase(Scale):
         else:
             normalize = vmin = vmax = None
 
-        self._pipeline = [
+        new._pipeline = [
             axis.convert_units,
             forward,
             normalize,
@@ -270,7 +321,7 @@ class ContinuousBase(Scale):
 
         def spacer(x):
             return np.min(np.diff(np.sort(x.dropna().unique())))
-        self._spacer = spacer
+        new._spacer = spacer
 
         # TODO make legend optional on per-plot basis with Scale parameter?
         if prop.legend:
@@ -278,12 +329,9 @@ class ContinuousBase(Scale):
             locs = axis.major.locator()
             locs = locs[(vmin <= locs) & (locs <= vmax)]
             labels = axis.major.formatter.format_ticks(locs)
-            self._legend = list(locs), list(labels)
+            new._legend = list(locs), list(labels)
 
-        else:
-            self._legend = None
-
-        return self
+        return new
 
     def _get_transform(self):
 
@@ -478,7 +526,7 @@ class Continuous(ContinuousBase):
             Pre-configured formatter to use; other parameters will be ignored.
         like : str or callable
             Either a format pattern (e.g., `".2f"`), a format string with fields named
-            `x` and/or `pos` (e.g., `"${x.2f}"`), or a callable that consumes a number
+            `x` and/or `pos` (e.g., `"${x:.2f}"`), or a callable that consumes a number
             and returns a string.
         base : number
             Use log formatter (with scientific notation) having this value as the base.
