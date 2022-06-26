@@ -1073,7 +1073,7 @@ class Plotter:
                     # in _transform_coords, which means it was added during compute_stat
                     # This allows downstream orientation inference to work properly.
                     # But it feels a little hacky, so perhaps revisit.
-                    scale._priority = 0
+                    scale._priority = 0  # type: ignore
                 self._scales[var] = scale
 
     def _plot_layer(self, p: Plot, layer: Layer) -> None:

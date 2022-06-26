@@ -4,7 +4,7 @@ from copy import copy
 from collections.abc import Sequence
 from dataclasses import dataclass
 from functools import partial
-from typing import Any, Callable, Tuple, Optional, Union
+from typing import Any, Callable, Tuple, Optional, Union, ClassVar
 
 import numpy as np
 import matplotlib as mpl
@@ -52,7 +52,7 @@ class Scale:
 
     values: tuple | str | list | dict | None
 
-    _priority: int
+    _priority: ClassVar[int]
     _pipeline: Pipeline
     _matplotlib_scale: ScaleBase
     _spacer: staticmethod
@@ -138,7 +138,7 @@ class Nominal(Scale):
     values: tuple | str | list | dict | None = None
     order: list | None = None
 
-    _priority: int = 3  # TODO need to hide from dataclass
+    _priority: ClassVar[int] = 3
 
     def _setup(
         self, data: Series, prop: Property, axis: Axis | None = None,
@@ -379,7 +379,7 @@ class Continuous(ContinuousBase):
     # TODO Add this to deal with outliers?
     # outside: Literal["keep", "drop", "clip"] = "keep"
 
-    _priority: int = 1
+    _priority: ClassVar[int] = 1
 
     def tick(
         self,
@@ -614,7 +614,7 @@ class Temporal(ContinuousBase):
 
     transform = None
 
-    _priority: int = 2
+    _priority: ClassVar[int] = 2
 
     def tick(
         self, locator: Locator | None = None, *, upto: int | None = None,
