@@ -471,7 +471,7 @@ class Continuous(ContinuousBase):
         base : number
             Use log formatter (with scientific notation) having this value as the base.
         unit : str or (str, str) tuple
-            Use engineering formatter with SI units (e.g., with `unit="g"`, a tick value
+            Use  SI prefixes with these units (e.g., with `unit="g"`, a tick value
             of 5000 will appear as `5 kg`). When a tuple, the first element gives the
             seperator between the number and unit.
 

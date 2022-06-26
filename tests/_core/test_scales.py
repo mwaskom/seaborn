@@ -23,6 +23,7 @@ from seaborn._core.properties import (
     Fill,
 )
 from seaborn.palettes import color_palette
+from seaborn.external.version import Version
 
 
 class TestContinuous:
@@ -585,6 +586,10 @@ class TestTemporal:
         assert isinstance(locator, mpl.dates.AutoDateLocator)
         assert isinstance(formatter, mpl.dates.AutoDateFormatter)
 
+    @pytest.mark.skipif(
+        Version(mpl.__version__) < Version("3.3.0"),
+        reason="Test requires new matplotlib date epoch."
+    )
     def test_tick_locator(self, t):
 
         locator = mpl.dates.YearLocator(month=3, day=15)
@@ -601,13 +606,10 @@ class TestTemporal:
         locator = ax.xaxis.get_major_locator()
         assert set(locator.maxticks.values()) == {n}
 
-    def test_label_concise(self, t, x):
-
-        ax = mpl.figure.Figure().subplots()
-        Temporal().label(concise=True)._setup(t, Coordinate(), ax.xaxis)
-        formatter = ax.xaxis.get_major_formatter()
-        assert isinstance(formatter, mpl.dates.ConciseDateFormatter)
-
+    @pytest.mark.skipif(
+        Version(mpl.__version__) < Version("3.3.0"),
+        reason="Test requires new matplotlib date epoch."
+    )
     def test_label_formatter(self, t):
 
         formatter = mpl.dates.DateFormatter("%Y")
@@ -616,3 +618,10 @@ class TestTemporal:
         a.set_view_interval(10, 1000)
         label, = a.major.formatter.format_ticks([100])
         assert label == "1970"
+
+    def test_label_concise(self, t, x):
+
+        ax = mpl.figure.Figure().subplots()
+        Temporal().label(concise=True)._setup(t, Coordinate(), ax.xaxis)
+        formatter = ax.xaxis.get_major_formatter()
+        assert isinstance(formatter, mpl.dates.ConciseDateFormatter)
