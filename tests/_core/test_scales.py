@@ -212,6 +212,17 @@ class TestContinuous:
         with pytest.raises(RuntimeError, match="`every` not supported"):
             Continuous(transform="log").tick(every=2)
 
+    def test_symlog_tick_default(self, x):
+
+        s = Continuous(transform="symlog")._setup(x, Coordinate())
+        a = PseudoAxis(s._matplotlib_scale)
+        a.set_view_interval(-1050, 1050)
+        ticks = a.major.locator()
+        assert ticks[0] == -ticks[-1]
+        pos_ticks = np.sort(np.unique(np.abs(ticks)))
+        assert np.allclose(np.diff(np.log10(pos_ticks[1:])), 1)
+        assert pos_ticks[0] == 0
+
     def test_label_formatter(self, x):
 
         fmt = mpl.ticker.FormatStrFormatter("%.3f")
