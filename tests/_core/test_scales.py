@@ -62,6 +62,12 @@ class TestContinuous:
         s = Continuous(trans="pow3")._setup(x, Coordinate())
         assert_series_equal(s(x), np.power(x, 3))
 
+    def test_coordinate_transform_error(self, x):
+
+        s = Continuous(trans="bad")
+        with pytest.raises(ValueError, match="Unknown value provided"):
+            s._setup(x, Coordinate())
+
     def test_interval_defaults(self, x):
 
         s = Continuous()._setup(x, IntervalProperty())

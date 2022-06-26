@@ -45,7 +45,6 @@ if TYPE_CHECKING:
         Callable[[ArrayLike], ArrayLike], Callable[[ArrayLike], ArrayLike]
     ]
 
-    # TODO standardize String / ArrayLike interface
     Pipeline = Sequence[Optional[Callable[[Union[Series, ArrayLike]], ArrayLike]]]
 
 
@@ -77,8 +76,7 @@ class Scale:
     def _get_formatter(self):
         raise NotImplementedError()
 
-    # TODO typing
-    def _get_scale(self, name, forward, inverse):
+    def _get_scale(self, name: str, forward: Callable, inverse: Callable):
 
         major_locator, minor_locator = self._get_locators(**self._tick_params)
         major_formatter = self._get_formatter(major_locator, **self._label_params)
@@ -156,7 +154,7 @@ class Nominal(Scale):
 
         units_seed = categorical_order(data, new.order)
 
-        # TODO move to new._get_scale?
+        # TODO move to Nominal._get_scale?
         # TODO this needs some more complicated rethinking about how to pass
         # a unit dictionary down to these methods, along with how much we want
         # to invest in their API. What is it useful for tick() to do here?
@@ -169,7 +167,6 @@ class Nominal(Scale):
         # major_formatter = new._get_formatter(major_locator, **new._label_params)
 
         class CatScale(mpl.scale.LinearScale):
-            # TODO turn this into a real thing I guess
             name = None  # To work around mpl<3.4 compat issues
 
             def set_default_locators_and_formatters(self, axis):
@@ -356,7 +353,10 @@ class ContinuousBase(Scale):
             return np.min(np.diff(np.sort(x.dropna().unique())))
         new._spacer = spacer
 
-        # TODO make legend optional on per-plot basis with Scale parameter?
+        # TODO How to allow disabling of legend for all uses of property?
+        # Could add a Scale parameter, or perhaps Scale.suppress()?
+        # Are there other useful parameters that would be in Scale.legend()
+        # besides allowing Scale.legend(False)?
         if prop.legend:
             axis.set_view_interval(vmin, vmax)
             locs = axis.major.locator()
@@ -397,8 +397,7 @@ class ContinuousBase(Scale):
             elif arg == "sqrt":
                 return _make_sqrt_transforms()
             else:
-                # TODO useful error message
-                raise ValueError()
+                raise ValueError(f"Unknown value provided for trans: {arg!r}")
 
 
 @dataclass
@@ -543,8 +542,6 @@ class Continuous(ContinuousBase):
 
         if locator is not None:
             major_locator = locator
-
-        # TODO raise if locator is passed with any other parameters
 
         elif upto is not None:
             if log_base:
@@ -744,15 +741,11 @@ class Temporal(ContinuousBase):
 # ----------------------------------------------------------------------------------- #
 
 
-class Calendric(Scale):
-    # TODO have this separate from Temporal or have Temporal(date=True) or similar?
-    ...
+# TODO Have this separate from Temporal or have Temporal(date=True) or similar?
+# class Calendric(Scale):
 
-
-class Binned(Scale):
-    # Needed? Or handle this at layer (in stat or as param, eg binning=)
-    ...
-
+# TODO Needed? Or handle this at layer (in stat or as param, eg binning=)
+# class Binned(Scale):
 
 # TODO any need for color-specific scales?
 # class Sequential(Continuous):
@@ -773,7 +766,7 @@ class PseudoAxis:
     code, this object acts like an Axis and can be used to scale other variables.
 
     """
-    axis_name = ""  # TODO Needs real value? Just used for x/y logic in matplotlib
+    axis_name = ""  # Matplotlib requirement but not actually used
 
     def __init__(self, scale):
 
@@ -788,11 +781,9 @@ class PseudoAxis:
         self._data_interval = None, None
 
         scale.set_default_locators_and_formatters(self)
-        # self.set_default_intervals()  TODO mock?
+        # self.set_default_intervals()  Is this ever needed?
 
     def set_view_interval(self, vmin, vmax):
-        # TODO this gets called when setting DateTime units,
-        # but we may not need it to do anything
         self._view_interval = vmin, vmax
 
     def get_view_interval(self):
@@ -819,8 +810,6 @@ class PseudoAxis:
         locator.set_axis(self)
 
     def set_major_formatter(self, formatter):
-        # TODO matplotlib method does more handling (e.g. to set w/format str)
-        # We will probably handle that in the tick/format interface, though
         self.major.formatter = formatter
         formatter.set_axis(self)
 
@@ -846,12 +835,11 @@ class PseudoAxis:
             if info is None:
                 return
             if info.majloc is not None:
-                # TODO matplotlib method has more conditions here; are they needed?
                 self.set_major_locator(info.majloc)
             if info.majfmt is not None:
                 self.set_major_formatter(info.majfmt)
 
-            # TODO this is in matplotlib method; do we need this?
+            # This is in matplotlib method; do we need this?
             # self.set_default_intervals()
 
     def convert_units(self, x):
@@ -863,10 +851,11 @@ class PseudoAxis:
         return self.converter.convert(x, self.units, self)
 
     def get_scale(self):
-        # TODO matplotlib actually returns a string here!
+        # Note that matplotlib actually returns a string here!
+        # (e.g., with a log scale, axis.get_scale() returns "log")
         # Currently we just hit it with minor ticks where it checks for
         # scale == "log". I'm not sure how you'd actually use log-scale
-        # minor "ticks" in a legend context, so this is fine.....
+        # minor "ticks" in a legend context, so this is fine....
         return self.scale
 
     def get_majorticklocs(self):
