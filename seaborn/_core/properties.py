@@ -86,7 +86,7 @@ class Property:
         if isinstance(arg, str):
             if any(arg.startswith(k) for k in trans_args):
                 # TODO validate numeric type? That should happen centrally somewhere
-                return Continuous(transform=arg)
+                return Continuous(trans=arg)
             else:
                 msg = f"Unknown magic arg for {self.variable} scale: '{arg}'."
                 raise ValueError(msg)

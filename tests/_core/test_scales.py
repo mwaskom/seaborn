@@ -54,12 +54,12 @@ class TestContinuous:
 
     def test_coordinate_transform(self, x):
 
-        s = Continuous(transform="log")._setup(x, Coordinate())
+        s = Continuous(trans="log")._setup(x, Coordinate())
         assert_series_equal(s(x), np.log10(x))
 
     def test_coordinate_transform_with_parameter(self, x):
 
-        s = Continuous(transform="pow3")._setup(x, Coordinate())
+        s = Continuous(trans="pow3")._setup(x, Coordinate())
         assert_series_equal(s(x), np.power(x, 3))
 
     def test_interval_defaults(self, x):
@@ -118,7 +118,7 @@ class TestContinuous:
 
         x = pd.Series([1, 10, 100], name="x", dtype=float)
         cmap = color_palette("ch:", as_cmap=True)
-        s = Continuous(transform="log")._setup(x, Color())
+        s = Continuous(trans="log")._setup(x, Color())
         assert_array_equal(s(x), cmap([0, .5, 1])[:, :3])  # FIXME RGBA
 
     def test_tick_locator(self, x):
@@ -184,7 +184,7 @@ class TestContinuous:
 
     def test_log_tick_default(self, x):
 
-        s = Continuous(transform="log")._setup(x, Coordinate())
+        s = Continuous(trans="log")._setup(x, Coordinate())
         a = PseudoAxis(s._matplotlib_scale)
         a.set_view_interval(.5, 1050)
         ticks = a.major.locator()
@@ -193,16 +193,16 @@ class TestContinuous:
     def test_log_tick_upto(self, x):
 
         n = 3
-        s = Continuous(transform="log").tick(upto=n)._setup(x, Coordinate())
+        s = Continuous(trans="log").tick(upto=n)._setup(x, Coordinate())
         a = PseudoAxis(s._matplotlib_scale)
         assert a.major.locator.numticks == n
 
     def test_log_tick_count(self, x):
 
         with pytest.raises(RuntimeError, match="`count` requires"):
-            Continuous(transform="log").tick(count=4)
+            Continuous(trans="log").tick(count=4)
 
-        s = Continuous(transform="log").tick(count=4, between=(1, 1000))
+        s = Continuous(trans="log").tick(count=4, between=(1, 1000))
         a = PseudoAxis(s._setup(x, Coordinate())._matplotlib_scale)
         a.set_view_interval(.5, 1050)
         assert_array_equal(a.major.locator(), [1, 10, 100, 1000])
@@ -210,11 +210,11 @@ class TestContinuous:
     def test_log_tick_every(self, x):
 
         with pytest.raises(RuntimeError, match="`every` not supported"):
-            Continuous(transform="log").tick(every=2)
+            Continuous(trans="log").tick(every=2)
 
     def test_symlog_tick_default(self, x):
 
-        s = Continuous(transform="symlog")._setup(x, Coordinate())
+        s = Continuous(trans="symlog")._setup(x, Coordinate())
         a = PseudoAxis(s._matplotlib_scale)
         a.set_view_interval(-1050, 1050)
         ticks = a.major.locator()
@@ -275,7 +275,7 @@ class TestContinuous:
 
     def test_label_base_from_transform(self, x):
 
-        s = Continuous(transform="log")
+        s = Continuous(trans="log")
         a = PseudoAxis(s._setup(x, Coordinate())._matplotlib_scale)
         a.set_view_interval(10, 1000)
         label, = a.major.formatter.format_ticks([100])

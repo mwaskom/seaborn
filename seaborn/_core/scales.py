@@ -368,7 +368,7 @@ class ContinuousBase(Scale):
 
     def _get_transform(self):
 
-        arg = self.transform
+        arg = self.trans
 
         def get_param(method, default):
             if arg == method:
@@ -407,7 +407,7 @@ class Continuous(ContinuousBase):
     A numeric scale supporting norms and functional transforms.
     """
     values: tuple | str | None = None
-    transform: str | Transforms | None = None
+    trans: str | Transforms | None = None
 
     # TODO Add this to deal with outliers?
     # outside: Literal["keep", "drop", "clip"] = "keep"
@@ -455,7 +455,7 @@ class Continuous(ContinuousBase):
                 f"Tick locator must be an instance of {Locator!r}, "
                 f"not {type(locator)!r}."
             )
-        log_base, symlog_thresh = self._parse_for_log_params(self.transform)
+        log_base, symlog_thresh = self._parse_for_log_params(self.trans)
         if log_base or symlog_thresh:
             if count is not None and between is None:
                 raise RuntimeError("`count` requires `between` with log transform.")
@@ -523,21 +523,23 @@ class Continuous(ContinuousBase):
         }
         return new
 
-    def _parse_for_log_params(self, transform):
+    def _parse_for_log_params(
+        self, trans: str | Transforms | None
+    ) -> tuple[float | None, float | None]:
 
         log_base = symlog_thresh = None
-        if isinstance(transform, str):
-            m = re.match(r"^log(\d*)", transform)
+        if isinstance(trans, str):
+            m = re.match(r"^log(\d*)", trans)
             if m is not None:
                 log_base = float(m[1] or 10)
-            m = re.match(r"symlog(\d*)", transform)
+            m = re.match(r"symlog(\d*)", trans)
             if m is not None:
                 symlog_thresh = float(m[1] or 1)
         return log_base, symlog_thresh
 
     def _get_locators(self, locator, at, upto, count, every, between, minor):
 
-        log_base, symlog_thresh = self._parse_for_log_params(self.transform)
+        log_base, symlog_thresh = self._parse_for_log_params(self.trans)
 
         if locator is not None:
             major_locator = locator
@@ -595,7 +597,7 @@ class Continuous(ContinuousBase):
 
     def _get_formatter(self, locator, formatter, like, base, unit):
 
-        log_base, symlog_thresh = self._parse_for_log_params(self.transform)
+        log_base, symlog_thresh = self._parse_for_log_params(self.trans)
         if base is None:
             if symlog_thresh:
                 log_base = 10
@@ -646,7 +648,7 @@ class Temporal(ContinuousBase):
     # those yet, and having a clear distinction betewen date(time) / time
     # may be more useful.
 
-    transform = None
+    trans = None
 
     _priority: ClassVar[int] = 2
 
