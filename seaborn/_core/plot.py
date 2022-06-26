@@ -1409,16 +1409,18 @@ class Plotter:
                 self._figure,
                 handles,
                 labels,
-                title=name,  # TODO don't show "None" as title
+                title="" if name is None else name,
                 loc="center left",
                 bbox_to_anchor=(.98, .55),
             )
 
-            # TODO: This is an illegal hack accessing private attributes on the legend
-            # We need to sort out how we are going to handle this given that lack of a
-            # proper API to do things like position legends relative to each other
             if base_legend:
-                base_legend._legend_box._children.extend(legend._legend_box._children)
+                # Matplotlib has no public API for this so it is a bit of a hack.
+                # Ideally we'd define our own legend class with more flexibility,
+                # but that is a lot of work!
+                base_legend_box = base_legend.get_children()[0]
+                this_legend_box = legend.get_children()[0]
+                base_legend_box.get_children().extend(this_legend_box.get_children())
             else:
                 base_legend = legend
                 self._figure.legends.append(legend)

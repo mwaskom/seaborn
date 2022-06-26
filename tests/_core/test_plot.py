@@ -1724,3 +1724,9 @@ class TestLegend:
         s = pd.Series(["a", "b", "a", "c"], name="s")
         p = Plot(**xy).add(MockMark(), color=s, legend=False).plot()
         assert not p._legend_contents
+
+    def test_anonymous_title(self, xy):
+
+        p = Plot(**xy, color=["a", "b", "c", "d"]).add(MockMark()).plot()
+        legend, = p._figure.legends
+        assert legend.get_title().get_text() == ""
