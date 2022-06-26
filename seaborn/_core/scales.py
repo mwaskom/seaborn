@@ -455,21 +455,12 @@ class Continuous(ContinuousBase):
                 f"Tick locator must be an instance of {Locator!r}, "
                 f"not {type(locator)!r}."
             )
-
-        # Note: duplicating some logic from _get_locators so that we can do input checks
-        # in the function the user actually calls rather than from within _setup
-        log_transform = (
-            isinstance(self.transform, str)
-            and re.match(r"log(\d*)", self.transform)
-        )
-
-        if count is not None and between is None and log_transform:
-            msg = "`count` requires `between` with log transform."
-            raise RuntimeError(msg)
-
-        if every is not None and log_transform:
-            msg = "`every` not supported with log transform."
-            raise RuntimeError(msg)
+        log_base, symlog_thresh = self._parse_for_log_params(self.transform)
+        if log_base or symlog_thresh:
+            if count is not None and between is None:
+                raise RuntimeError("`count` requires `between` with log transform.")
+            if every is not None:
+                raise RuntimeError("`every` not supported with log transform.")
 
         new = copy(self)
         new._tick_params = {
@@ -513,12 +504,12 @@ class Continuous(ContinuousBase):
         Copy of self with new label configuration.
 
         """
+        # Input checks
         if formatter is not None and not isinstance(formatter, Formatter):
             raise TypeError(
                 f"Label formatter must be an instance of {Formatter!r}, "
                 f"not {type(formatter)!r}"
             )
-
         if like is not None and not (isinstance(like, str) or callable(like)):
             msg = f"`like` must be a string or callable, not {type(like).__name__}."
             raise TypeError(msg)
