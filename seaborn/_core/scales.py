@@ -73,7 +73,7 @@ class Scale:
     def _get_locators(self):
         raise NotImplementedError()
 
-    def _get_formatter(self):
+    def _get_formatter(self, locator: Locator | None = None):
         raise NotImplementedError()
 
     def _get_scale(self, name: str, forward: Callable, inverse: Callable):
