@@ -67,10 +67,10 @@ class Scale:
     def tick(self):
         raise NotImplementedError()
 
-    def _get_locators(self):
+    def label(self):
         raise NotImplementedError()
 
-    def label(self):
+    def _get_locators(self):
         raise NotImplementedError()
 
     def _get_formatter(self):
@@ -230,6 +230,14 @@ class Nominal(Scale):
         }
         return new
 
+    def label(self, formatter=None):
+
+        new = copy(self)
+        new._label_params = {
+            "formatter": formatter,
+        }
+        return new
+
     def _get_locators(self, locator):
 
         if locator is not None:
@@ -238,14 +246,6 @@ class Nominal(Scale):
         locator = mpl.category.StrCategoryLocator({})
 
         return locator, None
-
-    def label(self, formatter=None):
-
-        new = copy(self)
-        new._label_params = {
-            "formatter": formatter,
-        }
-        return new
 
     def _get_formatter(self, locator, formatter):
 
@@ -390,7 +390,7 @@ class Continuous(ContinuousBase):
         every: float | None = None,
         between: tuple[float, float] | None = None,
         minor: int | None = None,
-    ) -> Continuous:  # TODO type return value as Self
+    ) -> Continuous:
         """
         Configure the selection of ticks for the scale's axis or legend.
 
@@ -447,6 +447,55 @@ class Continuous(ContinuousBase):
             "every": every,
             "between": between,
             "minor": minor,
+        }
+        return new
+
+    def label(
+        self,
+        formatter=None, *,
+        like: str | Callable | None = None,
+        base: int | None = None,
+        unit: str | None = None,
+    ) -> Continuous:
+        """
+        Configure the appearance of tick labels for the scale's axis or legend.
+
+        Parameters
+        ----------
+        formatter : matplotlib Formatter
+            Pre-configured formatter to use; other parameters will be ignored.
+        like : str or callable
+            Either a format pattern (e.g., `".2f"`), a format string with fields named
+            `x` and/or `pos` (e.g., `"${x:.2f}"`), or a callable that consumes a number
+            and returns a string.
+        base : number
+            Use log formatter (with scientific notation) having this value as the base.
+        unit : str or (str, str) tuple
+            Use engineering formatter with SI units (e.g., with `unit="g"`, a tick value
+            of 5000 will appear as `5 kg`). When a tuple, the first element gives the
+            seperator between the number and unit.
+
+        Returns
+        -------
+        Copy of self with new label configuration.
+
+        """
+        if formatter is not None and not isinstance(formatter, Formatter):
+            raise TypeError(
+                f"Label formatter must be an instance of {Formatter!r}, "
+                f"not {type(formatter)!r}"
+            )
+
+        if like is not None and not (isinstance(like, str) or callable(like)):
+            msg = f"`like` must be a string or callable, not {type(like).__name__}."
+            raise TypeError(msg)
+
+        new = copy(self)
+        new._label_params = {
+            "formatter": formatter,
+            "like": like,
+            "base": base,
+            "unit": unit,
         }
         return new
 
@@ -510,55 +559,6 @@ class Continuous(ContinuousBase):
 
         return major_locator, minor_locator
 
-    def label(
-        self,
-        formatter=None, *,
-        like: str | Callable | None = None,
-        base: int | None = None,
-        unit: str | None = None,
-    ) -> Continuous:
-        """
-        Configure the appearance of tick labels for the scale's axis or legend.
-
-        Parameters
-        ----------
-        formatter : matplotlib Formatter
-            Pre-configured formatter to use; other parameters will be ignored.
-        like : str or callable
-            Either a format pattern (e.g., `".2f"`), a format string with fields named
-            `x` and/or `pos` (e.g., `"${x:.2f}"`), or a callable that consumes a number
-            and returns a string.
-        base : number
-            Use log formatter (with scientific notation) having this value as the base.
-        unit : str or (str, str) tuple
-            Use engineering formatter with SI units (e.g., with `unit="g"`, a tick value
-            of 5000 will appear as `5 kg`). When a tuple, the first element gives the
-            seperator between the number and unit.
-
-        Returns
-        -------
-        Copy of self with new label configuration.
-
-        """
-        if formatter is not None and not isinstance(formatter, Formatter):
-            raise TypeError(
-                f"Label formatter must be an instance of {Formatter!r}, "
-                f"not {type(formatter)!r}"
-            )
-
-        if like is not None and not (isinstance(like, str) or callable(like)):
-            msg = f"`like` must be a string or callable, not {type(like).__name__}."
-            raise TypeError(msg)
-
-        new = copy(self)
-        new._label_params = {
-            "formatter": formatter,
-            "like": like,
-            "base": base,
-            "unit": unit,
-        }
-        return new
-
     def _get_formatter(self, locator, formatter, like, base, unit):
 
         # TODO this has now been copied in a few places
@@ -617,9 +617,26 @@ class Temporal(ContinuousBase):
     _priority: ClassVar[int] = 2
 
     def tick(
-        self, locator: Locator | None = None, *, upto: int | None = None,
+        self, locator: Locator | None = None, *,
+        upto: int | None = None,
     ) -> Temporal:
+        """
+        Configure the selection of ticks for the scale's axis or legend.
 
+        This API is under construction and will be enhanced over time.
+
+        Parameters
+        ----------
+        locator: matplotlib Locator
+            Pre-configured matplotlib locator; other parameters will not be used.
+        upto : int
+            Choose "nice" locations for ticks, but do not exceed this number.
+
+        Returns
+        -------
+        Copy of self with new tick configuration.
+
+        """
         if locator is not None and not isinstance(locator, Locator):
             err = (
                 f"Tick locator must be an instance of {Locator!r}, "
@@ -631,12 +648,38 @@ class Temporal(ContinuousBase):
         new._tick_params = {"locator": locator, "upto": upto}
         return new
 
+    def label(
+        self,
+        formatter: Formatter | None = None, *,
+        concise: bool = False,
+    ) -> Temporal:
+        """
+        Configure the appearance of tick labels for the scale's axis or legend.
+
+        This API is under construction and will be enhanced over time.
+
+        Parameters
+        ----------
+        formatter : matplotlib Formatter
+            Pre-configured formatter to use; other parameters will be ignored.
+        concise : bool
+            If True, use :class:`matplotlib.dates.ConciseDateFormatter` to make
+            the tick labels as compact as possible.
+
+        Returns
+        -------
+        Copy of self with new label configuration.
+
+        """
+        new = copy(self)
+        new._label_params = {"formatter": formatter, "concise": concise}
+        return new
+
     def _get_locators(self, locator, upto):
 
         if locator is not None:
             major_locator = locator
         elif upto is not None:
-            # TODO atleast for minticks?
             major_locator = AutoDateLocator(minticks=2, maxticks=upto)
 
         else:
@@ -647,7 +690,8 @@ class Temporal(ContinuousBase):
 
     def _get_formatter(self, locator, formatter, concise):
 
-        # TODO handle formatter
+        if formatter is not None:
+            return formatter
 
         if concise:
             # TODO ideally we would have concise coordinate ticks,
@@ -657,14 +701,6 @@ class Temporal(ContinuousBase):
             formatter = AutoDateFormatter(locator)
 
         return formatter
-
-    def label(
-        self, formatter: Formatter | None = None, *, concise: bool = False,
-    ) -> Temporal:
-
-        new = copy(self)
-        new._label_params = {"formatter": formatter, "concise": concise}
-        return new
 
 
 # ----------------------------------------------------------------------------------- #

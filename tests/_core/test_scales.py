@@ -585,12 +585,13 @@ class TestTemporal:
         assert isinstance(locator, mpl.dates.AutoDateLocator)
         assert isinstance(formatter, mpl.dates.AutoDateFormatter)
 
-    def test_label_concise(self, t, x):
+    def test_tick_locator(self, t):
 
-        ax = mpl.figure.Figure().subplots()
-        Temporal().label(concise=True)._setup(t, Coordinate(), ax.xaxis)
-        formatter = ax.xaxis.get_major_formatter()
-        assert isinstance(formatter, mpl.dates.ConciseDateFormatter)
+        locator = mpl.dates.YearLocator(month=3, day=15)
+        s = Temporal().tick(locator)
+        a = PseudoAxis(s._setup(t, Coordinate())._matplotlib_scale)
+        a.set_view_interval(0, 365)
+        assert 73 in a.major.locator()
 
     def test_tick_upto(self, t, x):
 
@@ -599,3 +600,19 @@ class TestTemporal:
         Temporal().tick(upto=n)._setup(t, Coordinate(), ax.xaxis)
         locator = ax.xaxis.get_major_locator()
         assert set(locator.maxticks.values()) == {n}
+
+    def test_label_concise(self, t, x):
+
+        ax = mpl.figure.Figure().subplots()
+        Temporal().label(concise=True)._setup(t, Coordinate(), ax.xaxis)
+        formatter = ax.xaxis.get_major_formatter()
+        assert isinstance(formatter, mpl.dates.ConciseDateFormatter)
+
+    def test_label_formatter(self, t):
+
+        formatter = mpl.dates.DateFormatter("%Y")
+        s = Temporal().label(formatter)
+        a = PseudoAxis(s._setup(t, Coordinate())._matplotlib_scale)
+        a.set_view_interval(10, 1000)
+        label, = a.major.formatter.format_ticks([100])
+        assert label == "1970"
