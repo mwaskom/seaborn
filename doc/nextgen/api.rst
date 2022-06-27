@@ -64,6 +64,7 @@ Moves
 
     Dodge
     Jitter
+    Norm
     Shift
     Stack
 
