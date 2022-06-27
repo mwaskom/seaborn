@@ -103,3 +103,5 @@ Other updates
 - |Dependencies| The unit test suite is no longer part of the source or wheel distribution. Seaborn has never had a runtime API for exercising the tests, so this should not have workflow implications (:pr:`2833`).
 
 - |API| Removed the previously-deprecated `factorplot` along with several previously-deprecated utility functions (`iqr`, `percentiles`, `pmf_hist`, and `sort_df`).
+
+- |API| Removed the (previously-unused) option to pass additional keyword arguments to :func:`pointplot`.
