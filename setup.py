@@ -46,9 +46,6 @@ EXTRAS_REQUIRE = {
 
 PACKAGES = [
     'seaborn',
-    'seaborn._core',
-    'seaborn._marks',
-    'seaborn._stats',
     'seaborn.colors',
     'seaborn.external',
     'seaborn._core',
