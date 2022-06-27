@@ -4,8 +4,30 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy.testing as npt
 
-from .. import rcmod, palettes, utils
-from ..conftest import has_verdana
+from seaborn import rcmod, palettes, utils
+
+
+def has_verdana():
+    """Helper to verify if Verdana font is present"""
+    # This import is relatively lengthy, so to prevent its import for
+    # testing other tests in this module not requiring this knowledge,
+    # import font_manager here
+    import matplotlib.font_manager as mplfm
+    try:
+        verdana_font = mplfm.findfont('Verdana', fallback_to_default=False)
+    except:  # noqa
+        # if https://github.com/matplotlib/matplotlib/pull/3435
+        # gets accepted
+        return False
+    # otherwise check if not matching the logic for a 'default' one
+    try:
+        unlikely_font = mplfm.findfont("very_unlikely_to_exist1234",
+                                       fallback_to_default=False)
+    except:  # noqa
+        # if matched verdana but not unlikely, Verdana must exist
+        return True
+    # otherwise -- if they match, must be the same default
+    return verdana_font != unlikely_font
 
 
 class RCParamTester:

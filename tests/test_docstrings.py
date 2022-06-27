@@ -1,4 +1,4 @@
-from .._docstrings import DocstringComponents
+from seaborn._docstrings import DocstringComponents
 
 
 EXAMPLE_DICT = dict(

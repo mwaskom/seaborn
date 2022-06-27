@@ -16,9 +16,9 @@ try:
 except ImportError:
     _no_statsmodels = True
 
-from .. import regression as lm
-from ..external.version import Version
-from ..palettes import color_palette
+from seaborn import regression as lm
+from seaborn.external.version import Version
+from seaborn.palettes import color_palette
 
 rs = np.random.RandomState(0)
 
@@ -521,6 +521,14 @@ class TestRegressionPlots:
         ax = lm.regplot(x="x", y="y", data=self.df,
                         scatter_kws={'color': color})
         assert ax.collections[0]._alpha == 0.8
+
+        f, ax = plt.subplots()
+        alpha = .3
+        ax = lm.regplot(x="x", y="y", data=self.df,
+                        x_bins=5, fit_reg=False,
+                        scatter_kws={"alpha": alpha})
+        for line in ax.lines:
+            assert line.get_alpha() == alpha
 
     def test_regplot_binned(self):
 

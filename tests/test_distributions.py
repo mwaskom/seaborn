@@ -1,4 +1,5 @@
 import itertools
+import warnings
 
 import numpy as np
 import matplotlib as mpl
@@ -8,20 +9,20 @@ from matplotlib.colors import to_rgb, to_rgba
 import pytest
 from numpy.testing import assert_array_equal, assert_array_almost_equal
 
-from .. import distributions as dist
-from ..palettes import (
+from seaborn import distributions as dist
+from seaborn.palettes import (
     color_palette,
     light_palette,
 )
-from .._oldcore import (
+from seaborn._oldcore import (
     categorical_order,
 )
-from .._statistics import (
+from seaborn._statistics import (
     KDE,
     Histogram,
     _no_scipy,
 )
-from ..distributions import (
+from seaborn.distributions import (
     _DistributionPlotter,
     displot,
     distplot,
@@ -30,9 +31,9 @@ from ..distributions import (
     kdeplot,
     rugplot,
 )
-from ..external.version import Version
-from ..axisgrid import FacetGrid
-from .._testing import (
+from seaborn.external.version import Version
+from seaborn.axisgrid import FacetGrid
+from seaborn._testing import (
     assert_plots_equal,
     assert_legends_equal,
     assert_colors_equal,
@@ -411,9 +412,15 @@ class TestKDEPlotUnivariate(SharedAxesLevelTests):
             ax = kdeplot(x=[5])
         assert not ax.lines
 
-        with pytest.warns(None) as record:
+        with pytest.warns(UserWarning):
+            # https://github.com/mwaskom/seaborn/issues/2762
+            ax = kdeplot(x=[1929245168.06679] * 18)
+        assert not ax.lines
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", UserWarning)
             ax = kdeplot(x=[5], warn_singular=False)
-        assert not record
+        assert not ax.lines
 
     def test_variable_assignment(self, long_df):
 
@@ -930,9 +937,14 @@ class TestKDEPlotBivariate:
             ax = dist.kdeplot(x=[5], y=[6])
         assert not ax.lines
 
-        with pytest.warns(None) as record:
+        with pytest.warns(UserWarning):
+            ax = kdeplot(x=[1929245168.06679] * 18, y=np.arange(18))
+        assert not ax.lines
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", UserWarning)
             ax = kdeplot(x=[5], y=[7], warn_singular=False)
-        assert not record
+        assert not ax.lines
 
     def test_fill_artists(self, long_df):
 
@@ -1449,11 +1461,6 @@ class TestHistPlotUnivariate(SharedAxesLevelTests):
         ymax, ymin = ax.get_ylim()
         assert ymax > ymin
 
-    def test_discrete_requires_bars(self, long_df):
-
-        with pytest.raises(ValueError, match="`element` must be 'bars'"):
-            histplot(long_df, x="s", discrete=True, element="poly")
-
     @pytest.mark.skipif(
         Version(np.__version__) < Version("1.17"),
         reason="Histogram over datetime64 requires numpy >= 1.17",
@@ -1721,6 +1728,15 @@ class TestHistPlotUnivariate(SharedAxesLevelTests):
         bar_widths = [b.get_width() for b in ax.patches]
         steps = np.divide(bar_widths[1:], bar_widths[:-1])
         assert np.allclose(steps, 10)
+
+    def test_log_scale_dodge(self, rng):
+
+        x = rng.lognormal(0, 2, 100)
+        hue = np.repeat(["a", "b"], 50)
+        ax = histplot(x=x, hue=hue, bins=5, log_scale=True, multiple="dodge")
+        x_min = np.log([b.get_x() for b in ax.patches])
+        x_max = np.log([b.get_x() + b.get_width() for b in ax.patches])
+        assert np.unique(np.round(x_max - x_min, 10)).size == 1
 
     @pytest.mark.parametrize(
         "fill", [True, False],

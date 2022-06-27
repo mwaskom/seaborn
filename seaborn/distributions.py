@@ -280,8 +280,18 @@ class _DistributionPlotter(VectorPlotter):
             for key in curves:
                 level = dict(key)["hue"]
                 hist = curves[key].reset_index(name="heights")
-                hist["widths"] /= n
-                hist["edges"] += hue_levels.index(level) * hist["widths"]
+                level_idx = hue_levels.index(level)
+                if self._log_scaled(self.data_variable):
+                    log_min = np.log10(hist["edges"])
+                    log_max = np.log10(hist["edges"] + hist["widths"])
+                    log_width = (log_max - log_min) / n
+                    new_min = np.power(10, log_min + level_idx * log_width)
+                    new_max = np.power(10, log_min + (level_idx + 1) * log_width)
+                    hist["widths"] = new_max - new_min
+                    hist["edges"] = new_min
+                else:
+                    hist["widths"] /= n
+                    hist["edges"] += level_idx * hist["widths"]
 
                 curves[key] = hist.set_index(["edges", "widths"])["heights"]
 
@@ -324,16 +334,6 @@ class _DistributionPlotter(VectorPlotter):
             # Extract the data points from this sub set and remove nulls
             observations = sub_data[data_variable]
 
-            observation_variance = observations.var()
-            if math.isclose(observation_variance, 0) or np.isnan(observation_variance):
-                msg = (
-                    "Dataset has 0 variance; skipping density estimate. "
-                    "Pass `warn_singular=False` to disable this warning."
-                )
-                if warn_singular:
-                    warnings.warn(msg, UserWarning)
-                continue
-
             # Extract the weights for this subset of observations
             if "weights" in self.variables:
                 weights = sub_data["weights"]
@@ -343,7 +343,24 @@ class _DistributionPlotter(VectorPlotter):
                 part_weight = len(sub_data)
 
             # Estimate the density of observations at this level
-            density, support = estimator(observations, weights=weights)
+            variance = np.nan_to_num(observations.var())
+            singular = len(observations) < 2 or math.isclose(variance, 0)
+            try:
+                if not singular:
+                    # Convoluted approach needed because numerical failures
+                    # can manifest in a few different ways.
+                    density, support = estimator(observations, weights=weights)
+            except np.linalg.LinAlgError:
+                singular = True
+
+            if singular:
+                msg = (
+                    "Dataset has 0 variance; skipping density estimate. "
+                    "Pass `warn_singular=False` to disable this warning."
+                )
+                if warn_singular:
+                    warnings.warn(msg, UserWarning, stacklevel=4)
+                continue
 
             if log_scale:
                 support = np.power(10, support)
@@ -387,9 +404,6 @@ class _DistributionPlotter(VectorPlotter):
         # --  Input checking
         _check_argument("multiple", ["layer", "stack", "fill", "dodge"], multiple)
         _check_argument("element", ["bars", "step", "poly"], element)
-
-        if estimate_kws["discrete"] and element != "bars":
-            raise ValueError("`element` must be 'bars' when `discrete` is True")
 
         auto_bins_with_weights = (
             "weights" in self.variables
@@ -1047,8 +1061,10 @@ class _DistributionPlotter(VectorPlotter):
 
         for sub_vars, sub_data in self.iter_data("hue", from_comp_data=True):
 
-            # Extract the data points from this sub set and remove nulls
+            # Extract the data points from this sub set
             observations = sub_data[["x", "y"]]
+            min_variance = observations.var().fillna(0).min()
+            observations = observations["x"], observations["y"]
 
             # Extract the weights for this subset of observations
             if "weights" in self.variables:
@@ -1056,20 +1072,24 @@ class _DistributionPlotter(VectorPlotter):
             else:
                 weights = None
 
-            # Check that KDE will not error out
-            variance = observations[["x", "y"]].var()
-            if any(math.isclose(x, 0) for x in variance) or variance.isna().any():
+            # Estimate the density of observations at this level
+            singular = math.isclose(min_variance, 0)
+            try:
+                if not singular:
+                    density, support = estimator(*observations, weights=weights)
+            except np.linalg.LinAlgError:
+                # Testing for 0 variance doesn't catch all cases where scipy raises,
+                # but we can also get a ValueError, so we need this convoluted approach
+                singular = True
+
+            if singular:
                 msg = (
-                    "Dataset has 0 variance; skipping density estimate. "
+                    "KDE cannot be estimated (0 variance or perfect covariance). "
                     "Pass `warn_singular=False` to disable this warning."
                 )
                 if warn_singular:
-                    warnings.warn(msg, UserWarning)
+                    warnings.warn(msg, UserWarning, stacklevel=3)
                 continue
-
-            # Estimate the density of observations at this level
-            observations = observations["x"], observations["y"]
-            density, support = estimator(*observations, weights=weights)
 
             # Transform the support grid back to the original scale
             xx, yy = support
@@ -2137,8 +2157,8 @@ def displot(
     grid_data = p.plot_data.rename(columns=p.variables)
     grid_data = grid_data.loc[:, ~grid_data.columns.duplicated()]
 
-    col_name = p.variables.get("col", None)
-    row_name = p.variables.get("row", None)
+    col_name = p.variables.get("col")
+    row_name = p.variables.get("row")
 
     if facet_kws is None:
         facet_kws = {}

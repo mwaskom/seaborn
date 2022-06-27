@@ -55,6 +55,30 @@ class SemanticMapping:
         setattr(plotter, method_name, cls(plotter, *args, **kwargs))
         return plotter
 
+    def _check_list_length(self, levels, values, variable):
+        """Input check when values are provided as a list."""
+        # Copied from _core/properties; eventually will be replaced for that.
+        message = ""
+        if len(levels) > len(values):
+            message = " ".join([
+                f"\nThe {variable} list has fewer values ({len(values)})",
+                f"than needed ({len(levels)}) and will cycle, which may",
+                "produce an uninterpretable plot."
+            ])
+            values = [x for _, x in zip(levels, itertools.cycle(values))]
+
+        elif len(values) > len(levels):
+            message = " ".join([
+                f"The {variable} list has more values ({len(values)})",
+                f"than needed ({len(levels)}), which may not be intended.",
+            ])
+            values = values[:len(levels)]
+
+        if message:
+            warnings.warn(message, UserWarning, stacklevel=6)
+
+        return values
+
     def _lookup_single(self, key):
         """Apply the mapping to a single data value."""
         return self.lookup_table[key]
@@ -93,7 +117,11 @@ class HueMapping(SemanticMapping):
 
         data = plotter.plot_data.get("hue", pd.Series(dtype=float))
 
-        if data.notna().any():
+        if data.isna().all():
+            if palette is not None:
+                msg = "Ignoring `palette` because no `hue` variable has been assigned."
+                warnings.warn(msg, stacklevel=4)
+        else:
 
             map_type = self.infer_map_type(
                 palette, norm, plotter.input_format, plotter.var_types["hue"]
@@ -145,6 +173,13 @@ class HueMapping(SemanticMapping):
             # Use a value that's in the original data vector
             value = self.lookup_table[key]
         except KeyError:
+
+            if self.norm is None:
+                # Currently we only get here in scatterplot with hue_order,
+                # because scatterplot does not consider hue a grouping variable
+                # So unused hue levels are in the data, but not the lookup table
+                return (0, 0, 0, 0)
+
             # Use the colormap to interpolate between existing datapoints
             # (e.g. in the context of making a continuous legend)
             try:
@@ -201,10 +236,7 @@ class HueMapping(SemanticMapping):
                 else:
                     colors = color_palette("husl", n_colors)
             elif isinstance(palette, list):
-                if len(palette) != n_colors:
-                    err = "The palette list has the wrong number of colors."
-                    raise ValueError(err)
-                colors = palette
+                colors = self._check_list_length(levels, palette, "palette")
             else:
                 colors = color_palette(palette, n_colors)
 
@@ -356,10 +388,7 @@ class SizeMapping(SemanticMapping):
         elif isinstance(sizes, list):
 
             # List inputs give size values in the same order as the levels
-            if len(sizes) != len(levels):
-                err = "The `sizes` list has the wrong number of values."
-                raise ValueError(err)
-
+            sizes = self._check_list_length(levels, sizes, "sizes")
             lookup_table = dict(zip(levels, sizes))
 
         else:
@@ -567,9 +596,7 @@ class StyleMapping(SemanticMapping):
                 raise ValueError(err)
             lookup_table = arg
         elif isinstance(arg, Sequence):
-            if len(levels) != len(arg):
-                err = f"The `{attr}` argument has the wrong number of values"
-                raise ValueError(err)
+            arg = self._check_list_length(levels, arg, attr)
             lookup_table = dict(zip(levels, arg))
         elif arg:
             err = f"This `{attr}` argument was not understood: {arg}"

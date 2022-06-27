@@ -319,10 +319,10 @@ class TestScaling:
 
     def test_inference(self, long_df):
 
-        for col, scale_type in zip("zat", ["continuous", "nominal", "temporal"]):
+        for col, scale_type in zip("zat", ["Continuous", "Nominal", "Temporal"]):
             p = Plot(long_df, x=col, y=col).add(MockMark()).plot()
             for var in "xy":
-                assert p._scales[var].scale_type == scale_type
+                assert p._scales[var].__class__.__name__ == scale_type
 
     def test_inference_from_layer_data(self):
 
@@ -551,7 +551,7 @@ class TestScaling:
         s = MockStat()
         y = ["a", "a", "b", "c"]
         Plot(y=y).add(MockMark(), s).plot()
-        assert s.scales["y"].scale_type == "nominal"
+        assert s.scales["y"].__class__.__name__ == "Nominal"
 
     # TODO where should RGB consistency be enforced?
     @pytest.mark.xfail(
@@ -1718,3 +1718,15 @@ class TestLegend:
         s = pd.Series(["r", "g", "b", "g"])
         p = Plot(**xy).add(MockMark(), color=s).scale(color=None).plot()
         assert not p._legend_contents
+
+    def test_suppression_in_add_method(self, xy):
+
+        s = pd.Series(["a", "b", "a", "c"], name="s")
+        p = Plot(**xy).add(MockMark(), color=s, legend=False).plot()
+        assert not p._legend_contents
+
+    def test_anonymous_title(self, xy):
+
+        p = Plot(**xy, color=["a", "b", "c", "d"]).add(MockMark()).plot()
+        legend, = p._figure.legends
+        assert legend.get_title().get_text() == ""

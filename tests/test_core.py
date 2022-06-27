@@ -8,8 +8,8 @@ import pytest
 from numpy.testing import assert_array_equal
 from pandas.testing import assert_frame_equal
 
-from ..axisgrid import FacetGrid
-from .._oldcore import (
+from seaborn.axisgrid import FacetGrid
+from seaborn._oldcore import (
     SemanticMapping,
     HueMapping,
     SizeMapping,
@@ -22,7 +22,7 @@ from .._oldcore import (
     categorical_order,
 )
 
-from ..palettes import color_palette
+from seaborn.palettes import color_palette
 
 
 try:
@@ -151,7 +151,7 @@ class TestHueMapping:
 
         # Test list with wrong number of colors
         palette = colors[:-1]
-        with pytest.raises(ValueError):
+        with pytest.warns(UserWarning):
             HueMapping(p, palette=palette)
 
         # Test hue order
@@ -296,7 +296,7 @@ class TestHueMapping:
         assert m.lookup_table == dict(zip(hue_levels, palette))
 
         palette = color_palette("Blues", len(hue_levels) + 1)
-        with pytest.raises(ValueError):
+        with pytest.warns(UserWarning):
             HueMapping(p, palette=palette)
 
         # Test dictionary of colors
@@ -315,6 +315,12 @@ class TestHueMapping:
         # Test bad norm argument
         with pytest.raises(ValueError):
             HueMapping(p, norm="not a norm")
+
+    def test_hue_map_without_hue_dataa(self, long_df):
+
+        p = VectorPlotter(data=long_df, variables=dict(x="x", y="y"))
+        with pytest.warns(UserWarning, match="Ignoring `palette`"):
+            HueMapping(p, palette="viridis")
 
 
 class TestSizeMapping:
@@ -454,7 +460,7 @@ class TestSizeMapping:
 
         # Test sizes list with wrong length
         sizes = list(np.random.rand(len(levels) + 1))
-        with pytest.raises(ValueError):
+        with pytest.warns(UserWarning):
             SizeMapping(p, sizes=sizes)
 
         # Test sizes dict with missing levels
@@ -572,13 +578,13 @@ class TestStyleMapping:
             assert_array_equal(m(key, "path").vertices, path.vertices)
 
         # Test too many levels with style lists
-        with pytest.raises(ValueError):
+        with pytest.warns(UserWarning):
             StyleMapping(p, markers=["o", "s"], dashes=False)
 
-        with pytest.raises(ValueError):
+        with pytest.warns(UserWarning):
             StyleMapping(p, markers=False, dashes=[(2, 1)])
 
-        # Test too many levels with style dicts
+        # Test missing keys with style dicts
         markers, dashes = {"a": "o", "b": "s"}, False
         with pytest.raises(ValueError):
             StyleMapping(p, markers=markers, dashes=dashes)

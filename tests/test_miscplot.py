@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 
-from .. import miscplot as misc
-from ..palettes import color_palette
+from seaborn import miscplot as misc
+from seaborn.palettes import color_palette
 from .test_utils import _network
 
 

@@ -5,12 +5,13 @@ import matplotlib.pyplot as plt
 from matplotlib.colors import same_color, to_rgba
 
 import pytest
-from numpy.testing import assert_array_equal
+from numpy.testing import assert_array_equal, assert_array_almost_equal
 
-from ..external.version import Version
-from ..palettes import color_palette
+from seaborn.external.version import Version
+from seaborn.palettes import color_palette
+from seaborn._oldcore import categorical_order
 
-from ..relational import (
+from seaborn.relational import (
     _RelationalPlotter,
     _LinePlotter,
     _ScatterPlotter,
@@ -19,8 +20,8 @@ from ..relational import (
     scatterplot
 )
 
-from ..utils import _draw_figure
-from .._testing import assert_plots_equal
+from seaborn.utils import _draw_figure
+from seaborn._testing import assert_plots_equal
 
 
 @pytest.fixture(params=[
@@ -497,16 +498,18 @@ class TestRelationalPlotter(Helpers):
                 assert_array_equal(x, grp_df["x"])
                 assert_array_equal(y, grp_df["y"])
 
-    @pytest.mark.parametrize(
-        "vector_type",
-        ["series", "numpy", "list"],
-    )
+    @pytest.mark.parametrize("vector_type", ["series", "numpy", "list"])
     def test_relplot_vectors(self, long_df, vector_type):
 
         semantics = dict(x="x", y="y", hue="f", col="c")
         kws = {key: long_df[val] for key, val in semantics.items()}
+        if vector_type == "numpy":
+            kws = {k: v.to_numpy() for k, v in kws.items()}
+        elif vector_type == "list":
+            kws = {k: v.to_list() for k, v in kws.items()}
         g = relplot(data=long_df, **kws)
         grouped = long_df.groupby("c")
+        assert len(g.axes_dict) == len(grouped)
         for (_, grp_df), ax in zip(grouped, g.axes.flat):
             x, y = ax.collections[0].get_offsets().T
             assert_array_equal(x, grp_df["x"])
@@ -517,6 +520,7 @@ class TestRelationalPlotter(Helpers):
         g = relplot(data=wide_df)
         x, y = g.ax.collections[0].get_offsets().T
         assert_array_equal(y, wide_df.to_numpy().T.ravel())
+        assert not g.ax.get_ylabel()
 
     def test_relplot_hues(self, long_df):
 
@@ -1063,6 +1067,31 @@ class TestLinePlotter(SharedAxesLevelTests, Helpers):
         ax.clear()
         p.plot(ax, {})
 
+    def test_orient(self, long_df):
+
+        long_df = long_df.drop("x", axis=1).rename(columns={"s": "y", "y": "x"})
+
+        ax1 = plt.figure().subplots()
+        lineplot(data=long_df, x="x", y="y", orient="y", errorbar="sd")
+        assert len(ax1.lines) == len(ax1.collections)
+        line, = ax1.lines
+        expected = long_df.groupby("y").agg({"x": "mean"}).reset_index()
+        assert_array_almost_equal(line.get_xdata(), expected["x"])
+        assert_array_almost_equal(line.get_ydata(), expected["y"])
+        ribbon_y = ax1.collections[0].get_paths()[0].vertices[:, 1]
+        assert_array_equal(np.unique(ribbon_y), long_df["y"].sort_values().unique())
+
+        ax2 = plt.figure().subplots()
+        lineplot(
+            data=long_df, x="x", y="y", orient="y", errorbar="sd", err_style="bars"
+        )
+        segments = ax2.collections[0].get_segments()
+        for i, val in enumerate(sorted(long_df["y"].unique())):
+            assert (segments[i][:, 1] == val).all()
+
+        with pytest.raises(ValueError, match="`orient` must be either 'x' or 'y'"):
+            lineplot(long_df, x="y", y="x", orient="bad")
+
     def test_log_scale(self):
 
         f, ax = plt.subplots()
@@ -1249,13 +1278,13 @@ class TestLinePlotter(SharedAxesLevelTests, Helpers):
 
         axs = plt.figure().subplots(2)
         lineplot(data=long_df, x="x", y="y", errorbar=("ci", 95), seed=0, ax=axs[0])
-        with pytest.warns(UserWarning, match="The `ci` parameter is deprecated"):
+        with pytest.warns(FutureWarning, match="\n\nThe `ci` parameter is deprecated"):
             lineplot(data=long_df, x="x", y="y", ci=95, seed=0, ax=axs[1])
         assert_plots_equal(*axs)
 
         axs = plt.figure().subplots(2)
         lineplot(data=long_df, x="x", y="y", errorbar="sd", ax=axs[0])
-        with pytest.warns(UserWarning, match="The `ci` parameter is deprecated"):
+        with pytest.warns(FutureWarning, match="\n\nThe `ci` parameter is deprecated"):
             lineplot(data=long_df, x="x", y="y", ci="sd", ax=axs[1])
         assert_plots_equal(*axs)
 
@@ -1619,6 +1648,16 @@ class TestScatterPlotter(SharedAxesLevelTests, Helpers):
         scatterplot(data=long_df, x="x", y="y", c=long_df["y"], cmap=cmap)
         _draw_figure(ax.figure)
         assert_array_equal(ax.collections[0].get_facecolors(), colors)
+
+    def test_hue_order(self, long_df):
+
+        order = categorical_order(long_df["a"])
+        unused = order.pop()
+
+        ax = scatterplot(data=long_df, x="x", y="y", hue="a", hue_order=order)
+        points = ax.collections[0]
+        assert (points.get_facecolors()[long_df["a"] == unused] == 0).all()
+        assert [t.get_text() for t in ax.legend_.texts] == order
 
     def test_linewidths(self, long_df):
 

@@ -15,21 +15,21 @@ from numpy.testing import (
     assert_array_less,
 )
 
-from .. import categorical as cat
-from .. import palettes
+from seaborn import categorical as cat
+from seaborn import palettes
 
-from ..external.version import Version
-from .._oldcore import categorical_order
-from ..categorical import (
+from seaborn.external.version import Version
+from seaborn._oldcore import categorical_order
+from seaborn.categorical import (
     _CategoricalPlotterNew,
     Beeswarm,
     catplot,
     stripplot,
     swarmplot,
 )
-from ..palettes import color_palette
-from ..utils import _normal_quantile_func, _draw_figure
-from .._testing import assert_plots_equal
+from seaborn.palettes import color_palette
+from seaborn.utils import _normal_quantile_func, _draw_figure
+from seaborn._testing import assert_plots_equal
 
 
 PLOT_FUNCS = [
@@ -517,7 +517,7 @@ class TestCategoricalStatPlotter(CategoricalFixture):
 
         p = cat._CategoricalStatPlotter()
         p.establish_variables("g", "y", data=self.df)
-        p.estimate_statistic(np.mean, None, 100, None)
+        p.estimate_statistic("mean", None, 100, None)
         npt.assert_array_equal(p.confint, np.array([]))
 
         p.establish_variables("g", "y", hue="h", data=self.df)
@@ -532,7 +532,7 @@ class TestCategoricalStatPlotter(CategoricalFixture):
         y = pd.Series(np.random.RandomState(0).randn(300))
 
         p.establish_variables(g, y)
-        p.estimate_statistic(np.mean, 95, 10000, None)
+        p.estimate_statistic("mean", ("ci", 95), 10000, None)
 
         assert p.statistic.shape == (3,)
         assert p.confint.shape == (3, 2)
@@ -558,11 +558,11 @@ class TestCategoricalStatPlotter(CategoricalFixture):
         y[u == "y"] += 3
 
         p.establish_variables(g, y)
-        p.estimate_statistic(np.mean, 95, 10000, None)
+        p.estimate_statistic("mean", ("ci", 95), 10000, None)
         stat1, ci1 = p.statistic, p.confint
 
         p.establish_variables(g, y, units=u)
-        p.estimate_statistic(np.mean, 95, 10000, None)
+        p.estimate_statistic("mean", ("ci", 95), 10000, None)
         stat2, ci2 = p.statistic, p.confint
 
         npt.assert_array_equal(stat1, stat2)
@@ -578,7 +578,7 @@ class TestCategoricalStatPlotter(CategoricalFixture):
         y = pd.Series(np.random.RandomState(0).randn(300))
 
         p.establish_variables(g, y, order=list("abdc"))
-        p.estimate_statistic(np.mean, 95, 10000, None)
+        p.estimate_statistic("mean", ("ci", 95), 10000, None)
 
         assert p.statistic.shape == (4,)
         assert p.confint.shape == (4, 2)
@@ -603,7 +603,7 @@ class TestCategoricalStatPlotter(CategoricalFixture):
         y = pd.Series(np.random.RandomState(0).randn(300))
 
         p.establish_variables(g, y, h)
-        p.estimate_statistic(np.mean, 95, 50000, None)
+        p.estimate_statistic("mean", ("ci", 95), 50000, None)
 
         assert p.statistic.shape == (3, 2)
         assert p.confint.shape == (3, 2, 2)
@@ -628,9 +628,9 @@ class TestCategoricalStatPlotter(CategoricalFixture):
         y = pd.Series(np.random.RandomState(0).randn(300))
 
         p.establish_variables(g, y, h)
-        p.estimate_statistic(np.mean, 95, 1000, 0)
+        p.estimate_statistic("mean", ("ci", 95), 1000, 0)
         confint_1 = p.confint
-        p.estimate_statistic(np.mean, 95, 1000, 0)
+        p.estimate_statistic("mean", ("ci", 95), 1000, 0)
         confint_2 = p.confint
 
         npt.assert_array_equal(confint_1, confint_2)
@@ -647,11 +647,11 @@ class TestCategoricalStatPlotter(CategoricalFixture):
         y[u == "k"] += 3
 
         p.establish_variables(g, y, h)
-        p.estimate_statistic(np.mean, 95, 10000, None)
+        p.estimate_statistic("mean", ("ci", 95), 10000, None)
         stat1, ci1 = p.statistic, p.confint
 
         p.establish_variables(g, y, h, units=u)
-        p.estimate_statistic(np.mean, 95, 10000, None)
+        p.estimate_statistic("mean", ("ci", 95), 10000, None)
         stat2, ci2 = p.statistic, p.confint
 
         npt.assert_array_equal(stat1, stat2)
@@ -670,7 +670,7 @@ class TestCategoricalStatPlotter(CategoricalFixture):
         p.establish_variables(g, y, h,
                               order=list("abdc"),
                               hue_order=list("zyx"))
-        p.estimate_statistic(np.mean, 95, 50000, None)
+        p.estimate_statistic("mean", ("ci", 95), 50000, None)
 
         assert p.statistic.shape == (4, 3)
         assert p.confint.shape == (4, 3, 2)
@@ -1952,7 +1952,7 @@ class SharedScatterTests(SharedAxesLevelTests):
 
     @pytest.mark.parametrize(
         "val_var,val_col,hue_col",
-        itertools.product(["x", "y"], ["b", "y", "t"], [None, "a"]),
+        list(itertools.product(["x", "y"], ["b", "y", "t"], [None, "a"])),
     )
     def test_single(self, long_df, val_var, val_col, hue_col):
 
@@ -2053,6 +2053,15 @@ class SharedScatterTests(SharedAxesLevelTests):
         points = ax.collections[0]
         for point_color in points.get_facecolors():
             assert to_rgb(point_color) in palette
+
+    def test_palette_with_hue_deprecation(self, long_df):
+        palette = "Blues"
+        with pytest.warns(FutureWarning, match="Passing `palette` without"):
+            ax = self.func(data=long_df, x="a", y=long_df["y"], palette=palette)
+        strips = ax.collections
+        colors = color_palette(palette, len(strips))
+        for strip, color in zip(strips, colors):
+            assert same_color(strip.get_facecolor()[0], color)
 
     def test_log_scale(self):
 
@@ -2190,30 +2199,31 @@ class TestSwarmPlot(SharedScatterTests):
 class TestBarPlotter(CategoricalFixture):
 
     default_kws = dict(
-        x=None, y=None, hue=None, data=None,
-        estimator=np.mean, ci=95, n_boot=100, units=None, seed=None,
+        data=None, x=None, y=None, hue=None, units=None,
+        estimator="mean", errorbar=("ci", 95), n_boot=100, seed=None,
         order=None, hue_order=None,
         orient=None, color=None, palette=None,
-        saturation=.75, errcolor=".26", errwidth=None,
+        saturation=.75, width=0.8,
+        errcolor=".26", errwidth=None,
         capsize=None, dodge=True
     )
 
     def test_nested_width(self):
 
-        kws = self.default_kws.copy()
+        ax = cat.barplot(data=self.df, x="g", y="y", hue="h")
+        for bar in ax.patches:
+            assert bar.get_width() == pytest.approx(.8 / 2)
+        ax.clear()
 
-        p = cat._BarPlotter(**kws)
-        p.establish_variables("g", "y", hue="h", data=self.df)
-        assert p.nested_width == .8 / 2
+        ax = cat.barplot(data=self.df, x="g", y="y", hue="g", width=.5)
+        for bar in ax.patches:
+            assert bar.get_width() == pytest.approx(.5 / 3)
+        ax.clear()
 
-        p = cat._BarPlotter(**kws)
-        p.establish_variables("h", "y", "g", data=self.df)
-        assert p.nested_width == .8 / 3
-
-        kws["dodge"] = False
-        p = cat._BarPlotter(**kws)
-        p.establish_variables("h", "y", "g", data=self.df)
-        assert p.nested_width == .8
+        ax = cat.barplot(data=self.df, x="g", y="y", hue="g", dodge=False)
+        for bar in ax.patches:
+            assert bar.get_width() == pytest.approx(.8)
+        ax.clear()
 
     def test_draw_vertical_bars(self):
 
@@ -2441,12 +2451,25 @@ class TestBarPlotter(CategoricalFixture):
         assert ax.get_ylabel() == "g"
         plt.close("all")
 
+    def test_errorbar(self, long_df):
+
+        ax = cat.barplot(data=long_df, x="a", y="y", errorbar=("sd", 2))
+        order = categorical_order(long_df["a"])
+
+        for i, line in enumerate(ax.lines):
+            sub_df = long_df.loc[long_df["a"] == order[i], "y"]
+            mean = sub_df.mean()
+            sd = sub_df.std()
+            expected = mean - 2 * sd, mean + 2 * sd
+            assert_array_equal(line.get_ydata(), expected)
+
 
 class TestPointPlotter(CategoricalFixture):
 
     default_kws = dict(
         x=None, y=None, hue=None, data=None,
-        estimator=np.mean, ci=95, n_boot=100, units=None, seed=None,
+        estimator="mean", errorbar=("ci", 95),
+        n_boot=100, units=None, seed=None,
         order=None, hue_order=None,
         markers="o", linestyles="-", dodge=0,
         join=True, scale=1,
@@ -2706,6 +2729,20 @@ class TestPointPlotter(CategoricalFixture):
         assert ax.get_ylabel() == "g"
         plt.close("all")
 
+    def test_errorbar(self, long_df):
+
+        ax = cat.pointplot(
+            data=long_df, x="a", y="y", errorbar=("sd", 2), join=False
+        )
+        order = categorical_order(long_df["a"])
+
+        for i, line in enumerate(ax.lines):
+            sub_df = long_df.loc[long_df["a"] == order[i], "y"]
+            mean = sub_df.mean()
+            sd = sub_df.std()
+            expected = mean - 2 * sd, mean + 2 * sd
+            assert_array_equal(line.get_ydata(), expected)
+
 
 class TestCountPlot(CategoricalFixture):
 
@@ -2788,6 +2825,10 @@ class TestCatPlot(CategoricalFixture):
         assert len(g.ax.patches) == want_elements
         assert len(g.ax.lines) == 0
 
+        g = cat.catplot(y="y", data=self.df, kind="box")
+        want_artists = 1
+        assert len(self.get_box_artists(g.ax)) == want_artists
+
         g = cat.catplot(x="g", y="y", data=self.df, kind="box")
         want_artists = self.g.unique().size
         assert len(self.get_box_artists(g.ax)) == want_artists
@@ -2809,6 +2850,8 @@ class TestCatPlot(CategoricalFixture):
         g = cat.catplot(x="g", y="y", data=self.df, kind="strip")
         want_elements = self.g.unique().size
         assert len(g.ax.collections) == want_elements
+        for strip in g.ax.collections:
+            assert same_color(strip.get_facecolors(), "C0")
 
         g = cat.catplot(x="g", y="y", hue="h", data=self.df, kind="strip")
         want_elements = self.g.unique().size + self.h.unique().size
@@ -2871,15 +2914,6 @@ class TestCatPlot(CategoricalFixture):
             g = cat.catplot(x="g", y="y", data=self.df, ax=ax)
         assert len(ax.collections) == 0
         assert len(g.ax.collections) > 0
-
-    def test_factorplot(self):
-
-        with pytest.warns(UserWarning):
-            g = cat.factorplot(x="g", y="y", data=self.df)
-
-        assert len(g.ax.collections) == 1
-        want_lines = self.g.unique().size + 1
-        assert len(g.ax.lines) == want_lines
 
     def test_share_xy(self):
 

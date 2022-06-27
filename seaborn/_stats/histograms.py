@@ -117,7 +117,10 @@ class Hist(Stat):
 
     def __call__(self, data, groupby, orient, scales):
 
-        scale_type = scales[orient].scale_type
+        # TODO better to do this as an isinstance check?
+        # We are only asking about Nominal scales now,
+        # but presumably would apply to Ordinal too?
+        scale_type = scales[orient].__class__.__name__.lower()
         grouping_vars = [v for v in data if v in groupby.order]
         if not grouping_vars or self.common_bins is True:
             bin_kws = self._define_bin_params(data, orient, scale_type)

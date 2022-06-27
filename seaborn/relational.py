@@ -26,20 +26,20 @@ _relational_narrative = DocstringComponents(dict(
 
     # ---  Introductory prose
     main_api="""
-The relationship between ``x`` and ``y`` can be shown for different subsets
-of the data using the ``hue``, ``size``, and ``style`` parameters. These
+The relationship between `x` and `y` can be shown for different subsets
+of the data using the `hue`, `size`, and `style` parameters. These
 parameters control what visual semantics are used to identify the different
 subsets. It is possible to show up to three dimensions independently by
 using all three semantic types, but this style of plot can be hard to
 interpret and is often ineffective. Using redundant semantics (i.e. both
-``hue`` and ``style`` for the same variable) can be helpful for making
+`hue` and `style` for the same variable) can be helpful for making
 graphics more accessible.
 
 See the :ref:`tutorial <relational_tutorial>` for more information.
     """,
 
     relational_semantic="""
-The default treatment of the ``hue`` (and to a lesser extent, ``size``)
+The default treatment of the `hue` (and to a lesser extent, `size`)
 semantic, if present, depends on whether the variable is inferred to
 represent "numeric" or "categorical" data. In particular, numeric variables
 are represented with a sequential colormap by default, and the legend
@@ -53,13 +53,13 @@ _relational_docs = dict(
 
     # --- Shared function parameters
     data_vars="""
-x, y : names of variables in ``data`` or vector data
+x, y : names of variables in `data` or vector data
     Input data variables; must be numeric. Can pass data directly or
-    reference columns in ``data``.
+    reference columns in `data`.
     """,
     data="""
 data : DataFrame, array, or list of arrays
-    Input data structure. If ``x`` and ``y`` are specified as names, this
+    Input data structure. If `x` and `y` are specified as names, this
     should be a "long-form" DataFrame containing those columns. Otherwise
     it is treated as "wide-form" data and grouping variables are ignored.
     See the examples for the various ways this parameter can be specified
@@ -67,66 +67,65 @@ data : DataFrame, array, or list of arrays
     """,
     palette="""
 palette : string, list, dict, or matplotlib colormap
-    An object that determines how colors are chosen when ``hue`` is used.
+    An object that determines how colors are chosen when `hue` is used.
     It can be the name of a seaborn palette or matplotlib colormap, a list
     of colors (anything matplotlib understands), a dict mapping levels
-    of the ``hue`` variable to colors, or a matplotlib colormap object.
+    of the `hue` variable to colors, or a matplotlib colormap object.
     """,
     hue_order="""
 hue_order : list
-    Specified order for the appearance of the ``hue`` variable levels,
+    Specified order for the appearance of the `hue` variable levels,
     otherwise they are determined from the data. Not relevant when the
-    ``hue`` variable is numeric.
+    `hue` variable is numeric.
     """,
     hue_norm="""
 hue_norm : tuple or :class:`matplotlib.colors.Normalize` object
-    Normalization in data units for colormap applied to the ``hue``
-    variable when it is numeric. Not relevant if it is categorical.
+    Normalization in data units for colormap applied to the `hue`
+    variable when it is numeric. Not relevant if `hue` is categorical.
     """,
     sizes="""
 sizes : list, dict, or tuple
-    An object that determines how sizes are chosen when ``size`` is used.
-    It can always be a list of size values or a dict mapping levels of the
-    ``size`` variable to sizes. When ``size``  is numeric, it can also be
-    a tuple specifying the minimum and maximum size to use such that other
-    values are normalized within this range.
+    An object that determines how sizes are chosen when `size` is used.
+    List or dict arguments should provide a size for each unique data value,
+    which forces a categorical interpretation. The argument may also be a
+    min, max tuple.
     """,
     size_order="""
 size_order : list
-    Specified order for appearance of the ``size`` variable levels,
+    Specified order for appearance of the `size` variable levels,
     otherwise they are determined from the data. Not relevant when the
-    ``size`` variable is numeric.
+    `size` variable is numeric.
     """,
     size_norm="""
 size_norm : tuple or Normalize object
     Normalization in data units for scaling plot objects when the
-    ``size`` variable is numeric.
+    `size` variable is numeric.
     """,
     dashes="""
 dashes : boolean, list, or dictionary
     Object determining how to draw the lines for different levels of the
-    ``style`` variable. Setting to ``True`` will use default dash codes, or
+    `style` variable. Setting to `True` will use default dash codes, or
     you can pass a list of dash codes or a dictionary mapping levels of the
-    ``style`` variable to dash codes. Setting to ``False`` will use solid
+    `style` variable to dash codes. Setting to `False` will use solid
     lines for all subsets. Dashes are specified as in matplotlib: a tuple
-    of ``(segment, gap)`` lengths, or an empty string to draw a solid line.
+    of `(segment, gap)` lengths, or an empty string to draw a solid line.
     """,
     markers="""
 markers : boolean, list, or dictionary
     Object determining how to draw the markers for different levels of the
-    ``style`` variable. Setting to ``True`` will use default markers, or
+    `style` variable. Setting to `True` will use default markers, or
     you can pass a list of markers or a dictionary mapping levels of the
-    ``style`` variable to markers. Setting to ``False`` will draw
+    `style` variable to markers. Setting to `False` will draw
     marker-less lines.  Markers are specified as in matplotlib.
     """,
     style_order="""
 style_order : list
-    Specified order for appearance of the ``style`` variable levels
+    Specified order for appearance of the `style` variable levels
     otherwise they are determined from the data. Not relevant when the
-    ``style`` variable is numeric.
+    `style` variable is numeric.
     """,
     units="""
-units : vector or key in ``data``
+units : vector or key in `data`
     Grouping variable identifying sampling units. When used, a separate
     line will be drawn for each unit with appropriate semantics, but no
     legend entry will be added. Useful for showing distribution of
@@ -134,8 +133,8 @@ units : vector or key in ``data``
     """,
     estimator="""
 estimator : name of pandas method or callable or None
-    Method for aggregating across multiple observations of the ``y``
-    variable at the same ``x`` level. If ``None``, all observations will
+    Method for aggregating across multiple observations of the `y`
+    variable at the same `x` level. If `None`, all observations will
     be drawn.
     """,
     ci="""
@@ -156,11 +155,11 @@ seed : int, numpy.random.Generator, or numpy.random.RandomState
     """,
     legend="""
 legend : "auto", "brief", "full", or False
-    How to draw the legend. If "brief", numeric ``hue`` and ``size``
+    How to draw the legend. If "brief", numeric `hue` and `size`
     variables will be represented with a sample of evenly spaced values.
     If "full", every group will get an entry in the legend. If "auto",
     choose between brief or full representation based on number of levels.
-    If ``False``, no legend data is added and no legend is drawn.
+    If `False`, no legend data is added and no legend is drawn.
     """,
     ax_in="""
 ax : matplotlib Axes
@@ -352,9 +351,8 @@ class _LinePlotter(_RelationalPlotter):
     def __init__(
         self, *,
         data=None, variables={},
-        estimator=None, ci=None, n_boot=None, seed=None,
-        sort=True, err_style=None, err_kws=None, legend=None,
-        errorbar=None,
+        estimator=None, n_boot=None, seed=None, errorbar=None,
+        sort=True, orient="x", err_style=None, err_kws=None, legend=None
     ):
 
         # TODO this is messy, we want the mapping to be agnostic about
@@ -368,10 +366,10 @@ class _LinePlotter(_RelationalPlotter):
 
         self.estimator = estimator
         self.errorbar = errorbar
-        self.ci = ci
         self.n_boot = n_boot
         self.seed = seed
         self.sort = sort
+        self.orient = orient
         self.err_style = err_style
         self.err_kws = {} if err_kws is None else err_kws
 
@@ -384,7 +382,7 @@ class _LinePlotter(_RelationalPlotter):
         # honor both (a) the current state of the plot cycler and (b) the
         # specified kwargs on all the lines we will draw, overriding when
         # relevant with the data semantics. Note that we won't cycle
-        # internally; in other words, if ``hue`` is not used, all elements will
+        # internally; in other words, if `hue` is not used, all elements will
         # have the same color, but they will have the color that you would have
         # gotten from the corresponding matplotlib function, and calling the
         # function will advance the axes property cycle.
@@ -408,8 +406,11 @@ class _LinePlotter(_RelationalPlotter):
         )
 
         # TODO abstract variable to aggregate over here-ish. Better name?
-        agg_var = "y"
-        grouper = ["x"]
+        orient = self.orient
+        if orient not in {"x", "y"}:
+            err = f"`orient` must be either 'x' or 'y', not {orient!r}."
+            raise ValueError(err)
+        other = {"x": "y", "y": "x"}[orient]
 
         # TODO How to handle NA? We don't want NA to propagate through to the
         # estimate/CI when some values are present, but we would also like
@@ -422,7 +423,7 @@ class _LinePlotter(_RelationalPlotter):
         for sub_vars, sub_data in self.iter_data(grouping_vars, from_comp_data=True):
 
             if self.sort:
-                sort_vars = ["units", "x", "y"]
+                sort_vars = ["units", orient, other]
                 sort_cols = [var for var in sort_vars if var in self.variables]
                 sub_data = sub_data.sort_values(sort_cols)
 
@@ -431,10 +432,10 @@ class _LinePlotter(_RelationalPlotter):
                     # TODO eventually relax this constraint
                     err = "estimator must be None when specifying units"
                     raise ValueError(err)
-                grouped = sub_data.groupby(grouper, sort=self.sort)
+                grouped = sub_data.groupby(orient, sort=self.sort)
                 # Could pass as_index=False instead of reset_index,
                 # but that fails on a corner case with older pandas.
-                sub_data = grouped.apply(agg, agg_var).reset_index()
+                sub_data = grouped.apply(agg, other).reset_index()
 
             # TODO this is pretty ad hoc ; see GH2409
             for var in "xy":
@@ -478,19 +479,23 @@ class _LinePlotter(_RelationalPlotter):
 
                 if self.err_style == "band":
 
-                    ax.fill_between(
-                        sub_data["x"], sub_data["ymin"], sub_data["ymax"],
+                    func = {"x": ax.fill_between, "y": ax.fill_betweenx}[orient]
+                    func(
+                        sub_data[orient],
+                        sub_data[f"{other}min"], sub_data[f"{other}max"],
                         color=line_color, **err_kws
                     )
 
                 elif self.err_style == "bars":
 
-                    error_deltas = (
-                        sub_data["y"] - sub_data["ymin"],
-                        sub_data["ymax"] - sub_data["y"],
-                    )
+                    error_param = {
+                        f"{other}err": (
+                            sub_data[other] - sub_data[f"{other}min"],
+                            sub_data[f"{other}max"] - sub_data[other],
+                        )
+                    }
                     ebars = ax.errorbar(
-                        sub_data["x"], sub_data["y"], error_deltas,
+                        sub_data["x"], sub_data["y"], **error_param,
                         linestyle="", color=line_color, alpha=line_alpha,
                         **err_kws
                     )
@@ -515,14 +520,7 @@ class _ScatterPlotter(_RelationalPlotter):
     _legend_attributes = ["color", "s", "marker"]
     _legend_func = "scatter"
 
-    def __init__(
-        self, *,
-        data=None, variables={},
-        x_bins=None, y_bins=None,
-        estimator=None, ci=None, n_boot=None,
-        alpha=None, x_jitter=None, y_jitter=None,
-        legend=None
-    ):
+    def __init__(self, *, data=None, variables={}, legend=None):
 
         # TODO this is messy, we want the mapping to be agnostic about
         # the kind of plot to draw, but for the time being we need to set
@@ -533,7 +531,6 @@ class _ScatterPlotter(_RelationalPlotter):
 
         super().__init__(data=data, variables=variables)
 
-        self.alpha = alpha
         self.legend = legend
 
     def plot(self, ax, kws):
@@ -565,10 +562,6 @@ class _ScatterPlotter(_RelationalPlotter):
             m = mpl.markers.MarkerStyle(m)
         if m.is_filled():
             kws.setdefault("edgecolor", "w")
-
-        # TODO this makes it impossible to vary alpha with hue which might
-        # otherwise be useful? Should we just pass None?
-        kws["alpha"] = 1 if self.alpha == "auto" else self.alpha
 
         # Draw the scatter plot
         points = ax.scatter(x=x, y=y, **kws)
@@ -608,8 +601,8 @@ def lineplot(
     sizes=None, size_order=None, size_norm=None,
     dashes=True, markers=None, style_order=None,
     estimator="mean", errorbar=("ci", 95), n_boot=1000, seed=None,
-    sort=True, err_style="band", err_kws=None, ci="deprecated",
-    legend="auto", ax=None, **kwargs
+    orient="x", sort=True, err_style="band", err_kws=None,
+    legend="auto", ci="deprecated", ax=None, **kwargs
 ):
 
     # Handle deprecation of ci parameter
@@ -618,9 +611,9 @@ def lineplot(
     variables = _LinePlotter.get_semantics(locals())
     p = _LinePlotter(
         data=data, variables=variables,
-        estimator=estimator, ci=ci, n_boot=n_boot, seed=seed,
-        sort=sort, err_style=err_style, err_kws=err_kws, legend=legend,
-        errorbar=errorbar,
+        estimator=estimator, n_boot=n_boot, seed=seed, errorbar=errorbar,
+        sort=sort, orient=orient, err_style=err_style, err_kws=err_kws,
+        legend=legend,
     )
 
     p.map_hue(palette=palette, order=hue_order, norm=hue_norm)
@@ -654,23 +647,23 @@ Draw a line plot with possibility of several semantic groupings.
 
 {narrative.relational_semantic}
 
-By default, the plot aggregates over multiple ``y`` values at each value of
-``x`` and shows an estimate of the central tendency and a confidence
+By default, the plot aggregates over multiple `y` values at each value of
+`x` and shows an estimate of the central tendency and a confidence
 interval for that estimate.
 
 Parameters
 ----------
 {params.core.data}
 {params.core.xy}
-hue : vector or key in ``data``
+hue : vector or key in `data`
     Grouping variable that will produce lines with different colors.
     Can be either categorical or numeric, although color mapping will
     behave differently in latter case.
-size : vector or key in ``data``
+size : vector or key in `data`
     Grouping variable that will produce lines with different widths.
     Can be either categorical or numeric, although size mapping will
     behave differently in latter case.
-style : vector or key in ``data``
+style : vector or key in `data`
     Grouping variable that will produce lines with different dashes
     and/or markers. Can have a numeric dtype but will always be treated
     as categorical.
@@ -688,6 +681,9 @@ style : vector or key in ``data``
 {params.stat.errorbar}
 {params.rel.n_boot}
 {params.rel.seed}
+orient : "x" or "y"
+    Dimension along which the data are sorted / aggregated. Equivalently,
+    the "independent variable" of the resulting function.
 sort : boolean
     If True, the data will be sorted by the x and y variables, otherwise
     lines will connect points in the order they appear in the dataset.
@@ -697,7 +693,7 @@ err_style : "band" or "bars"
 err_kws : dict of keyword arguments
     Additional parameters to control the aesthetics of the error bars. The
     kwargs are passed either to :meth:`matplotlib.axes.Axes.fill_between`
-    or :meth:`matplotlib.axes.Axes.errorbar`, depending on ``err_style``.
+    or :meth:`matplotlib.axes.Axes.errorbar`, depending on `err_style`.
 {params.rel.legend}
 {params.rel.ci}
 {params.core.ax}
@@ -732,21 +728,12 @@ def scatterplot(
     x=None, y=None, hue=None, size=None, style=None,
     palette=None, hue_order=None, hue_norm=None,
     sizes=None, size_order=None, size_norm=None,
-    markers=True, style_order=None,
-    x_bins=None, y_bins=None,
-    units=None, estimator=None, ci=95, n_boot=1000,
-    alpha=None, x_jitter=None, y_jitter=None,
-    legend="auto", ax=None,
+    markers=True, style_order=None, legend="auto", ax=None,
     **kwargs
 ):
 
     variables = _ScatterPlotter.get_semantics(locals())
-    p = _ScatterPlotter(
-        data=data, variables=variables,
-        x_bins=x_bins, y_bins=y_bins,
-        estimator=estimator, ci=ci, n_boot=n_boot,
-        alpha=alpha, x_jitter=x_jitter, y_jitter=y_jitter, legend=legend,
-    )
+    p = _ScatterPlotter(data=data, variables=variables, legend=legend)
 
     p.map_hue(palette=palette, order=hue_order, norm=hue_norm)
     p.map_size(sizes=sizes, order=size_order, norm=size_norm)
@@ -781,15 +768,15 @@ Parameters
 ----------
 {params.core.data}
 {params.core.xy}
-hue : vector or key in ``data``
+hue : vector or key in `data`
     Grouping variable that will produce points with different colors.
     Can be either categorical or numeric, although color mapping will
     behave differently in latter case.
-size : vector or key in ``data``
+size : vector or key in `data`
     Grouping variable that will produce points with different sizes.
     Can be either categorical or numeric, although size mapping will
     behave differently in latter case.
-style : vector or key in ``data``
+style : vector or key in `data`
     Grouping variable that will produce points with different markers.
     Can have a numeric dtype but will always be treated as categorical.
 {params.core.palette}
@@ -800,20 +787,6 @@ style : vector or key in ``data``
 {params.rel.size_norm}
 {params.rel.markers}
 {params.rel.style_order}
-{{x,y}}_bins : lists or arrays or functions
-    *Currently non-functional.*
-{params.rel.units}
-    *Currently non-functional.*
-{params.rel.estimator}
-    *Currently non-functional.*
-{params.rel.ci}
-    *Currently non-functional.*
-{params.rel.n_boot}
-    *Currently non-functional.*
-alpha : float
-    Proportional opacity of the points.
-{{x,y}}_jitter : booleans or floats
-    *Currently non-functional.*
 {params.rel.legend}
 {params.core.ax}
 kwargs : key, value mappings
@@ -951,7 +924,11 @@ def relplot(
 
     # Pass the row/col variables to FacetGrid with their original
     # names so that the axes titles render correctly
-    grid_kws = {v: p.variables.get(v, None) for v in grid_semantics}
+    for var in ["row", "col"]:
+        # Handle faceting variables that lack name information
+        if var in p.variables and p.variables[var] is None:
+            p.variables[var] = f"_{var}_"
+    grid_kws = {v: p.variables.get(v) for v in grid_semantics}
 
     # Rename the columns of the plot_data structure appropriately
     new_cols = plot_variables.copy()
@@ -971,10 +948,8 @@ def relplot(
     # Draw the plot
     g.map_dataframe(func, **plot_kws)
 
-    # Label the axes
-    g.set_axis_labels(
-        variables.get("x", None), variables.get("y", None)
-    )
+    # Label the axes, using the original variables
+    g.set(xlabel=variables.get("x"), ylabel=variables.get("y"))
 
     # Show the legend
     if legend:
@@ -1014,11 +989,11 @@ Figure-level interface for drawing relational plots onto a FacetGrid.
 
 This function provides access to several different axes-level functions
 that show the relationship between two variables with semantic mappings
-of subsets. The ``kind`` parameter selects the underlying axes-level
+of subsets. The `kind` parameter selects the underlying axes-level
 function to use:
 
-- :func:`scatterplot` (with ``kind="scatter"``; the default)
-- :func:`lineplot` (with ``kind="line"``)
+- :func:`scatterplot` (with `kind="scatter"`; the default)
+- :func:`lineplot` (with `kind="line"`)
 
 Extra keyword arguments are passed to the underlying function, so you
 should refer to the documentation for each to see kind-specific options.
@@ -1030,23 +1005,19 @@ should refer to the documentation for each to see kind-specific options.
 After plotting, the :class:`FacetGrid` with the plot is returned and can
 be used directly to tweak supporting plot details or add other layers.
 
-Note that, unlike when using the underlying plotting functions directly,
-data must be passed in a long-form DataFrame with variables specified by
-passing strings to ``x``, ``y``, and other parameters.
-
 Parameters
 ----------
 {params.core.data}
 {params.core.xy}
-hue : vector or key in ``data``
+hue : vector or key in `data`
     Grouping variable that will produce elements with different colors.
     Can be either categorical or numeric, although color mapping will
     behave differently in latter case.
-size : vector or key in ``data``
+size : vector or key in `data`
     Grouping variable that will produce elements with different sizes.
     Can be either categorical or numeric, although size mapping will
     behave differently in latter case.
-style : vector or key in ``data``
+style : vector or key in `data`
     Grouping variable that will produce elements with different styles.
     Can have a numeric dtype but will always be treated as categorical.
 {params.rel.units}
@@ -1067,7 +1038,7 @@ row_order, col_order : lists of strings
 {params.rel.legend}
 kind : string
     Kind of plot to draw, corresponding to a seaborn relational plot.
-    Options are {{``scatter`` and ``line``}}.
+    Options are `"scatter"` or `"line"`.
 {params.facets.height}
 {params.facets.aspect}
 facet_kws : dict

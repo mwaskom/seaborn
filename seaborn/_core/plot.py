@@ -23,7 +23,7 @@ from seaborn._marks.base import Mark
 from seaborn._stats.base import Stat
 from seaborn._core.data import PlotData
 from seaborn._core.moves import Move
-from seaborn._core.scales import ScaleSpec, Scale
+from seaborn._core.scales import Scale
 from seaborn._core.subplots import Subplots
 from seaborn._core.groupby import GroupBy
 from seaborn._core.properties import PROPERTIES, Property, Coordinate
@@ -55,6 +55,7 @@ class Layer(TypedDict, total=False):
     source: DataSource
     vars: dict[str, VariableSpec]
     orient: str
+    legend: bool
 
 
 class FacetSpec(TypedDict, total=False):
@@ -145,7 +146,7 @@ class Plot:
 
     _data: PlotData
     _layers: list[Layer]
-    _scales: dict[str, ScaleSpec]
+    _scales: dict[str, Scale]
 
     _subplot_spec: dict[str, Any]  # TODO values type
     _facet_spec: FacetSpec
@@ -297,9 +298,10 @@ class Plot:
         self,
         mark: Mark,
         stat: Stat | None = None,
-        move: Move | None = None,  # TODO or list[Move]
+        move: Move | list[Move] | None = None,
         *,
         orient: str | None = None,
+        legend: bool = True,
         data: DataSource = None,
         **variables: VariableSpec,
     ) -> Plot:
@@ -318,6 +320,8 @@ class Plot:
             A transformation applied to the data before plotting.
         move : :class:`seaborn.objects.Move`
             Additional transformation(s) to handle over-plotting.
+        legend : bool
+            Option to suppress the mark/mappings for this layer from the legend.
         orient : "x", "y", "v", or "h"
             The orientation of the mark, which affects how the stat is computed.
             Typically corresponds to the axis that defines groups for aggregation.
@@ -356,6 +360,7 @@ class Plot:
             "move": move,
             "vars": variables,
             "source": data,
+            "legend": legend,
             "orient": {"v": "x", "h": "y"}.get(orient, orient),  # type: ignore
         })
 
@@ -515,7 +520,7 @@ class Plot:
 
     # TODO def twin()?
 
-    def scale(self, **scales: ScaleSpec) -> Plot:
+    def scale(self, **scales: Scale) -> Plot:
         """
         Control mappings from data units to visual properties.
 
@@ -868,7 +873,7 @@ class Plotter:
                 var_df = pd.DataFrame(columns=cols)
 
             prop = Coordinate(axis)
-            scale_spec = self._get_scale(p, prefix, prop, var_df[var])
+            scale = self._get_scale(p, prefix, prop, var_df[var])
 
             # Shared categorical axes are broken on matplotlib<3.4.0.
             # https://github.com/matplotlib/matplotlib/pull/18308
@@ -877,7 +882,7 @@ class Plotter:
             if Version(mpl.__version__) < Version("3.4.0"):
                 from seaborn._core.scales import Nominal
                 paired_axis = axis in p._pair_spec
-                cat_scale = isinstance(scale_spec, Nominal)
+                cat_scale = isinstance(scale, Nominal)
                 ok_dim = {"x": "col", "y": "row"}[axis]
                 shared_axes = share_state not in [False, "none", ok_dim]
                 if paired_axis and cat_scale and shared_axes:
@@ -892,7 +897,7 @@ class Plotter:
             # Setup the scale on all of the data and plug it into self._scales
             # We do this because by the time we do self._setup_scales, coordinate data
             # will have been converted to floats already, so scale inference fails
-            self._scales[var] = scale_spec.setup(var_df[var], prop)
+            self._scales[var] = scale._setup(var_df[var], prop)
 
             # Set up an empty series to receive the transformed values.
             # We need this to handle piecemeal tranforms of categories -> floats.
@@ -922,7 +927,7 @@ class Plotter:
 
                     seed_values = var_df.loc[idx, var]
 
-                scale = scale_spec.setup(seed_values, prop, axis=axis_obj)
+                scale = scale._setup(seed_values, prop, axis=axis_obj)
 
                 for layer, new_series in zip(layers, transformed_data):
                     layer_df = layer["data"].frame
@@ -931,7 +936,7 @@ class Plotter:
                         new_series.loc[idx] = scale(layer_df.loc[idx, var])
 
                 # TODO need decision about whether to do this or modify axis transform
-                set_scale_obj(view["ax"], axis, scale.matplotlib_scale)
+                set_scale_obj(view["ax"], axis, scale._matplotlib_scale)
 
             # Now the transformed data series are complete, set update the layer data
             for layer, new_series in zip(layers, transformed_data):
@@ -995,11 +1000,11 @@ class Plotter:
 
     def _get_scale(
         self, spec: Plot, var: str, prop: Property, values: Series
-    ) -> ScaleSpec:
+    ) -> Scale:
 
         if var in spec._scales:
             arg = spec._scales[var]
-            if arg is None or isinstance(arg, ScaleSpec):
+            if arg is None or isinstance(arg, Scale):
                 scale = arg
             else:
                 scale = prop.infer_scale(arg, values)
@@ -1047,28 +1052,28 @@ class Plotter:
                 axis = m["axis"]
 
             prop = PROPERTIES.get(var if axis is None else axis, Property())
-            scale_spec = self._get_scale(p, var, prop, var_values)
+            scale = self._get_scale(p, var, prop, var_values)
 
             # Initialize the data-dependent parameters of the scale
             # Note that this returns a copy and does not mutate the original
             # This dictionary is used by the semantic mappings
-            if scale_spec is None:
+            if scale is None:
                 # TODO what is the cleanest way to implement identity scale?
-                # We don't really need a ScaleSpec, and Identity() will be
+                # We don't really need a Scale, and Identity() will be
                 # overloaded anyway (but maybe a general Identity object
                 # that can be used as Scale/Mark/Stat/Move?)
                 # Note that this may not be the right spacer to use
                 # (but that is only relevant for coordinates, where identity scale
                 # doesn't make sense or is poorly defined, since we don't use pixels.)
-                self._scales[var] = Scale([], lambda x: x, None, "identity", None)
+                self._scales[var] = Scale._identity()
             else:
-                scale = scale_spec.setup(var_values, prop)
+                scale = scale._setup(var_values, prop)
                 if isinstance(prop, Coordinate):
                     # If we have a coordinate here, we didn't assign a scale for it
                     # in _transform_coords, which means it was added during compute_stat
                     # This allows downstream orientation inference to work properly.
                     # But it feels a little hacky, so perhaps revisit.
-                    scale.scale_type = "computed"
+                    scale._priority = 0  # type: ignore
                 self._scales[var] = scale
 
     def _plot_layer(self, p: Plot, layer: Layer) -> None:
@@ -1092,14 +1097,14 @@ class Plotter:
                 # sorted unique numbers will correctly reconstruct intended order
                 # TODO This is tricky, make sure we add some tests for this
                 if var not in "xy" and var in scales:
-                    return scales[var].order
+                    return getattr(scales[var], "order", None)
 
             if "width" in mark._mappable_props:
                 width = mark._resolve(df, "width", None)
             else:
                 width = df.get("width", 0.8)  # TODO what default
             if orient in df:
-                df["width"] = width * scales[orient].spacing(df[orient])
+                df["width"] = width * scales[orient]._spacing(df[orient])
 
             if "baseline" in mark._mappable_props:
                 # TODO what marks should have this?
@@ -1140,7 +1145,8 @@ class Plotter:
         for view in self._subplots:
             view["ax"].autoscale_view()
 
-        self._update_legend_contents(mark, data, scales)
+        if layer["legend"]:
+            self._update_legend_contents(mark, data, scales)
 
     def _scale_coords(self, subplots: list[dict], df: DataFrame) -> DataFrame:
         # TODO stricter type on subplots
@@ -1271,7 +1277,7 @@ class Plotter:
             v for v in grouping_vars if v in df and v not in ["col", "row"]
         ]
         for var in grouping_vars:
-            order = self._scales[var].order
+            order = getattr(self._scales[var], "order", None)
             if order is None:
                 order = categorical_order(df[var])
             grouping_keys.append(order)
@@ -1351,7 +1357,7 @@ class Plotter:
         ]] = []
         schema = []
         for var in legend_vars:
-            var_legend = scales[var].legend
+            var_legend = scales[var]._legend
             if var_legend is not None:
                 values, labels = var_legend
                 for (_, part_id), part_vars, _ in schema:
@@ -1403,16 +1409,18 @@ class Plotter:
                 self._figure,
                 handles,
                 labels,
-                title=name,  # TODO don't show "None" as title
+                title="" if name is None else name,
                 loc="center left",
                 bbox_to_anchor=(.98, .55),
             )
 
-            # TODO: This is an illegal hack accessing private attributes on the legend
-            # We need to sort out how we are going to handle this given that lack of a
-            # proper API to do things like position legends relative to each other
             if base_legend:
-                base_legend._legend_box._children.extend(legend._legend_box._children)
+                # Matplotlib has no public API for this so it is a bit of a hack.
+                # Ideally we'd define our own legend class with more flexibility,
+                # but that is a lot of work!
+                base_legend_box = base_legend.get_children()[0]
+                this_legend_box = legend.get_children()[0]
+                base_legend_box.get_children().extend(this_legend_box.get_children())
             else:
                 base_legend = legend
                 self._figure.legends.append(legend)

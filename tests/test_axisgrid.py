@@ -11,14 +11,14 @@ try:
 except ImportError:
     import pandas.util.testing as tm
 
-from .._oldcore import categorical_order
-from .. import rcmod
-from ..palettes import color_palette
-from ..relational import scatterplot
-from ..distributions import histplot, kdeplot, distplot
-from ..categorical import pointplot
-from .. import axisgrid as ag
-from .._testing import (
+from seaborn._oldcore import categorical_order
+from seaborn import rcmod
+from seaborn.palettes import color_palette
+from seaborn.relational import scatterplot
+from seaborn.distributions import histplot, kdeplot, distplot
+from seaborn.categorical import pointplot
+from seaborn import axisgrid as ag
+from seaborn._testing import (
     assert_plots_equal,
     assert_colors_equal,
 )
@@ -765,12 +765,12 @@ class TestPairGrid:
 
         for ax in np.diag(g.axes):
             assert not ax.yaxis.get_visible()
-            assert not g.axes[0, 0].get_ylabel()
 
         plot_vars = ["x", "y", "z"]
         g = ag.PairGrid(self.df, vars=plot_vars, corner=True)
         g.map(scatterplot)
         assert len(g.figure.axes) == corner_size
+        assert g.axes[0, 0].get_ylabel() == "x"
 
     def test_size(self):
 
@@ -1170,6 +1170,14 @@ class TestPairGrid:
 
         plt.close("all")
 
+    def test_hue_in_map(self, long_df):
+
+        g = ag.PairGrid(long_df, vars=["x", "y"])
+        g.map(scatterplot, hue=long_df["a"])
+        ax = g.axes.flat[0]
+        points = ax.collections[0]
+        assert len(set(map(tuple, points.get_facecolors()))) == 3
+
     def test_nondefault_index(self):
 
         df = self.df.copy().set_index("b")
@@ -1377,7 +1385,7 @@ class TestPairGrid:
         m2 = g._legend.legendHandles[1].get_paths()[0]
         assert m1 != m2
 
-        with pytest.raises(ValueError):
+        with pytest.warns(UserWarning):
             g = ag.pairplot(self.df, hue="a", vars=vars, markers=markers[:-2])
 
     def test_corner_despine(self):
@@ -1780,4 +1788,11 @@ class TestJointPlot:
 
         with pytest.warns(UserWarning):
             g = ag.jointplot(data=long_df, x="x", y="y", marginal_kws=dict(rug=True))
-            assert g.ax_marg_x.patches
+        assert g.ax_marg_x.patches
+
+    def test_ax_warning(self, long_df):
+
+        ax = plt.gca()
+        with pytest.warns(UserWarning):
+            g = ag.jointplot(data=long_df, x="x", y="y", ax=ax)
+        assert g.ax_joint.collections
