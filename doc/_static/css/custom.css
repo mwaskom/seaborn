@@ -17,11 +17,6 @@ html[data-theme=light]{
 
 }
 
-/* highlight over function signature after link */
-dt:target, span.highlighted {
-  background-color: #fdebba;
-}
-
 /* Syntax highlighting */
 
 /* string literals */
@@ -49,13 +44,26 @@ html[data-theme=light] .highlight .kc {
   font-weight: bold;
 }
 
-
 /* Use full page width without sidebars */
 .bd-content {
   max-width: 100%;
   flex-grow: 1;
 }
 
+/* Function signature customization */
+dt {
+  font-weight: 500;
+  color: rgb(52, 54, 99);
+}
+
+span.default_value {
+  color: rgb(124, 141, 138);
+}
+
+/* highlight over function signature after link */
+dt:target, span.highlighted {
+  background-color: #fdebba;
+}
 
 /* *********************************************************************** */
 

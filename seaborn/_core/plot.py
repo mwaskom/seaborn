@@ -650,7 +650,9 @@ class Plot:
         ----------
         fname : str, path, or buffer
             Location on disk to save the figure, or a buffer to write into.
-        Other keyword arguments are passed to :meth:`matplotlib.figure.Figure.savefig`.
+        kwargs
+            Other keyword arguments are passed through to
+            :meth:`matplotlib.figure.Figure.savefig`.
 
         """
         # TODO expose important keyword arguments in our signature?

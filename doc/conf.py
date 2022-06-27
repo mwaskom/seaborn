@@ -40,6 +40,7 @@ extensions = [
     'matplotlib.sphinxext.plot_directive',
     'gallery_generator',
     'numpydoc',
+    'sphinx_copybutton',
     'sphinx_issues',
     'sphinx_design',
 ]
@@ -75,7 +76,7 @@ plot_html_show_source_link = False
 html_show_sourcelink = False
 
 # Control the appearance of type hints
-autodoc_typehints = "description"
+autodoc_typehints = "none"
 autodoc_typehints_format = "short"
 
 # Allow shorthand references for main function interface
