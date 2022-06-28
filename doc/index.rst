@@ -56,9 +56,8 @@ seaborn: statistical data visualization
 
     To see the code or report a bug, please visit the `GitHub repository
     <https://github.com/mwaskom/seaborn>`_. General support questions are most at home
-    on `stackoverflow <https://stackoverflow.com/questions/tagged/seaborn/>`_ or
-    `discourse <https://discourse.matplotlib.org/c/3rdparty/seaborn/21>`_, which
-    have dedicated channels for seaborn.
+    on `stackoverflow <https://stackoverflow.com/questions/tagged/seaborn/>`_, which
+    has a dedicated channel for seaborn.
 
   .. grid-item-card:: Contents
     :columns: 12 12 3 3
