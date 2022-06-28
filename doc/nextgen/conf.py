@@ -61,13 +61,15 @@ html_theme = "pydata_sphinx_theme"
 
 html_theme_options = {
     "show_prev_next": False,
-    "page_sidebar_items": [],
+    # "page_sidebar_items": [],
 }
 
 html_context = {
    # other contexts
    "default_mode": "light"
 }
+
+html_show_sourcelink = False
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
@@ -77,10 +79,13 @@ html_static_path = ['_static']
 html_logo = "_static/logo.svg"
 
 html_sidebars = {
-    # "**": [],
-    "demo": ["page-toc"]
+    "index": [],
+    "demo": ["page-toc.html"],
 }
 
+html_context= {
+    "default_mode": "light",
+}
 
 # -- Intersphinx ------------------------------------------------
 

@@ -22,6 +22,8 @@ Plot interface
     Plot.facet
     Plot.pair
     Plot.configure
+    Plot.limit
+    Plot.label
     Plot.on
     Plot.plot
     Plot.save
@@ -36,6 +38,7 @@ Marks
 
     Area
     Bar
+    Bars
     Dot
     Line
     Lines

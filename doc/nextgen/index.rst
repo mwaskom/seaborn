@@ -37,27 +37,31 @@ with the new interface:
 
 
 
-Testing the alpha release
--------------------------
+Testing the pre-release
+-----------------------
 
-If you’re interested, please install the alpha and kick the tires. It is
-very far from complete, so expect some rough edges and instability! But
-feedback will be very helpful in pushing this towards a more stable
-broad release:
+If you’re interested, please install the pre-release and kick the tires.
+It is still a work in progress, so expect some rough edges and
+instability! But feedback will be very helpful in pushing this towards a
+more stable broad release:
 
 ::
 
-   pip install https://github.com/mwaskom/seaborn/archive/refs/tags/v0.12.0a0.tar.gz
+   pip install --pre seaborn
 
-The documentation is still a work in progress, but there’s a reasonably
-thorough demo of the main parts, and some basic API documentation for
-the existing classes.
+Preview components
+------------------
+
+The formal documentation is still a work-in-progress, so this preview
+serves as an introduction and reference for testing. There’s a
+reasonably thorough demo of the main components and some basic API
+documentation for the existing classes:
 
 .. toctree::
     :maxdepth: 1
 
-    demo
-    api
+    Demonstration <demo>
+    API Overview <api>
 
 Background and goals
 --------------------
@@ -91,14 +95,15 @@ currently exists in seaborn with a similar level of abstraction: this
 lets you focus on *what* you want to show rather than *how* to show it.
 
 One will note that the result looks a bit (a lot?) like ggplot. That’s
-not unintentional, but the goal is also *not* to “port ggplot2 to
-Python”. (If that’s what you’re looking for, check out the very nice
-`plotnine <https://plotnine.readthedocs.io/en/stable/>`__ package).
-There is an immense amount of wisdom in the grammar of graphics and in
-its particular implementation as ggplot2. But, as languages, R and
-Python are just too different for idioms from one to feel natural when
-translated literally into the other. So while I have taken much
-inspiration from ggplot (along with vega-lite, d3, and other great
-libraries), I’ve also made plenty of choices differently, for better or
-for worse.
+not unintentional: while the original seaborn interface was never
+explicitly intended to implement a grammar of graphics, the redesign is.
+But the goal is also *not* to “port ggplot2 to Python”. (If that’s what
+you’re looking for, check out the very nice
+`plotnine <https://plotnine.readthedocs.io/en/stable/>`__ package). I do
+think that ggplot2 gets a lot right, especially its approach to
+layering. But, as languages, R and Python are just too different for
+idioms from one to feel natural when translated literally into the
+other. So while I have taken much inspiration from ggplot (along with
+vega-lite, d3, and other great libraries), I’ve also made plenty of
+choices differently, for better or for worse.
 
