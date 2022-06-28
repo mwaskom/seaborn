@@ -4,12 +4,12 @@ Contributing to seaborn
 General support
 ---------------
 
-General support questions ("how do I do X?") are most at home on either [StackOverflow](https://stackoverflow.com/) or [discourse](https://discourse.matplotlib.org/c/3rdparty/seaborn/21), which have a larger audience of people who will see your post and may be able to offer assistance. StackOverflow is better for specific issues, while discourse is better for more open-ended discussion. Your chance of getting a quick answer will be higher if you include runnable code, a precise statement of what you are hoping to achieve, and a clear explanation of the problems that you have encountered.
+General support questions ("how do I do X?") are most at home on either [StackOverflow](https://stackoverflow.com/), which has a larger audience of people who will see your post and may be able to offer assistance. Your chance of getting a quick answer will be higher if you include runnable code, a precise statement of what you are hoping to achieve, and a clear explanation of the problems that you have encountered.
 
 Reporting bugs
 --------------
 
-If you think you've encountered a bug in seaborn, please report it on the [Github issue tracker](https://github.com/mwaskom/seaborn/issues/new). To be useful, bug reports must include the following information:
+If you think you've encountered a bug in seaborn, please report it on the [Github issue tracker](https://github.com/mwaskom/seaborn/issues/new). To be useful, bug reports *must* include the following information:
 
 - A reproducible code example that demonstrates the problem
 - The output that you are seeing (an image of a plot, or the error message)
