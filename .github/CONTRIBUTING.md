@@ -4,7 +4,7 @@ Contributing to seaborn
 General support
 ---------------
 
-General support questions ("how do I do X?") are most at home on either [StackOverflow](https://stackoverflow.com/), which has a larger audience of people who will see your post and may be able to offer assistance. Your chance of getting a quick answer will be higher if you include runnable code, a precise statement of what you are hoping to achieve, and a clear explanation of the problems that you have encountered.
+General support questions ("how do I do X?") are most at home on [StackOverflow](https://stackoverflow.com/), which has a larger audience of people who will see your post and may be able to offer assistance. Your chance of getting a quick answer will be higher if you include runnable code, a precise statement of what you are hoping to achieve, and a clear explanation of the problems that you have encountered.
 
 Reporting bugs
 --------------
