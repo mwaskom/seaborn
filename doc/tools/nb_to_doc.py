@@ -76,14 +76,14 @@ def strip_output(nb):
     for field in keys['metadata']:
         pop_recursive(nb.metadata, field)
 
+    if 'NB_KERNEL' in os.environ:
+        nb.metadata['kernelspec']['name'] = os.environ['NB_KERNEL']
+        nb.metadata['kernelspec']['display_name'] = os.environ['NB_KERNEL']
+
     for cell in nb.cells:
 
-        # Remove the outputs, unless directed otherwise
         if 'outputs' in cell:
-
             cell['outputs'] = []
-
-        # Remove the prompt_number/execution_count, unless directed otherwise
         if 'prompt_number' in cell:
             cell['prompt_number'] = None
         if 'execution_count' in cell:
