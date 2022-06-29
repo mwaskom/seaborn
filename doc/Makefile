@@ -46,11 +46,12 @@ clean:
 	-rm -rf example_thumbs/*
 	-rm -rf generated/*
 	-make -C docstrings clean
-	-make -C tutorial clean
+	-make -C _tutorial clean
 
 .PHONY: tutorials
 tutorials:
-	make -C tutorial
+	mkdir -p tutorial
+	make -C _tutorial
 
 .PHONY: docstrings
 docstrings:

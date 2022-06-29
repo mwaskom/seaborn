@@ -106,12 +106,11 @@ def strip_output(nb):
 if __name__ == "__main__":
 
     # Get the desired ipynb file path and parse into components
-    _, fpath = sys.argv
+    _, fpath, outdir = sys.argv
     basedir, fname = os.path.split(fpath)
     fstem = fname[:-6]
 
     # Read the notebook
-    print(f"Executing {fpath} ...", end=" ", flush=True)
     with open(fpath) as f:
         nb = nbformat.read(f, as_version=4)
 
@@ -156,24 +155,22 @@ if __name__ == "__main__":
     body, resources = exp.from_notebook_node(nb)
 
     # Clean the output on the notebook and save a .ipynb back to disk
-    print(f"Writing clean {fpath} ... ", end=" ", flush=True)
     nb = strip_output(nb)
     with open(fpath, "wt") as f:
         nbformat.write(nb, f)
 
     # Write the .rst file
-    rst_path = os.path.join(basedir, f"{fstem}.rst")
-    print(f"Writing {rst_path}")
+    rst_path = os.path.join(outdir, f"{fstem}.rst")
     with open(rst_path, "w") as f:
         f.write(body)
 
     # Write the individual image outputs
-    imdir = os.path.join(basedir, f"{fstem}_files")
+    imdir = os.path.join(outdir, f"{fstem}_files")
     if not os.path.exists(imdir):
         os.mkdir(imdir)
 
     for imname, imdata in resources["outputs"].items():
         if imname.startswith(fstem):
-            impath = os.path.join(basedir, f"{imname}")
+            impath = os.path.join(outdir, f"{imname}")
             with open(impath, "wb") as f:
                 f.write(imdata)

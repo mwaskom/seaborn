@@ -80,7 +80,7 @@ API Overview
       .. grid-item::
         :columns: 4
 
-        .. image:: ./tutorial/error_bars_files/error_bars_3_0.png
+        .. image:: ./tutorial/error_bars_files/error_bars_2_0.png
           :target: ./tutorial/error_bars.html
 
       .. grid-item::
