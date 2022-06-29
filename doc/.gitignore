@@ -3,5 +3,5 @@ _build/
 generated/
 examples/
 example_thumbs/*.png
-docstrings/*.rst
+docstrings/
 tutorial/

@@ -45,17 +45,18 @@ clean:
 	-rm -rf examples/*
 	-rm -rf example_thumbs/*
 	-rm -rf generated/*
-	-make -C docstrings clean
+	-make -C _docstrings clean
 	-make -C _tutorial clean
 
 .PHONY: tutorials
 tutorials:
-	mkdir -p tutorial
-	make -C _tutorial
+	@mkdir -p tutorial
+	@make -C _tutorial
 
 .PHONY: docstrings
 docstrings:
-	make -C docstrings
+	@mkdir -p docstrings
+	@make -C _docstrings
 
 notebooks: tutorials docstrings
 

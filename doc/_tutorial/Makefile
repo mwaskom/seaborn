@@ -6,6 +6,4 @@ tutorial: ${rst_files}
 	../tools/nb_to_doc.py $*.ipynb ../tutorial
 
 clean:
-	rm -rf *.rst
-	rm -rf *_files/
-	rm -rf .ipynb_checkpoints/
+	rm -rf ../tutorial
