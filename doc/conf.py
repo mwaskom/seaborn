@@ -138,6 +138,7 @@ html_theme_options = {
     "show_prev_next": False,
     "navbar_start": ["navbar-logo"],
     "navbar_end": ["search-button", "navbar-icon-links"],
+    "header_links_before_dropdown": 8,
 }
 
 html_context = {
