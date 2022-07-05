@@ -14,6 +14,7 @@ from seaborn._marks.base import (
     resolve_properties,
     resolve_color,
 )
+from seaborn.external.version import Version
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
@@ -124,10 +125,12 @@ class Bar(Mark):
                 vals.append(h)
 
             # Add a container which is useful for, e.g. Axes.bar_label
-            orientation = {"x": "vertical", "y": "horizontal"}[orient]
-            container = mpl.container.BarContainer(
-                bars, datavalues=vals, orientation=orientation,
-            )
+            if Version(mpl.__version__) >= Version("3.4.0"):
+                orientation = {"x": "vertical", "y": "horizontal"}[orient]
+                container_kws = dict(datavalues=vals, orientation=orientation)
+            else:
+                container_kws = {}
+            container = mpl.container.BarContainer(bars, **container_kws)
             ax.add_container(container)
 
     def _legend_artist(
