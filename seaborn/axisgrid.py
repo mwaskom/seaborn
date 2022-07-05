@@ -2216,7 +2216,7 @@ def jointplot(
     elif kind.startswith("hist"):
 
         # TODO process pair parameters for bins, etc. and pass
-        # to both jount and marginal plots
+        # to both joint and marginal plots
 
         joint_kws.setdefault("color", color)
         grid.plot_joint(histplot, **joint_kws)

@@ -409,7 +409,7 @@ class Plot:
         # TODO would like to add transpose=True, which would then draw
         # Plot(x=...).pair(y=[...]) across the rows
         # This may also be possible by setting `wrap=1`, although currently the axes
-        # are shared and the interior labels are disabeled (this is a bug either way)
+        # are shared and the interior labels are disabled (this is a bug either way)
 
         pair_spec: PairSpec = {}
 
@@ -900,7 +900,7 @@ class Plotter:
             self._scales[var] = scale._setup(var_df[var], prop)
 
             # Set up an empty series to receive the transformed values.
-            # We need this to handle piecemeal tranforms of categories -> floats.
+            # We need this to handle piecemeal transforms of categories -> floats.
             transformed_data = []
             for layer in layers:
                 index = layer["data"].frame.index
