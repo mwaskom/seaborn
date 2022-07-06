@@ -28,14 +28,14 @@ class Bar(Mark):
     """
     An interval mark drawn between baseline and data values with a width.
     """
-    color: MappableColor = Mappable("C0", )
-    alpha: MappableFloat = Mappable(.7, )
-    fill: MappableBool = Mappable(True, )
-    edgecolor: MappableColor = Mappable(depend="color", )
-    edgealpha: MappableFloat = Mappable(1, )
+    color: MappableColor = Mappable("C0")
+    alpha: MappableFloat = Mappable(.7)
+    fill: MappableBool = Mappable(True)
+    edgecolor: MappableColor = Mappable(depend="color")
+    edgealpha: MappableFloat = Mappable(1)
     edgewidth: MappableFloat = Mappable(rc="patch.linewidth")
-    edgestyle: MappableStyle = Mappable("-", )
-    # pattern: MappableString = Mappable(None, )  # TODO no Property yet
+    edgestyle: MappableStyle = Mappable("-")
+    # pattern: MappableString = Mappable(None)  # TODO no Property yet
 
     width: MappableFloat = Mappable(.8, grouping=False)
     baseline: MappableFloat = Mappable(0, grouping=False)  # TODO *is* this mappable?
@@ -58,52 +58,52 @@ class Bar(Mark):
 
     def _plot(self, split_gen, scales, orient):
 
-        def coords_to_geometry(x, y, w, b):
-            # TODO possible too slow with lots of bars (e.g. dense hist)
-            # Why not just use BarCollection?
-            if orient == "x":
-                w, h = w, y - b
-                xy = x - w / 2, b
-            else:
-                w, h = x - b, w
-                xy = b, y - h / 2
-            return xy, w, h
-
+        val_dim = {"x": "h", "y": "w"}[orient]
         val_idx = ["y", "x"].index(orient)
 
         for _, data, ax in split_gen():
 
-            xys = data[["x", "y"]].to_numpy()
-            data = self._resolve_properties(data, scales)
+            kws = self._resolve_properties(data, scales)
+            if orient == "x":
+                kws["x"] = (data["x"] - data["width"] / 2).to_numpy()
+                kws["y"] = data["baseline"].to_numpy()
+                kws["w"] = data["width"].to_numpy()
+                kws["h"] = (data["y"] - data["baseline"]).to_numpy()
+            else:
+                kws["x"] = data["baseline"].to_numpy()
+                kws["y"] = (data["y"] - data["width"] / 2).to_numpy()
+                kws["w"] = (data["x"] - data["baseline"]).to_numpy()
+                kws["h"] = data["width"].to_numpy()
+
+            kws.pop("width", None)
+            kws.pop("baseline", None)
 
             bars, vals = [], []
-            for i, (x, y) in enumerate(xys):
+            for i in range(len(data)):
 
-                baseline = data["baseline"][i]
-                width = data["width"][i]
-                xy, w, h = coords_to_geometry(x, y, width, baseline)
+                row = {k: v[i] for k, v in kws.items()}
 
                 # Skip bars with no value. It's possible we'll want to make this
                 # an option (i.e so you have an artist for animating or annotating),
                 # but let's keep things simple for now.
-                if not np.nan_to_num(h):
+                if not np.nan_to_num(row[val_dim]):
                     continue
 
-                # TODO Because we are clipping the artist (see below), the edges end up
+                # Because we are clipping the artist (see below), the edges end up
                 # looking half as wide as they actually are. I don't love this clumsy
                 # workaround, which is going to cause surprises if you work with the
                 # artists directly. We may need to revisit after feedback.
-                linewidth = data["edgewidth"][i] * 2
-                linestyle = data["edgestyle"][i]
+                linewidth = row["edgewidth"] * 2
+                linestyle = row["edgestyle"]
                 if linestyle[1]:
                     linestyle = (linestyle[0], tuple(x / 2 for x in linestyle[1]))
 
                 bar = mpl.patches.Rectangle(
-                    xy=xy,
-                    width=w,
-                    height=h,
-                    facecolor=data["facecolor"][i],
-                    edgecolor=data["edgecolor"][i],
+                    xy=(row["x"], row["y"]),
+                    width=row["w"],
+                    height=row["h"],
+                    facecolor=row["facecolor"],
+                    edgecolor=row["edgecolor"],
                     linestyle=linestyle,
                     linewidth=linewidth,
                     **self.artist_kws,
@@ -122,7 +122,7 @@ class Bar(Mark):
                 bar.sticky_edges[val_idx][:] = (0, np.inf)
                 ax.add_patch(bar)
                 bars.append(bar)
-                vals.append(h)
+                vals.append(row[val_dim])
 
             # Add a container which is useful for, e.g. Axes.bar_label
             if Version(mpl.__version__) >= Version("3.4.0"):
