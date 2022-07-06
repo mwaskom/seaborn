@@ -76,8 +76,10 @@ class TestBar:
         for bar in ax.patches:
             assert bar.get_facecolor() == to_rgba(mark.color, mark.alpha)
             assert bar.get_edgecolor() == to_rgba(mark.edgecolor, mark.edgealpha)
-            assert bar.get_linewidth() == mark.edgewidth
-            assert bar.get_linestyle() == (0, mark.edgestyle)
+            # See comments in plotting method for why we need these adjustments
+            assert bar.get_linewidth() == mark.edgewidth * 2
+            expected_dashes = (mark.edgestyle[0] / 2, mark.edgestyle[1] / 2)
+            assert bar.get_linestyle() == (0, expected_dashes)
 
     def test_mapped_properties(self):
 
@@ -90,3 +92,15 @@ class TestBar:
             assert bar.get_facecolor() == to_rgba(f"C{i}", mark.alpha)
             assert bar.get_edgecolor() == to_rgba(f"C{i}", 1)
         assert ax.patches[0].get_linewidth() < ax.patches[1].get_linewidth()
+
+    def test_zero_height_skipped(self):
+
+        p = Plot(["a", "b", "c"], [1, 0, 2]).add(Bar()).plot()
+        ax = p._figure.axes[0]
+        assert len(ax.patches) == 2
+
+    def test_artist_kws_clip(self):
+
+        p = Plot(["a", "b"], [1, 2]).add(Bar({"clip_on": False})).plot()
+        patch = p._figure.axes[0].patches[0]
+        assert patch.clipbox is None
