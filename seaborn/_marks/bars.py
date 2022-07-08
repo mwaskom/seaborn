@@ -188,11 +188,21 @@ class Bars(BarBase):
         for _, data, ax in split_gen():
 
             bars, _ = self._make_patches(data, scales, orient)
+            ax.autoscale_view()
 
             collection = mpl.collections.PatchCollection(bars, match_original=True)
             collection.sticky_edges[val_idx][:] = (0, np.inf)
             collections[ax].append(collection)
-            ax.add_collection(collection)
+            ax.add_collection(collection, autolim=False)
+
+            # Workaround for matplotlib autoscaling bug
+            # https://github.com/matplotlib/matplotlib/issues/11898
+            # https://github.com/matplotlib/matplotlib/issues/23129
+            xy = np.vstack([bar.get_verts() for bar in bars])
+            ax.dataLim.update_from_data_xy(
+                xy, ax.ignore_existing_data_limits,
+                updatex=True, updatey=True
+            )
 
         def get_dimensions(collection):
 
