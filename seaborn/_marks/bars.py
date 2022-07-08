@@ -1,4 +1,5 @@
 from __future__ import annotations
+from collections import defaultdict
 from dataclasses import dataclass
 
 import numpy as np
@@ -55,23 +56,14 @@ class BarBase(Mark):
             if not np.nan_to_num(row[val_dim]):
                 continue
 
-            # Because we are clipping the artist (see below), the edges end up
-            # looking half as wide as they actually are. I don't love this clumsy
-            # workaround, which is going to cause surprises if you work with the
-            # artists directly. We may need to revisit after feedback.
-            linewidth = row["edgewidth"] * 2
-            linestyle = row["edgestyle"]
-            if linestyle[1]:
-                linestyle = (linestyle[0], tuple(x / 2 for x in linestyle[1]))
-
             bar = mpl.patches.Rectangle(
                 xy=(row["x"], row["y"]),
                 width=row["w"],
                 height=row["h"],
                 facecolor=row["facecolor"],
                 edgecolor=row["edgecolor"],
-                linestyle=linestyle,
-                linewidth=linewidth,
+                linestyle=row["edgestyle"],
+                linewidth=row["edgewidth"],
                 **self.artist_kws,
             )
             bars.append(bar)
@@ -137,6 +129,16 @@ class Bar(BarBase):
 
             for bar in bars:
 
+                # Because we are clipping the artist (see below), the edges end up
+                # looking half as wide as they actually are. I don't love this clumsy
+                # workaround, which is going to cause surprises if you work with the
+                # artists directly. We may need to revisit after feedback.
+                bar.set_linewidth(bar.get_linewidth() * 2)
+                linestyle = bar.get_linestyle()
+                if linestyle[1]:
+                    linestyle = (linestyle[0], tuple(x / 2 for x in linestyle[1]))
+                bar.set_linestyle(linestyle)
+
                 # This is a bit of a hack to handle the fact that the edge lines are
                 # centered on the actual extents of the bar, and overlap when bars are
                 # stacked or dodged. We may discover that this causes problems and needs
@@ -158,3 +160,69 @@ class Bar(BarBase):
                 container_kws = {}
             container = mpl.container.BarContainer(bars, **container_kws)
             ax.add_container(container)
+
+
+@dataclass
+class Bars(BarBase):
+    """
+    TODO
+    """
+    color: MappableColor = Mappable("C0")
+    alpha: MappableFloat = Mappable(.7)
+    fill: MappableBool = Mappable(True)
+    edgecolor: MappableColor = Mappable(rc="patch.edgecolor")
+    edgealpha: MappableFloat = Mappable(1)
+    edgewidth: MappableFloat = Mappable(None)
+    edgestyle: MappableStyle = Mappable("-")
+    # pattern: MappableString = Mappable(None)  # TODO no Property yet
+
+    width: MappableFloat = Mappable(1, grouping=False)
+    baseline: MappableFloat = Mappable(0, grouping=False)  # TODO *is* this mappable?
+
+    def _plot(self, split_gen, scales, orient):
+
+        ori_idx = ["x", "y"].index(orient)
+        val_idx = ["y", "x"].index(orient)
+        collections = defaultdict(list)
+
+        for _, data, ax in split_gen():
+
+            bars, _ = self._make_patches(data, scales, orient)
+
+            collection = mpl.collections.PatchCollection(bars, match_original=True)
+            collection.sticky_edges[val_idx][:] = (0, np.inf)
+            collections[ax].append(collection)
+            ax.add_collection(collection)
+
+        def get_dimensions(collection):
+
+            edges = []
+            widths = []
+            for path in collection.get_paths():
+                verts = path.vertices
+                edges.append(min(verts[:, ori_idx]))
+                widths.append(np.ptp(verts[:, ori_idx]))
+
+            return np.array(edges), np.array(widths)
+
+        if "edgewidth" not in scales and isinstance(self.edgewidth, Mappable):
+
+            min_width = np.inf
+
+            for ax, ax_collections in collections.items():
+                ax.autoscale_view()
+                for collection in ax_collections:
+                    edges, widths = get_dimensions(collection)
+                    points = 72 / ax.figure.dpi * abs(
+                        ax.transData.transform([edges + widths] * 2)
+                        - ax.transData.transform([edges] * 2)
+                    )
+                    min_width = min(min_width, min(points[ori_idx]))
+
+            # TODO handle infinit width
+
+            auto_linewidth = min(.1 * min_width, mpl.rcParams["patch.linewidth"])
+
+            for _, ax_collections in collections.items():
+                for collection in ax_collections:
+                    collection.set_linewidth(auto_linewidth)
