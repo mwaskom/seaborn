@@ -1,16 +1,19 @@
-from textwrap import dedent
-from numbers import Number
 import warnings
 from colorsys import rgb_to_hls
 from functools import partial
+from numbers import Number
+from textwrap import dedent
 
 import numpy as np
 import pandas as pd
+
 try:
     from scipy.stats import gaussian_kde
+
     _no_scipy = False
 except ImportError:
     from .external.kde import gaussian_kde
+
     _no_scipy = True
 
 import matplotlib as mpl
@@ -25,11 +28,12 @@ from seaborn._oldcore import (
 )
 from seaborn.relational import _RelationalPlotter
 from seaborn import utils
-from seaborn.utils import remove_na, _normal_quantile_func, _draw_figure, _default_color
+from seaborn.utils import remove_na, _normal_quantile_func, _draw_figure, \
+    _default_color
 from seaborn._statistics import EstimateAggregator
-from seaborn.palettes import color_palette, husl_palette, light_palette, dark_palette
+from seaborn.palettes import color_palette, husl_palette, light_palette, \
+    dark_palette
 from seaborn.axisgrid import FacetGrid, _facet_docs
-
 
 __all__ = [
     "catplot",
@@ -42,7 +46,6 @@ __all__ = [
 # Subclassing _RelationalPlotter for the legend machinery,
 # but probably should move that more centrally
 class _CategoricalPlotterNew(_RelationalPlotter):
-
     semantics = "x", "y", "hue", "units"
 
     wide_structure = {"x": "@columns", "y": "@values", "hue": "@columns"}
@@ -54,13 +57,13 @@ class _CategoricalPlotterNew(_RelationalPlotter):
     _legend_attributes = ["color"]
 
     def __init__(
-        self,
-        data=None,
-        variables={},
-        order=None,
-        orient=None,
-        require_numeric=False,
-        legend="auto",
+            self,
+            data=None,
+            variables={},
+            order=None,
+            orient=None,
+            require_numeric=False,
+            legend="auto",
     ):
 
         super().__init__(data=data, variables=variables)
@@ -253,12 +256,12 @@ class _CategoricalPlotterNew(_RelationalPlotter):
     # with no observations
 
     def plot_strips(
-        self,
-        jitter,
-        dodge,
-        color,
-        edgecolor,
-        plot_kws,
+            self,
+            jitter,
+            dodge,
+            color,
+            edgecolor,
+            plot_kws,
     ):
 
         width = .8 * self._native_width
@@ -284,9 +287,11 @@ class _CategoricalPlotterNew(_RelationalPlotter):
                                                  from_comp_data=True,
                                                  allow_empty=True):
             if offsets is not None and (offsets != 0).any():
-                dodge_move = offsets[sub_data["hue"].map(self._hue_map.levels.index)]
+                dodge_move = offsets[
+                    sub_data["hue"].map(self._hue_map.levels.index)]
 
-            jitter_move = jitterer(size=len(sub_data)) if len(sub_data) > 1 else 0
+            jitter_move = jitterer(size=len(sub_data)) if len(
+                sub_data) > 1 else 0
 
             adjusted_data = sub_data[self.cat_axis] + dodge_move + jitter_move
             sub_data.loc[:, self.cat_axis] = adjusted_data
@@ -296,7 +301,8 @@ class _CategoricalPlotterNew(_RelationalPlotter):
                     sub_data[var] = np.power(10, sub_data[var])
 
             ax = self._get_axes(sub_vars)
-            points = ax.scatter(sub_data["x"], sub_data["y"], color=color, **plot_kws)
+            points = ax.scatter(sub_data["x"], sub_data["y"], color=color,
+                                **plot_kws)
 
             if "hue" in self.variables:
                 points.set_facecolors(self._hue_map(sub_data["hue"]))
@@ -319,12 +325,12 @@ class _CategoricalPlotterNew(_RelationalPlotter):
                 ax.legend(title=self.legend_title)
 
     def plot_swarms(
-        self,
-        dodge,
-        color,
-        edgecolor,
-        warn_thresh,
-        plot_kws,
+            self,
+            dodge,
+            color,
+            edgecolor,
+            warn_thresh,
+            plot_kws,
     ):
 
         width = .8 * self._native_width
@@ -343,17 +349,20 @@ class _CategoricalPlotterNew(_RelationalPlotter):
                                                  allow_empty=True):
 
             if offsets is not None:
-                dodge_move = offsets[sub_data["hue"].map(self._hue_map.levels.index)]
+                dodge_move = offsets[
+                    sub_data["hue"].map(self._hue_map.levels.index)]
 
             if not sub_data.empty:
-                sub_data.loc[:, self.cat_axis] = sub_data[self.cat_axis] + dodge_move
+                sub_data.loc[:, self.cat_axis] = sub_data[
+                                                     self.cat_axis] + dodge_move
 
             for var in "xy":
                 if self._log_scaled(var):
                     sub_data[var] = np.power(10, sub_data[var])
 
             ax = self._get_axes(sub_vars)
-            points = ax.scatter(sub_data["x"], sub_data["y"], color=color, **plot_kws)
+            points = ax.scatter(sub_data["x"], sub_data["y"], color=color,
+                                **plot_kws)
 
             if "hue" in self.variables:
                 points.set_facecolors(self._hue_map(sub_data["hue"]))
@@ -364,7 +373,8 @@ class _CategoricalPlotterNew(_RelationalPlotter):
                 points.set_edgecolors(edgecolor)
 
             if not sub_data.empty:
-                point_collections[(ax, sub_data[self.cat_axis].iloc[0])] = points
+                point_collections[
+                    (ax, sub_data[self.cat_axis].iloc[0])] = points
 
         beeswarm = Beeswarm(
             width=width, orient=self.orient, warn_thresh=warn_thresh,
@@ -412,12 +422,10 @@ class _CategoricalPlotterNew(_RelationalPlotter):
 
 
 class _CategoricalFacetPlotter(_CategoricalPlotterNew):
-
     semantics = _CategoricalPlotterNew.semantics + ("col", "row")
 
 
 class _CategoricalPlotter:
-
     width = .8
     default_palette = "light"
     require_numeric = True
@@ -1423,7 +1431,6 @@ class _ViolinPlotter(_CategoricalPlotter):
 
 
 class _CategoricalStatPlotter(_CategoricalPlotter):
-
     require_numeric = True
 
     @property
@@ -1590,7 +1597,6 @@ class _BarPlotter(_CategoricalStatPlotter):
 
 
 class _PointPlotter(_CategoricalStatPlotter):
-
     default_palette = "dark"
 
     def __init__(self, x, y, hue, data, order, hue_order,
@@ -1805,7 +1811,8 @@ class _LVPlotter(_CategoricalPlotter):
         elif self.k_depth == 'proportion':
             k = int(np.log2(n)) - int(np.log2(n * p)) + 1
         elif self.k_depth == 'trustworthy':
-            point_conf = 2 * _normal_quantile_func(1 - self.trust_alpha / 2) ** 2
+            point_conf = 2 * _normal_quantile_func(
+                1 - self.trust_alpha / 2) ** 2
             k = int(np.log2(n / point_conf)) + 1
         else:
             k = int(self.k_depth)  # allow having k as input
@@ -1834,13 +1841,40 @@ class _LVPlotter(_CategoricalPlotter):
     def _width_functions(self, width_func):
         # Dictionary of functions for computing the width of the boxes
         width_functions = {'linear': lambda h, i, k: (i + 1.) / k,
-                           'exponential': lambda h, i, k: 2**(-k + i - 1),
-                           'area': lambda h, i, k: (1 - 2**(-k + i - 2)) / h}
+                           'exponential': lambda h, i, k: 2 ** (-k + i - 1),
+                           'area': lambda h, i, k: (1 - 2 ** (-k + i - 2)) / h}
         return width_functions[width_func]
 
     def _lvplot(self, box_data, positions,
                 color=[255. / 256., 185. / 256., 0.],
-                widths=1, ax=None, **kws):
+                widths=1, ax=None, box_kws=None,
+                flier_kws=None,
+                line_kws=None, **kws):
+
+        # -- Default keyword dicts - based on
+        # distributions.plot_univariate_histogram
+        box_kws, flier_kws, line_kws = map(
+            lambda d: {} if d is None else d.copy(),
+            (box_kws, flier_kws, line_kws))
+
+        # Set the default kwargs for the boxes (currently a placeholder)
+        box_default_kws = dict()
+        # Set the default kwargs for the lines denoting medians
+        line_default_kws = dict(c=".15",
+                                       alpha=0.45,
+                                       solid_capstyle="butt",
+                                       linewidth=self.linewidth, )
+        # Set the default kwargs for the outliers scatterplot
+        flier_default_kws = dict(marker='d', color=self.gray)
+
+        # Update each of the dicts containing box/line/fliers kwargs with the
+        # default values (if not defined by the user)
+        default_dicts = [box_default_kws, line_default_kws, flier_default_kws]
+        user_input_dicts = [box_kws, line_kws, flier_kws]
+        for default_dict, user_dict in zip(default_dicts, user_input_dicts):
+            for k, v in default_dict.items():
+                user_dict.setdefault(k, v)
+
 
         vert = self.orient == "v"
         x = positions[0]
@@ -1849,7 +1883,8 @@ class _LVPlotter(_CategoricalPlotter):
         # If we only have one data point, plot a line
         if len(box_data) == 1:
             kws.update({
-                'color': self.gray, 'linestyle': '-', 'linewidth': self.linewidth
+                'color': self.gray, 'linestyle': '-',
+                'linewidth': self.linewidth
             })
             ys = [box_data[0], box_data[0]]
             xs = [x - widths / 2, x + widths / 2]
@@ -1872,16 +1907,16 @@ class _LVPlotter(_CategoricalPlotter):
                 return b[1] - b[0]
 
             # Functions to construct the letter value boxes
-            def vert_perc_box(x, b, i, k, w):
+            def vert_perc_box(x, b, i, k, w, **box_kws):
                 rect = Patches.Rectangle((x - widths * w / 2, b[0]),
                                          widths * w,
-                                         height(b), fill=True)
+                                         height(b), fill=True, **box_kws)
                 return rect
 
-            def horz_perc_box(x, b, i, k, w):
+            def horz_perc_box(x, b, i, k, w, **box_kws):
                 rect = Patches.Rectangle((b[0], x - widths * w / 2),
                                          height(b), widths * w,
-                                         fill=True)
+                                         fill=True, **box_kws)
                 return rect
 
             # Scale the width of the boxes so the biggest starts at 1
@@ -1912,24 +1947,22 @@ class _LVPlotter(_CategoricalPlotter):
                 xs_outliers = outliers
                 ys_outliers = np.full(len(outliers), x)
 
-            boxes = [box_func(x, b[0], i, k, b[1])
+            boxes = [box_func(x, b[0], i, k, b[1], **box_kws)
                      for i, b in enumerate(zip(box_ends, w_area))]
+
 
             # Plot the medians
             ax.plot(
                 xs_median,
                 ys_median,
-                c=".15",
-                alpha=0.45,
-                solid_capstyle="butt",
-                linewidth=self.linewidth,
-                **kws
+                **line_kws
             )
 
             # Plot outliers (if any)
             if len(outliers) > 0:
-                ax.scatter(xs_outliers, ys_outliers, marker='d',
-                           c=self.gray, **kws)
+                ax.scatter(xs_outliers, ys_outliers,
+                           **flier_kws
+                           )
 
             # Construct a color map from the input color
             rgb = [hex_color, (1, 1, 1)]
@@ -1947,8 +1980,10 @@ class _LVPlotter(_CategoricalPlotter):
             # Plot the boxes
             ax.add_collection(collection)
 
-    def draw_letter_value_plot(self, ax, kws):
+    def draw_letter_value_plot(self, ax, box_kws=None, flier_kws=None,
+                               line_kws=None, **kws):
         """Use matplotlib to draw a letter value plot on an Axes."""
+
         for i, group_data in enumerate(self.plot_data):
 
             if self.plot_hues is None:
@@ -1972,7 +2007,9 @@ class _LVPlotter(_CategoricalPlotter):
                              color=color,
                              widths=self.width,
                              ax=ax,
-                             **kws)
+                             box_kws=box_kws,
+                             flier_kws=flier_kws,
+                             line_kws=line_kws)
 
             else:
                 # Draw nested groups of boxes
@@ -2001,14 +2038,16 @@ class _LVPlotter(_CategoricalPlotter):
                                  color=color,
                                  widths=self.nested_width,
                                  ax=ax,
-                                 **kws)
+                                 box_kws=box_kws,
+                                 flier_kws=flier_kws,
+                                 line_kws=line_kws)
 
         # Autoscale the values axis to make sure all patches are visible
         ax.autoscale_view(scalex=self.orient == "h", scaley=self.orient == "v")
 
-    def plot(self, ax, boxplot_kws):
+    def plot(self, ax, box_kws=None, flier_kws=None, line_kws=None, **kwargs):
         """Make the plot."""
-        self.draw_letter_value_plot(ax, boxplot_kws)
+        self.draw_letter_value_plot(ax, box_kws, flier_kws, line_kws, kwargs)
         self.annotate_axes(ax)
         if self.orient == "h":
             ax.invert_yaxis()
@@ -2180,12 +2219,11 @@ _categorical_docs.update(_facet_docs)
 
 
 def boxplot(
-    data=None, *, x=None, y=None, hue=None, order=None, hue_order=None,
-    orient=None, color=None, palette=None, saturation=.75, width=.8,
-    dodge=True, fliersize=5, linewidth=None, whis=1.5, ax=None,
-    **kwargs
+        data=None, *, x=None, y=None, hue=None, order=None, hue_order=None,
+        orient=None, color=None, palette=None, saturation=.75, width=.8,
+        dodge=True, fliersize=5, linewidth=None, whis=1.5, ax=None,
+        **kwargs
 ):
-
     plotter = _BoxPlotter(x, y, hue, data, order, hue_order,
                           orient, color, palette, saturation,
                           width, dodge, fliersize, linewidth)
@@ -2253,13 +2291,12 @@ boxplot.__doc__ = dedent("""\
 
 
 def violinplot(
-    data=None, *, x=None, y=None, hue=None, order=None, hue_order=None,
-    bw="scott", cut=2, scale="area", scale_hue=True, gridsize=100,
-    width=.8, inner="box", split=False, dodge=True, orient=None,
-    linewidth=None, color=None, palette=None, saturation=.75,
-    ax=None, **kwargs,
+        data=None, *, x=None, y=None, hue=None, order=None, hue_order=None,
+        bw="scott", cut=2, scale="area", scale_hue=True, gridsize=100,
+        width=.8, inner="box", split=False, dodge=True, orient=None,
+        linewidth=None, color=None, palette=None, saturation=.75,
+        ax=None, **kwargs,
 ):
-
     plotter = _ViolinPlotter(x, y, hue, data, order, hue_order,
                              bw, cut, scale, scale_hue, gridsize,
                              width, inner, split, dodge, orient, linewidth,
@@ -2355,13 +2392,13 @@ violinplot.__doc__ = dedent("""\
 
 
 def boxenplot(
-    data=None, *, x=None, y=None, hue=None, order=None, hue_order=None,
-    orient=None, color=None, palette=None, saturation=.75,
-    width=.8, dodge=True, k_depth='tukey', linewidth=None,
-    scale='exponential', outlier_prop=0.007, trust_alpha=0.05, showfliers=True,
-    ax=None, **kwargs
+        data=None, *, x=None, y=None, hue=None, order=None, hue_order=None,
+        orient=None, color=None, palette=None, saturation=.75,
+        width=.8, dodge=True, k_depth='tukey', linewidth=None,
+        scale='exponential', outlier_prop=0.007, trust_alpha=0.05,
+        showfliers=True,
+        ax=None, box_kws=None, flier_kws=None, line_kws=None, **kwargs
 ):
-
     plotter = _LVPlotter(x, y, hue, data, order, hue_order,
                          orient, color, palette, saturation,
                          width, dodge, k_depth, linewidth, scale,
@@ -2370,7 +2407,7 @@ def boxenplot(
     if ax is None:
         ax = plt.gca()
 
-    plotter.plot(ax, kwargs)
+    plotter.plot(ax, box_kws, flier_kws, line_kws, kwargs)
     return ax
 
 
@@ -2423,6 +2460,7 @@ boxenplot.__doc__ = dedent("""\
     showfliers : bool, optional
         If False, suppress the plotting of outliers.
     {ax_in}
+    box_kws, line_kws, flier_kws
     kwargs : key, value mappings
         Other keyword arguments are passed through to
         :meth:`matplotlib.axes.Axes.plot` and
@@ -2447,13 +2485,12 @@ boxenplot.__doc__ = dedent("""\
 
 
 def stripplot(
-    data=None, *, x=None, y=None, hue=None, order=None, hue_order=None,
-    jitter=True, dodge=False, orient=None, color=None, palette=None,
-    size=5, edgecolor="gray", linewidth=0,
-    hue_norm=None, native_scale=False, formatter=None, legend="auto",
-    ax=None, **kwargs
+        data=None, *, x=None, y=None, hue=None, order=None, hue_order=None,
+        jitter=True, dodge=False, orient=None, color=None, palette=None,
+        size=5, edgecolor="gray", linewidth=0,
+        hue_norm=None, native_scale=False, formatter=None, legend="auto",
+        ax=None, **kwargs
 ):
-
     p = _CategoricalPlotterNew(
         data=data,
         variables=_CategoricalPlotterNew.get_semantics(locals()),
@@ -2567,13 +2604,12 @@ stripplot.__doc__ = dedent("""\
 
 
 def swarmplot(
-    data=None, *, x=None, y=None, hue=None, order=None, hue_order=None,
-    dodge=False, orient=None, color=None, palette=None,
-    size=5, edgecolor="gray", linewidth=0, hue_norm=None,
-    native_scale=False, formatter=None, legend="auto", warn_thresh=.05,
-    ax=None, **kwargs
+        data=None, *, x=None, y=None, hue=None, order=None, hue_order=None,
+        dodge=False, orient=None, color=None, palette=None,
+        size=5, edgecolor="gray", linewidth=0, hue_norm=None,
+        native_scale=False, formatter=None, legend="auto", warn_thresh=.05,
+        ax=None, **kwargs
 ):
-
     p = _CategoricalPlotterNew(
         data=data,
         variables=_CategoricalPlotterNew.get_semantics(locals()),
@@ -2688,14 +2724,15 @@ swarmplot.__doc__ = dedent("""\
 
 
 def barplot(
-    data=None, *, x=None, y=None, hue=None, order=None, hue_order=None,
-    estimator="mean", errorbar=("ci", 95), n_boot=1000, units=None, seed=None,
-    orient=None, color=None, palette=None, saturation=.75, width=.8,
-    errcolor=".26", errwidth=None, capsize=None, dodge=True, ci="deprecated",
-    ax=None,
-    **kwargs,
+        data=None, *, x=None, y=None, hue=None, order=None, hue_order=None,
+        estimator="mean", errorbar=("ci", 95), n_boot=1000, units=None,
+        seed=None,
+        orient=None, color=None, palette=None, saturation=.75, width=.8,
+        errcolor=".26", errwidth=None, capsize=None, dodge=True,
+        ci="deprecated",
+        ax=None,
+        **kwargs,
 ):
-
     errorbar = utils._deprecate_ci(errorbar, ci)
 
     # Be backwards compatible with len passed directly, which
@@ -2778,13 +2815,13 @@ barplot.__doc__ = dedent("""\
 
 
 def pointplot(
-    data=None, *, x=None, y=None, hue=None, order=None, hue_order=None,
-    estimator="mean", errorbar=("ci", 95), n_boot=1000, units=None, seed=None,
-    markers="o", linestyles="-", dodge=False, join=True, scale=1,
-    orient=None, color=None, palette=None, errwidth=None, ci="deprecated",
-    capsize=None, ax=None,
+        data=None, *, x=None, y=None, hue=None, order=None, hue_order=None,
+        estimator="mean", errorbar=("ci", 95), n_boot=1000, units=None,
+        seed=None,
+        markers="o", linestyles="-", dodge=False, join=True, scale=1,
+        orient=None, color=None, palette=None, errwidth=None, ci="deprecated",
+        capsize=None, ax=None,
 ):
-
     errorbar = utils._deprecate_ci(errorbar, ci)
 
     plotter = _PointPlotter(x, y, hue, data, order, hue_order,
@@ -2866,11 +2903,10 @@ pointplot.__doc__ = dedent("""\
 
 
 def countplot(
-    data=None, *, x=None, y=None, hue=None, order=None, hue_order=None,
-    orient=None, color=None, palette=None, saturation=.75, width=.8,
-    dodge=True, ax=None, **kwargs
+        data=None, *, x=None, y=None, hue=None, order=None, hue_order=None,
+        orient=None, color=None, palette=None, saturation=.75, width=.8,
+        dodge=True, ax=None, **kwargs
 ):
-
     estimator = "size"
     errorbar = None
     n_boot = 0
@@ -2950,16 +2986,15 @@ countplot.__doc__ = dedent("""\
 
 
 def catplot(
-    data=None, *, x=None, y=None, hue=None, row=None, col=None,
-    col_wrap=None, estimator="mean", errorbar=("ci", 95), n_boot=1000,
-    units=None, seed=None, order=None, hue_order=None, row_order=None,
-    col_order=None, height=5, aspect=1, kind="strip", native_scale=False,
-    formatter=None, orient=None, color=None, palette=None, hue_norm=None,
-    legend="auto", legend_out=True, sharex=True, sharey=True,
-    margin_titles=False, facet_kws=None, ci="deprecated",
-    **kwargs
+        data=None, *, x=None, y=None, hue=None, row=None, col=None,
+        col_wrap=None, estimator="mean", errorbar=("ci", 95), n_boot=1000,
+        units=None, seed=None, order=None, hue_order=None, row_order=None,
+        col_order=None, height=5, aspect=1, kind="strip", native_scale=False,
+        formatter=None, orient=None, color=None, palette=None, hue_norm=None,
+        legend="auto", legend_out=True, sharex=True, sharey=True,
+        margin_titles=False, facet_kws=None, ci="deprecated",
+        **kwargs
 ):
-
     # Determine the plotting function
     try:
         plot_func = globals()[kind + "plot"]
@@ -3135,9 +3170,9 @@ def catplot(
     p.require_numeric = plotter_class.require_numeric
     p.establish_variables(x_, y_, hue, data, orient, order, hue_order)
     if (
-        order is not None
-        or (sharex and p.orient == "v")
-        or (sharey and p.orient == "h")
+            order is not None
+            or (sharex and p.orient == "v")
+            or (sharey and p.orient == "h")
     ):
         # Sync categorical axis between facets to have the same categories
         order = p.group_names
@@ -3299,6 +3334,7 @@ catplot.__doc__ = dedent("""\
 
 class Beeswarm:
     """Modifies a scatterplot artist to show a beeswarm plot."""
+
     def __init__(self, orient="v", width=0.8, warn_thresh=.05):
 
         # XXX should we keep the orient parameterization or specify the swarm axis?
@@ -3380,7 +3416,6 @@ class Beeswarm:
 
         # Loop over the remaining points
         for xyr_i in orig_xyr[1:]:
-
             # Find the points in the swarm that could possibly
             # overlap with the point we are currently placing
             neighbors = self.could_overlap(xyr_i, swarm)
@@ -3394,7 +3429,8 @@ class Beeswarm:
             candidates = candidates[np.argsort(offsets)]
 
             # Find the first candidate that does not overlap any neighbors
-            new_xyr_i = self.first_non_overlapping_candidate(candidates, neighbors)
+            new_xyr_i = self.first_non_overlapping_candidate(candidates,
+                                                             neighbors)
 
             # Place it into the swarm
             swarm = np.vstack([swarm, new_xyr_i])
