@@ -204,23 +204,21 @@ class Bars(BarBase):
                 updatex=True, updatey=True
             )
 
-        def get_dimensions(collection):
-
-            edges = []
-            widths = []
-            for path in collection.get_paths():
-                verts = path.vertices
-                edges.append(min(verts[:, ori_idx]))
-                widths.append(np.ptp(verts[:, ori_idx]))
-
-            return np.array(edges), np.array(widths)
-
         if "edgewidth" not in scales and isinstance(self.edgewidth, Mappable):
+
+            def get_dimensions(collection):
+
+                edges = []
+                widths = []
+                for path in collection.get_paths():
+                    verts = path.vertices
+                    edges.append(min(verts[:, ori_idx]))
+                    widths.append(np.ptp(verts[:, ori_idx]))
+                return np.array(edges), np.array(widths)
 
             min_width = np.inf
 
             for ax, ax_collections in collections.items():
-                ax.autoscale_view()
                 for collection in ax_collections:
                     edges, widths = get_dimensions(collection)
                     points = 72 / ax.figure.dpi * abs(
@@ -228,8 +226,6 @@ class Bars(BarBase):
                         - ax.transData.transform([edges] * 2)
                     )
                     min_width = min(min_width, min(points[ori_idx]))
-
-            # TODO handle infinit width
 
             auto_linewidth = min(.1 * min_width, mpl.rcParams["patch.linewidth"])
 
