@@ -222,7 +222,7 @@ class Bars(BarBase):
                     ax.transData.transform([edges + widths] * 2)
                     - ax.transData.transform([edges] * 2)
                 )
-                min_width = min(min_width, min(points[ori_idx]))
+                min_width = min(min_width, min(points[:, ori_idx]))
 
             linewidth = min(.1 * min_width, mpl.rcParams["patch.linewidth"])
             for _, col in collections.items():
