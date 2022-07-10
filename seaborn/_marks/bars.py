@@ -207,6 +207,9 @@ class Bars(BarBase):
 
         if "edgewidth" not in scales and isinstance(self.edgewidth, Mappable):
 
+            for ax in collections:
+                ax.autoscale_view()
+
             def get_dimensions(collection):
                 edges, widths = [], []
                 for verts in (path.vertices for path in collection.get_paths()):
@@ -216,7 +219,6 @@ class Bars(BarBase):
 
             min_width = np.inf
             for ax, col in collections.items():
-                ax.autoscale_view()
                 edges, widths = get_dimensions(col)
                 points = 72 / ax.figure.dpi * abs(
                     ax.transData.transform([edges + widths] * 2)
