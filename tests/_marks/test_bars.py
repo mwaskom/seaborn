@@ -1,9 +1,13 @@
-import pytest
 
-from matplotlib.colors import to_rgba
+import numpy as np
+import pandas as pd
+from matplotlib.colors import to_rgba, to_rgba_array
+
+import pytest
+from numpy.testing import assert_array_equal
 
 from seaborn._core.plot import Plot
-from seaborn._marks.bars import Bar
+from seaborn._marks.bars import Bar, Bars
 
 
 class TestBar:
@@ -104,3 +108,92 @@ class TestBar:
         p = Plot(["a", "b"], [1, 2]).add(Bar({"clip_on": False})).plot()
         patch = p._figure.axes[0].patches[0]
         assert patch.clipbox is None
+
+
+class TestBars:
+
+    @pytest.fixture
+    def x(self):
+        return pd.Series([4, 5, 6, 7, 8], name="x")
+
+    @pytest.fixture
+    def y(self):
+        return pd.Series([2, 8, 3, 5, 9], name="y")
+
+    @pytest.fixture
+    def color(self):
+        return pd.Series(["a", "b", "c", "a", "c"], name="color")
+
+    def test_positions(self, x, y):
+
+        p = Plot(x, y).add(Bars()).plot()
+        ax = p._figure.axes[0]
+        paths = ax.collections[0].get_paths()
+        assert len(paths) == len(x)
+        for i, path in enumerate(paths):
+            verts = path.vertices
+            assert verts[0, 0] == pytest.approx(x[i] - .5)
+            assert verts[1, 0] == pytest.approx(x[i] + .5)
+            assert verts[0, 1] == 0
+            assert verts[3, 1] == y[i]
+
+    def test_positions_horizontal(self, x, y):
+
+        p = Plot(x=y, y=x).add(Bars(), orient="h").plot()
+        ax = p._figure.axes[0]
+        paths = ax.collections[0].get_paths()
+        assert len(paths) == len(x)
+        for i, path in enumerate(paths):
+            verts = path.vertices
+            assert verts[0, 1] == pytest.approx(x[i] - .5)
+            assert verts[3, 1] == pytest.approx(x[i] + .5)
+            assert verts[0, 0] == 0
+            assert verts[1, 0] == y[i]
+
+    def test_width(self, x, y):
+
+        p = Plot(x, y).add(Bars(width=.4)).plot()
+        ax = p._figure.axes[0]
+        paths = ax.collections[0].get_paths()
+        for i, path in enumerate(paths):
+            verts = path.vertices
+            assert verts[0, 0] == pytest.approx(x[i] - .2)
+            assert verts[1, 0] == pytest.approx(x[i] + .2)
+
+    def test_mapped_color_direct_alpha(self, x, y, color):
+
+        alpha = .5
+        p = Plot(x, y, color=color).add(Bars(alpha=alpha)).plot()
+        ax = p._figure.axes[0]
+        fcs = ax.collections[0].get_facecolors()
+        expected = to_rgba_array(["C0", "C1", "C2", "C0", "C2"], alpha)
+        assert_array_equal(fcs, expected)
+
+    def test_mapped_edgewidth(self, x, y):
+
+        p = Plot(x, y, edgewidth=y).add(Bars()).plot()
+        ax = p._figure.axes[0]
+        lws = ax.collections[0].get_linewidths()
+        assert_array_equal(np.argsort(lws), np.argsort(y))
+
+    def test_auto_edgewidth(self):
+
+        x0 = np.arange(10)
+        x1 = np.arange(1000)
+
+        p0 = Plot(x0, x0).add(Bars()).plot()
+        p1 = Plot(x1, x1).add(Bars()).plot()
+
+        lw0 = p0._figure.axes[0].collections[0].get_linewidths()
+        lw1 = p1._figure.axes[0].collections[0].get_linewidths()
+
+        assert (lw0 > lw1).all()
+
+    def test_unfilled(self, x, y):
+
+        p = Plot(x, y).add(Bars(fill=False, edgecolor="C4")).plot()
+        ax = p._figure.axes[0]
+        fcs = ax.collections[0].get_facecolors()
+        ecs = ax.collections[0].get_edgecolors()
+        assert_array_equal(fcs, to_rgba_array(["C0"] * len(x), 0))
+        assert_array_equal(ecs, to_rgba_array(["C4"] * len(x), 1))

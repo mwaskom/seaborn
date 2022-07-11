@@ -32,6 +32,7 @@ class TestMappable:
         assert str(Mappable("CO")) == "<'CO'>"
         assert str(Mappable(rc="lines.linewidth")) == "<rc:lines.linewidth>"
         assert str(Mappable(depend="color")) == "<depend:color>"
+        assert str(Mappable(auto=True)) == "<auto>"
 
     def test_input_checks(self):
 
