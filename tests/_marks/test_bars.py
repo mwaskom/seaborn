@@ -176,6 +176,19 @@ class TestBars:
         lws = ax.collections[0].get_linewidths()
         assert_array_equal(np.argsort(lws), np.argsort(y))
 
+    def test_auto_edgewidth(self):
+
+        x0 = np.arange(10)
+        x1 = np.arange(1000)
+
+        p0 = Plot(x0, x0).add(Bars()).plot()
+        p1 = Plot(x1, x1).add(Bars()).plot()
+
+        lw0 = p0._figure.axes[0].collections[0].get_linewidths()
+        lw1 = p1._figure.axes[0].collections[0].get_linewidths()
+
+        assert (lw0 > lw1).all()
+
     def test_unfilled(self, x, y):
 
         p = Plot(x, y).add(Bars(fill=False, edgecolor="C4")).plot()
