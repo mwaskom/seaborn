@@ -27,6 +27,7 @@ class Mappable:
         val: Any = None,
         depend: str | None = None,
         rc: str | None = None,
+        auto: bool = False,
         grouping: bool = True,
     ):
         """
@@ -40,6 +41,8 @@ class Mappable:
             Use the value of this feature as the default.
         rc : str
             Use the value of this rcParam as the default.
+        auto : bool
+            The default value will depend on other parameters at compile time.
         grouping : bool
             If True, use the mapped variable to define groups.
 
@@ -52,6 +55,7 @@ class Mappable:
         self._val = val
         self._rc = rc
         self._depend = depend
+        self._auto = auto
         self._grouping = grouping
 
     def __repr__(self):
@@ -62,6 +66,8 @@ class Mappable:
             s = f"<depend:{self._depend}>"
         elif self._rc is not None:
             s = f"<rc:{self._rc}>"
+        elif self._auto:
+            s = "<auto>"
         else:
             s = "<undefined>"
         return s

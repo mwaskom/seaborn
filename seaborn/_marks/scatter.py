@@ -91,7 +91,7 @@ class Scatter(Mark):
         # (That should be solved upstream by defaulting to "" for unset x/y?)
         # (Be mindful of xmin/xmax, etc!)
 
-        for keys, data, ax in split_gen():
+        for _, data, ax in split_gen():
 
             offsets = np.column_stack([data["x"], data["y"]])
             data = self._resolve_properties(data, scales)
