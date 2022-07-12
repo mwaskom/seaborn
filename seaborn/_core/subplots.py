@@ -21,9 +21,9 @@ class Subplots:
     ----------
     subplot_spec : dict
         Keyword args for :meth:`matplotlib.figure.Figure.subplots`.
-    facet_spec : dict
+    facet_spec : FacetSpec
         Parameters that control subplot faceting.
-    pair_spec : dict
+    pair_spec : PairSpec
         Parameters that control subplot pairing.
 
     """
