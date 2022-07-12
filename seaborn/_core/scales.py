@@ -496,7 +496,7 @@ class Continuous(ContinuousBase):
         unit : str or (str, str) tuple
             Use  SI prefixes with these units (e.g., with `unit="g"`, a tick value
             of 5000 will appear as `5 kg`). When a tuple, the first element gives the
-            seperator between the number and unit.
+            separator between the number and unit.
 
         Returns
         -------

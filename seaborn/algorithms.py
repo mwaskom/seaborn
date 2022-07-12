@@ -137,6 +137,6 @@ def _handle_random_seed(seed=None):
             elif seed is None:
                 rng = np.random.RandomState()
             else:
-                err = "{} cannot be used to seed the randomn number generator"
+                err = "{} cannot be used to seed the random number generator"
                 raise ValueError(err.format(seed))
     return rng
