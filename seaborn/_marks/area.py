@@ -21,33 +21,39 @@ class AreaBase:
 
     def _plot(self, split_gen, scales, orient):
 
-        kws = {}
+        patches = defaultdict(list)
 
         for keys, data, ax in split_gen():
 
-            kws.setdefault(ax, defaultdict(list))
-
+            kws = {}
             data = self._standardize_coordinate_parameters(data, orient)
             resolved = resolve_properties(self, keys, scales)
             verts = self._get_verts(data, orient)
-
             ax.update_datalim(verts)
-            kws[ax]["verts"].append(verts)
 
-            # TODO fill= is not working here properly
-            # We could hack a fix, but would be better to handle fill in resolve_color
+            # TODO should really move this logic into resolve_color
+            fc = resolve_color(self, keys, "", scales)
+            if not resolved["fill"]:
+                fc = mpl.colors.to_rgba(fc, 0)
 
-            kws[ax]["facecolors"].append(resolve_color(self, keys, "", scales))
-            kws[ax]["edgecolors"].append(resolve_color(self, keys, "edge", scales))
+            kws["facecolor"] = fc
+            kws["edgecolor"] = resolve_color(self, keys, "edge", scales)
+            kws["linewidth"] = resolved["edgewidth"]
+            kws["linestyle"] = resolved["edgestyle"]
 
-            kws[ax]["linewidth"].append(resolved["edgewidth"])
-            kws[ax]["linestyle"].append(resolved["edgestyle"])
+            patches[ax].append(mpl.patches.Polygon(verts, **kws))
 
-        for ax, ax_kws in kws.items():
-            ax.add_collection(mpl.collections.PolyCollection(**ax_kws))
+        for ax, ax_patches in patches.items():
+
+            for patch in ax_patches:
+                self._postprocess_artist(patch, ax, orient)
+                ax.add_patch(patch)
 
     def _standardize_coordinate_parameters(self, data, orient):
         return data
+
+    def _postprocess_artist(self, artist, ax, orient):
+        pass
 
     def _get_verts(self, data, orient):
 
@@ -66,8 +72,12 @@ class AreaBase:
         keys = {v: value for v in variables}
         resolved = resolve_properties(self, keys, scales)
 
+        fc = resolve_color(self, keys, "", scales)
+        if not resolved["fill"]:
+            fc = mpl.colors.to_rgba(fc, 0)
+
         return mpl.patches.Patch(
-            facecolor=resolve_color(self, keys, "", scales),
+            facecolor=fc,
             edgecolor=resolve_color(self, keys, "edge", scales),
             linewidth=resolved["edgewidth"],
             linestyle=resolved["edgestyle"],
@@ -94,6 +104,25 @@ class Area(AreaBase, Mark):
     def _standardize_coordinate_parameters(self, data, orient):
         dv = {"x": "y", "y": "x"}[orient]
         return data.rename(columns={"baseline": f"{dv}min", dv: f"{dv}max"})
+
+    def _postprocess_artist(self, artist, ax, orient):
+
+        # TODO copying a lot of code from Bar, let's abstract this
+        # See comments there, I am not going to repeat them too
+
+        artist.set_linewidth(artist.get_linewidth() * 2)
+
+        linestyle = artist.get_linestyle()
+        if linestyle[1]:
+            linestyle = (linestyle[0], tuple(x / 2 for x in linestyle[1]))
+        artist.set_linestyle(linestyle)
+
+        artist.set_clip_path(artist.get_path(), artist.get_transform() + ax.transData)
+        if self.artist_kws.get("clip_on", True):
+            artist.set_clip_box(ax.bbox)
+
+        val_idx = ["y", "x"].index(orient)
+        artist.sticky_edges[val_idx][:] = (0, np.inf)
 
 
 @dataclass
