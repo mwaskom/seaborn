@@ -1120,7 +1120,7 @@ class PairGrid(Grid):
     This object maps each variable in a dataset onto a column and row in a
     grid of multiple axes. Different axes-level plotting functions can be
     used to draw bivariate plots in the upper and lower triangles, and the
-    the marginal distribution of each variable can be shown on the diagonal.
+    marginal distribution of each variable can be shown on the diagonal.
 
     Several different common plots can be generated in a single line using
     :func:`pairplot`. Use :class:`PairGrid` when you need more flexibility.
