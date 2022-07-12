@@ -142,11 +142,11 @@ class Plot:
     the plot without rendering it to access the lower-level representation.
 
     """
-    # TODO use TypedDict throughout?
-
     _data: PlotData
     _layers: list[Layer]
+
     _scales: dict[str, Scale]
+    _limits: dict[str, tuple[float | None, float | None]]
 
     _subplot_spec: dict[str, Any]  # TODO values type
     _facet_spec: FacetSpec
@@ -169,7 +169,9 @@ class Plot:
 
         self._data = PlotData(data, variables)
         self._layers = []
+
         self._scales = {}
+        self._limits = {}
 
         self._subplot_spec = {}
         self._facet_spec = {}
@@ -543,6 +545,23 @@ class Plot:
         new._scales.update(**scales)
         return new
 
+    def limit(self, **limits: tuple[float | None, float | None]) -> Plot:
+        """
+        Control the range of visible data.
+
+        Keywords correspond to variables defined in the plot, and values are a
+        (min, max) tuple (where either can be `None` to leave unset).
+
+        Limits apply only to the axis scale; data outside the limits are still
+        used in any stat transforms and added to the plot.
+
+        Behavior for non-coordinate variables is currently undefined.
+
+        """
+        new = self._clone()
+        new._limits.update(limits)
+        return new
+
     def configure(
         self,
         figsize: tuple[float, float] | None = None,
@@ -634,11 +653,8 @@ class Plot:
         for layer in layers:
             plotter._plot_layer(self, layer)
 
-        plotter._make_legend()
-
-        # TODO this should be configurable
-        if not plotter._figure.get_constrained_layout():
-            plotter._figure.set_tight_layout(True)
+        plotter._make_legend(self)
+        plotter._finalize_figure(self)
 
         return plotter
 
@@ -1379,7 +1395,7 @@ class Plotter:
 
         self._legend_contents.extend(contents)
 
-    def _make_legend(self) -> None:
+    def _make_legend(self, p: Plot) -> None:
         """Create the legend artist(s) and add onto the figure."""
         # Combine artists representing same information across layers
         # Input list has an entry for each distinct variable in each layer
@@ -1424,3 +1440,24 @@ class Plotter:
             else:
                 base_legend = legend
                 self._figure.legends.append(legend)
+
+    def _finalize_figure(self, p: Plot) -> None:
+
+        for sub in self._subplots:
+            ax = sub["ax"]
+            for axis in "xy":
+                axis_key = sub[axis]
+
+                if axis_key in p._limits:
+                    convert_units = getattr(ax, f"{axis}axis").convert_units
+                    lo, hi = p._limits[axis_key]
+                    lo = lo if lo is None else convert_units(lo)
+                    hi = hi if hi is None else convert_units(hi)
+                    # TODO it would be nice to special-case Nominal axes to
+                    # go from lo - .5 to hi + .5, that is going to interact
+                    # with generally making that adjustment on Nominal axes however
+                    ax.set(**{f"{axis}lim": (lo, hi)})
+
+        # TODO this should be configurable
+        if not self._figure.get_constrained_layout():
+            self._figure.set_tight_layout(True)

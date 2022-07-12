@@ -995,6 +995,18 @@ class TestPlotting:
         assert ax.get_xlabel() == "a"
         assert ax.get_ylabel() == "b"
 
+    def test_limits(self, long_df):
+
+        limit = (-2, 24)
+        p = Plot(long_df, x="x", y="y").limit(x=limit).plot()
+        ax1 = p._figure.axes[0]
+        assert ax1.get_xlim() == limit
+
+        limit = tuple(np.array(["2005-01-01", "2008-01-01"], dtype="datetime64"))
+        p = Plot(long_df, x="d", y="y").limit(x=limit).plot()
+        ax1 = p._figure.axes[0]
+        assert ax1.get_xlim() == tuple(mpl.dates.date2num(limit))
+
 
 class TestFacetInterface:
 
@@ -1381,6 +1393,13 @@ class TestPairInterface:
         err = "When faceting on both col= and row=, passing `order`"
         with pytest.raises(RuntimeError, match=err):
             p.facet(col="a", row="b", order=["a", "b", "c"])
+
+    def test_limits(self, long_df):
+
+        limit = (-2, 24)
+        p = Plot(long_df, y="y").pair(x=["x", "z"]).limit(x1=limit).plot()
+        ax1 = p._figure.axes[1]
+        assert ax1.get_xlim() == limit
 
 
 class TestLabelVisibility:
