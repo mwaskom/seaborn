@@ -86,6 +86,14 @@ class TestAreaMarks:
         lws = [p.get_linewidth() for p in ax.patches]
         assert lws[0] > lws[1]
 
+    def test_unfilled(self):
+
+        x, y = [1, 2, 3], [1, 2, 1]
+        p = Plot(x=x, y=y).add(Area(fill=False)).plot()
+        ax = p._figure.axes[0]
+        poly = ax.patches[0]
+        assert poly.get_facecolor() == to_rgba("C0", 0)
+
     def test_ribbon(self):
 
         x, ymin, ymax = [1, 2, 4], [2, 1, 4], [3, 3, 5]

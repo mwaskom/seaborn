@@ -31,16 +31,16 @@ class AreaBase:
             verts = self._get_verts(data, orient)
             ax.update_datalim(verts)
 
-            # TODO fill= is not working here properly
-            # We could hack a fix, but would be better to handle fill in resolve_color
+            # TODO should really move this logic into resolve_color
+            fc = resolve_color(self, keys, "", scales)
+            if not resolved["fill"]:
+                fc = mpl.colors.to_rgba(fc, 0)
 
-            kws["facecolor"] = resolve_color(self, keys, "", scales)
+            kws["facecolor"] = fc
             kws["edgecolor"] = resolve_color(self, keys, "edge", scales)
             kws["linewidth"] = resolved["edgewidth"]
             kws["linestyle"] = resolved["edgestyle"]
 
-            # path = mpl.path.Path(verts)  # TODO, closed=True)
-            # patches[ax].append(mpl.patches.PathPatch(path, **kws))
             patches[ax].append(mpl.patches.Polygon(verts, **kws))
 
         for ax, ax_patches in patches.items():
@@ -72,8 +72,12 @@ class AreaBase:
         keys = {v: value for v in variables}
         resolved = resolve_properties(self, keys, scales)
 
+        fc = resolve_color(self, keys, "", scales)
+        if not resolved["fill"]:
+            fc = mpl.colors.to_rgba(fc, 0)
+
         return mpl.patches.Patch(
-            facecolor=resolve_color(self, keys, "", scales),
+            facecolor=fc,
             edgecolor=resolve_color(self, keys, "edge", scales),
             linewidth=resolved["edgewidth"],
             linestyle=resolved["edgestyle"],
