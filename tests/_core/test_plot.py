@@ -1002,10 +1002,15 @@ class TestPlotting:
         ax1 = p._figure.axes[0]
         assert ax1.get_xlim() == limit
 
-        limit = tuple(np.array(["2005-01-01", "2008-01-01"], dtype="datetime64"))
+        limit = (np.datetime64("2005-01-01"), np.datetime64("2008-01-01"))
         p = Plot(long_df, x="d", y="y").limit(x=limit).plot()
-        ax1 = p._figure.axes[0]
-        assert ax1.get_xlim() == tuple(mpl.dates.date2num(limit))
+        ax = p._figure.axes[0]
+        assert ax.get_xlim() == tuple(mpl.dates.date2num(limit))
+
+        limit = ("b", "c")
+        p = Plot(x=["a", "b", "c", "d"], y=[1, 2, 3, 4]).limit(x=limit).plot()
+        ax = p._figure.axes[0]
+        assert ax.get_xlim() == (0.5, 2.5)
 
 
 class TestFacetInterface:

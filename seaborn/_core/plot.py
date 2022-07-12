@@ -10,7 +10,7 @@ import itertools
 import textwrap
 from collections import abc
 from collections.abc import Callable, Generator, Hashable
-from typing import Any
+from typing import Any, cast
 
 import pandas as pd
 from pandas import DataFrame, Series, Index
@@ -146,7 +146,7 @@ class Plot:
     _layers: list[Layer]
 
     _scales: dict[str, Scale]
-    _limits: dict[str, tuple[float | None, float | None]]
+    _limits: dict[str, tuple[Any, Any]]
 
     _subplot_spec: dict[str, Any]  # TODO values type
     _facet_spec: FacetSpec
@@ -545,7 +545,7 @@ class Plot:
         new._scales.update(**scales)
         return new
 
-    def limit(self, **limits: tuple[float | None, float | None]) -> Plot:
+    def limit(self, **limits: tuple[Any, Any]) -> Plot:
         """
         Control the range of visible data.
 
@@ -1448,14 +1448,16 @@ class Plotter:
             for axis in "xy":
                 axis_key = sub[axis]
 
+                # Axis limits
                 if axis_key in p._limits:
                     convert_units = getattr(ax, f"{axis}axis").convert_units
-                    lo, hi = p._limits[axis_key]
-                    lo = lo if lo is None else convert_units(lo)
-                    hi = hi if hi is None else convert_units(hi)
-                    # TODO it would be nice to special-case Nominal axes to
-                    # go from lo - .5 to hi + .5, that is going to interact
-                    # with generally making that adjustment on Nominal axes however
+                    a, b = p._limits[axis_key]
+                    lo = a if a is None else convert_units(a)
+                    hi = b if b is None else convert_units(b)
+                    if isinstance(a, str):
+                        lo = cast(float, lo) - 0.5
+                    if isinstance(b, str):
+                        hi = cast(float, hi) + 0.5
                     ax.set(**{f"{axis}lim": (lo, hi)})
 
         # TODO this should be configurable
