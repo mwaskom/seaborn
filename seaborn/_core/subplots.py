@@ -25,8 +25,6 @@ class Subplots:
         Parameters that control subplot faceting.
     pair_spec : dict
         Parameters that control subplot pairing.
-    data : PlotData
-        Data used to define figure setup.
 
     """
     def __init__(
