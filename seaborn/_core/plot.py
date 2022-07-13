@@ -147,6 +147,7 @@ class Plot:
 
     _scales: dict[str, Scale]
     _limits: dict[str, tuple[Any, Any]]
+    _labels: dict[str, str | Callable[[str], str] | None]
 
     _subplot_spec: dict[str, Any]  # TODO values type
     _facet_spec: FacetSpec
@@ -172,6 +173,7 @@ class Plot:
 
         self._scales = {}
         self._limits = {}
+        self._labels = {}
 
         self._subplot_spec = {}
         self._facet_spec = {}
@@ -552,14 +554,33 @@ class Plot:
         Keywords correspond to variables defined in the plot, and values are a
         (min, max) tuple (where either can be `None` to leave unset).
 
-        Limits apply only to the axis scale; data outside the limits are still
-        used in any stat transforms and added to the plot.
+        Limits apply only to the axis; data outside the visible range are
+        still used for any stat transforms and added to the plot.
 
         Behavior for non-coordinate variables is currently undefined.
 
         """
         new = self._clone()
         new._limits.update(limits)
+        return new
+
+    def label(self, **labels: str | Callable[[str], str] | None) -> Plot:
+        """
+        Control the labels used for variables in the plot.
+
+        For coordinate variables, this sets the axis label.
+        For semantic variables, it sets the legend title.
+
+        Keywords correspond to variables defined in the plot.
+        Values can be one of the following types::
+
+        - string (used literally)
+        - function (called on the default label)
+        - None (disables the label for this variable)
+
+        """
+        new = self._clone()
+        new._labels.update(labels)
         return new
 
     def configure(
@@ -797,6 +818,9 @@ class Plotter:
             ax = sub["ax"]
             for axis in "xy":
                 axis_key = sub[axis]
+
+                # ~~ Axis labels
+
                 # TODO Should we make it possible to use only one x/y label for
                 # all rows/columns in a faceted plot? Maybe using sub{axis}label,
                 # although the alignments of the labels from that method leaves
@@ -805,8 +829,18 @@ class Plotter:
                     common.names.get(axis_key),
                     *(layer["data"].names.get(axis_key) for layer in layers)
                 ]
-                label = next((name for name in names if name is not None), None)
+                auto_label = next((name for name in names if name is not None), None)
+                if axis_key in p._labels:
+                    manual_label = p._labels[axis_key]
+                    if callable(manual_label):
+                        label = manual_label(auto_label)
+                    else:
+                        label = manual_label
+                else:
+                    label = auto_label
                 ax.set(**{f"{axis}label": label})
+
+                # ~~ Decoration visibility
 
                 # TODO there should be some override (in Plot.configure?) so that
                 # tick labels can be shown on interior shared axes
@@ -1151,9 +1185,7 @@ class Plotter:
             df = self._unscale_coords(subplots, df, orient)
 
             grouping_vars = mark._grouping_props + default_grouping_vars
-            split_generator = self._setup_split_generator(
-                grouping_vars, df, subplots
-            )
+            split_generator = self._setup_split_generator(grouping_vars, df, subplots)
 
             mark._plot(split_generator, scales, orient)
 
@@ -1162,7 +1194,7 @@ class Plotter:
             view["ax"].autoscale_view()
 
         if layer["legend"]:
-            self._update_legend_contents(mark, data, scales)
+            self._update_legend_contents(mark, data, scales, p._labels)
 
     def _scale_coords(self, subplots: list[dict], df: DataFrame) -> DataFrame:
         # TODO stricter type on subplots
@@ -1357,7 +1389,11 @@ class Plotter:
         return split_generator
 
     def _update_legend_contents(
-        self, mark: Mark, data: PlotData, scales: dict[str, Scale]
+        self,
+        mark: Mark,
+        data: PlotData,
+        scales: dict[str, Scale],
+        titles: dict[str, str | Callable[[str], str] | None],
     ) -> None:
         """Add legend artists / labels for one layer in the plot."""
         if data.frame.empty and data.frames:
@@ -1382,7 +1418,17 @@ class Plotter:
                         part_vars.append(var)
                         break
                 else:
-                    entry = (data.names[var], data.ids[var]), [var], (values, labels)
+                    # TODO copied from _setup_figure
+                    auto_title = data.names[var]
+                    if var in titles:
+                        manual_title = titles[var]
+                        if callable(manual_title):
+                            title = manual_title(auto_title)
+                        else:
+                            title = manual_title
+                    else:
+                        title = auto_title
+                    entry = (title, data.ids[var]), [var], (values, labels)
                     schema.append(entry)
 
         # Second pass, generate an artist corresponding to each value

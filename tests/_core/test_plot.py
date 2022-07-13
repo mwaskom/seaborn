@@ -1012,6 +1012,18 @@ class TestPlotting:
         ax = p._figure.axes[0]
         assert ax.get_xlim() == (0.5, 2.5)
 
+    def test_labels(self, long_df):
+
+        label = "Y axis"
+        p = Plot(long_df, x="x", y="y").label(y=label).plot()
+        ax1 = p._figure.axes[0]
+        assert ax1.get_ylabel() == label
+
+        label = str.capitalize
+        p = Plot(long_df, x="x", y="y").label(y=label).plot()
+        ax = p._figure.axes[0]
+        assert ax.get_ylabel() == "Y"
+
 
 class TestFacetInterface:
 
@@ -1405,6 +1417,13 @@ class TestPairInterface:
         p = Plot(long_df, y="y").pair(x=["x", "z"]).limit(x1=limit).plot()
         ax1 = p._figure.axes[1]
         assert ax1.get_xlim() == limit
+
+    def test_labels(self, long_df):
+
+        label = "Z"
+        p = Plot(long_df, y="y").pair(x=["x", "z"]).label(x1=label).plot()
+        ax1 = p._figure.axes[1]
+        assert ax1.get_xlabel() == label
 
 
 class TestLabelVisibility:
