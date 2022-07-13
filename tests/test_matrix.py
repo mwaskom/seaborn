@@ -264,7 +264,7 @@ class TestHeatmap:
         hm = mat._HeatMapper(self.df_unif, **kws)
         npt.assert_array_equal(cmap(np.inf), hm.cmap(np.inf))
 
-    def test_tickabels_off(self):
+    def test_ticklabels_off(self):
         kws = self.default_kws.copy()
         kws['xticklabels'] = False
         kws['yticklabels'] = False
