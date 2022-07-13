@@ -789,6 +789,20 @@ class Plotter:
 
         return common_data, layers
 
+    def _resolve_label(self, p: Plot, var: str, auto_label: str | None) -> str | None:
+
+        label: str | None
+        if var in p._labels:
+            manual_label = p._labels[var]
+            if callable(manual_label) and auto_label is not None:
+                label = manual_label(auto_label)
+            else:
+                # mypy needs a lot of help here, I'm not sure why
+                label = cast(Optional[str], manual_label)
+        else:
+            label = auto_label
+        return label
+
     def _setup_figure(self, p: Plot, common: PlotData, layers: list[Layer]) -> None:
 
         # --- Parsing the faceting/pairing parameterization to specify figure grid
@@ -830,16 +844,7 @@ class Plotter:
                     *(layer["data"].names.get(axis_key) for layer in layers)
                 ]
                 auto_label = next((name for name in names if name is not None), None)
-                if axis_key in p._labels:
-                    manual_label = p._labels[axis_key]
-                    label: str | None
-                    if callable(manual_label) and auto_label is not None:
-                        label = manual_label(auto_label)
-                    else:
-                        # mypy needs a lot of help here, I'm not sure why
-                        label = cast(Optional[str], manual_label)
-                else:
-                    label = auto_label
+                label = self._resolve_label(p, axis_key, auto_label)
                 ax.set(**{f"{axis}label": label})
 
                 # ~~ Decoration visibility
@@ -1196,7 +1201,7 @@ class Plotter:
             view["ax"].autoscale_view()
 
         if layer["legend"]:
-            self._update_legend_contents(mark, data, scales, p._labels)
+            self._update_legend_contents(p, mark, data, scales)
 
     def _scale_coords(self, subplots: list[dict], df: DataFrame) -> DataFrame:
         # TODO stricter type on subplots
@@ -1392,10 +1397,10 @@ class Plotter:
 
     def _update_legend_contents(
         self,
+        p: Plot,
         mark: Mark,
         data: PlotData,
         scales: dict[str, Scale],
-        titles: dict[str, str | Callable[[str], str] | None],
     ) -> None:
         """Add legend artists / labels for one layer in the plot."""
         if data.frame.empty and data.frames:
@@ -1420,18 +1425,8 @@ class Plotter:
                         part_vars.append(var)
                         break
                 else:
-                    # TODO copied from _setup_figure
                     auto_title = data.names[var]
-                    if var in titles:
-                        manual_title = titles[var]
-                        title: str | None
-                        if callable(manual_title) and auto_title is not None:
-                            title = manual_title(auto_title)
-                        else:
-                            # mypy needs a lot of help here, I'm not sure why
-                            title = cast(Optional[str], manual_title)
-                    else:
-                        title = auto_title
+                    title = self._resolve_label(p, var, auto_title)
                     entry = (title, data.ids[var]), [var], (values, labels)
                     schema.append(entry)
 
