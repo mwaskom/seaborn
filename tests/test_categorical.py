@@ -512,10 +512,18 @@ class TestCategoricalPlotter(CategoricalFixture):
     def test_dict_as_palette(self):
 
         p = cat._CategoricalPlotter()
+
+        # Test dict palette with hue
         p.establish_variables("g", "y", hue="h", data=self.df)
         pal = {"m": (0, 0, 1), "n": (1, 0, 0)}
         p.establish_colors(None, pal, 1)
         assert p.colors == [(0, 0, 1), (1, 0, 0)]
+
+        # Test dict palette without hue
+        p.establish_variables("g", "y", data=self.df)
+        pal = {"a": (0, 0, 1), "b": (1, 0, 0), "c": (0, 1, 0)}
+        p.establish_colors(None, pal, 1)
+        assert p.colors == [(0, 0, 1), (1, 0, 0), (0, 1, 0)]
 
     def test_palette_desaturation(self):
 
