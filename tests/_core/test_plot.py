@@ -999,8 +999,8 @@ class TestPlotting:
 
         limit = (-2, 24)
         p = Plot(long_df, x="x", y="y").limit(x=limit).plot()
-        ax1 = p._figure.axes[0]
-        assert ax1.get_xlim() == limit
+        ax = p._figure.axes[0]
+        assert ax.get_xlim() == limit
 
         limit = (np.datetime64("2005-01-01"), np.datetime64("2008-01-01"))
         p = Plot(long_df, x="d", y="y").limit(x=limit).plot()
@@ -1012,17 +1012,29 @@ class TestPlotting:
         ax = p._figure.axes[0]
         assert ax.get_xlim() == (0.5, 2.5)
 
-    def test_labels(self, long_df):
+    def test_labels_axis(self, long_df):
 
         label = "Y axis"
         p = Plot(long_df, x="x", y="y").label(y=label).plot()
-        ax1 = p._figure.axes[0]
-        assert ax1.get_ylabel() == label
+        ax = p._figure.axes[0]
+        assert ax.get_ylabel() == label
 
         label = str.capitalize
         p = Plot(long_df, x="x", y="y").label(y=label).plot()
         ax = p._figure.axes[0]
         assert ax.get_ylabel() == "Y"
+
+    def test_labels_legend(self, long_df):
+
+        m = MockMark()
+
+        label = "A"
+        p = Plot(long_df, x="x", y="y", color="a").add(m).label(color=label).plot()
+        assert p._figure.legends[0].get_title().get_text() == label
+
+        func = str.capitalize
+        p = Plot(long_df, x="x", y="y", color="a").add(m).label(color=func).plot()
+        assert p._figure.legends[0].get_title().get_text() == label
 
 
 class TestFacetInterface:
