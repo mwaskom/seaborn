@@ -10,7 +10,7 @@ import itertools
 import textwrap
 from collections import abc
 from collections.abc import Callable, Generator, Hashable
-from typing import Any, cast
+from typing import Any, Optional, cast
 
 import pandas as pd
 from pandas import DataFrame, Series, Index
@@ -832,10 +832,12 @@ class Plotter:
                 auto_label = next((name for name in names if name is not None), None)
                 if axis_key in p._labels:
                     manual_label = p._labels[axis_key]
-                    if callable(manual_label):
+                    label: str | None
+                    if callable(manual_label) and auto_label is not None:
                         label = manual_label(auto_label)
                     else:
-                        label = manual_label
+                        # mypy needs a lot of help here, I'm not sure why
+                        label = cast(Optional[str], manual_label)
                 else:
                     label = auto_label
                 ax.set(**{f"{axis}label": label})
@@ -1422,10 +1424,12 @@ class Plotter:
                     auto_title = data.names[var]
                     if var in titles:
                         manual_title = titles[var]
-                        if callable(manual_title):
+                        title: str | None
+                        if callable(manual_title) and auto_title is not None:
                             title = manual_title(auto_title)
                         else:
-                            title = manual_title
+                            # mypy needs a lot of help here, I'm not sure why
+                            title = cast(Optional[str], manual_title)
                     else:
                         title = auto_title
                     entry = (title, data.ids[var]), [var], (values, labels)
