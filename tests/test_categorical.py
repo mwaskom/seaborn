@@ -472,6 +472,23 @@ class TestCategoricalPlotter(CategoricalFixture):
         npt.assert_array_almost_equal(p.colors,
                                       rgba_array[:, :3])
 
+    def test_specific_default_palette(self):
+        p = cat._CategoricalPlotter()
+
+        # Test dark default palette
+        p.default_palette = "dark"
+        p.establish_variables("g", "y", hue="h", data=self.df)
+        p.establish_colors("blue", None, 1)
+        rgba_array = np.array(palettes.dark_palette("blue", 2))
+        npt.assert_array_almost_equal(p.colors,
+                                      rgba_array[:, :3])
+
+        # Test other default palette
+        p.default_palette = "blue"
+        p.establish_variables("g", "y", hue="h", data=self.df)
+        with pytest.raises(RuntimeError):
+            p.establish_colors("blue", None, 1)
+
     def test_specific_palette(self):
 
         p = cat._CategoricalPlotter()
