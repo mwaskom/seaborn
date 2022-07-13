@@ -346,6 +346,12 @@ class TestHeatmap:
             assert text.get_text() == f"{val:.1f}"
             assert text.get_fontsize() == 14
 
+    def test_heatmap_annotation_different_shapes(self):
+
+        annot_data = self.df_norm.append(self.letters)
+        with pytest.raises(ValueError):
+            mat.heatmap(self.df_norm, annot=annot_data)
+
     def test_heatmap_annotation_with_limited_ticklabels(self):
         ax = mat.heatmap(self.df_norm, fmt=".2f", annot=True,
                          xticklabels=False, yticklabels=False)
