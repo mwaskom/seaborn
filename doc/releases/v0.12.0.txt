@@ -80,7 +80,7 @@ Other updates
 
 - |Fix| Fixed a bug in :func:`violinplot` where inner boxes/points could be missing with unpaired split violins (:pr:`2814`).
 
-- |Fix| Fixed a bug in :class:`PairGrid` where and error would be raised when defining `hue` only in the mapping methods (:pr:`2847`).
+- |Fix| Fixed a bug in :class:`PairGrid` where an error would be raised when defining `hue` only in the mapping methods (:pr:`2847`).
 
 - |Fix| Fixed a bug in :func:`scatterplot` where an error would be raised when `hue_order` was a subset of the hue levels (:pr:`2848`).
 

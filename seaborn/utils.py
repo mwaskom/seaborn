@@ -597,23 +597,23 @@ def load_dataset(name, cache=True, data_home=None, **kws):
         df["time"] = pd.Categorical(df["time"], ["Lunch", "Dinner"])
         df["smoker"] = pd.Categorical(df["smoker"], ["Yes", "No"])
 
-    if name == "flights":
+    elif name == "flights":
         months = df["month"].str[:3]
         df["month"] = pd.Categorical(months, months.unique())
 
-    if name == "exercise":
+    elif name == "exercise":
         df["time"] = pd.Categorical(df["time"], ["1 min", "15 min", "30 min"])
         df["kind"] = pd.Categorical(df["kind"], ["rest", "walking", "running"])
         df["diet"] = pd.Categorical(df["diet"], ["no fat", "low fat"])
 
-    if name == "titanic":
+    elif name == "titanic":
         df["class"] = pd.Categorical(df["class"], ["First", "Second", "Third"])
         df["deck"] = pd.Categorical(df["deck"], list("ABCDEFG"))
 
-    if name == "penguins":
+    elif name == "penguins":
         df["sex"] = df["sex"].str.title()
 
-    if name == "diamonds":
+    elif name == "diamonds":
         df["color"] = pd.Categorical(
             df["color"], ["D", "E", "F", "G", "H", "I", "J"],
         )

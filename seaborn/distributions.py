@@ -1539,7 +1539,7 @@ pthresh : number or None
     transparent.
 pmax : number or None
     A value in [0, 1] that sets that saturation point for the colormap at a value
-    such that cells below is constistute this proportion of the total count (or
+    such that cells below constitute this proportion of the total count (or
     other statistic, when used).
 {params.dist.cbar}
 {params.dist.cbar_ax}

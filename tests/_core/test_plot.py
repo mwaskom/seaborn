@@ -995,6 +995,47 @@ class TestPlotting:
         assert ax.get_xlabel() == "a"
         assert ax.get_ylabel() == "b"
 
+    def test_limits(self, long_df):
+
+        limit = (-2, 24)
+        p = Plot(long_df, x="x", y="y").limit(x=limit).plot()
+        ax = p._figure.axes[0]
+        assert ax.get_xlim() == limit
+
+        limit = (np.datetime64("2005-01-01"), np.datetime64("2008-01-01"))
+        p = Plot(long_df, x="d", y="y").limit(x=limit).plot()
+        ax = p._figure.axes[0]
+        assert ax.get_xlim() == tuple(mpl.dates.date2num(limit))
+
+        limit = ("b", "c")
+        p = Plot(x=["a", "b", "c", "d"], y=[1, 2, 3, 4]).limit(x=limit).plot()
+        ax = p._figure.axes[0]
+        assert ax.get_xlim() == (0.5, 2.5)
+
+    def test_labels_axis(self, long_df):
+
+        label = "Y axis"
+        p = Plot(long_df, x="x", y="y").label(y=label).plot()
+        ax = p._figure.axes[0]
+        assert ax.get_ylabel() == label
+
+        label = str.capitalize
+        p = Plot(long_df, x="x", y="y").label(y=label).plot()
+        ax = p._figure.axes[0]
+        assert ax.get_ylabel() == "Y"
+
+    def test_labels_legend(self, long_df):
+
+        m = MockMark()
+
+        label = "A"
+        p = Plot(long_df, x="x", y="y", color="a").add(m).label(color=label).plot()
+        assert p._figure.legends[0].get_title().get_text() == label
+
+        func = str.capitalize
+        p = Plot(long_df, x="x", y="y", color="a").add(m).label(color=func).plot()
+        assert p._figure.legends[0].get_title().get_text() == label
+
 
 class TestFacetInterface:
 
@@ -1381,6 +1422,20 @@ class TestPairInterface:
         err = "When faceting on both col= and row=, passing `order`"
         with pytest.raises(RuntimeError, match=err):
             p.facet(col="a", row="b", order=["a", "b", "c"])
+
+    def test_limits(self, long_df):
+
+        limit = (-2, 24)
+        p = Plot(long_df, y="y").pair(x=["x", "z"]).limit(x1=limit).plot()
+        ax1 = p._figure.axes[1]
+        assert ax1.get_xlim() == limit
+
+    def test_labels(self, long_df):
+
+        label = "Z"
+        p = Plot(long_df, y="y").pair(x=["x", "z"]).label(x1=label).plot()
+        ax1 = p._figure.axes[1]
+        assert ax1.get_xlabel() == label
 
 
 class TestLabelVisibility:

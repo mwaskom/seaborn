@@ -10,7 +10,7 @@ import itertools
 import textwrap
 from collections import abc
 from collections.abc import Callable, Generator, Hashable
-from typing import Any
+from typing import Any, Optional, cast
 
 import pandas as pd
 from pandas import DataFrame, Series, Index
@@ -142,11 +142,12 @@ class Plot:
     the plot without rendering it to access the lower-level representation.
 
     """
-    # TODO use TypedDict throughout?
-
     _data: PlotData
     _layers: list[Layer]
+
     _scales: dict[str, Scale]
+    _limits: dict[str, tuple[Any, Any]]
+    _labels: dict[str, str | Callable[[str], str] | None]
 
     _subplot_spec: dict[str, Any]  # TODO values type
     _facet_spec: FacetSpec
@@ -169,7 +170,10 @@ class Plot:
 
         self._data = PlotData(data, variables)
         self._layers = []
+
         self._scales = {}
+        self._limits = {}
+        self._labels = {}
 
         self._subplot_spec = {}
         self._facet_spec = {}
@@ -233,7 +237,10 @@ class Plot:
         new._data = self._data
 
         new._layers.extend(self._layers)
+
         new._scales.update(self._scales)
+        new._labels.update(self._labels)
+        new._limits.update(self._limits)
 
         new._subplot_spec.update(self._subplot_spec)
         new._facet_spec.update(self._facet_spec)
@@ -409,7 +416,7 @@ class Plot:
         # TODO would like to add transpose=True, which would then draw
         # Plot(x=...).pair(y=[...]) across the rows
         # This may also be possible by setting `wrap=1`, although currently the axes
-        # are shared and the interior labels are disabeled (this is a bug either way)
+        # are shared and the interior labels are disabled (this is a bug either way)
 
         pair_spec: PairSpec = {}
 
@@ -540,7 +547,43 @@ class Plot:
 
         """
         new = self._clone()
-        new._scales.update(**scales)
+        new._scales.update(scales)
+        return new
+
+    def limit(self, **limits: tuple[Any, Any]) -> Plot:
+        """
+        Control the range of visible data.
+
+        Keywords correspond to variables defined in the plot, and values are a
+        (min, max) tuple (where either can be `None` to leave unset).
+
+        Limits apply only to the axis; data outside the visible range are
+        still used for any stat transforms and added to the plot.
+
+        Behavior for non-coordinate variables is currently undefined.
+
+        """
+        new = self._clone()
+        new._limits.update(limits)
+        return new
+
+    def label(self, **labels: str | Callable[[str], str] | None) -> Plot:
+        """
+        Control the labels used for variables in the plot.
+
+        For coordinate variables, this sets the axis label.
+        For semantic variables, it sets the legend title.
+
+        Keywords correspond to variables defined in the plot.
+        Values can be one of the following types::
+
+        - string (used literally)
+        - function (called on the default label)
+        - None (disables the label for this variable)
+
+        """
+        new = self._clone()
+        new._labels.update(labels)
         return new
 
     def configure(
@@ -634,11 +677,8 @@ class Plot:
         for layer in layers:
             plotter._plot_layer(self, layer)
 
-        plotter._make_legend()
-
-        # TODO this should be configurable
-        if not plotter._figure.get_constrained_layout():
-            plotter._figure.set_tight_layout(True)
+        plotter._make_legend(self)
+        plotter._finalize_figure(self)
 
         return plotter
 
@@ -752,6 +792,20 @@ class Plotter:
 
         return common_data, layers
 
+    def _resolve_label(self, p: Plot, var: str, auto_label: str | None) -> str | None:
+
+        label: str | None
+        if var in p._labels:
+            manual_label = p._labels[var]
+            if callable(manual_label) and auto_label is not None:
+                label = manual_label(auto_label)
+            else:
+                # mypy needs a lot of help here, I'm not sure why
+                label = cast(Optional[str], manual_label)
+        else:
+            label = auto_label
+        return label
+
     def _setup_figure(self, p: Plot, common: PlotData, layers: list[Layer]) -> None:
 
         # --- Parsing the faceting/pairing parameterization to specify figure grid
@@ -781,6 +835,9 @@ class Plotter:
             ax = sub["ax"]
             for axis in "xy":
                 axis_key = sub[axis]
+
+                # ~~ Axis labels
+
                 # TODO Should we make it possible to use only one x/y label for
                 # all rows/columns in a faceted plot? Maybe using sub{axis}label,
                 # although the alignments of the labels from that method leaves
@@ -789,8 +846,11 @@ class Plotter:
                     common.names.get(axis_key),
                     *(layer["data"].names.get(axis_key) for layer in layers)
                 ]
-                label = next((name for name in names if name is not None), None)
+                auto_label = next((name for name in names if name is not None), None)
+                label = self._resolve_label(p, axis_key, auto_label)
                 ax.set(**{f"{axis}label": label})
+
+                # ~~ Decoration visibility
 
                 # TODO there should be some override (in Plot.configure?) so that
                 # tick labels can be shown on interior shared axes
@@ -900,7 +960,7 @@ class Plotter:
             self._scales[var] = scale._setup(var_df[var], prop)
 
             # Set up an empty series to receive the transformed values.
-            # We need this to handle piecemeal tranforms of categories -> floats.
+            # We need this to handle piecemeal transforms of categories -> floats.
             transformed_data = []
             for layer in layers:
                 index = layer["data"].frame.index
@@ -1135,9 +1195,7 @@ class Plotter:
             df = self._unscale_coords(subplots, df, orient)
 
             grouping_vars = mark._grouping_props + default_grouping_vars
-            split_generator = self._setup_split_generator(
-                grouping_vars, df, subplots
-            )
+            split_generator = self._setup_split_generator(grouping_vars, df, subplots)
 
             mark._plot(split_generator, scales, orient)
 
@@ -1146,7 +1204,7 @@ class Plotter:
             view["ax"].autoscale_view()
 
         if layer["legend"]:
-            self._update_legend_contents(mark, data, scales)
+            self._update_legend_contents(p, mark, data, scales)
 
     def _scale_coords(self, subplots: list[dict], df: DataFrame) -> DataFrame:
         # TODO stricter type on subplots
@@ -1341,7 +1399,11 @@ class Plotter:
         return split_generator
 
     def _update_legend_contents(
-        self, mark: Mark, data: PlotData, scales: dict[str, Scale]
+        self,
+        p: Plot,
+        mark: Mark,
+        data: PlotData,
+        scales: dict[str, Scale],
     ) -> None:
         """Add legend artists / labels for one layer in the plot."""
         if data.frame.empty and data.frames:
@@ -1366,7 +1428,9 @@ class Plotter:
                         part_vars.append(var)
                         break
                 else:
-                    entry = (data.names[var], data.ids[var]), [var], (values, labels)
+                    auto_title = data.names[var]
+                    title = self._resolve_label(p, var, auto_title)
+                    entry = (title, data.ids[var]), [var], (values, labels)
                     schema.append(entry)
 
         # Second pass, generate an artist corresponding to each value
@@ -1379,7 +1443,7 @@ class Plotter:
 
         self._legend_contents.extend(contents)
 
-    def _make_legend(self) -> None:
+    def _make_legend(self, p: Plot) -> None:
         """Create the legend artist(s) and add onto the figure."""
         # Combine artists representing same information across layers
         # Input list has an entry for each distinct variable in each layer
@@ -1424,3 +1488,26 @@ class Plotter:
             else:
                 base_legend = legend
                 self._figure.legends.append(legend)
+
+    def _finalize_figure(self, p: Plot) -> None:
+
+        for sub in self._subplots:
+            ax = sub["ax"]
+            for axis in "xy":
+                axis_key = sub[axis]
+
+                # Axis limits
+                if axis_key in p._limits:
+                    convert_units = getattr(ax, f"{axis}axis").convert_units
+                    a, b = p._limits[axis_key]
+                    lo = a if a is None else convert_units(a)
+                    hi = b if b is None else convert_units(b)
+                    if isinstance(a, str):
+                        lo = cast(float, lo) - 0.5
+                    if isinstance(b, str):
+                        hi = cast(float, hi) + 0.5
+                    ax.set(**{f"{axis}lim": (lo, hi)})
+
+        # TODO this should be configurable
+        if not self._figure.get_constrained_layout():
+            self._figure.set_tight_layout(True)
