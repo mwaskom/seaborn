@@ -237,7 +237,10 @@ class Plot:
         new._data = self._data
 
         new._layers.extend(self._layers)
+
         new._scales.update(self._scales)
+        new._labels.update(self._labels)
+        new._limits.update(self._limits)
 
         new._subplot_spec.update(self._subplot_spec)
         new._facet_spec.update(self._facet_spec)
@@ -544,7 +547,7 @@ class Plot:
 
         """
         new = self._clone()
-        new._scales.update(**scales)
+        new._scales.update(scales)
         return new
 
     def limit(self, **limits: tuple[Any, Any]) -> Plot:
