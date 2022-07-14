@@ -260,6 +260,10 @@ class TestPalette:
         rcmod.set_palette("Set2", color_codes=True)
         assert utils.get_color_cycle() == palettes.color_palette("Set2", 8)
 
+        assert mpl.colors.same_color(
+            mpl.rcParams["patch.facecolor"], palettes.color_palette()[0]
+        )
+
 
 class TestFonts:
 

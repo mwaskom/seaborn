@@ -508,8 +508,7 @@ def set_palette(palette, n_colors=None, desat=None, color_codes=False):
     Parameters
     ----------
     palette : seaborn color paltte | matplotlib colormap | hls | husl
-        Palette definition. Should be something that :func:`color_palette`
-        can process.
+        Palette definition. Should be something :func:`color_palette` can process.
     n_colors : int
         Number of colors in the cycle. The default number of colors will depend
         on the format of ``palette``, see the :func:`color_palette`
@@ -537,7 +536,6 @@ def set_palette(palette, n_colors=None, desat=None, color_codes=False):
     colors = palettes.color_palette(palette, n_colors, desat)
     cyl = cycler('color', colors)
     mpl.rcParams['axes.prop_cycle'] = cyl
-    mpl.rcParams["patch.facecolor"] = colors[0]
     if color_codes:
         try:
             palettes.set_color_codes(palette)
