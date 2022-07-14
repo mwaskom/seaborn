@@ -27,6 +27,7 @@ Mark objects
 
     Area
     Bar
+    Bars
     Dot
     Path
     Paths

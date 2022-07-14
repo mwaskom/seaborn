@@ -581,7 +581,7 @@ class Plot:
         For semantic variables, it sets the legend title.
 
         Keywords correspond to variables defined in the plot.
-        Values can be one of the following types::
+        Values can be one of the following types:
 
         - string (used literally)
         - function (called on the default label)
