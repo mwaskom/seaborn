@@ -1849,7 +1849,7 @@ class _LVPlotter(_CategoricalPlotter):
                 color=[255. / 256., 185. / 256., 0.],
                 widths=1, ax=None, box_kws=None,
                 flier_kws=None,
-                line_kws=None, **kws):
+                line_kws=None):
 
         # -- Default keyword dicts - based on
         # distributions.plot_univariate_histogram
@@ -1857,24 +1857,23 @@ class _LVPlotter(_CategoricalPlotter):
             lambda d: {} if d is None else d.copy(),
             (box_kws, flier_kws, line_kws))
 
-        # Set the default kwargs for the boxes (currently a placeholder)
-        box_default_kws = dict()
         # Set the default kwargs for the lines denoting medians
-        line_default_kws = dict(c=".15",
-                                       alpha=0.45,
-                                       solid_capstyle="butt",
-                                       linewidth=self.linewidth, )
+        line_default_kws = dict(
+            color=".15",
+            alpha=0.45,
+            solid_capstyle="butt",
+            linewidth=self.linewidth,
+        )
         # Set the default kwargs for the outliers scatterplot
         flier_default_kws = dict(marker='d', color=self.gray)
 
         # Update each of the dicts containing box/line/fliers kwargs with the
         # default values (if not defined by the user)
-        default_dicts = [box_default_kws, line_default_kws, flier_default_kws]
-        user_input_dicts = [box_kws, line_kws, flier_kws]
+        default_dicts = [line_default_kws, flier_default_kws]
+        user_input_dicts = [line_kws, flier_kws]
         for default_dict, user_dict in zip(default_dicts, user_input_dicts):
             for k, v in default_dict.items():
                 user_dict.setdefault(k, v)
-
 
         vert = self.orient == "v"
         x = positions[0]
@@ -1882,7 +1881,7 @@ class _LVPlotter(_CategoricalPlotter):
 
         # If we only have one data point, plot a line
         if len(box_data) == 1:
-            kws.update({
+            line_kws.update({
                 'color': self.gray, 'linestyle': '-',
                 'linewidth': self.linewidth
             })
@@ -1892,7 +1891,7 @@ class _LVPlotter(_CategoricalPlotter):
                 xx, yy = xs, ys
             else:
                 xx, yy = ys, xs
-            ax.plot(xx, yy, **kws)
+            ax.plot(xx, yy, **line_kws)
         else:
             # Get the number of data points and calculate "depth" of
             # letter-value plot
@@ -1907,16 +1906,16 @@ class _LVPlotter(_CategoricalPlotter):
                 return b[1] - b[0]
 
             # Functions to construct the letter value boxes
-            def vert_perc_box(x, b, i, k, w, **box_kws):
+            def vert_perc_box(x, b, i, k, w):
                 rect = Patches.Rectangle((x - widths * w / 2, b[0]),
                                          widths * w,
-                                         height(b), fill=True, **box_kws)
+                                         height(b), fill=True)
                 return rect
 
-            def horz_perc_box(x, b, i, k, w, **box_kws):
+            def horz_perc_box(x, b, i, k, w):
                 rect = Patches.Rectangle((b[0], x - widths * w / 2),
                                          height(b), widths * w,
-                                         fill=True, **box_kws)
+                                         fill=True)
                 return rect
 
             # Scale the width of the boxes so the biggest starts at 1
@@ -1947,10 +1946,6 @@ class _LVPlotter(_CategoricalPlotter):
                 xs_outliers = outliers
                 ys_outliers = np.full(len(outliers), x)
 
-            boxes = [box_func(x, b[0], i, k, b[1], **box_kws)
-                     for i, b in enumerate(zip(box_ends, w_area))]
-
-
             # Plot the medians
             ax.plot(
                 xs_median,
@@ -1970,8 +1965,22 @@ class _LVPlotter(_CategoricalPlotter):
             # Make sure that the last boxes contain hue and are not pure white
             rgb = [hex_color, cmap(.85)]
             cmap = mpl.colors.LinearSegmentedColormap.from_list('new_map', rgb)
+
+            # Set the default kwargs for the boxes
+            box_default_kws = dict(cmap=cmap,
+                                   edgecolor=self.gray,
+                                   linewidth=self.linewidth)
+
+            for k, v in box_default_kws.items():
+                box_kws.setdefault(k, v)
+
+            boxes = [box_func(x, b[0], i, k, b[1])
+                     for i, b in enumerate(zip(box_ends, w_area))]
+
             collection = PatchCollection(
-                boxes, cmap=cmap, edgecolor=self.gray, linewidth=self.linewidth
+                boxes,
+                # cmap=cmap, edgecolor=self.gray, linewidth=self.linewidth,
+                **box_kws
             )
 
             # Set the color gradation, first box will have color=hex_color
@@ -1981,7 +1990,7 @@ class _LVPlotter(_CategoricalPlotter):
             ax.add_collection(collection)
 
     def draw_letter_value_plot(self, ax, box_kws=None, flier_kws=None,
-                               line_kws=None, **kws):
+                               line_kws=None):  # , **kws):
         """Use matplotlib to draw a letter value plot on an Axes."""
 
         for i, group_data in enumerate(self.plot_data):
@@ -2045,9 +2054,10 @@ class _LVPlotter(_CategoricalPlotter):
         # Autoscale the values axis to make sure all patches are visible
         ax.autoscale_view(scalex=self.orient == "h", scaley=self.orient == "v")
 
-    def plot(self, ax, box_kws=None, flier_kws=None, line_kws=None, **kwargs):
+    def plot(self, ax, box_kws=None, flier_kws=None, line_kws=None):
         """Make the plot."""
-        self.draw_letter_value_plot(ax, box_kws, flier_kws, line_kws, kwargs)
+        self.draw_letter_value_plot(ax, box_kws, flier_kws,
+                                    line_kws)  # , kwargs)
         self.annotate_axes(ax)
         if self.orient == "h":
             ax.invert_yaxis()
@@ -2397,7 +2407,7 @@ def boxenplot(
         width=.8, dodge=True, k_depth='tukey', linewidth=None,
         scale='exponential', outlier_prop=0.007, trust_alpha=0.05,
         showfliers=True,
-        ax=None, box_kws=None, flier_kws=None, line_kws=None, **kwargs
+        ax=None, box_kws=None, flier_kws=None, line_kws=None,
 ):
     plotter = _LVPlotter(x, y, hue, data, order, hue_order,
                          orient, color, palette, saturation,
@@ -2407,7 +2417,7 @@ def boxenplot(
     if ax is None:
         ax = plt.gca()
 
-    plotter.plot(ax, box_kws, flier_kws, line_kws, kwargs)
+    plotter.plot(ax, box_kws, flier_kws, line_kws)
     return ax
 
 
@@ -2460,7 +2470,15 @@ boxenplot.__doc__ = dedent("""\
     showfliers : bool, optional
         If False, suppress the plotting of outliers.
     {ax_in}
-    box_kws, line_kws, flier_kws
+    box_kws: key, value mappings
+        Other keyword arguments are passed through to
+        :meth:`matplotlib.patches.Rectangle`.
+    line_kws: key, value mappings
+        Other keyword arguments are passed through to
+        :meth:`matplotlib.axes.Axes.plot`.
+    flier_kws: line_kws: key, value mappings
+        Other keyword arguments are passed through to
+        :meth:`matplotlib.axes.Axes.scatter`.
     kwargs : key, value mappings
         Other keyword arguments are passed through to
         :meth:`matplotlib.axes.Axes.plot` and
