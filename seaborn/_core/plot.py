@@ -1354,10 +1354,11 @@ class Plotter:
                         # Matplotlib (usually?) masks nan data, so this should "work".
                         # Downstream code can also drop these rows, at some speed cost.
                         present = axes_df.notna().all(axis=1)
-                        axes_df = axes_df.assign(
-                            x=axes_df["x"].where(present),
-                            y=axes_df["y"].where(present),
-                        )
+                        nulled = {}
+                        for axis in "xy":
+                            if axis in axes_df:
+                                nulled[axis] = axes_df[axis].where(present)
+                        axes_df = axes_df.assign(**nulled)
                     else:
                         axes_df = axes_df.dropna()
 
