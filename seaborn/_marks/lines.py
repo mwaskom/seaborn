@@ -50,6 +50,9 @@ class Path(Mark):
             if self._sort:
                 data = data.sort_values(orient)
 
+            artist_kws = self.artist_kws.copy()
+            self._handle_capstyle(artist_kws, vals)
+
             line = mpl.lines.Line2D(
                 data["x"].to_numpy(),
                 data["y"].to_numpy(),
@@ -61,7 +64,7 @@ class Path(Mark):
                 markerfacecolor=vals["fillcolor"],
                 markeredgecolor=vals["edgecolor"],
                 markeredgewidth=vals["edgewidth"],
-                **self.artist_kws,
+                **artist_kws,
             )
             ax.add_line(line)
 
@@ -77,6 +80,9 @@ class Path(Mark):
         if Version(mpl.__version__) < Version("3.3.0"):
             vals["marker"] = vals["marker"]._marker
 
+        artist_kws = self.artist_kws.copy()
+        self._handle_capstyle(artist_kws, vals)
+
         return mpl.lines.Line2D(
             [], [],
             color=vals["color"],
@@ -87,8 +93,16 @@ class Path(Mark):
             markerfacecolor=vals["fillcolor"],
             markeredgecolor=vals["edgecolor"],
             markeredgewidth=vals["edgewidth"],
-            **self.artist_kws,
+            **artist_kws,
         )
+
+    def _handle_capstyle(self, kws, vals):
+
+        # Work around for this matplotlib issue:
+        # https://github.com/matplotlib/matplotlib/issues/23437
+        if vals["linestyle"][1] is None:
+            capstyle = kws.get("solid_capstyle", mpl.rcParams["lines.solid_capstyle"])
+            kws["dash_capstyle"] = capstyle
 
 
 @dataclass
@@ -111,7 +125,15 @@ class Paths(Mark):
 
     _sort: ClassVar[bool] = False
 
-    def _plot(self, split_gen, scales, orient):
+    def __post_init__(self):
+
+        # LineCollection artists have a capstyle property but don't source its value
+        # from the rc, so we do that manually here. Unfortunately, because we add
+        # only one LineCollection, we have the use the same capstyle for all lines
+        # even when they are dashed. It's a slight inconsistency, but looks fine IMO.
+        self.artist_kws.setdefault("capstyle", mpl.rcParams["lines.solid_capstyle"])
+
+    def _setup_lines(self, split_gen, scales, orient):
 
         line_data = {}
 
@@ -150,12 +172,17 @@ class Paths(Mark):
 
         key = resolve_properties(self, {v: value for v in variables}, scales)
 
+        artist_kws = self.artist_kws.copy()
+        capstyle = artist_kws.pop("capstyle")
+        artist_kws["solid_capstyle"] = capstyle
+        artist_kws["dash_capstyle"] = capstyle
+
         return mpl.lines.Line2D(
             [], [],
             color=key["color"],
             linewidth=key["linewidth"],
             linestyle=key["linestyle"],
-            **self.artist_kws,
+            **artist_kws,
         )
 
 

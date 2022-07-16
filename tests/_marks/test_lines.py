@@ -1,5 +1,6 @@
 
 import numpy as np
+import matplotlib as mpl
 from matplotlib.colors import same_color, to_rgba
 
 from numpy.testing import assert_array_equal
@@ -113,6 +114,24 @@ class TestPath:
         # assert line1.get_linestyle() != line2.get_linestyle()
         assert line1.get_markersize() != line2.get_markersize()
 
+    def test_capstyle(self):
+
+        x = y = [1, 2]
+        rc = {"lines.solid_capstyle": "projecting", "lines.dash_capstyle": "round"}
+
+        with mpl.rc_context(rc):
+            p = Plot(x, y).add(Path()).plot()
+            line, = p._figure.axes[0].get_lines()
+            assert line.get_dash_capstyle() == "projecting"
+
+            p = Plot(x, y).add(Path(linestyle="--")).plot()
+            line, = p._figure.axes[0].get_lines()
+            assert line.get_dash_capstyle() == "round"
+
+            p = Plot(x, y).add(Path({"solid_capstyle": "butt"})).plot()
+            line, = p._figure.axes[0].get_lines()
+            assert line.get_solid_capstyle() == "butt"
+
 
 class TestLine:
 
@@ -187,6 +206,24 @@ class TestPaths:
         p = Plot(x=x, y=y).add(m).plot()
         lines, = p._figure.axes[0].collections
         assert same_color(lines.get_colors().squeeze(), to_rgba(m.color, m.alpha))
+
+    def test_capstyle(self):
+
+        x = y = [1, 2]
+        rc = {"lines.solid_capstyle": "projecting"}
+
+        with mpl.rc_context(rc):
+            p = Plot(x, y).add(Paths()).plot()
+            lines = p._figure.axes[0].collections[0]
+            assert lines.get_capstyle() == "projecting"
+
+            p = Plot(x, y).add(Paths(linestyle="--")).plot()
+            lines = p._figure.axes[0].collections[0]
+            assert lines.get_capstyle() == "projecting"
+
+            p = Plot(x, y).add(Paths({"capstyle": "butt"})).plot()
+            lines = p._figure.axes[0].collections[0]
+            assert lines.get_capstyle() == "butt"
 
 
 class TestLines:
