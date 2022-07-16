@@ -139,17 +139,12 @@ class Paths(Mark):
             line_data[ax]["linestyles"].append(vals["linestyle"])
 
         for ax, ax_data in line_data.items():
-            lines = mpl.collections.LineCollection(
-                **ax_data,
-                **self.artist_kws,
-            )
-            ax.add_collection(lines, autolim=False)
+            lines = mpl.collections.LineCollection(**ax_data, **self.artist_kws)
+            # Handle datalim update manually
             # https://github.com/matplotlib/matplotlib/issues/23129
-            # TODO get paths from lines object?
+            ax.add_collection(lines, autolim=False)
             xy = np.concatenate(ax_data["segments"])
-            ax.dataLim.update_from_data_xy(
-                xy, ax.ignore_existing_data_limits, updatex=True, updatey=True
-            )
+            ax.update_datalim(xy)
 
     def _legend_artist(self, variables, value, scales):
 
