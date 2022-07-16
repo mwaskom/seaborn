@@ -153,12 +153,18 @@ class Paths(Mark):
             if self._sort:
                 data = data.sort_values(orient)
 
-            # TODO comment about block consolidation
+            # Column stack to avoid block consolidation
             xy = np.column_stack([data["x"], data["y"]])
             line_data[ax]["segments"].append(xy)
             line_data[ax]["colors"].append(vals["color"])
             line_data[ax]["linewidths"].append(vals["linewidth"])
             line_data[ax]["linestyles"].append(vals["linestyle"])
+
+        return line_data
+
+    def _plot(self, split_gen, scales, orient):
+
+        line_data = self._setup_lines(split_gen, scales, orient)
 
         for ax, ax_data in line_data.items():
             lines = mpl.collections.LineCollection(**ax_data, **self.artist_kws)
@@ -192,3 +198,41 @@ class Lines(Paths):
     A faster but less-flexible mark for drawing many lines.
     """
     _sort: ClassVar[bool] = True
+
+
+@dataclass
+class Interval(Paths):
+    """
+    An oriented line mark drawn between min/max values on the other axis.
+    """
+    def _setup_lines(self, split_gen, scales, orient):
+
+        line_data = {}
+
+        other = {"x": "y", "y": "x"}[orient]
+
+        for keys, data, ax in split_gen(keep_na=not self._sort):
+
+            if ax not in line_data:
+                line_data[ax] = {
+                    "segments": [],
+                    "colors": [],
+                    "linewidths": [],
+                    "linestyles": [],
+                }
+
+            vals = resolve_properties(self, keys, scales)
+            vals["color"] = resolve_color(self, keys, scales=scales)
+
+            cols = [orient, f"{other}min", f"{other}max"]
+            data = data[cols].melt(orient, value_name=other)[["x", "y"]]
+            segments = [d.to_numpy() for _, d in data.groupby(orient)]
+
+            line_data[ax]["segments"].extend(segments)
+
+            n = len(segments)
+            line_data[ax]["colors"].extend([vals["color"]] * n)
+            line_data[ax]["linewidths"].extend([vals["linewidth"]] * n)
+            line_data[ax]["linestyles"].extend([vals["linestyle"]] * n)
+
+        return line_data
