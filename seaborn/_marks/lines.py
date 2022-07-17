@@ -203,7 +203,7 @@ class Lines(Paths):
 @dataclass
 class Interval(Paths):
     """
-    An oriented line mark drawn between min/max values on the other axis.
+    An oriented line mark drawn between min/max values.
     """
     def _setup_lines(self, split_gen, scales, orient):
 
