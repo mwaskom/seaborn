@@ -89,7 +89,7 @@ class TestEst(AggregationFixtures):
 
         grouped = df.groupby("x", as_index=False)["y"]
         est = grouped.mean()
-        err = grouped.std()
+        err = grouped.std().fillna(0)  # fillna needed only on pinned tests
         expected = est.assign(ymin=est["y"] - err["y"], ymax=est["y"] + err["y"])
         assert_frame_equal(res, expected)
 
