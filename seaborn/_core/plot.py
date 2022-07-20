@@ -967,26 +967,9 @@ class Plotter:
                 transformed_data.append(pd.Series(dtype=float, index=index, name=var))
 
             for view in subplots:
+
                 axis_obj = getattr(view["ax"], f"{axis}axis")
-
-                if share_state in [True, "all"]:
-                    # The all-shared case is easiest, every subplot sees all the data
-                    seed_values = var_df[var]
-                else:
-                    # Otherwise, we need to setup separate scales for different subplots
-                    if share_state in [False, "none"]:
-                        # Fully independent axes are also easy: use each subplot's data
-                        idx = self._get_subplot_index(var_df, view)
-                    elif share_state in var_df:
-                        # Sharing within row/col is more complicated
-                        use_rows = var_df[share_state] == view[share_state]
-                        idx = var_df.index[use_rows]
-                    else:
-                        # This configuration doesn't make much sense, but it's fine
-                        idx = var_df.index
-
-                    seed_values = var_df.loc[idx, var]
-
+                seed_values = self._get_subplot_data(var_df, var, view, share_state)
                 scale = scale._setup(seed_values, prop, axis=axis_obj)
 
                 for layer, new_series in zip(layers, transformed_data):
@@ -1073,6 +1056,28 @@ class Plotter:
 
         return scale
 
+    def _get_subplot_data(self, df, var, view, share_state):
+
+        if share_state in [True, "all"]:
+            # The all-shared case is easiest, every subplot sees all the data
+            seed_values = df[var]
+        else:
+            # Otherwise, we need to setup separate scales for different subplots
+            if share_state in [False, "none"]:
+                # Fully independent axes are also easy: use each subplot's data
+                idx = self._get_subplot_index(df, view)
+            elif share_state in df:
+                # Sharing within row/col is more complicated
+                use_rows = df[share_state] == view[share_state]
+                idx = df.index[use_rows]
+            else:
+                # This configuration doesn't make much sense, but it's fine
+                idx = df.index
+
+            seed_values = df.loc[idx, var]
+
+        return seed_values
+
     def _setup_scales(self, p: Plot, layers: list[Layer]) -> None:
 
         # Identify all of the variables that will be used at some point in the plot
@@ -1091,16 +1096,19 @@ class Plotter:
                 continue
 
             # Get the data all the distinct appearances of this variable.
+            cols = [var, "col", "row"]
             parts = []
             for layer in layers:
                 if layer["data"].frame.empty and layer["data"].frames:
                     for df in layer["data"].frames.values():
-                        parts.append(df.get(var))
+                        parts.append(df.filter(cols))
                 else:
-                    parts.append(layer["data"].frame.get(var))
-            var_values = pd.concat(
-                parts, axis=0, join="inner", ignore_index=True
-            ).rename(var)
+                    parts.append(layer["data"].frame.filter(cols))
+
+            if parts:
+                var_df = pd.concat(parts, ignore_index=True)
+            else:
+                var_df = pd.DataFrame(columns=cols)
 
             # Determine whether this is an coordinate variable
             # (i.e., x/y, paired x/y, or derivative such as xmax)
@@ -1112,7 +1120,7 @@ class Plotter:
                 axis = m["axis"]
 
             prop = PROPERTIES.get(var if axis is None else axis, Property())
-            scale = self._get_scale(p, var, prop, var_values)
+            scale = self._get_scale(p, var, prop, var_df[var])
 
             # Initialize the data-dependent parameters of the scale
             # Note that this returns a copy and does not mutate the original
@@ -1127,13 +1135,21 @@ class Plotter:
                 # doesn't make sense or is poorly defined, since we don't use pixels.)
                 self._scales[var] = Scale._identity()
             else:
-                scale = scale._setup(var_values, prop)
                 if isinstance(prop, Coordinate):
                     # If we have a coordinate here, we didn't assign a scale for it
                     # in _transform_coords, which means it was added during compute_stat
                     # This allows downstream orientation inference to work properly.
                     # But it feels a little hacky, so perhaps revisit.
-                    scale._priority = 0  # type: ignore
+                    share = self._subplots.subplot_spec[f"share{axis}"]
+                    views = [view for view in self._subplots if view[axis] == var]
+                    for view in views:
+                        axis_obj = getattr(view["ax"], f"{axis}axis")
+                        seed_values = self._get_subplot_data(var_df, var, view, share)
+                        scale = scale._setup(seed_values, prop, axis=axis_obj)
+                        set_scale_obj(view["ax"], axis, scale._matplotlib_scale)
+
+                scale = scale._setup(var_df[var], prop)
+                scale._priority = 0  # type: ignore
                 self._scales[var] = scale
 
     def _plot_layer(self, p: Plot, layer: Layer) -> None:

@@ -2,6 +2,7 @@ import functools
 import itertools
 import warnings
 import imghdr
+from xml.dom.minidom import Identified
 
 import numpy as np
 import pandas as pd
@@ -438,6 +439,31 @@ class TestScaling:
             expected = expected + mpl.dates.date2num(np.datetime64('0000-12-31'))
 
         assert_vector_equal(m.passed_data[0]["x"], expected)
+
+    def test_computed_var_ticks(self, long_df):
+
+        class Identity(Stat):
+            def __call__(self, df, groupby, orient, scales):
+                other = {"x": "y", "y": "x"}[orient]
+                return df.assign(**{other: df[orient]})
+
+        tick_locs = [1, 2, 5]
+        scale = Continuous().tick(at=tick_locs)
+        p = Plot(long_df, "x").add(MockMark(), Identity()).scale(y=scale).plot()
+        ax = p._figure.axes[0]
+        assert_array_equal(ax.get_yticks(), tick_locs)
+
+    def test_computed_var_transform(self, long_df):
+
+        class Identity(Stat):
+            def __call__(self, df, groupby, orient, scales):
+                other = {"x": "y", "y": "x"}[orient]
+                return df.assign(**{other: df[orient]})
+
+        p = Plot(long_df, "x").add(MockMark(), Identity()).scale(y="log").plot()
+        ax = p._figure.axes[0]
+        xfm = ax.yaxis.get_transform().transform
+        assert_array_equal(xfm([1, 10, 100]), [0, 1, 2])
 
     def test_facet_categories(self):
 
