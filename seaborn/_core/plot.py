@@ -1091,8 +1091,13 @@ class Plotter:
 
         for var in variables:
 
+            if var in ["col", "row"]:
+                # There's not currently a concept of "scale" for faceting variables
+                continue
+
             if var in self._scales:
-                # Scales for coordinate variables added in _transform_coords
+                # Scales for coordinate variables have already been added
+                # in _transform_coords so there's nothing to do here
                 continue
 
             # Get the data all the distinct appearances of this variable.
