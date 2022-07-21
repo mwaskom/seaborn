@@ -1110,10 +1110,7 @@ class Plotter:
                 else:
                     parts.append(layer["data"].frame.filter(cols))
 
-            if parts:
-                var_df = pd.concat(parts, ignore_index=True)
-            else:
-                var_df = pd.DataFrame(columns=cols)
+            var_df = pd.concat(parts, ignore_index=True)
 
             # Determine whether this is an coordinate variable
             # (i.e., x/y, paired x/y, or derivative such as xmax)
