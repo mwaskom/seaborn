@@ -2,7 +2,6 @@ import functools
 import itertools
 import warnings
 import imghdr
-from xml.dom.minidom import Identified
 
 import numpy as np
 import pandas as pd

@@ -1143,18 +1143,20 @@ class Plotter:
                 if isinstance(prop, Coordinate):
                     # If we have a coordinate here, we didn't assign a scale for it
                     # in _transform_coords, which means it was added during compute_stat
-                    # This allows downstream orientation inference to work properly.
-                    # But it feels a little hacky, so perhaps revisit.
                     share = self._subplots.subplot_spec[f"share{axis}"]
                     views = [view for view in self._subplots if view[axis] == var]
                     for view in views:
                         axis_obj = getattr(view["ax"], f"{axis}axis")
                         seed_values = self._get_subplot_data(var_df, var, view, share)
-                        scale = scale._setup(seed_values, prop, axis=axis_obj)
-                        set_scale_obj(view["ax"], axis, scale._matplotlib_scale)
+                        view_scale = scale._setup(seed_values, prop, axis=axis_obj)
+                        set_scale_obj(view["ax"], axis, view_scale._matplotlib_scale)
 
                 scale = scale._setup(var_df[var], prop)
+
+                # This allows downstream orientation inference to work properly.
+                # But it feels a little hacky, so perhaps revisit.
                 scale._priority = 0  # type: ignore
+
                 self._scales[var] = scale
 
     def _plot_layer(self, p: Plot, layer: Layer) -> None:
