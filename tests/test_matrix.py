@@ -348,7 +348,7 @@ class TestHeatmap:
 
     def test_heatmap_annotation_different_shapes(self):
 
-        annot_data = self.df_norm.append(self.letters)
+        annot_data = self.df_norm.iloc[:-1]
         with pytest.raises(ValueError):
             mat.heatmap(self.df_norm, annot=annot_data)
 
