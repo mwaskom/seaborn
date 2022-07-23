@@ -1006,18 +1006,20 @@ class Plotter:
 
         for var in variables:
 
-            # Determine whether this is an coordinate variable
+            # Determine whether this is a coordinate variable
             # (i.e., x/y, paired x/y, or derivative such as xmax)
-            m = re.match(r"^(?P<prefix>(?P<axis>x|y)\d*).*", var)
+            m = re.match(r"^(?P<coord>(?P<axis>x|y)\d*).*", var)
             if m is None:
-                axis = None
+                coord = axis = None
             else:
-                var = m["prefix"]
+                coord = m["coord"]
                 axis = m["axis"]
 
-            prop_name = var if axis is None else axis
-            if prop_name not in PROPERTIES:
-                # Filters out facet vars, maybe others?
+            # Get keys that handle things like x0, xmax, properly where relevant
+            prop_key = var if axis is None else axis
+            scale_key = var if coord is None else coord
+
+            if prop_key not in PROPERTIES:
                 continue
 
             # Concatenate layers, using only the relevant coordinate and faceting vars,
@@ -1033,23 +1035,24 @@ class Plotter:
                     parts.append(layer["data"].frame.filter(cols))
             var_df = pd.concat(parts, ignore_index=True)
 
-            prop = PROPERTIES[prop_name]
-            scale = self._get_scale(p, var, prop, var_df[var])
+            prop = PROPERTIES[prop_key]
+            scale = self._get_scale(p, scale_key, prop, var_df[var])
 
-            if var not in p._variables:
-                # This allows downstream orientation inference to work properly.
-                # But it feels a little hacky, so perhaps revisit.
+            if scale_key not in p._variables:
+                # TODO this implies that the variable was added by the stat
+                # It allows downstream orientation inference to work properly.
+                # But it feels rather hacky, so ideally revisit.
                 scale._priority = 0  # type: ignore
 
             if axis is None:
-                # We could think about having a broader concept of shared properties
+                # We could think about having a broader concept of (un)shared properties
                 # In general, not something you want to do (different scales in facets)
                 # But could make sense e.g. with paired plots. Build later.
                 share_state = None
                 subplots = []
             else:
                 share_state = self._subplots.subplot_spec[f"share{axis}"]
-                subplots = [view for view in self._subplots if view[axis] == var]
+                subplots = [view for view in self._subplots if view[axis] == coord]
 
             # Shared categorical axes are broken on matplotlib<3.4.0.
             # https://github.com/matplotlib/matplotlib/pull/18308
@@ -1070,8 +1073,12 @@ class Plotter:
             else:
                 self._scales[var] = scale._setup(var_df[var], prop)
 
-            # Eveything below here applies only to coordinate variables
-            if axis is None:
+            # Everything below here applies only to coordinate variables
+            # We additionally skip it when we're working with a value
+            # that is derived from a coordinate we've already processed.
+            # e.g., the Stat consumed y and added ymin/ymax. In that case,
+            # we've already setup the y scale and ymin/max are in scale space.
+            if axis is None or (var != coord and coord in p._variables):
                 continue
 
             # Set up an empty series to receive the transformed values.
