@@ -654,40 +654,37 @@ class Plot:
 
     def plot(self, pyplot=False) -> Plotter:
         """
-        Compile the plot and return the :class:`Plotter` engine.
-
+        Compile the plot spec and return a Plotter object.
         """
         # TODO if we have _target object, pyplot should be determined by whether it
         # is hooked into the pyplot state machine (how do we check?)
 
         plotter = Plotter(pyplot=pyplot)
 
+        # Process the variable assignments and initialize the figure
         common, layers = plotter._extract_data(self)
         plotter._setup_figure(self, common, layers)
 
+        # Process the scale spec for coordinate variables and transform their data
         coord_vars = [v for v in self._variables if re.match(r"^x|y", v)]
         plotter._setup_scales(self, common, layers, coord_vars)
 
+        # Apply statistical transform(s)
         plotter._compute_stats(self, layers)
 
-        other_vars = set()  # TODO move this into a method
-        for layer in layers:
-            if layer["data"].frame.empty and layer["data"].frames:
-                for df in layer["data"].frames.values():
-                    other_vars.update(df.columns)
-            else:
-                other_vars.update(layer["data"].frame.columns)
-        other_vars -= set(coord_vars)
-        plotter._setup_scales(self, common, layers, list(other_vars))
+        # Process scale spec for semantic variables and coordinates computed by stat
+        plotter._setup_scales(self, common, layers)
 
         # TODO Remove these after updating other methods
         # ---- Maybe have debug= param that attaches these when True?
         plotter._data = common
         plotter._layers = layers
 
+        # Process the data for each layer and add matplotlib artists
         for layer in layers:
             plotter._plot_layer(self, layer)
 
+        # Add various figure decorations
         plotter._make_legend(self)
         plotter._finalize_figure(self)
 
@@ -696,7 +693,6 @@ class Plot:
     def show(self, **kwargs) -> None:
         """
         Render and display the plot.
-
         """
         # TODO make pyplot configurable at the class level, and when not using,
         # import IPython.display and call on self to populate cell output?
@@ -1001,8 +997,22 @@ class Plotter:
         return seed_values
 
     def _setup_scales(
-        self, p: Plot, common: PlotData, layers: list[Layer], variables: list[str],
+        self, p: Plot,
+        common: PlotData,
+        layers: list[Layer],
+        variables: list[str] | None = None,
     ) -> None:
+
+        if variables is None:
+            # Add variables that have data but not a scale, which happens
+            # because this method can be called multiple time, to handle
+            # variables added during the Stat transform.
+            variables = []
+            for layer in layers:
+                variables.extend(layer["data"].frame.columns)
+                for df in layer["data"].frames.values():
+                    variables.extend(v for v in df if v not in variables)
+            variables = [v for v in variables if v not in self._scales]
 
         for var in variables:
 
@@ -1028,11 +1038,9 @@ class Plotter:
             cols = [var, "col", "row"]
             parts = [common.frame.filter(cols)]
             for layer in layers:
-                if layer["data"].frame.empty and layer["data"].frames:
-                    for df in layer["data"].frames.values():
-                        parts.append(df.filter(cols))
-                else:
-                    parts.append(layer["data"].frame.filter(cols))
+                parts.append(layer["data"].frame.filter(cols))
+                for df in layer["data"].frames.values():
+                    parts.append(df.filter(cols))
             var_df = pd.concat(parts, ignore_index=True)
 
             prop = PROPERTIES[prop_key]
