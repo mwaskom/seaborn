@@ -26,7 +26,7 @@ from seaborn._core.moves import Move
 from seaborn._core.scales import Scale
 from seaborn._core.subplots import Subplots
 from seaborn._core.groupby import GroupBy
-from seaborn._core.properties import PROPERTIES, Property, Coordinate
+from seaborn._core.properties import PROPERTIES, Property
 from seaborn._core.typing import DataSource, VariableSpec, OrderSpec
 from seaborn._core.rules import categorical_order
 from seaborn._compat import set_scale_obj
@@ -664,10 +664,21 @@ class Plot:
 
         common, layers = plotter._extract_data(self)
         plotter._setup_figure(self, common, layers)
-        plotter._transform_coords(self, common, layers)
+
+        coord_vars = [v for v in self._variables if re.match(r"^x|y", v)]
+        plotter._setup_scales(self, common, layers, coord_vars)
 
         plotter._compute_stats(self, layers)
-        plotter._setup_scales(self, layers)
+
+        other_vars = set()  # TODO move this into a method
+        for layer in layers:
+            if layer["data"].frame.empty and layer["data"].frames:
+                for df in layer["data"].frames.values():
+                    other_vars.update(df.columns)
+            else:
+                other_vars.update(layer["data"].frame.columns)
+        other_vars -= set(coord_vars)
+        plotter._setup_scales(self, common, layers, list(other_vars))
 
         # TODO Remove these after updating other methods
         # ---- Maybe have debug= param that attaches these when True?
@@ -898,95 +909,6 @@ class Plotter:
                 title_text = ax.set_title(title)
                 title_text.set_visible(show_title)
 
-    def _transform_coords(self, p: Plot, common: PlotData, layers: list[Layer]) -> None:
-
-        for var in p._variables:
-
-            # Parse name to identify variable (x, y, xmin, etc.) and axis (x/y)
-            # TODO should we have xmin0/xmin1 or x0min/x1min?
-            m = re.match(r"^(?P<prefix>(?P<axis>[x|y])\d*).*", var)
-
-            if m is None:
-                continue
-
-            prefix = m["prefix"]
-            axis = m["axis"]
-
-            share_state = self._subplots.subplot_spec[f"share{axis}"]
-
-            # Concatenate layers, using only the relevant coordinate and faceting vars,
-            # This is unnecessarily wasteful, as layer data will often be redundant.
-            # But figuring out the minimal amount we need is more complicated.
-            cols = [var, "col", "row"]
-            # TODO basically copied from _setup_scales, and very clumsy
-            layer_values = [common.frame.filter(cols)]
-            for layer in layers:
-                if layer["data"].frame is None:
-                    for df in layer["data"].frames.values():
-                        layer_values.append(df.filter(cols))
-                else:
-                    layer_values.append(layer["data"].frame.filter(cols))
-
-            if layer_values:
-                var_df = pd.concat(layer_values, ignore_index=True)
-            else:
-                var_df = pd.DataFrame(columns=cols)
-
-            prop = Coordinate(axis)
-            scale = self._get_scale(p, prefix, prop, var_df[var])
-
-            # Shared categorical axes are broken on matplotlib<3.4.0.
-            # https://github.com/matplotlib/matplotlib/pull/18308
-            # This only affects us when sharing *paired* axes. This is a novel/niche
-            # behavior, so we will raise rather than hack together a workaround.
-            if Version(mpl.__version__) < Version("3.4.0"):
-                from seaborn._core.scales import Nominal
-                paired_axis = axis in p._pair_spec
-                cat_scale = isinstance(scale, Nominal)
-                ok_dim = {"x": "col", "y": "row"}[axis]
-                shared_axes = share_state not in [False, "none", ok_dim]
-                if paired_axis and cat_scale and shared_axes:
-                    err = "Sharing paired categorical axes requires matplotlib>=3.4.0"
-                    raise RuntimeError(err)
-
-            # Now loop through each subplot, deriving the relevant seed data to setup
-            # the scale (so that axis units / categories are initialized properly)
-            # And then scale the data in each layer.
-            subplots = [view for view in self._subplots if view[axis] == prefix]
-
-            # Setup the scale on all of the data and plug it into self._scales
-            # We do this because by the time we do self._setup_scales, coordinate data
-            # will have been converted to floats already, so scale inference fails
-            self._scales[var] = scale._setup(var_df[var], prop)
-
-            # Set up an empty series to receive the transformed values.
-            # We need this to handle piecemeal transforms of categories -> floats.
-            transformed_data = []
-            for layer in layers:
-                index = layer["data"].frame.index
-                transformed_data.append(pd.Series(dtype=float, index=index, name=var))
-
-            for view in subplots:
-
-                axis_obj = getattr(view["ax"], f"{axis}axis")
-                seed_values = self._get_subplot_data(var_df, var, view, share_state)
-                scale = scale._setup(seed_values, prop, axis=axis_obj)
-
-                for layer, new_series in zip(layers, transformed_data):
-                    layer_df = layer["data"].frame
-                    if var in layer_df:
-                        idx = self._get_subplot_index(layer_df, view)
-                        new_series.loc[idx] = scale(layer_df.loc[idx, var])
-
-                # TODO need decision about whether to do this or modify axis transform
-                set_scale_obj(view["ax"], axis, scale._matplotlib_scale)
-
-            # Now the transformed data series are complete, set update the layer data
-            for layer, new_series in zip(layers, transformed_data):
-                layer_df = layer["data"].frame
-                if var in layer_df:
-                    layer_df[var] = new_series
-
     def _compute_stats(self, spec: Plot, layers: list[Layer]) -> None:
 
         grouping_vars = [v for v in PROPERTIES if v not in "xy"]
@@ -1078,39 +1000,11 @@ class Plotter:
 
         return seed_values
 
-    def _setup_scales(self, p: Plot, layers: list[Layer]) -> None:
-
-        # Identify all of the variables that will be used at some point in the plot
-        variables = set()
-        for layer in layers:
-            if layer["data"].frame.empty and layer["data"].frames:
-                for df in layer["data"].frames.values():
-                    variables.update(df.columns)
-            else:
-                variables.update(layer["data"].frame.columns)
+    def _setup_scales(
+        self, p: Plot, common: PlotData, layers: list[Layer], variables: list[str],
+    ) -> None:
 
         for var in variables:
-
-            if var in ["col", "row"]:
-                # There's not currently a concept of "scale" for faceting variables
-                continue
-
-            if var in self._scales:
-                # Scales for coordinate variables have already been added
-                # in _transform_coords so there's nothing to do here
-                continue
-
-            # Get the data all the distinct appearances of this variable.
-            cols = [var, "col", "row"]
-            parts = []
-            for layer in layers:
-                if layer["data"].frame.empty and layer["data"].frames:
-                    for df in layer["data"].frames.values():
-                        parts.append(df.filter(cols))
-                else:
-                    parts.append(layer["data"].frame.filter(cols))
-
-            var_df = pd.concat(parts, ignore_index=True)
 
             # Determine whether this is an coordinate variable
             # (i.e., x/y, paired x/y, or derivative such as xmax)
@@ -1121,40 +1015,91 @@ class Plotter:
                 var = m["prefix"]
                 axis = m["axis"]
 
-            prop = PROPERTIES.get(var if axis is None else axis, Property())
+            prop_name = var if axis is None else axis
+            if prop_name not in PROPERTIES:
+                # Filters out facet vars, maybe others?
+                continue
+
+            # Concatenate layers, using only the relevant coordinate and faceting vars,
+            # This is unnecessarily wasteful, as layer data will often be redundant.
+            # But figuring out the minimal amount we need is more complicated.
+            cols = [var, "col", "row"]
+            parts = [common.frame.filter(cols)]
+            for layer in layers:
+                if layer["data"].frame.empty and layer["data"].frames:
+                    for df in layer["data"].frames.values():
+                        parts.append(df.filter(cols))
+                else:
+                    parts.append(layer["data"].frame.filter(cols))
+            var_df = pd.concat(parts, ignore_index=True)
+
+            prop = PROPERTIES[prop_name]
             scale = self._get_scale(p, var, prop, var_df[var])
 
-            # Initialize the data-dependent parameters of the scale
-            # Note that this returns a copy and does not mutate the original
-            # This dictionary is used by the semantic mappings
-            if scale is None:
-                # TODO what is the cleanest way to implement identity scale?
-                # We don't really need a Scale, and Identity() will be
-                # overloaded anyway (but maybe a general Identity object
-                # that can be used as Scale/Mark/Stat/Move?)
-                # Note that this may not be the right spacer to use
-                # (but that is only relevant for coordinates, where identity scale
-                # doesn't make sense or is poorly defined, since we don't use pixels.)
-                self._scales[var] = Scale._identity()
-            else:
-                if isinstance(prop, Coordinate):
-                    # If we have a coordinate here, we didn't assign a scale for it
-                    # in _transform_coords, which means it was added during compute_stat
-                    share = self._subplots.subplot_spec[f"share{axis}"]
-                    views = [view for view in self._subplots if view[axis] == var]
-                    for view in views:
-                        axis_obj = getattr(view["ax"], f"{axis}axis")
-                        seed_values = self._get_subplot_data(var_df, var, view, share)
-                        view_scale = scale._setup(seed_values, prop, axis=axis_obj)
-                        set_scale_obj(view["ax"], axis, view_scale._matplotlib_scale)
-
-                scale = scale._setup(var_df[var], prop)
-
+            if var not in p._variables:
                 # This allows downstream orientation inference to work properly.
                 # But it feels a little hacky, so perhaps revisit.
                 scale._priority = 0  # type: ignore
 
-                self._scales[var] = scale
+            if axis is None:
+                # We could think about having a broader concept of shared properties
+                # In general, not something you want to do (different scales in facets)
+                # But could make sense e.g. with paired plots. Build later.
+                share_state = None
+                subplots = []
+            else:
+                share_state = self._subplots.subplot_spec[f"share{axis}"]
+                subplots = [view for view in self._subplots if view[axis] == var]
+
+            # Shared categorical axes are broken on matplotlib<3.4.0.
+            # https://github.com/matplotlib/matplotlib/pull/18308
+            # This only affects us when sharing *paired* axes. This is a novel/niche
+            # behavior, so we will raise rather than hack together a workaround.
+            if axis is not None and Version(mpl.__version__) < Version("3.4.0"):
+                from seaborn._core.scales import Nominal
+                paired_axis = axis in p._pair_spec
+                cat_scale = isinstance(scale, Nominal)
+                ok_dim = {"x": "col", "y": "row"}[axis]
+                shared_axes = share_state not in [False, "none", ok_dim]
+                if paired_axis and cat_scale and shared_axes:
+                    err = "Sharing paired categorical axes requires matplotlib>=3.4.0"
+                    raise RuntimeError(err)
+
+            if scale is None:
+                self._scales[var] = Scale._identity()
+            else:
+                self._scales[var] = scale._setup(var_df[var], prop)
+
+            # Eveything below here applies only to coordinate variables
+            if axis is None:
+                continue
+
+            # Set up an empty series to receive the transformed values.
+            # We need this to handle piecemeal transforms of categories -> floats.
+            transformed_data = []
+            for layer in layers:
+                index = layer["data"].frame.index
+                empty_series = pd.Series(dtype=float, index=index, name=var)
+                transformed_data.append(empty_series)
+
+            for view in subplots:
+
+                axis_obj = getattr(view["ax"], f"{axis}axis")
+                seed_values = self._get_subplot_data(var_df, var, view, share_state)
+                view_scale = scale._setup(seed_values, prop, axis=axis_obj)
+                set_scale_obj(view["ax"], axis, view_scale._matplotlib_scale)
+
+                for layer, new_series in zip(layers, transformed_data):
+                    layer_df = layer["data"].frame
+                    if var in layer_df:
+                        idx = self._get_subplot_index(layer_df, view)
+                        new_series.loc[idx] = view_scale(layer_df.loc[idx, var])
+
+            # Now the transformed data series are complete, set update the layer data
+            for layer, new_series in zip(layers, transformed_data):
+                layer_df = layer["data"].frame
+                if var in layer_df:
+                    layer_df[var] = new_series
 
     def _plot_layer(self, p: Plot, layer: Layer) -> None:
 
