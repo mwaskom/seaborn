@@ -1,4 +1,4 @@
-pydata-sphinx-theme
+pydata-sphinx-theme==0.10.0rc1
 numpydoc
 nbconvert
 ipykernel
