@@ -2,6 +2,6 @@ pydata-sphinx-theme
 numpydoc
 nbconvert
 ipykernel
-sphinx-copybuton
+sphinx-copybutton
 sphinx-issues
 sphinx-design
