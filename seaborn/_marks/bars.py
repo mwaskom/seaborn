@@ -200,10 +200,8 @@ class Bars(BarBase):
             # Workaround for matplotlib autoscaling bug
             # https://github.com/matplotlib/matplotlib/issues/11898
             # https://github.com/matplotlib/matplotlib/issues/23129
-            xy = np.vstack([path.vertices for path in col.get_paths()])
-            ax.dataLim.update_from_data_xy(
-                xy, ax.ignore_existing_data_limits, updatex=True, updatey=True
-            )
+            xys = np.vstack([path.vertices for path in col.get_paths()])
+            ax.update_datalim(xys)
 
         if "edgewidth" not in scales and isinstance(self.edgewidth, Mappable):
 

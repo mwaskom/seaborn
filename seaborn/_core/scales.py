@@ -350,7 +350,10 @@ class ContinuousBase(Scale):
         ]
 
         def spacer(x):
-            return np.min(np.diff(np.sort(x.dropna().unique())))
+            x = x.dropna().unique()
+            if len(x) < 2:
+                return np.nan
+            return np.min(np.diff(np.sort(x)))
         new._spacer = spacer
 
         # TODO How to allow disabling of legend for all uses of property?
