@@ -149,9 +149,11 @@ class Plot:
     _limits: dict[str, tuple[Any, Any]]
     _labels: dict[str, str | Callable[[str], str] | None]
 
-    _subplot_spec: dict[str, Any]  # TODO values type
     _facet_spec: FacetSpec
     _pair_spec: PairSpec
+
+    _figure_spec: dict[str, Any]
+    _subplot_spec: dict[str, Any]
 
     def __init__(
         self,
@@ -175,9 +177,11 @@ class Plot:
         self._limits = {}
         self._labels = {}
 
-        self._subplot_spec = {}
         self._facet_spec = {}
         self._pair_spec = {}
+
+        self._subplot_spec = {}
+        self._figure_spec = {}
 
         self._target = None
 
@@ -242,9 +246,11 @@ class Plot:
         new._labels.update(self._labels)
         new._limits.update(self._limits)
 
-        new._subplot_spec.update(self._subplot_spec)
         new._facet_spec.update(self._facet_spec)
         new._pair_spec.update(self._pair_spec)
+
+        new._figure_spec.update(self._figure_spec)
+        new._subplot_spec.update(self._subplot_spec)
 
         new._target = self._target
 
@@ -612,8 +618,7 @@ class Plot:
 
         new = self._clone()
 
-        # TODO this is a hack; make a proper figure spec object
-        new._figsize = figsize  # type: ignore
+        new._figure_spec["figsize"] = figsize
 
         if sharex is not None:
             new._subplot_spec["sharex"] = sharex
@@ -825,9 +830,8 @@ class Plotter:
         self._subplots = subplots = Subplots(subplot_spec, facet_spec, pair_spec)
 
         # --- Figure initialization
-        figure_kws = {"figsize": getattr(p, "_figsize", None)}  # TODO fix
         self._figure = subplots.init_figure(
-            pair_spec, self.pyplot, figure_kws, p._target,
+            pair_spec, self.pyplot, p._figure_spec, p._target,
         )
 
         # --- Figure annotation

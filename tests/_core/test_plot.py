@@ -1122,6 +1122,12 @@ class TestFacetInterface:
         p = Plot(long_df).facet(**variables, order=order)
         self.check_facet_results_2d(p, long_df, variables, order)
 
+    def test_figsize(self):
+
+        figsize = (4, 2)
+        p = Plot().configure(figsize=figsize).plot()
+        assert tuple(p._figure.get_size_inches()) == figsize
+
     def test_axis_sharing(self, long_df):
 
         variables = {"row": "a", "col": "c"}
