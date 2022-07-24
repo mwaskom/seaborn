@@ -439,6 +439,52 @@ class TestScaling:
 
         assert_vector_equal(m.passed_data[0]["x"], expected)
 
+    def test_computed_var_ticks(self, long_df):
+
+        class Identity(Stat):
+            def __call__(self, df, groupby, orient, scales):
+                other = {"x": "y", "y": "x"}[orient]
+                return df.assign(**{other: df[orient]})
+
+        tick_locs = [1, 2, 5]
+        scale = Continuous().tick(at=tick_locs)
+        p = Plot(long_df, "x").add(MockMark(), Identity()).scale(y=scale).plot()
+        ax = p._figure.axes[0]
+        assert_array_equal(ax.get_yticks(), tick_locs)
+
+    def test_computed_var_transform(self, long_df):
+
+        class Identity(Stat):
+            def __call__(self, df, groupby, orient, scales):
+                other = {"x": "y", "y": "x"}[orient]
+                return df.assign(**{other: df[orient]})
+
+        p = Plot(long_df, "x").add(MockMark(), Identity()).scale(y="log").plot()
+        ax = p._figure.axes[0]
+        xfm = ax.yaxis.get_transform().transform
+        assert_array_equal(xfm([1, 10, 100]), [0, 1, 2])
+
+    def test_explicit_range_with_axis_scaling(self):
+
+        x = [1, 2, 3]
+        ymin = [10, 100, 1000]
+        ymax = [20, 200, 2000]
+        m = MockMark()
+        Plot(x=x, ymin=ymin, ymax=ymax).add(m).scale(y="log").plot()
+        assert_vector_equal(m.passed_data[0]["ymax"], pd.Series(ymax, dtype=float))
+
+    def test_derived_range_with_axis_scaling(self):
+
+        class AddOne(Stat):
+            def __call__(self, df, *args):
+                return df.assign(ymax=df["y"] + 1)
+
+        x = y = [1, 10, 100]
+
+        m = MockMark()
+        Plot(x, y).add(m, AddOne()).scale(y="log").plot()
+        assert_vector_equal(m.passed_data[0]["ymax"], pd.Series([10., 100., 1000.]))
+
     def test_facet_categories(self):
 
         m = MockMark()
