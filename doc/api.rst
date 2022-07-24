@@ -29,6 +29,7 @@ Mark objects
     Bar
     Bars
     Dot
+    Interval
     Path
     Paths
     Line
@@ -45,6 +46,7 @@ Stat objects
     :nosignatures:
 
     Agg
+    Est
     Hist
     PolyFit
 
