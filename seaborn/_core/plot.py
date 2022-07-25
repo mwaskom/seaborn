@@ -1129,7 +1129,7 @@ class Plotter:
         move = layer["move"]
 
         default_grouping_vars = ["col", "row", "group"]  # TODO where best to define?
-        grouping_properties = [v for v in PROPERTIES if v not in "xy"]
+        grouping_properties = [v for v in PROPERTIES if v[0] not in "xy"]
 
         pair_variables = p._pair_spec.get("structure", {})
 
