@@ -86,8 +86,8 @@ def set_theme(context="notebook", style="darkgrid", palette="deep",
     Set aspects of the visual theme for all matplotlib and seaborn plots.
 
     This function changes the global defaults for all plots using the
-    :ref:`matplotlib rcParams system <matplotlib:matplotlib-rcparams>`.
-    The themeing is decomposed into several distinct sets of parameter values.
+    matplotlib rcParams system. The themeing is decomposed into several distinct
+    sets of parameter values.
 
     The options are illustrated in the :doc:`aesthetics <../tutorial/aesthetics>`
     and :doc:`color palette <../tutorial/color_palettes>` tutorials.
@@ -152,7 +152,7 @@ def axes_style(style=None, rc=None):
 
     The style parameters control properties like the color of the background and
     whether a grid is enabled by default. This is accomplished using the
-    :ref:`matplotlib rcParams system <matplotlib:matplotlib-rcparams>`.
+    matplotlib rcParams system.
 
     The options are illustrated in the
     :doc:`aesthetics tutorial <../tutorial/aesthetics>`.
@@ -309,7 +309,7 @@ def set_style(style=None, rc=None):
 
     The style parameters control properties like the color of the background and
     whether a grid is enabled by default. This is accomplished using the
-    :ref:`matplotlib rcParams system <matplotlib:matplotlib-rcparams>`.
+    matplotlib rcParams system.
 
     The options are illustrated in the
     :doc:`aesthetics tutorial <../tutorial/aesthetics>`.
@@ -341,7 +341,7 @@ def plotting_context(context=None, font_scale=1, rc=None):
 
     This affects things like the size of the labels, lines, and other elements
     of the plot, but not the overall style. This is accomplished using the
-    :ref:`matplotlib rcParams system <matplotlib:matplotlib-rcparams>`.
+    matplotlib rcParams system.
 
     The base context is "notebook", and the other contexts are "paper", "talk",
     and "poster", which are version of the notebook parameters scaled by different
@@ -442,7 +442,7 @@ def set_context(context=None, font_scale=1, rc=None):
 
     This affects things like the size of the labels, lines, and other elements
     of the plot, but not the overall style. This is accomplished using the
-    :ref:`matplotlib rcParams system <matplotlib:matplotlib-rcparams>`.
+    matplotlib rcParams system.
 
     The base context is "notebook", and the other contexts are "paper", "talk",
     and "poster", which are version of the notebook parameters scaled by different

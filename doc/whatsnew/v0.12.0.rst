@@ -1,0 +1,109 @@
+
+v0.12.0 (Unreleased)
+--------------------
+
+A paper describing seaborn was published in the `Journal of Open Source Software <https://joss.theoj.org/papers/10.21105/joss.03021>`_. The paper serves as an introduction to the library and can be used to cite seaborn if it has been integral to a scientific publication.
+
+Keyword-only arguments
+~~~~~~~~~~~~~~~~~~~~~~
+
+|API| Seaborn's plotting functions now require explicit keywords for most arguments, following the deprecation of positional arguments in v0.11.0. With this enforcement, most functions have also had their parameter lists rearranged so that `data` is the first and only positional argument. This adds consistency across the various functions in the library. It also means that calling `func(data)` will do something for nearly all functions (those that support wide-form data) and that :class:`pandas.DataFrame` can be piped directly into a plot. It is possible that the signatures will be loosened a bit in future releases so that `x` and `y` can be positional, but minimal support for positional arguments after this change will reduce the chance of inadvertent mis-specification (:pr:`2804`).
+
+Modernization of categorical scatterplots
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This release begins the process of modernizing the :ref:`categorical plots <categorical_api>`, beginning with :func:`stripplot` and :func:`swarmplot`. These functions are sporting some enhancements that alleviate a few long-running frustrations (:pr:`2413`, :pr:`2447`):
+
+- |Feature| The new `native_scale` parameter allows numeric or datetime categories to be plotted with their original scale rather than converted to strings and plotted at fixed intervals.
+
+- |Feature| The new `formatter` parameter allows more control over the string representation of values on the categorical axis. There should also be improved defaults for some types, such as dates.
+
+- |Enhancement| It is now possible to assign `hue` when using only one coordinate variable (i.e. only `x` or `y`).
+
+- |Enhancement| It is now possible to disable the legend.
+
+The updates also harmonize behavior with functions that have been more recently introduced. This should be relatively non-disruptive, although a few defaults will change:
+
+- |Defaults| The functions now hook into matplotlib's unit system for plotting categorical data. (Seaborn's categorical functions actually predate support for categorical data in matplotlib.) This should mostly be transparent to the user, but it may resolve a few edge cases. For example, matplotlib interactivity should work better (e.g., for showing the data value under the cursor).
+
+- |Defaults| A color palette is no longer applied to levels of the categorical variable by default. It is now necessary to explicitly assign `hue` to see multiple colors (i.e., assign the same variable to `x`/`y` and `hue`). Passing `palette` without `hue` will continue to be honored for one release cycle.
+
+- |Defaults| Numeric `hue` variables now receive a continuous mapping by default, using the same rules as :func:`scatterplot`. Pass `palette="deep"` to reproduce previous defaults.
+
+- |Defaults| The plots now follow the default property cycle; i.e. calling an axes-level function multiple times with the same active axes will produce different-colored artists.
+
+- |API| Currently, assigning `hue` and then passing a `color` will produce a gradient palette. This is now deprecated, as it is easy to request a gradient with, e.g. `palette="light:blue"`.
+
+Similar enhancements / updates should be expected to roll out to other categorical plotting functions in future releases. There are also several function-specific enhancements:
+
+- |Enhancement| In :func:`stripplot`, a "strip" with a single observation will be plotted without jitter (:pr:`2413`)
+
+- |Enhancement| In :func:`swarmplot`, the points are now swarmed at draw time, meaning that the plot will adapt to further changes in axis scaling or tweaks to the plot layout (:pr:`2443`).
+
+- |Feature| In :func:`swarmplot`, the proportion of points that must overlap before issuing a warning can now be controlled with the `warn_thresh` parameter (:pr:`2447`).
+
+- |Fix| In :func:`swarmplot`, the order of the points in each swarm now matches the order in the original dataset; previously they were sorted. This affects only the underlying data stored in the matplotlib artist, not the visual representation (:pr:`2443`).
+
+More flexible errorbars
+~~~~~~~~~~~~~~~~~~~~~~~
+
+|API| |Feature|
+
+Increased the flexibility of what can be shown by the internally-calculated errorbars for :func:`lineplot`, :func:`barplot`, and :func:`pointplot`.
+
+With the new `errorbar` parameter, it is now possible to select bootstrap confidence intervals, percentile / predictive intervals, or intervals formed by scaled standard deviations or standard errors. The parameter also accepts an arbitrary function that maps from a vector to an interval. There is a new :doc:`user guide chapter </tutorial/error_bars>` demonstrating these options and explaining when you might want to use each one.
+
+As a consequence of this change, the `ci` parameter has been deprecated. Note that :func:`regplot` retains the previous API, but it will likely be updated in a future release (:pr:`2407`, :pr:`2866`).
+
+Other updates
+~~~~~~~~~~~~~
+
+- |Feature| It is now possible to aggregate / sort a :func:`lineplot` along the y axis using `orient="y"` (:pr:`2854`).
+
+- |Feature| It is now possible to specify `estimator` as a string in :func:`barplot` and :func:`pointplot`, in addition to a callable (:pr:`2866`).
+
+- |Enhancement| Added a `width` parameter to :func:`barplot` (:pr:`2860`).
+
+- |Enhancement| Error bars in :func:`regplot` now inherit the alpha value of the points they correspond to (:pr:`2540`).
+
+- |Enhancement| When using :func:`pairplot` with `corner=True` and `diag_kind=None`, the top left y axis label is no longer hidden (:pr:`2850`).
+
+- |Enhancement| It is now possible to plot a discrete :func:`histplot` as a step function or polygon (:pr:`2859`).
+
+- |Fix| Improved integration with the matplotlib color cycle in most axes-level functions (:pr:`2449`).
+
+- |Fix| Fixed a regression in 0.11.2 that caused some functions to stall indefinitely or raise when the input data had a duplicate index (:pr:`2776`).
+
+- |Fix| Fixed a bug in :func:`histplot` and :func:`kdeplot` where weights were not factored into the normalization (:pr:`2812`).
+
+- |Fix| Fixed two edgecases in :func:`histplot` when only `binwidth` was provided (:pr:`2813`).
+
+- |Fix| Fixed a bug in :func:`violinplot` where inner boxes/points could be missing with unpaired split violins (:pr:`2814`).
+
+- |Fix| Fixed a bug in :class:`PairGrid` where an error would be raised when defining `hue` only in the mapping methods (:pr:`2847`).
+
+- |Fix| Fixed a bug in :func:`scatterplot` where an error would be raised when `hue_order` was a subset of the hue levels (:pr:`2848`).
+
+- |Fix| Fixed a bug in :func:`histplot` where dodged bars would have different widths on a log scale (:pr:`2849`).
+
+- |Fix| In :func:`lineplot`, allowed the `dashes` keyword to set the style of a line without mapping a `style` variable (:pr:`2449`).
+
+- |Fix| Improved support in :func:`relplot` for "wide" data and for faceting variables passed as non-pandas objects (:pr:`2846`).
+
+- |Fix| Subplot titles will no longer be reset when calling :meth:`FacetGrid.map` or :meth:`FacetGrid.map_dataframe` (:pr:`2705`).
+
+- |Fix| Improved robustness to numerical errors in :func:`kdeplot` (:pr:`2862`).
+
+- |Defaults| The `patch.facecolor` rc param is no longer set by :func:`set_palette` (or :func:`set_theme`). This should have no general effect, because the matplotlib default is now `"C0"` (:pr:`2906`).
+
+- |Deps| Made `scipy` an optional dependency and added `pip install seaborn[all]` as a method for ensuring the availability of compatible `scipy` and `statsmodels` libraries at install time. This has a few minor implications for existing code, which are explained in the Github pull request (:pr:`2398`).
+
+- |Deps| Example datasets are now stored in an OS-specific cache location (as determined by `appdirs`) rather than in the user's home directory. Users should feel free to remove `~/seaborn-data` if desired (:pr:`2773`).
+
+- |Deps| The unit test suite is no longer part of the source or wheel distribution. Seaborn has never had a runtime API for exercising the tests, so this should not have workflow implications (:pr:`2833`).
+
+- |Deps| Following `NEP29 <https://numpy.org/neps/nep-0029-deprecation_policy.html>`_, dropped support for Python 3.6 and bumped the minimally-supported versions of the library dependencies.
+
+- |API| Removed the previously-deprecated `factorplot` along with several previously-deprecated utility functions (`iqr`, `percentiles`, `pmf_hist`, and `sort_df`).
+
+- |API| Removed the (previously-unused) option to pass additional keyword arguments to :func:`pointplot`.

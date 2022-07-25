@@ -2,5 +2,5 @@
 
 .. currentmodule:: {{ module }}
 
-.. auto{{ objtype }}:: {{ objname }}
+.. autoclass:: {{ objname }}
 

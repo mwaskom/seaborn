@@ -1,14 +1,90 @@
 .. _api_ref:
 
-.. currentmodule:: seaborn
-
 API reference
 =============
+
+.. currentmodule:: seaborn.objects
+
+Objects interface
+-----------------
+
+Plot object
+~~~~~~~~~~~
+
+.. autosummary::
+    :toctree: generated/
+    :nosignatures:
+
+    Plot
+
+Mark objects
+~~~~~~~~~~~~
+
+.. autosummary::
+    :toctree: generated/
+    :template: object
+    :nosignatures:
+
+    Area
+    Bar
+    Bars
+    Dot
+    Interval
+    Path
+    Paths
+    Line
+    Lines
+    Ribbon
+    Scatter
+
+Stat objects
+~~~~~~~~~~~~
+
+.. autosummary::
+    :toctree: generated/
+    :template: object
+    :nosignatures:
+
+    Agg
+    Est
+    Hist
+    PolyFit
+
+Move objects
+~~~~~~~~~~~~
+
+.. autosummary::
+    :toctree: generated/
+    :template: object
+    :nosignatures:
+
+    Dodge
+    Jitter
+    Norm
+    Stack
+    Shift
+
+Scale objects
+~~~~~~~~~~~~~
+
+.. autosummary::
+    :toctree: generated/
+    :template: scale
+    :nosignatures:
+
+    Continuous
+    Nominal
+    Temporal
+
+.. currentmodule:: seaborn
+
+Function interface
+------------------
 
 .. _relational_api:
 
 Relational plots
-----------------
+~~~~~~~~~~~~~~~~
 
 .. autosummary::
     :toctree: generated/
@@ -21,7 +97,7 @@ Relational plots
 .. _distribution_api:
 
 Distribution plots
-------------------
+~~~~~~~~~~~~~~~~~~
 
 .. autosummary::
     :toctree: generated/
@@ -37,7 +113,7 @@ Distribution plots
 .. _categorical_api:
 
 Categorical plots
------------------
+~~~~~~~~~~~~~~~~~
 
 .. autosummary::
     :toctree: generated/
@@ -56,7 +132,7 @@ Categorical plots
 .. _regression_api:
 
 Regression plots
-----------------
+~~~~~~~~~~~~~~~~
 
 .. autosummary::
     :toctree: generated/
@@ -69,7 +145,7 @@ Regression plots
 .. _matrix_api:
 
 Matrix plots
-------------
+~~~~~~~~~~~~
 
 .. autosummary::
     :toctree: generated/
@@ -154,7 +230,7 @@ Color palettes
     mpl_palette
 
 Palette widgets
----------------
+~~~~~~~~~~~~~~~
 
 .. autosummary::
     :toctree: generated/

@@ -1,9 +1,7 @@
-docutils<0.18  # https://sourceforge.net/p/docutils/bugs/431/
-sphinx==3.3.1
-jinja2<3.1  # Needed for compat with pinned sphinx
-sphinx_bootstrap_theme==0.8.0
-jinja2<3.1  # Needed for compat with pinned sphinx
+pydata-sphinx-theme==0.10.0rc1
 numpydoc
 nbconvert
 ipykernel
+sphinx-copybutton
 sphinx-issues
+sphinx-design

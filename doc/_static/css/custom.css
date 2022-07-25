@@ -1,0 +1,113 @@
+/**** Overriding theme defaults ****/
+
+html[data-theme=light]{
+  --pst-color-primary: rgb(52, 54, 99);
+  --pst-color-secondary: rgb(107, 161, 174);
+  --pst-color-link: rgb(74, 105, 145);
+  --pst-color-inline-code: rgb(96, 141, 130);
+}
+
+:root {
+  --pst-font-size-h1: 34px;
+  --pst-font-size-h2: 28px;
+  --pst-font-size-h3: 23px;
+  --pst-font-size-h4: 19px;
+  --pst-font-size-h5: 17px;
+  --pst-font-size-h6: 16px;
+
+}
+
+/* Syntax highlighting */
+
+/* string literals */
+html[data-theme=light] .highlight .s2 {
+  color: rgb(74, 105, 145);
+  font-weight: normal;
+}
+/* number literals */
+html[data-theme=light] .highlight .mi {
+  color: rgb(136, 97, 153);
+  font-weight: normal;
+}
+html[data-theme=light] .highlight .mf {
+  color: rgb(136, 97, 153);
+  font-weight: normal;
+}
+/* operators */
+html[data-theme=light] .highlight .o {
+  color: rgb(219, 164, 117);
+  font-weight: bold;
+}
+/* builtins */
+html[data-theme=light] .highlight .kc {
+  color: rgb(107, 161, 174);
+  font-weight: bold;
+}
+
+/* Use full page width without sidebars */
+.bd-content {
+  max-width: 100%;
+  flex-grow: 1;
+}
+
+/* Function signature customization */
+dt {
+  font-weight: 500;
+  color: rgb(52, 54, 99);
+}
+
+span.default_value {
+  color: rgb(124, 141, 138);
+}
+
+/* highlight over function signature after link */
+dt:target, span.highlighted {
+  background-color: #fdebba;
+}
+
+/* *********************************************************************** */
+
+/* --- Badges for categorizing release notes --- */
+
+.label,
+.badge {
+  display: inline-block;
+  padding: 2px 4px;
+  font-size: 11.844px;
+  /* font-weight: bold; */
+  line-height: 13px;
+  color: #ffffff;
+  vertical-align: baseline;
+  white-space: nowrap;
+  /* text-shadow: 0 -1px 0 rgba(0, 0, 0, 0.25); */
+  background-color: #999999;
+}
+.badge {
+  padding-left: 9px;
+  padding-right: 9px;
+  -webkit-border-radius: 9px;
+  -moz-border-radius: 9px;
+  border-radius: 9px;
+  opacity: 70%;
+}
+.badge-api {
+  background-color: #c44e52;
+}
+.badge-defaults {
+  background-color: #dd8452;
+}
+.badge-docs {
+  background-color: #8172b3;
+}
+.badge-feature {
+  background-color: #55a868;
+}
+.badge-enhancement {
+  background-color: #4c72b0;
+}
+.badge-fix {
+    background-color: #ccb974;
+}
+.badge-dependencies {
+    background-color: #937860;
+}

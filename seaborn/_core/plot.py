@@ -581,7 +581,7 @@ class Plot:
         For semantic variables, it sets the legend title.
 
         Keywords correspond to variables defined in the plot.
-        Values can be one of the following types::
+        Values can be one of the following types:
 
         - string (used literally)
         - function (called on the default label)
@@ -650,7 +650,9 @@ class Plot:
         ----------
         fname : str, path, or buffer
             Location on disk to save the figure, or a buffer to write into.
-        Other keyword arguments are passed to :meth:`matplotlib.figure.Figure.savefig`.
+        kwargs
+            Other keyword arguments are passed through to
+            :meth:`matplotlib.figure.Figure.savefig`.
 
         """
         # TODO expose important keyword arguments in our signature?
