@@ -15,7 +15,7 @@ from numpy.testing import assert_array_equal
 from seaborn._core.plot import Plot
 from seaborn._core.scales import Nominal, Continuous
 from seaborn._core.rules import categorical_order
-from seaborn._core.moves import Move, Shift
+from seaborn._core.moves import Move, Shift, Dodge
 from seaborn._marks.base import Mark
 from seaborn._stats.base import Stat
 from seaborn.external.version import Version
@@ -859,7 +859,7 @@ class TestPlotting:
             assert_vector_equal(data["x"], long_df.loc[rows, x_i])
             assert_vector_equal(data["y"], long_df.loc[rows, y])
 
-    def test_movement(self, long_df):
+    def test_move(self, long_df):
 
         orig_df = long_df.copy(deep=True)
 
@@ -870,7 +870,7 @@ class TestPlotting:
 
         assert_frame_equal(long_df, orig_df)   # Test data was not mutated
 
-    def test_movement_log_scale(self, long_df):
+    def test_move_log_scale(self, long_df):
 
         m = MockMark()
         Plot(
@@ -891,6 +891,20 @@ class TestPlotting:
         Plot(long_df, x="x").pair(y=["y", "z"]).add(m, move=move_stack).plot()
         for frame in m.passed_data:
             assert_vector_equal(frame["x"], long_df["x"] + 3)
+
+    def test_move_with_range(self, long_df):
+
+        x = [0, 0, 1, 1, 2, 2]
+        group = [0, 1, 0, 1, 0, 1]
+        ymin = np.arange(6)
+        ymax = np.arange(6) * 2
+
+        m = MockMark()
+        Plot(x=x, group=group, ymin=ymin, ymax=ymax).add(m, move=Dodge()).plot()
+
+        signs = [-1, +1]
+        for i, df in m.passed_data[0].groupby("group"):
+            assert_array_equal(df["x"], np.arange(3) + signs[i] * 0.2)
 
     def test_methods_clone(self, long_df):
 
