@@ -30,6 +30,7 @@ from seaborn._core.properties import PROPERTIES, Property
 from seaborn._core.typing import DataSource, VariableSpec, OrderSpec
 from seaborn._core.rules import categorical_order
 from seaborn._compat import set_scale_obj
+from seaborn.rcmod import axes_style
 from seaborn.external.version import Version
 
 from typing import TYPE_CHECKING
@@ -148,6 +149,7 @@ class Plot:
     _scales: dict[str, Scale]
     _limits: dict[str, tuple[Any, Any]]
     _labels: dict[str, str | Callable[[str], str] | None]
+    _theme: dict[str, Any]
 
     _facet_spec: FacetSpec
     _pair_spec: PairSpec
@@ -176,12 +178,13 @@ class Plot:
         self._scales = {}
         self._limits = {}
         self._labels = {}
+        self._theme = {}
 
         self._facet_spec = {}
         self._pair_spec = {}
 
-        self._subplot_spec = {}
         self._figure_spec = {}
+        self._subplot_spec = {}
 
         self._target = None
 
@@ -629,15 +632,20 @@ class Plot:
 
     # TODO def legend (ugh)
 
-    def theme(self) -> Plot:
+    def theme(
+        self,
+        style: str | None = None,  # TODO where to define default?
+        # TODO palette / font / context (with new name?)
+        *, rc: dict[str, Any] | None = None,
+    ) -> Plot:
         """
         Control the default appearance of elements in the plot.
 
-        TODO
         """
-        # TODO Plot-specific themes using the seaborn theming system
-        raise NotImplementedError()
         new = self._clone()
+        new._theme.update(axes_style(style))
+        if rc is not None:
+            new._theme.update(rc)
         return new
 
     # TODO decorate? (or similar, for various texts) alt names: label?
@@ -656,13 +664,32 @@ class Plot:
 
         """
         # TODO expose important keyword arguments in our signature?
-        self.plot().save(fname, **kwargs)
+        with mpl.rc_context(self._theme):
+            self._plot().save(fname, **kwargs)
         return self
 
-    def plot(self, pyplot=False) -> Plotter:
+    def show(self, **kwargs) -> None:
         """
-        Compile the plot spec and return a Plotter object.
+        Render and display the plot.
         """
+        # TODO make pyplot configurable at the class level, and when not using,
+        # import IPython.display and call on self to populate cell output?
+
+        # Keep an eye on whether matplotlib implements "attaching" an existing
+        # figure to pyplot: https://github.com/matplotlib/matplotlib/pull/14024
+
+        with mpl.rc_context(self._theme):
+            self._plot(pyplot=True).show(**kwargs)
+
+    def plot(self, pyplot: bool = False) -> Plotter:
+        """
+        Compile the plot spec and return the Plotter object.
+        """
+        with mpl.rc_context(self._theme):
+            return self._plot(pyplot)
+
+    def _plot(self, pyplot: bool = False) -> Plotter:
+
         # TODO if we have _target object, pyplot should be determined by whether it
         # is hooked into the pyplot state machine (how do we check?)
 
@@ -696,18 +723,6 @@ class Plot:
         plotter._finalize_figure(self)
 
         return plotter
-
-    def show(self, **kwargs) -> None:
-        """
-        Render and display the plot.
-        """
-        # TODO make pyplot configurable at the class level, and when not using,
-        # import IPython.display and call on self to populate cell output?
-
-        # Keep an eye on whether matplotlib implements "attaching" an existing
-        # figure to pyplot: https://github.com/matplotlib/matplotlib/pull/14024
-
-        self.plot(pyplot=True).show(**kwargs)
 
 
 # ---- The plot compilation engine ---------------------------------------------- #
@@ -823,9 +838,6 @@ class Plotter:
     def _setup_figure(self, p: Plot, common: PlotData, layers: list[Layer]) -> None:
 
         # --- Parsing the faceting/pairing parameterization to specify figure grid
-
-        # TODO use context manager with theme that has been set
-        # TODO (maybe wrap THIS function with context manager; would be cleaner)
 
         subplot_spec = p._subplot_spec.copy()
         facet_spec = p._facet_spec.copy()
