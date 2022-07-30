@@ -84,6 +84,7 @@ class Grid(_BaseGrid):
         if self._tight_layout_pad is not None:
             kwargs.setdefault("pad", self._tight_layout_pad)
         self._figure.tight_layout(*args, **kwargs)
+        return self
 
     def add_legend(self, legend_data=None, title=None, label_order=None,
                    adjust_subtitles=False, **kwargs):
@@ -1005,6 +1006,8 @@ class FacetGrid(Grid):
 
         if y is not None:
             self.map(plt.axhline, y=y, **line_kws)
+
+        return self
 
     # ------ Properties that are part of the public API and documented by Sphinx
 
