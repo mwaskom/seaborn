@@ -92,6 +92,8 @@ Other updates
 
 - |Fix| Subplot titles will no longer be reset when calling :meth:`FacetGrid.map` or :meth:`FacetGrid.map_dataframe` (:pr:`2705`).
 
+- |Fix| Added a workaround for a matplotlib issue that caused figure-level functions to freeze when `plt.show` was called (:pr:`2925`).
+
 - |Fix| Improved robustness to numerical errors in :func:`kdeplot` (:pr:`2862`).
 
 - |Defaults| The `patch.facecolor` rc param is no longer set by :func:`set_palette` (or :func:`set_theme`). This should have no general effect, because the matplotlib default is now `"C0"` (:pr:`2906`).

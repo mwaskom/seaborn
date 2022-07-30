@@ -11,7 +11,9 @@ import matplotlib.pyplot as plt
 
 from ._oldcore import VectorPlotter, variable_type, categorical_order
 from . import utils
-from .utils import _check_argument, adjust_legend_subtitles, _draw_figure
+from .utils import (
+    adjust_legend_subtitles, _check_argument, _draw_figure, _disable_autolayout
+)
 from .palettes import color_palette, blend_palette
 from ._docstrings import (
     DocstringComponents,
@@ -389,8 +391,7 @@ class FacetGrid(Grid):
 
         # --- Initialize the subplot grid
 
-        # Disable autolayout so legend_out works properly
-        with mpl.rc_context({"figure.autolayout": False}):
+        with _disable_autolayout():
             fig = plt.figure(figsize=figsize)
 
         if col_wrap is None:
@@ -1215,8 +1216,7 @@ class PairGrid(Grid):
         # Create the figure and the array of subplots
         figsize = len(x_vars) * height * aspect, len(y_vars) * height
 
-        # Disable autolayout so legend_out works
-        with mpl.rc_context({"figure.autolayout": False}):
+        with _disable_autolayout():
             fig = plt.figure(figsize=figsize)
 
         axes = fig.subplots(len(y_vars), len(x_vars),
