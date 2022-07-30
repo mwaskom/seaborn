@@ -50,6 +50,35 @@ class _BaseGrid:
         """Access the :class:`matplotlib.figure.Figure` object underlying the grid."""
         return self._figure
 
+    def apply(self, func, *args, **kwargs):
+        """
+        Customize the grid with a user-supplied function and return self.
+
+        The `func` must accept an object of this type for its first
+        positional argument. Additional arguments are passed through.
+        The return value of `func` is ignored; this method returns self.
+        See the `pipe` method if you want the return value.
+
+        Added in v0.12.0.
+
+        """
+        func(self, *args, **kwargs)
+        return self
+
+    def pipe(self, func, *args, **kwargs):
+        """
+        Customize the grid with a user-supplied function and return its value.
+
+        The `func` must accept an object of this type for its first
+        positional argument. Additional arguments are passed through.
+        The return value of `func` becomes the return value of this method.
+        See the `apply` method if you want to return self instead.
+
+        Added in v0.12.0.
+
+        """
+        return func(self, *args, **kwargs)
+
     def savefig(self, *args, **kwargs):
         """
         Save an image of the plot.
@@ -774,35 +803,6 @@ class FacetGrid(Grid):
         self._finalize_grid(axis_labels)
 
         return self
-
-    def apply(self, func, *args, **kwargs):
-        """
-        Customize the grid with a user-supplied function and return self.
-
-        The `func` must accept a :class:`FacetGrid` object for its first
-        positional argument. Additional arguments are passed through.
-        The return value of `func` is ignored; this method returns self.
-        See :meth:`FacetGrid.pipe` if you want the return value.
-
-        Added in v0.12.0.
-
-        """
-        func(self, *args, **kwargs)
-        return self
-
-    def pipe(self, func, *args, **kwargs):
-        """
-        Customize the grid with a user-supplied function and return its value.
-
-        The `func` must accept a :class:`FacetGrid` object for its first
-        positional argument. Additional arguments are passed through.
-        The return value of `func` becomes the return value of this method.
-        See :meth:`FacetGrid.apply` if you want to return self instead.
-
-        Added in v0.12.0.
-
-        """
-        return func(self, *args, **kwargs)
 
     def _facet_color(self, hue_index, kw_color):
 
