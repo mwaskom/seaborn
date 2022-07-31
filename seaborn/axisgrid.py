@@ -52,7 +52,7 @@ class _BaseGrid:
 
     def apply(self, func, *args, **kwargs):
         """
-        Customize the grid with a user-supplied function and return self.
+        Pass the grid to a user-supplied function and return self.
 
         The `func` must accept an object of this type for its first
         positional argument. Additional arguments are passed through.
@@ -67,7 +67,7 @@ class _BaseGrid:
 
     def pipe(self, func, *args, **kwargs):
         """
-        Customize the grid with a user-supplied function and return its value.
+        Pass the grid to a user-supplied function and return its value.
 
         The `func` must accept an object of this type for its first
         positional argument. Additional arguments are passed through.
