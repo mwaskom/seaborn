@@ -673,6 +673,29 @@ class TestFacetGrid:
         assert g.axes[0, 0].lines[-1].get_color() == color
         assert g.axes[0, 0].lines[-1].get_linestyle() == linestyle
 
+    def test_apply(self, long_df):
+
+        def f(grid, color):
+            grid.figure.set_facecolor(color)
+
+        color = (.1, .6, .3, .9)
+        g = ag.FacetGrid(long_df)
+        res = g.apply(f, color)
+        assert res is g
+        assert g.figure.get_facecolor() == color
+
+    def test_pipe(self, long_df):
+
+        def f(grid, color):
+            grid.figure.set_facecolor(color)
+            return color
+
+        color = (.1, .6, .3, .9)
+        g = ag.FacetGrid(long_df)
+        res = g.pipe(f, color)
+        assert res == color
+        assert g.figure.get_facecolor() == color
+
 
 class TestPairGrid:
 
