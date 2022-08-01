@@ -2133,6 +2133,10 @@ _categorical_docs = dict(
         Function for converting categorical data into strings. Affects both grouping
         and tick labels.\
     """),
+    legend=dedent("""\
+    legend : str or bool, optional
+        If `False` or an empty string and `hue` is used, don't draw a legend.
+    """),
     ax_in=dedent("""\
     ax : matplotlib Axes, optional
         Axes object to draw the plot onto, otherwise uses the current Axes.\
@@ -2542,6 +2546,7 @@ stripplot.__doc__ = dedent("""\
     {linewidth}
     {native_scale}
     {formatter}
+    {legend}
     {ax_in}
     kwargs : key, value mappings
         Other keyword arguments are passed through to
@@ -2663,6 +2668,7 @@ swarmplot.__doc__ = dedent("""\
     {linewidth}
     {native_scale}
     {formatter}
+    {legend}
     {ax_in}
     kwargs : key, value mappings
         Other keyword arguments are passed through to
@@ -3272,7 +3278,7 @@ catplot.__doc__ = dedent("""\
     {color}
     {palette}
     {hue_norm}
-    legend : bool, optional
+    legend : str or bool, optional
         If ``True`` and there is a ``hue`` variable, draw a legend on the plot.
     {legend_out}
     {share_xy}
