@@ -11,7 +11,7 @@ import textwrap
 from contextlib import contextmanager
 from collections import abc
 from collections.abc import Callable, Generator, Hashable
-from typing import Any, Optional, cast
+from typing import Any, cast
 
 from cycler import cycler
 import pandas as pd
@@ -151,7 +151,7 @@ class Plot:
 
     _scales: dict[str, Scale]
     _limits: dict[str, tuple[Any, Any]]
-    _labels: dict[str, str | Callable[[str], str] | None]
+    _labels: dict[str, str | Callable[[str], str]]
     _theme: dict[str, Any]
 
     _facet_spec: FacetSpec
@@ -599,23 +599,26 @@ class Plot:
         new._limits.update(limits)
         return new
 
-    def label(self, **labels: str | Callable[[str], str] | None) -> Plot:
+    def label(self, *, title=None, **variables: str | Callable[[str], str]) -> Plot:
         """
-        Control the labels used for variables in the plot.
+        Add or modify labels to axes, legends, and subplots.
+
+        Additional keywords correspond to variables defined in the plot.
+        Values can be one of the following types:
+
+        - string (used literally; pass "" to clear the default label)
+        - function (called on the default label)
 
         For coordinate variables, this sets the axis label.
         For semantic variables, it sets the legend title.
 
-        Keywords correspond to variables defined in the plot.
-        Values can be one of the following types:
-
-        - string (used literally)
-        - function (called on the default label)
-        - None (disables the label for this variable)
-
         """
+        # TODO should col=... add a "label" to the facet titles?
+        # How does this interact with title=...?
         new = self._clone()
-        new._labels.update(labels)
+        if title is not None:
+            new._labels["title"] = title
+        new._labels.update(variables)
         return new
 
     def configure(
@@ -860,8 +863,7 @@ class Plotter:
             if callable(manual_label) and auto_label is not None:
                 label = manual_label(auto_label)
             else:
-                # mypy needs a lot of help here, I'm not sure why
-                label = cast(Optional[str], manual_label)
+                label = cast(str, manual_label)
         else:
             label = auto_label
         return label
