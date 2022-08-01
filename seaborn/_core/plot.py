@@ -12,6 +12,7 @@ from collections import abc
 from collections.abc import Callable, Generator, Hashable
 from typing import Any, Optional, cast
 
+from cycler import cycler
 import pandas as pd
 from pandas import DataFrame, Series, Index
 import matplotlib as mpl
@@ -30,7 +31,8 @@ from seaborn._core.properties import PROPERTIES, Property
 from seaborn._core.typing import DataSource, VariableSpec, OrderSpec
 from seaborn._core.rules import categorical_order
 from seaborn._compat import set_scale_obj
-from seaborn.rcmod import axes_style
+from seaborn.rcmod import axes_style, plotting_context
+from seaborn.palettes import color_palette
 from seaborn.external.version import Version
 
 from typing import TYPE_CHECKING
@@ -258,6 +260,16 @@ class Plot:
         new._target = self._target
 
         return new
+
+    def _theme_with_defaults(self) -> dict[str, Any]:
+
+        theme = {
+            **axes_style("darkgrid"),
+            **plotting_context("notebook"),
+            "axes.prop_cycle": cycler("color", color_palette("deep")),
+        }
+        theme.update(self._theme)
+        return theme
 
     @property
     def _variables(self) -> list[str]:
@@ -632,27 +644,25 @@ class Plot:
 
     # TODO def legend (ugh)
 
-    def theme(
-        self,
-        style: str | None = None,  # TODO where to define default?
-        # TODO palette / font / context (with new name?)
-        *, rc: dict[str, Any] | None = None,
-    ) -> Plot:
+    def theme(self, style: dict[str, Any] | None = None, /) -> Plot:
         """
         Control the default appearance of elements in the plot.
 
+        The API for customizing plot appearance is not yet finalized.
+        Currently, the only valid argument is a dict of matplotlib rc parameters.
+        (This dict must be passed as a positional argument.)
+
+        It is likely that this method will be enhanced in future releases.
+
         """
         new = self._clone()
-        new._theme.update(axes_style(style))
-        if rc is not None:
-            new._theme.update(rc)
+        if style is not None:
+            new._theme.update(style)
         return new
-
-    # TODO decorate? (or similar, for various texts) alt names: label?
 
     def save(self, fname, **kwargs) -> Plot:
         """
-        Render the plot and write it to a buffer or file on disk.
+        Compile the plot and write it to a buffer or file on disk.
 
         Parameters
         ----------
@@ -664,13 +674,13 @@ class Plot:
 
         """
         # TODO expose important keyword arguments in our signature?
-        with mpl.rc_context(self._theme):
+        with mpl.rc_context(self._theme_with_defaults()):
             self._plot().save(fname, **kwargs)
         return self
 
     def show(self, **kwargs) -> None:
         """
-        Render and display the plot.
+        Compile and display the plot by hooking into pyplot.
         """
         # TODO make pyplot configurable at the class level, and when not using,
         # import IPython.display and call on self to populate cell output?
@@ -678,14 +688,13 @@ class Plot:
         # Keep an eye on whether matplotlib implements "attaching" an existing
         # figure to pyplot: https://github.com/matplotlib/matplotlib/pull/14024
 
-        with mpl.rc_context(self._theme):
-            self._plot(pyplot=True).show(**kwargs)
+        self.plot(pyplot=True).show(**kwargs)
 
     def plot(self, pyplot: bool = False) -> Plotter:
         """
         Compile the plot spec and return the Plotter object.
         """
-        with mpl.rc_context(self._theme):
+        with mpl.rc_context(self._theme_with_defaults()):
             return self._plot(pyplot)
 
     def _plot(self, pyplot: bool = False) -> Plotter:
@@ -693,7 +702,7 @@ class Plot:
         # TODO if we have _target object, pyplot should be determined by whether it
         # is hooked into the pyplot state machine (how do we check?)
 
-        plotter = Plotter(pyplot=pyplot)
+        plotter = Plotter(pyplot=pyplot, theme=self._theme_with_defaults())
 
         # Process the variable assignments and initialize the figure
         common, layers = plotter._extract_data(self)
@@ -740,9 +749,10 @@ class Plotter:
     _layers: list[Layer]
     _figure: Figure
 
-    def __init__(self, pyplot=False):
+    def __init__(self, pyplot: bool, theme: dict[str, Any]):
 
-        self.pyplot = pyplot
+        self._pyplot = pyplot
+        self._theme = theme
         self._legend_contents: list[
             tuple[str, str | int], list[Artist], list[str],
         ] = []
@@ -762,7 +772,8 @@ class Plotter:
         # TODO if we did not create the Plotter with pyplot, is it possible to do this?
         # If not we should clearly raise.
         import matplotlib.pyplot as plt
-        plt.show(**kwargs)
+        with mpl.rc_context(self._theme):
+            plt.show(**kwargs)
 
     # TODO API for accessing the underlying matplotlib objects
     # TODO what else is useful in the public API for this class?
@@ -796,11 +807,12 @@ class Plotter:
 
         dpi = 96
         buffer = io.BytesIO()
-        self._figure.savefig(buffer, dpi=dpi * 2, format="png", bbox_inches="tight")
+
+        with mpl.rc_context(self._theme):
+            self._figure.savefig(buffer, dpi=dpi * 2, format="png", bbox_inches="tight")
         data = buffer.getvalue()
 
         scaling = .85 / 2
-        # w, h = self._figure.get_size_inches()
         w, h = Image.open(buffer).size
         metadata = {"width": w * scaling, "height": h * scaling}
         return data, metadata
@@ -852,7 +864,7 @@ class Plotter:
 
         # --- Figure initialization
         self._figure = subplots.init_figure(
-            pair_spec, self.pyplot, p._figure_spec, p._target,
+            pair_spec, self._pyplot, p._figure_spec, p._target,
         )
 
         # --- Figure annotation

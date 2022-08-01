@@ -859,6 +859,17 @@ class TestPlotting:
             assert_vector_equal(data["x"], long_df.loc[rows, x_i])
             assert_vector_equal(data["y"], long_df.loc[rows, y])
 
+    def test_theme_default(self):
+
+        p = Plot().plot()
+        assert mpl.colors.same_color(p._figure.axes[0].get_facecolor(), "#EAEAF2")
+
+    def test_theme(self):
+
+        color = "r"
+        p = Plot().theme({"axes.facecolor": color}).plot()
+        assert mpl.colors.same_color(p._figure.axes[0].get_facecolor(), color)
+
     def test_move(self, long_df):
 
         orig_df = long_df.copy(deep=True)
