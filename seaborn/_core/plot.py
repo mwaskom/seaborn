@@ -937,8 +937,7 @@ class Plotter:
             title_parts = []
             for dim in ["row", "col"]:
                 if sub[dim] is not None:
-                    name = common.names.get(dim)  # TODO None = val looks bad
-                    title_parts.append(f"{name} = {sub[dim]}")
+                    title_parts.append(f"{sub[dim]}")
 
             has_col = sub["col"] is not None
             has_row = sub["row"] is not None

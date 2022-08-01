@@ -1152,7 +1152,7 @@ class TestFacetInterface:
         for subplot, level in zip(p._subplots, order):
             assert subplot[dim] == level
             assert subplot[other_dim] is None
-            assert subplot["ax"].get_title() == f"{key} = {level}"
+            assert subplot["ax"].get_title() == f"{level}"
             assert_gridspec_shape(subplot["ax"], **{f"n{dim}s": len(order)})
 
     def test_1d(self, long_df, dim):
@@ -1188,7 +1188,7 @@ class TestFacetInterface:
             assert subplot["row"] == row_level
             assert subplot["col"] == col_level
             assert subplot["axes"].get_title() == (
-                f"{variables['row']} = {row_level} | {variables['col']} = {col_level}"
+                f"{row_level} | {col_level}"
             )
             assert_gridspec_shape(
                 subplot["axes"], len(levels["row"]), len(levels["col"])
@@ -1375,7 +1375,7 @@ class TestPairInterface:
             ax = subplot["ax"]
             assert ax.get_xlabel() == x
             assert ax.get_ylabel() == y_i
-            assert ax.get_title() == f"{col} = {col_i}"
+            assert ax.get_title() == f"{col_i}"
             assert_gridspec_shape(ax, len(y), len(facet_levels))
 
     @pytest.mark.parametrize("variables", [("rows", "y"), ("columns", "x")])
