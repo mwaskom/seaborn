@@ -945,7 +945,7 @@ class Plotter:
                     val = self._resolve_label(p, "title", f"{sub[dim]}")
                     if dim in p._labels:
                         key = self._resolve_label(p, dim, common.names.get(dim))
-                        val = f"{key}: {val}"
+                        val = f"{key} {val}"
                     title_parts.append(val)
 
             has_col = sub["col"] is not None

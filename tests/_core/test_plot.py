@@ -1131,7 +1131,7 @@ class TestPlotting:
         p = Plot(data).facet("a", "x").label(col=str.capitalize, row="$x$").plot()
         axs = np.reshape(p._figure.axes, (2, 2))
         for (i, j), ax in np.ndenumerate(axs):
-            expected = f"A: {data['a'][j]} | $x$: {data['x'][i]}"
+            expected = f"A {data['a'][j]} | $x$ {data['x'][i]}"
             assert ax.get_title() == expected
 
     def test_title_single(self):
