@@ -1125,6 +1125,34 @@ class TestPlotting:
         p = Plot(long_df, x="x", y="y", color="a").add(m).label(color=func).plot()
         assert p._figure.legends[0].get_title().get_text() == label
 
+    def test_labels_facets(self):
+
+        data = {"a": ["b", "c"], "x": ["y", "z"]}
+        p = Plot(data).facet("a", "x").label(col=str.capitalize, row="$x$").plot()
+        axs = np.reshape(p._figure.axes, (2, 2))
+        for (i, j), ax in np.ndenumerate(axs):
+            expected = f"A: {data['a'][j]} | $x$: {data['x'][i]}"
+            assert ax.get_title() == expected
+
+    def test_title_single(self):
+
+        label = "A"
+        p = Plot().label(title=label).plot()
+        assert p._figure.axes[0].get_title() == label
+
+    def test_title_facet_function(self):
+
+        titles = ["a", "b"]
+        p = Plot().facet(titles).label(title=str.capitalize).plot()
+        for i, ax in enumerate(p._figure.axes):
+            assert ax.get_title() == titles[i].upper()
+
+        cols, rows = ["a", "b"], ["x", "y"]
+        p = Plot().facet(cols, rows).label(title=str.capitalize).plot()
+        for i, ax in enumerate(p._figure.axes):
+            expected = " | ".join([cols[i % 2].upper(), rows[i // 2].upper()])
+            assert ax.get_title() == expected
+
 
 class TestFacetInterface:
 
@@ -1188,7 +1216,7 @@ class TestFacetInterface:
             assert subplot["row"] == row_level
             assert subplot["col"] == col_level
             assert subplot["axes"].get_title() == (
-                f"{row_level} | {col_level}"
+                f"{col_level} | {row_level}"
             )
             assert_gridspec_shape(
                 subplot["axes"], len(levels["row"]), len(levels["col"])

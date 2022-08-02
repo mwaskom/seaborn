@@ -601,7 +601,7 @@ class Plot:
 
     def label(self, *, title=None, **variables: str | Callable[[str], str]) -> Plot:
         """
-        Add or modify labels to axes, legends, and subplots.
+        Add or modify labels for axes, legends, and subplots.
 
         Additional keywords correspond to variables defined in the plot.
         Values can be one of the following types:
@@ -609,8 +609,11 @@ class Plot:
         - string (used literally; pass "" to clear the default label)
         - function (called on the default label)
 
-        For coordinate variables, this sets the axis label.
-        For semantic variables, it sets the legend title.
+        For coordinate variables, the value sets the axis label.
+        For semantic variables, the value sets the legend title.
+        For faceting variables, `title=` modifies the subplot-specific label,
+        while `col=` and/or `row=` add a label for the faceting variable.
+        When using a single subplot, `title=` sets its title.
 
         """
         # TODO should col=... add a "label" to the facet titles?
@@ -937,9 +940,13 @@ class Plotter:
             # Let's have what we currently call "margin titles" but properly using the
             # ax.set_title interface (see my gist)
             title_parts = []
-            for dim in ["row", "col"]:
+            for dim in ["col", "row"]:
                 if sub[dim] is not None:
-                    title_parts.append(f"{sub[dim]}")
+                    val = self._resolve_label(p, "title", f"{sub[dim]}")
+                    if dim in p._labels:
+                        key = self._resolve_label(p, dim, common.names.get(dim))
+                        val = f"{key}: {val}"
+                    title_parts.append(val)
 
             has_col = sub["col"] is not None
             has_row = sub["row"] is not None
@@ -954,6 +961,9 @@ class Plotter:
                 title = " | ".join(title_parts)
                 title_text = ax.set_title(title)
                 title_text.set_visible(show_title)
+            elif not (has_col or has_row):
+                title = self._resolve_label(p, "title", None)
+                title_text = ax.set_title(title)
 
     def _compute_stats(self, spec: Plot, layers: list[Layer]) -> None:
 
