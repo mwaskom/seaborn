@@ -1,12 +1,14 @@
+import io
+import xml
 import functools
 import itertools
 import warnings
-import imghdr
 
 import numpy as np
 import pandas as pd
 import matplotlib as mpl
 import matplotlib.pyplot as plt
+from PIL import Image
 
 import pytest
 from pandas.testing import assert_frame_equal, assert_series_equal
@@ -864,11 +866,17 @@ class TestPlotting:
         p = Plot().plot()
         assert mpl.colors.same_color(p._figure.axes[0].get_facecolor(), "#EAEAF2")
 
-    def test_theme(self):
+    def test_theme_params(self):
 
         color = "r"
         p = Plot().theme({"axes.facecolor": color}).plot()
         assert mpl.colors.same_color(p._figure.axes[0].get_facecolor(), color)
+
+    def test_theme_error(self):
+
+        p = Plot()
+        with pytest.raises(TypeError, match=r"theme\(\) takes 1 positional"):
+            p.theme("arg1", "arg2")
 
     def test_move(self, long_df):
 
@@ -960,21 +968,31 @@ class TestPlotting:
         if not gui_backend:
             assert msg
 
-    def test_png_representation(self):
+    def test_png_repr(self):
 
         p = Plot()
         data, metadata = p._repr_png_()
+        img = Image.open(io.BytesIO(data))
 
         assert not hasattr(p, "_figure")
         assert isinstance(data, bytes)
-        assert imghdr.what("", data) == "png"
+        assert img.format == "PNG"
         assert sorted(metadata) == ["height", "width"]
         # TODO test retina scaling
 
-    @pytest.mark.xfail(reason="Plot.save not yet implemented")
     def test_save(self):
 
-        Plot().save()
+        buf = io.BytesIO()
+
+        p = Plot().save(buf)
+        assert isinstance(p, Plot)
+        img = Image.open(buf)
+        assert img.format == "PNG"
+
+        buf = io.StringIO()
+        Plot().save(buf, format="svg")
+        tag = xml.etree.ElementTree.fromstring(buf.getvalue()).tag
+        assert tag == "{http://www.w3.org/2000/svg}svg"
 
     def test_on_axes(self):
 

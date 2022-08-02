@@ -679,13 +679,13 @@ class Plot:
 
         return new
 
-    def save(self, fname, **kwargs) -> Plot:
+    def save(self, loc, **kwargs) -> Plot:
         """
         Compile the plot and write it to a buffer or file on disk.
 
         Parameters
         ----------
-        fname : str, path, or buffer
+        loc : str, path, or buffer
             Location on disk to save the figure, or a buffer to write into.
         kwargs
             Other keyword arguments are passed through to
@@ -694,7 +694,7 @@ class Plot:
         """
         # TODO expose important keyword arguments in our signature?
         with theme_context(self._theme_with_defaults()):
-            self._plot().save(fname, **kwargs)
+            self._plot().save(loc, **kwargs)
         return self
 
     def show(self, **kwargs) -> None:
