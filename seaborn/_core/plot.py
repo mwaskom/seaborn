@@ -8,6 +8,7 @@ import sys
 import inspect
 import itertools
 import textwrap
+from contextlib import contextmanager
 from collections import abc
 from collections.abc import Callable, Generator, Hashable
 from typing import Any, Optional, cast
@@ -263,7 +264,17 @@ class Plot:
 
     def _theme_with_defaults(self) -> dict[str, Any]:
 
+        style_groups = [
+            "axes", "figure", "font", "grid", "hatch", "legend", "lines",
+            "mathtext", "markers", "patch", "savefig", "scatter",
+            "xaxis", "xtick", "yaxis", "ytick",
+        ]
+        base = {
+            k: v for k, v in mpl.rcParamsDefault.items()
+            if any(k.startswith(p) for p in style_groups)
+        }
         theme = {
+            **base,
             **axes_style("darkgrid"),
             **plotting_context("notebook"),
             "axes.prop_cycle": cycler("color", color_palette("deep")),
@@ -644,7 +655,7 @@ class Plot:
 
     # TODO def legend (ugh)
 
-    def theme(self, style: dict[str, Any] | None = None, /) -> Plot:
+    def theme(self, *args: dict[str, Any]) -> Plot:
         """
         Control the default appearance of elements in the plot.
 
@@ -656,8 +667,16 @@ class Plot:
 
         """
         new = self._clone()
-        if style is not None:
-            new._theme.update(style)
+
+        # We can skip this whole block on Python 3.8+ with positional-only syntax
+        nargs = len(args)
+        if nargs != 1:
+            err = f"theme() takes 1 positional argument, but {nargs} were given"
+            raise TypeError(err)
+
+        rc = args[0]
+        new._theme.update(rc)
+
         return new
 
     def save(self, fname, **kwargs) -> Plot:
@@ -674,7 +693,7 @@ class Plot:
 
         """
         # TODO expose important keyword arguments in our signature?
-        with mpl.rc_context(self._theme_with_defaults()):
+        with theme_context(self._theme_with_defaults()):
             self._plot().save(fname, **kwargs)
         return self
 
@@ -694,7 +713,7 @@ class Plot:
         """
         Compile the plot spec and return the Plotter object.
         """
-        with mpl.rc_context(self._theme_with_defaults()):
+        with theme_context(self._theme_with_defaults()):
             return self._plot(pyplot)
 
     def _plot(self, pyplot: bool = False) -> Plotter:
@@ -753,9 +772,9 @@ class Plotter:
 
         self._pyplot = pyplot
         self._theme = theme
-        self._legend_contents: list[
-            tuple[str, str | int], list[Artist], list[str],
-        ] = []
+        self._legend_contents: list[tuple[
+            tuple[str | None, str | int], list[Artist], list[str],
+        ]] = []
         self._scales: dict[str, Scale] = {}
 
     def save(self, loc, **kwargs) -> Plotter:  # TODO type args
@@ -772,7 +791,7 @@ class Plotter:
         # TODO if we did not create the Plotter with pyplot, is it possible to do this?
         # If not we should clearly raise.
         import matplotlib.pyplot as plt
-        with mpl.rc_context(self._theme):
+        with theme_context(self._theme):
             plt.show(**kwargs)
 
     # TODO API for accessing the underlying matplotlib objects
@@ -808,7 +827,7 @@ class Plotter:
         dpi = 96
         buffer = io.BytesIO()
 
-        with mpl.rc_context(self._theme):
+        with theme_context(self._theme):
             self._figure.savefig(buffer, dpi=dpi * 2, format="png", bbox_inches="tight")
         data = buffer.getvalue()
 
@@ -1522,3 +1541,14 @@ class Plotter:
         # TODO this should be configurable
         if not self._figure.get_constrained_layout():
             self._figure.set_tight_layout(True)
+
+
+@contextmanager
+def theme_context(params: dict[str, Any]) -> Generator:
+    """Temporarily modify specifc matplotlib rcParams."""
+    orig = {k: mpl.rcParams[k] for k in params}
+    try:
+        mpl.rcParams.update(params)
+        yield
+    finally:
+        mpl.rcParams.update(orig)
