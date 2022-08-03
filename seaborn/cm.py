@@ -1573,10 +1573,10 @@ _lut_dict = dict(
 
 for _name, _lut in _lut_dict.items():
 
-    _cmap = colors.ListedColormap(_lut, _name) 
+    _cmap = colors.ListedColormap(_lut, _name)
     locals()[_name] = _cmap
 
-    _cmap_r = colors.ListedColormap(_lut[::-1], _name + "_r")  
+    _cmap_r = colors.ListedColormap(_lut[::-1], _name + "_r")
     locals()[_name + "_r"] = _cmap_r
 
     mpl_cm.register_cmap(_name, _cmap)
