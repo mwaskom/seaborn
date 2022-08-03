@@ -2134,8 +2134,12 @@ _categorical_docs = dict(
         and tick labels.\
     """),
     legend=dedent("""\
-    legend : str or bool, optional
-        If `False` or an empty string and `hue` is used, don't draw a legend.
+legend : "auto", "brief", "full", or False
+    How to draw the legend. If "brief", numeric `hue` and `size`
+    variables will be represented with a sample of evenly spaced values.
+    If "full", every group will get an entry in the legend. If "auto",
+    choose between brief or full representation based on number of levels.
+    If `False`, no legend data is added and no legend is drawn.
     """),
     ax_in=dedent("""\
     ax : matplotlib Axes, optional
