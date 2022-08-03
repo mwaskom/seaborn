@@ -2133,6 +2133,14 @@ _categorical_docs = dict(
         Function for converting categorical data into strings. Affects both grouping
         and tick labels.\
     """),
+    legend=dedent("""\
+legend : "auto", "brief", "full", or False
+    How to draw the legend. If "brief", numeric `hue` and `size`
+    variables will be represented with a sample of evenly spaced values.
+    If "full", every group will get an entry in the legend. If "auto",
+    choose between brief or full representation based on number of levels.
+    If `False`, no legend data is added and no legend is drawn.
+    """),
     ax_in=dedent("""\
     ax : matplotlib Axes, optional
         Axes object to draw the plot onto, otherwise uses the current Axes.\
@@ -2542,6 +2550,7 @@ stripplot.__doc__ = dedent("""\
     {linewidth}
     {native_scale}
     {formatter}
+    {legend}
     {ax_in}
     kwargs : key, value mappings
         Other keyword arguments are passed through to
@@ -2663,6 +2672,7 @@ swarmplot.__doc__ = dedent("""\
     {linewidth}
     {native_scale}
     {formatter}
+    {legend}
     {ax_in}
     kwargs : key, value mappings
         Other keyword arguments are passed through to
@@ -3272,8 +3282,9 @@ catplot.__doc__ = dedent("""\
     {color}
     {palette}
     {hue_norm}
-    legend : bool, optional
-        If ``True`` and there is a ``hue`` variable, draw a legend on the plot.
+    legend : str or bool, optional
+        Set to `False` to disable the legend. With `strip` or `swarm` plots,
+        this also accepts a string, as described in the axes-level docstrings.
     {legend_out}
     {share_xy}
     {margin_titles}
