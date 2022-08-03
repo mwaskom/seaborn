@@ -1791,7 +1791,7 @@ class TestLegend:
 
         labels = list(np.unique(s))  # assumes sorted order
 
-        assert e[0] == (None, id(s))
+        assert e[0] == ("", id(s))
         assert e[-1] == labels
 
         artists = e[1]
