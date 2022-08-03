@@ -858,15 +858,17 @@ class Plotter:
 
         return common_data, layers
 
-    def _resolve_label(self, p: Plot, var: str, auto_label: str | None) -> str | None:
+    def _resolve_label(self, p: Plot, var: str, auto_label: str | None) -> str:
 
-        label: str | None
+        label: str
         if var in p._labels:
             manual_label = p._labels[var]
             if callable(manual_label) and auto_label is not None:
                 label = manual_label(auto_label)
             else:
                 label = cast(str, manual_label)
+        elif auto_label is None:
+            label = ""
         else:
             label = auto_label
         return label
@@ -1456,7 +1458,7 @@ class Plotter:
 
         # First pass: Identify the values that will be shown for each variable
         schema: list[tuple[
-            tuple[str | None, str | int], list[str], tuple[list, list[str]]
+            tuple[str, str | int], list[str], tuple[list, list[str]]
         ]] = []
         schema = []
         for var in legend_vars:
@@ -1469,8 +1471,7 @@ class Plotter:
                         part_vars.append(var)
                         break
                 else:
-                    auto_title = data.names[var]
-                    title = self._resolve_label(p, var, auto_title)
+                    title = self._resolve_label(p, var, data.names[var])
                     entry = (title, data.ids[var]), [var], (values, labels)
                     schema.append(entry)
 
@@ -1490,7 +1491,7 @@ class Plotter:
         # Input list has an entry for each distinct variable in each layer
         # Output dict has an entry for each distinct variable
         merged_contents: dict[
-            tuple[str | None, str | int], tuple[list[Artist], list[str]],
+            tuple[str, str | int], tuple[list[Artist], list[str]],
         ] = {}
         for key, artists, labels in self._legend_contents:
             # Key is (name, id); we need the id to resolve variable uniqueness,
@@ -1514,7 +1515,7 @@ class Plotter:
                 self._figure,
                 handles,
                 labels,
-                title="" if name is None else name,
+                title=name,
                 loc="center left",
                 bbox_to_anchor=(.98, .55),
             )
