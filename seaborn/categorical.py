@@ -3283,7 +3283,8 @@ catplot.__doc__ = dedent("""\
     {palette}
     {hue_norm}
     legend : str or bool, optional
-        If ``True`` and there is a ``hue`` variable, draw a legend on the plot.
+        Set to `False` to disable the legend. With `strip` or `swarm` plots,
+        this also accepts a string, as described in the axes-level docstrings.
     {legend_out}
     {share_xy}
     {margin_titles}
