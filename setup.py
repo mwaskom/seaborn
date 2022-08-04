@@ -32,7 +32,7 @@ MAINTAINER_EMAIL = 'mwaskom@gmail.com'
 URL = 'https://seaborn.pydata.org'
 LICENSE = 'BSD (3-clause)'
 DOWNLOAD_URL = 'https://github.com/mwaskom/seaborn/'
-VERSION = '0.12.0b2'
+VERSION = '0.12.0b3'
 PYTHON_REQUIRES = ">=3.7"
 
 INSTALL_REQUIRES = [
