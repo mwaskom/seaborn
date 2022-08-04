@@ -230,7 +230,7 @@ class Nominal(Scale):
 
         Parameters
         ----------
-        locator: :class:`matplotlib.ticker.Locator` subclass
+        locator : :class:`matplotlib.ticker.Locator` subclass
             Pre-configured matplotlib locator; other parameters will not be used.
 
         Returns
@@ -254,12 +254,13 @@ class Nominal(Scale):
 
         Parameters
         ----------
-        formatter: :class:`matplotlib.ticker.Formatter` subclass
+        formatter : :class:`matplotlib.ticker.Formatter` subclass
             Pre-configured matplotlib formatter; other parameters will not be used.
 
         Returns
         -------
-        Copy of self with new tick configuration.
+        scale
+            Copy of self with new tick configuration.
 
         """
         new = copy(self)
@@ -350,7 +351,10 @@ class ContinuousBase(Scale):
         ]
 
         def spacer(x):
-            return np.min(np.diff(np.sort(x.dropna().unique())))
+            x = x.dropna().unique()
+            if len(x) < 2:
+                return np.nan
+            return np.min(np.diff(np.sort(x)))
         new._spacer = spacer
 
         # TODO How to allow disabling of legend for all uses of property?
@@ -428,7 +432,7 @@ class Continuous(ContinuousBase):
 
         Parameters
         ----------
-        locator: :class:`matplotlib.ticker.Locator` subclass
+        locator : :class:`matplotlib.ticker.Locator` subclass
             Pre-configured matplotlib locator; other parameters will not be used.
         at : sequence of floats
             Place ticks at these specific locations (in data units).
@@ -445,7 +449,8 @@ class Continuous(ContinuousBase):
 
         Returns
         -------
-        Copy of self with new tick configuration.
+        scale
+            Copy of self with new tick configuration.
 
         """
         # Input checks
@@ -485,7 +490,7 @@ class Continuous(ContinuousBase):
 
         Parameters
         ----------
-        formatter: :class:`matplotlib.ticker.Formatter` subclass
+        formatter : :class:`matplotlib.ticker.Formatter` subclass
             Pre-configured formatter to use; other parameters will be ignored.
         like : str or callable
             Either a format pattern (e.g., `".2f"`), a format string with fields named
@@ -500,7 +505,8 @@ class Continuous(ContinuousBase):
 
         Returns
         -------
-        Copy of self with new label configuration.
+        scale
+            Copy of self with new label configuration.
 
         """
         # Input checks
@@ -661,14 +667,15 @@ class Temporal(ContinuousBase):
 
         Parameters
         ----------
-        locator: :class:`matplotlib.ticker.Locator` subclass
+        locator : :class:`matplotlib.ticker.Locator` subclass
             Pre-configured matplotlib locator; other parameters will not be used.
         upto : int
             Choose "nice" locations for ticks, but do not exceed this number.
 
         Returns
         -------
-        Copy of self with new tick configuration.
+        scale
+            Copy of self with new tick configuration.
 
         """
         if locator is not None and not isinstance(locator, Locator):
@@ -695,7 +702,7 @@ class Temporal(ContinuousBase):
 
         Parameters
         ----------
-        formatter: :class:`matplotlib.ticker.Formatter` subclass
+        formatter : :class:`matplotlib.ticker.Formatter` subclass
             Pre-configured formatter to use; other parameters will be ignored.
         concise : bool
             If True, use :class:`matplotlib.dates.ConciseDateFormatter` to make
@@ -703,7 +710,8 @@ class Temporal(ContinuousBase):
 
         Returns
         -------
-        Copy of self with new label configuration.
+        scale
+            Copy of self with new label configuration.
 
         """
         new = copy(self)

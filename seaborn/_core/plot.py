@@ -8,10 +8,12 @@ import sys
 import inspect
 import itertools
 import textwrap
+from contextlib import contextmanager
 from collections import abc
 from collections.abc import Callable, Generator, Hashable
-from typing import Any, Optional, cast
+from typing import Any, cast
 
+from cycler import cycler
 import pandas as pd
 from pandas import DataFrame, Series, Index
 import matplotlib as mpl
@@ -26,10 +28,12 @@ from seaborn._core.moves import Move
 from seaborn._core.scales import Scale
 from seaborn._core.subplots import Subplots
 from seaborn._core.groupby import GroupBy
-from seaborn._core.properties import PROPERTIES, Property, Coordinate
+from seaborn._core.properties import PROPERTIES, Property
 from seaborn._core.typing import DataSource, VariableSpec, OrderSpec
 from seaborn._core.rules import categorical_order
 from seaborn._compat import set_scale_obj
+from seaborn.rcmod import axes_style, plotting_context
+from seaborn.palettes import color_palette
 from seaborn.external.version import Version
 
 from typing import TYPE_CHECKING
@@ -147,11 +151,14 @@ class Plot:
 
     _scales: dict[str, Scale]
     _limits: dict[str, tuple[Any, Any]]
-    _labels: dict[str, str | Callable[[str], str] | None]
+    _labels: dict[str, str | Callable[[str], str]]
+    _theme: dict[str, Any]
 
-    _subplot_spec: dict[str, Any]  # TODO values type
     _facet_spec: FacetSpec
     _pair_spec: PairSpec
+
+    _figure_spec: dict[str, Any]
+    _subplot_spec: dict[str, Any]
 
     def __init__(
         self,
@@ -169,15 +176,19 @@ class Plot:
             raise TypeError(err)
 
         self._data = PlotData(data, variables)
+
         self._layers = []
 
         self._scales = {}
         self._limits = {}
         self._labels = {}
+        self._theme = {}
 
-        self._subplot_spec = {}
         self._facet_spec = {}
         self._pair_spec = {}
+
+        self._figure_spec = {}
+        self._subplot_spec = {}
 
         self._target = None
 
@@ -239,16 +250,39 @@ class Plot:
         new._layers.extend(self._layers)
 
         new._scales.update(self._scales)
-        new._labels.update(self._labels)
         new._limits.update(self._limits)
+        new._labels.update(self._labels)
+        new._theme.update(self._theme)
 
-        new._subplot_spec.update(self._subplot_spec)
         new._facet_spec.update(self._facet_spec)
         new._pair_spec.update(self._pair_spec)
+
+        new._figure_spec.update(self._figure_spec)
+        new._subplot_spec.update(self._subplot_spec)
 
         new._target = self._target
 
         return new
+
+    def _theme_with_defaults(self) -> dict[str, Any]:
+
+        style_groups = [
+            "axes", "figure", "font", "grid", "hatch", "legend", "lines",
+            "mathtext", "markers", "patch", "savefig", "scatter",
+            "xaxis", "xtick", "yaxis", "ytick",
+        ]
+        base = {
+            k: v for k, v in mpl.rcParamsDefault.items()
+            if any(k.startswith(p) for p in style_groups)
+        }
+        theme = {
+            **base,
+            **axes_style("darkgrid"),
+            **plotting_context("notebook"),
+            "axes.prop_cycle": cycler("color", color_palette("deep")),
+        }
+        theme.update(self._theme)
+        return theme
 
     @property
     def _variables(self) -> list[str]:
@@ -567,23 +601,27 @@ class Plot:
         new._limits.update(limits)
         return new
 
-    def label(self, **labels: str | Callable[[str], str] | None) -> Plot:
+    def label(self, *, title=None, **variables: str | Callable[[str], str]) -> Plot:
         """
-        Control the labels used for variables in the plot.
+        Add or modify labels for axes, legends, and subplots.
 
-        For coordinate variables, this sets the axis label.
-        For semantic variables, it sets the legend title.
+        Additional keywords correspond to variables defined in the plot.
+        Values can be one of the following types:
 
-        Keywords correspond to variables defined in the plot.
-        Values can be one of the following types::
-
-        - string (used literally)
+        - string (used literally; pass "" to clear the default label)
         - function (called on the default label)
-        - None (disables the label for this variable)
+
+        For coordinate variables, the value sets the axis label.
+        For semantic variables, the value sets the legend title.
+        For faceting variables, `title=` modifies the subplot-specific label,
+        while `col=` and/or `row=` add a label for the faceting variable.
+        When using a single subplot, `title=` sets its title.
 
         """
         new = self._clone()
-        new._labels.update(labels)
+        if title is not None:
+            new._labels["title"] = title
+        new._labels.update(variables)
         return new
 
     def configure(
@@ -612,8 +650,7 @@ class Plot:
 
         new = self._clone()
 
-        # TODO this is a hack; make a proper figure spec object
-        new._figsize = figsize  # type: ignore
+        new._figure_spec["figsize"] = figsize
 
         if sharex is not None:
             new._subplot_spec["sharex"] = sharex
@@ -624,68 +661,51 @@ class Plot:
 
     # TODO def legend (ugh)
 
-    def theme(self) -> Plot:
+    def theme(self, *args: dict[str, Any]) -> Plot:
         """
         Control the default appearance of elements in the plot.
 
-        TODO
+        The API for customizing plot appearance is not yet finalized.
+        Currently, the only valid argument is a dict of matplotlib rc parameters.
+        (This dict must be passed as a positional argument.)
+
+        It is likely that this method will be enhanced in future releases.
+
         """
-        # TODO Plot-specific themes using the seaborn theming system
-        raise NotImplementedError()
         new = self._clone()
+
+        # We can skip this whole block on Python 3.8+ with positional-only syntax
+        nargs = len(args)
+        if nargs != 1:
+            err = f"theme() takes 1 positional argument, but {nargs} were given"
+            raise TypeError(err)
+
+        rc = args[0]
+        new._theme.update(rc)
+
         return new
 
-    # TODO decorate? (or similar, for various texts) alt names: label?
-
-    def save(self, fname, **kwargs) -> Plot:
+    def save(self, loc, **kwargs) -> Plot:
         """
-        Render the plot and write it to a buffer or file on disk.
+        Compile the plot and write it to a buffer or file on disk.
 
         Parameters
         ----------
-        fname : str, path, or buffer
+        loc : str, path, or buffer
             Location on disk to save the figure, or a buffer to write into.
-        Other keyword arguments are passed to :meth:`matplotlib.figure.Figure.savefig`.
+        kwargs
+            Other keyword arguments are passed through to
+            :meth:`matplotlib.figure.Figure.savefig`.
 
         """
         # TODO expose important keyword arguments in our signature?
-        self.plot().save(fname, **kwargs)
+        with theme_context(self._theme_with_defaults()):
+            self._plot().save(loc, **kwargs)
         return self
-
-    def plot(self, pyplot=False) -> Plotter:
-        """
-        Compile the plot and return the :class:`Plotter` engine.
-
-        """
-        # TODO if we have _target object, pyplot should be determined by whether it
-        # is hooked into the pyplot state machine (how do we check?)
-
-        plotter = Plotter(pyplot=pyplot)
-
-        common, layers = plotter._extract_data(self)
-        plotter._setup_figure(self, common, layers)
-        plotter._transform_coords(self, common, layers)
-
-        plotter._compute_stats(self, layers)
-        plotter._setup_scales(self, layers)
-
-        # TODO Remove these after updating other methods
-        # ---- Maybe have debug= param that attaches these when True?
-        plotter._data = common
-        plotter._layers = layers
-
-        for layer in layers:
-            plotter._plot_layer(self, layer)
-
-        plotter._make_legend(self)
-        plotter._finalize_figure(self)
-
-        return plotter
 
     def show(self, **kwargs) -> None:
         """
-        Render and display the plot.
-
+        Compile and display the plot by hooking into pyplot.
         """
         # TODO make pyplot configurable at the class level, and when not using,
         # import IPython.display and call on self to populate cell output?
@@ -694,6 +714,49 @@ class Plot:
         # figure to pyplot: https://github.com/matplotlib/matplotlib/pull/14024
 
         self.plot(pyplot=True).show(**kwargs)
+
+    def plot(self, pyplot: bool = False) -> Plotter:
+        """
+        Compile the plot spec and return the Plotter object.
+        """
+        with theme_context(self._theme_with_defaults()):
+            return self._plot(pyplot)
+
+    def _plot(self, pyplot: bool = False) -> Plotter:
+
+        # TODO if we have _target object, pyplot should be determined by whether it
+        # is hooked into the pyplot state machine (how do we check?)
+
+        plotter = Plotter(pyplot=pyplot, theme=self._theme_with_defaults())
+
+        # Process the variable assignments and initialize the figure
+        common, layers = plotter._extract_data(self)
+        plotter._setup_figure(self, common, layers)
+
+        # Process the scale spec for coordinate variables and transform their data
+        coord_vars = [v for v in self._variables if re.match(r"^x|y", v)]
+        plotter._setup_scales(self, common, layers, coord_vars)
+
+        # Apply statistical transform(s)
+        plotter._compute_stats(self, layers)
+
+        # Process scale spec for semantic variables and coordinates computed by stat
+        plotter._setup_scales(self, common, layers)
+
+        # TODO Remove these after updating other methods
+        # ---- Maybe have debug= param that attaches these when True?
+        plotter._data = common
+        plotter._layers = layers
+
+        # Process the data for each layer and add matplotlib artists
+        for layer in layers:
+            plotter._plot_layer(self, layer)
+
+        # Add various figure decorations
+        plotter._make_legend(self)
+        plotter._finalize_figure(self)
+
+        return plotter
 
 
 # ---- The plot compilation engine ---------------------------------------------- #
@@ -711,12 +774,13 @@ class Plotter:
     _layers: list[Layer]
     _figure: Figure
 
-    def __init__(self, pyplot=False):
+    def __init__(self, pyplot: bool, theme: dict[str, Any]):
 
-        self.pyplot = pyplot
-        self._legend_contents: list[
+        self._pyplot = pyplot
+        self._theme = theme
+        self._legend_contents: list[tuple[
             tuple[str, str | int], list[Artist], list[str],
-        ] = []
+        ]] = []
         self._scales: dict[str, Scale] = {}
 
     def save(self, loc, **kwargs) -> Plotter:  # TODO type args
@@ -733,7 +797,8 @@ class Plotter:
         # TODO if we did not create the Plotter with pyplot, is it possible to do this?
         # If not we should clearly raise.
         import matplotlib.pyplot as plt
-        plt.show(**kwargs)
+        with theme_context(self._theme):
+            plt.show(**kwargs)
 
     # TODO API for accessing the underlying matplotlib objects
     # TODO what else is useful in the public API for this class?
@@ -767,11 +832,12 @@ class Plotter:
 
         dpi = 96
         buffer = io.BytesIO()
-        self._figure.savefig(buffer, dpi=dpi * 2, format="png", bbox_inches="tight")
+
+        with theme_context(self._theme):
+            self._figure.savefig(buffer, dpi=dpi * 2, format="png", bbox_inches="tight")
         data = buffer.getvalue()
 
         scaling = .85 / 2
-        # w, h = self._figure.get_size_inches()
         w, h = Image.open(buffer).size
         metadata = {"width": w * scaling, "height": h * scaling}
         return data, metadata
@@ -792,16 +858,17 @@ class Plotter:
 
         return common_data, layers
 
-    def _resolve_label(self, p: Plot, var: str, auto_label: str | None) -> str | None:
+    def _resolve_label(self, p: Plot, var: str, auto_label: str | None) -> str:
 
-        label: str | None
+        label: str
         if var in p._labels:
             manual_label = p._labels[var]
             if callable(manual_label) and auto_label is not None:
                 label = manual_label(auto_label)
             else:
-                # mypy needs a lot of help here, I'm not sure why
-                label = cast(Optional[str], manual_label)
+                label = cast(str, manual_label)
+        elif auto_label is None:
+            label = ""
         else:
             label = auto_label
         return label
@@ -809,9 +876,6 @@ class Plotter:
     def _setup_figure(self, p: Plot, common: PlotData, layers: list[Layer]) -> None:
 
         # --- Parsing the faceting/pairing parameterization to specify figure grid
-
-        # TODO use context manager with theme that has been set
-        # TODO (maybe wrap THIS function with context manager; would be cleaner)
 
         subplot_spec = p._subplot_spec.copy()
         facet_spec = p._facet_spec.copy()
@@ -825,9 +889,8 @@ class Plotter:
         self._subplots = subplots = Subplots(subplot_spec, facet_spec, pair_spec)
 
         # --- Figure initialization
-        figure_kws = {"figsize": getattr(p, "_figsize", None)}  # TODO fix
         self._figure = subplots.init_figure(
-            pair_spec, self.pyplot, figure_kws, p._target,
+            pair_spec, self._pyplot, p._figure_spec, p._target,
         )
 
         # --- Figure annotation
@@ -879,10 +942,13 @@ class Plotter:
             # Let's have what we currently call "margin titles" but properly using the
             # ax.set_title interface (see my gist)
             title_parts = []
-            for dim in ["row", "col"]:
+            for dim in ["col", "row"]:
                 if sub[dim] is not None:
-                    name = common.names.get(dim)  # TODO None = val looks bad
-                    title_parts.append(f"{name} = {sub[dim]}")
+                    val = self._resolve_label(p, "title", f"{sub[dim]}")
+                    if dim in p._labels:
+                        key = self._resolve_label(p, dim, common.names.get(dim))
+                        val = f"{key} {val}"
+                    title_parts.append(val)
 
             has_col = sub["col"] is not None
             has_row = sub["row"] is not None
@@ -897,112 +963,9 @@ class Plotter:
                 title = " | ".join(title_parts)
                 title_text = ax.set_title(title)
                 title_text.set_visible(show_title)
-
-    def _transform_coords(self, p: Plot, common: PlotData, layers: list[Layer]) -> None:
-
-        for var in p._variables:
-
-            # Parse name to identify variable (x, y, xmin, etc.) and axis (x/y)
-            # TODO should we have xmin0/xmin1 or x0min/x1min?
-            m = re.match(r"^(?P<prefix>(?P<axis>[x|y])\d*).*", var)
-
-            if m is None:
-                continue
-
-            prefix = m["prefix"]
-            axis = m["axis"]
-
-            share_state = self._subplots.subplot_spec[f"share{axis}"]
-
-            # Concatenate layers, using only the relevant coordinate and faceting vars,
-            # This is unnecessarily wasteful, as layer data will often be redundant.
-            # But figuring out the minimal amount we need is more complicated.
-            cols = [var, "col", "row"]
-            # TODO basically copied from _setup_scales, and very clumsy
-            layer_values = [common.frame.filter(cols)]
-            for layer in layers:
-                if layer["data"].frame is None:
-                    for df in layer["data"].frames.values():
-                        layer_values.append(df.filter(cols))
-                else:
-                    layer_values.append(layer["data"].frame.filter(cols))
-
-            if layer_values:
-                var_df = pd.concat(layer_values, ignore_index=True)
-            else:
-                var_df = pd.DataFrame(columns=cols)
-
-            prop = Coordinate(axis)
-            scale = self._get_scale(p, prefix, prop, var_df[var])
-
-            # Shared categorical axes are broken on matplotlib<3.4.0.
-            # https://github.com/matplotlib/matplotlib/pull/18308
-            # This only affects us when sharing *paired* axes. This is a novel/niche
-            # behavior, so we will raise rather than hack together a workaround.
-            if Version(mpl.__version__) < Version("3.4.0"):
-                from seaborn._core.scales import Nominal
-                paired_axis = axis in p._pair_spec
-                cat_scale = isinstance(scale, Nominal)
-                ok_dim = {"x": "col", "y": "row"}[axis]
-                shared_axes = share_state not in [False, "none", ok_dim]
-                if paired_axis and cat_scale and shared_axes:
-                    err = "Sharing paired categorical axes requires matplotlib>=3.4.0"
-                    raise RuntimeError(err)
-
-            # Now loop through each subplot, deriving the relevant seed data to setup
-            # the scale (so that axis units / categories are initialized properly)
-            # And then scale the data in each layer.
-            subplots = [view for view in self._subplots if view[axis] == prefix]
-
-            # Setup the scale on all of the data and plug it into self._scales
-            # We do this because by the time we do self._setup_scales, coordinate data
-            # will have been converted to floats already, so scale inference fails
-            self._scales[var] = scale._setup(var_df[var], prop)
-
-            # Set up an empty series to receive the transformed values.
-            # We need this to handle piecemeal transforms of categories -> floats.
-            transformed_data = []
-            for layer in layers:
-                index = layer["data"].frame.index
-                transformed_data.append(pd.Series(dtype=float, index=index, name=var))
-
-            for view in subplots:
-                axis_obj = getattr(view["ax"], f"{axis}axis")
-
-                if share_state in [True, "all"]:
-                    # The all-shared case is easiest, every subplot sees all the data
-                    seed_values = var_df[var]
-                else:
-                    # Otherwise, we need to setup separate scales for different subplots
-                    if share_state in [False, "none"]:
-                        # Fully independent axes are also easy: use each subplot's data
-                        idx = self._get_subplot_index(var_df, view)
-                    elif share_state in var_df:
-                        # Sharing within row/col is more complicated
-                        use_rows = var_df[share_state] == view[share_state]
-                        idx = var_df.index[use_rows]
-                    else:
-                        # This configuration doesn't make much sense, but it's fine
-                        idx = var_df.index
-
-                    seed_values = var_df.loc[idx, var]
-
-                scale = scale._setup(seed_values, prop, axis=axis_obj)
-
-                for layer, new_series in zip(layers, transformed_data):
-                    layer_df = layer["data"].frame
-                    if var in layer_df:
-                        idx = self._get_subplot_index(layer_df, view)
-                        new_series.loc[idx] = scale(layer_df.loc[idx, var])
-
-                # TODO need decision about whether to do this or modify axis transform
-                set_scale_obj(view["ax"], axis, scale._matplotlib_scale)
-
-            # Now the transformed data series are complete, set update the layer data
-            for layer, new_series in zip(layers, transformed_data):
-                layer_df = layer["data"].frame
-                if var in layer_df:
-                    layer_df[var] = new_series
+            elif not (has_col or has_row):
+                title = self._resolve_label(p, "title", None)
+                title_text = ax.set_title(title)
 
     def _compute_stats(self, spec: Plot, layers: list[Layer]) -> None:
 
@@ -1073,68 +1036,147 @@ class Plotter:
 
         return scale
 
-    def _setup_scales(self, p: Plot, layers: list[Layer]) -> None:
+    def _get_subplot_data(self, df, var, view, share_state):
 
-        # Identify all of the variables that will be used at some point in the plot
-        variables = set()
-        for layer in layers:
-            if layer["data"].frame.empty and layer["data"].frames:
-                for df in layer["data"].frames.values():
-                    variables.update(df.columns)
+        if share_state in [True, "all"]:
+            # The all-shared case is easiest, every subplot sees all the data
+            seed_values = df[var]
+        else:
+            # Otherwise, we need to setup separate scales for different subplots
+            if share_state in [False, "none"]:
+                # Fully independent axes are also easy: use each subplot's data
+                idx = self._get_subplot_index(df, view)
+            elif share_state in df:
+                # Sharing within row/col is more complicated
+                use_rows = df[share_state] == view[share_state]
+                idx = df.index[use_rows]
             else:
-                variables.update(layer["data"].frame.columns)
+                # This configuration doesn't make much sense, but it's fine
+                idx = df.index
+
+            seed_values = df.loc[idx, var]
+
+        return seed_values
+
+    def _setup_scales(
+        self, p: Plot,
+        common: PlotData,
+        layers: list[Layer],
+        variables: list[str] | None = None,
+    ) -> None:
+
+        if variables is None:
+            # Add variables that have data but not a scale, which happens
+            # because this method can be called multiple time, to handle
+            # variables added during the Stat transform.
+            variables = []
+            for layer in layers:
+                variables.extend(layer["data"].frame.columns)
+                for df in layer["data"].frames.values():
+                    variables.extend(v for v in df if v not in variables)
+            variables = [v for v in variables if v not in self._scales]
 
         for var in variables:
 
-            if var in self._scales:
-                # Scales for coordinate variables added in _transform_coords
-                continue
-
-            # Get the data all the distinct appearances of this variable.
-            parts = []
-            for layer in layers:
-                if layer["data"].frame.empty and layer["data"].frames:
-                    for df in layer["data"].frames.values():
-                        parts.append(df.get(var))
-                else:
-                    parts.append(layer["data"].frame.get(var))
-            var_values = pd.concat(
-                parts, axis=0, join="inner", ignore_index=True
-            ).rename(var)
-
-            # Determine whether this is an coordinate variable
+            # Determine whether this is a coordinate variable
             # (i.e., x/y, paired x/y, or derivative such as xmax)
-            m = re.match(r"^(?P<prefix>(?P<axis>x|y)\d*).*", var)
+            m = re.match(r"^(?P<coord>(?P<axis>x|y)\d*).*", var)
             if m is None:
-                axis = None
+                coord = axis = None
             else:
-                var = m["prefix"]
+                coord = m["coord"]
                 axis = m["axis"]
 
-            prop = PROPERTIES.get(var if axis is None else axis, Property())
-            scale = self._get_scale(p, var, prop, var_values)
+            # Get keys that handle things like x0, xmax, properly where relevant
+            prop_key = var if axis is None else axis
+            scale_key = var if coord is None else coord
 
-            # Initialize the data-dependent parameters of the scale
-            # Note that this returns a copy and does not mutate the original
-            # This dictionary is used by the semantic mappings
+            if prop_key not in PROPERTIES:
+                continue
+
+            # Concatenate layers, using only the relevant coordinate and faceting vars,
+            # This is unnecessarily wasteful, as layer data will often be redundant.
+            # But figuring out the minimal amount we need is more complicated.
+            cols = [var, "col", "row"]
+            parts = [common.frame.filter(cols)]
+            for layer in layers:
+                parts.append(layer["data"].frame.filter(cols))
+                for df in layer["data"].frames.values():
+                    parts.append(df.filter(cols))
+            var_df = pd.concat(parts, ignore_index=True)
+
+            prop = PROPERTIES[prop_key]
+            scale = self._get_scale(p, scale_key, prop, var_df[var])
+
+            if scale_key not in p._variables:
+                # TODO this implies that the variable was added by the stat
+                # It allows downstream orientation inference to work properly.
+                # But it feels rather hacky, so ideally revisit.
+                scale._priority = 0  # type: ignore
+
+            if axis is None:
+                # We could think about having a broader concept of (un)shared properties
+                # In general, not something you want to do (different scales in facets)
+                # But could make sense e.g. with paired plots. Build later.
+                share_state = None
+                subplots = []
+            else:
+                share_state = self._subplots.subplot_spec[f"share{axis}"]
+                subplots = [view for view in self._subplots if view[axis] == coord]
+
+            # Shared categorical axes are broken on matplotlib<3.4.0.
+            # https://github.com/matplotlib/matplotlib/pull/18308
+            # This only affects us when sharing *paired* axes. This is a novel/niche
+            # behavior, so we will raise rather than hack together a workaround.
+            if axis is not None and Version(mpl.__version__) < Version("3.4.0"):
+                from seaborn._core.scales import Nominal
+                paired_axis = axis in p._pair_spec
+                cat_scale = isinstance(scale, Nominal)
+                ok_dim = {"x": "col", "y": "row"}[axis]
+                shared_axes = share_state not in [False, "none", ok_dim]
+                if paired_axis and cat_scale and shared_axes:
+                    err = "Sharing paired categorical axes requires matplotlib>=3.4.0"
+                    raise RuntimeError(err)
+
             if scale is None:
-                # TODO what is the cleanest way to implement identity scale?
-                # We don't really need a Scale, and Identity() will be
-                # overloaded anyway (but maybe a general Identity object
-                # that can be used as Scale/Mark/Stat/Move?)
-                # Note that this may not be the right spacer to use
-                # (but that is only relevant for coordinates, where identity scale
-                # doesn't make sense or is poorly defined, since we don't use pixels.)
                 self._scales[var] = Scale._identity()
             else:
-                scale = scale._setup(var_values, prop)
-                if isinstance(prop, Coordinate):
-                    # If we have a coordinate here, we didn't assign a scale for it
-                    # in _transform_coords, which means it was added during compute_stat
-                    # This allows downstream orientation inference to work properly.
-                    # But it feels a little hacky, so perhaps revisit.
-                    scale._priority = 0  # type: ignore
-                self._scales[var] = scale
+                self._scales[var] = scale._setup(var_df[var], prop)
+
+            # Everything below here applies only to coordinate variables
+            # We additionally skip it when we're working with a value
+            # that is derived from a coordinate we've already processed.
+            # e.g., the Stat consumed y and added ymin/ymax. In that case,
+            # we've already setup the y scale and ymin/max are in scale space.
+            if axis is None or (var != coord and coord in p._variables):
+                continue
+
+            # Set up an empty series to receive the transformed values.
+            # We need this to handle piecemeal transforms of categories -> floats.
+            transformed_data = []
+            for layer in layers:
+                index = layer["data"].frame.index
+                empty_series = pd.Series(dtype=float, index=index, name=var)
+                transformed_data.append(empty_series)
+
+            for view in subplots:
+
+                axis_obj = getattr(view["ax"], f"{axis}axis")
+                seed_values = self._get_subplot_data(var_df, var, view, share_state)
+                view_scale = scale._setup(seed_values, prop, axis=axis_obj)
+                set_scale_obj(view["ax"], axis, view_scale._matplotlib_scale)
+
+                for layer, new_series in zip(layers, transformed_data):
+                    layer_df = layer["data"].frame
+                    if var in layer_df:
+                        idx = self._get_subplot_index(layer_df, view)
+                        new_series.loc[idx] = view_scale(layer_df.loc[idx, var])
+
+            # Now the transformed data series are complete, set update the layer data
+            for layer, new_series in zip(layers, transformed_data):
+                layer_df = layer["data"].frame
+                if var in layer_df:
+                    layer_df[var] = new_series
 
     def _plot_layer(self, p: Plot, layer: Layer) -> None:
 
@@ -1143,7 +1185,7 @@ class Plotter:
         move = layer["move"]
 
         default_grouping_vars = ["col", "row", "group"]  # TODO where best to define?
-        grouping_properties = [v for v in PROPERTIES if v not in "xy"]
+        grouping_properties = [v for v in PROPERTIES if v[0] not in "xy"]
 
         pair_variables = p._pair_spec.get("structure", {})
 
@@ -1354,10 +1396,11 @@ class Plotter:
                         # Matplotlib (usually?) masks nan data, so this should "work".
                         # Downstream code can also drop these rows, at some speed cost.
                         present = axes_df.notna().all(axis=1)
-                        axes_df = axes_df.assign(
-                            x=axes_df["x"].where(present),
-                            y=axes_df["y"].where(present),
-                        )
+                        nulled = {}
+                        for axis in "xy":
+                            if axis in axes_df:
+                                nulled[axis] = axes_df[axis].where(present)
+                        axes_df = axes_df.assign(**nulled)
                     else:
                         axes_df = axes_df.dropna()
 
@@ -1415,7 +1458,7 @@ class Plotter:
 
         # First pass: Identify the values that will be shown for each variable
         schema: list[tuple[
-            tuple[str | None, str | int], list[str], tuple[list, list[str]]
+            tuple[str, str | int], list[str], tuple[list, list[str]]
         ]] = []
         schema = []
         for var in legend_vars:
@@ -1428,8 +1471,7 @@ class Plotter:
                         part_vars.append(var)
                         break
                 else:
-                    auto_title = data.names[var]
-                    title = self._resolve_label(p, var, auto_title)
+                    title = self._resolve_label(p, var, data.names[var])
                     entry = (title, data.ids[var]), [var], (values, labels)
                     schema.append(entry)
 
@@ -1449,7 +1491,7 @@ class Plotter:
         # Input list has an entry for each distinct variable in each layer
         # Output dict has an entry for each distinct variable
         merged_contents: dict[
-            tuple[str | None, str | int], tuple[list[Artist], list[str]],
+            tuple[str, str | int], tuple[list[Artist], list[str]],
         ] = {}
         for key, artists, labels in self._legend_contents:
             # Key is (name, id); we need the id to resolve variable uniqueness,
@@ -1473,7 +1515,7 @@ class Plotter:
                 self._figure,
                 handles,
                 labels,
-                title="" if name is None else name,
+                title=name,
                 loc="center left",
                 bbox_to_anchor=(.98, .55),
             )
@@ -1511,3 +1553,14 @@ class Plotter:
         # TODO this should be configurable
         if not self._figure.get_constrained_layout():
             self._figure.set_tight_layout(True)
+
+
+@contextmanager
+def theme_context(params: dict[str, Any]) -> Generator:
+    """Temporarily modify specifc matplotlib rcParams."""
+    orig = {k: mpl.rcParams[k] for k in params}
+    try:
+        mpl.rcParams.update(params)
+        yield
+    finally:
+        mpl.rcParams.update(orig)

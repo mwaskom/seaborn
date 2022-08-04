@@ -106,6 +106,7 @@ class Scatter(Mark):
                 linestyles=data["edgestyle"],
                 transOffset=ax.transData,
                 transform=mpl.transforms.IdentityTransform(),
+                **self.artist_kws,
             )
             ax.add_collection(points)
 
@@ -124,6 +125,7 @@ class Scatter(Mark):
             linewidths=[res["linewidth"]],
             linestyles=[res["edgestyle"]],
             transform=mpl.transforms.IdentityTransform(),
+            **self.artist_kws,
         )
 
 

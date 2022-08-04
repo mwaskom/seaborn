@@ -1,231 +1,238 @@
+:notoc:
+
 .. _tutorial:
 
 User guide and tutorial
 ===============================
 
-.. raw:: html
+.. grid:: 1
+  :gutter: 2
 
-  <div class="container-fluid">
-    <div class="row">
+  .. grid-item-card::
 
-.. raw:: html
+    .. grid:: 2
 
-    <div class="panel panel-default">   
-      <div class="panel-heading">
-        <h3 class="panel-title">API overview</h3>
-      </div>
-      <div class="panel-body">
-        <div class="row">
-          <div class="col-md-6">
-            <div class="col-md-4">
-              <a href=./tutorial/function_overview.html>
-                <img src="_images/function_overview_8_0.png" class="img-responsive center-block">
-              </a>
-            </div>
-            <div class="col-md-8">
+      .. grid-item::
+        :columns: 4
 
-.. toctree::
-   :maxdepth: 2
-
-   tutorial/function_overview
-
-.. raw:: html
-
-            </div>
-          </div>
-          <div class="col-md-6">
-            <div class="col-md-4">
-              <a href=./tutorial/data_structure.html>
-                <img src="_images/data_structure_19_0.png" class="img-responsive center-block">
-              </a>
-            </div>
-            <div class="col-md-8">
+        .. image:: ./tutorial/introduction_files/introduction_33_0.png
+          :target: ./tutorial/introduction.html
 
 
-.. toctree::
-   :maxdepth: 2
+      .. grid-item::
+        :columns: 8
+        :margin: 2 0 0 0
 
-   tutorial/data_structure
+        .. toctree::
+          :maxdepth: 2
 
-.. raw:: html
+          tutorial/introduction
 
-            </div>
-          </div>
-        </div>
-        <div class="row">
-          <div class="col-md-6">
-            <div class="col-md-4">
-              <a href=./tutorial/error_bars.html>
-                <img src="_images/error_bars_4_0.png" class="img-responsive center-block">
-              </a>
-            </div>
-            <div class="col-md-8">
 
-.. toctree::
-   :maxdepth: 2
+API Overview
+------------
 
-   tutorial/error_bars
+.. grid:: 1
+  :gutter: 2
 
-.. raw:: html
+  .. grid-item-card::
 
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-    <div class="row">
-      <div class="col-md-6">
-        <div class="panel panel-default">   
-          <div class="panel-heading">
-            <h3 class="panel-title">Plotting functions</h3>
-          </div>
-          <div class="panel-body">
-            <div class="row">
-              <div class="col-md-4">
-                <a href=./tutorial/relational.html>
-                  <img src="_images/relational_51_0.png" class="img-responsive center-block">
-                </a>
-              </div>
-              <div class="col-md-8">
+    .. grid:: 2
 
-.. toctree::
-   :maxdepth: 2
+      .. grid-item::
+        :columns: 4
 
-   tutorial/relational
+        .. image:: ./tutorial/function_overview_files/function_overview_8_0.png
+          :target: ./tutorial/function_overview.html
 
-.. raw:: html
 
-              </div>
-            </div>
-            <hr>
-            <div class="row">
-              <div class="col-md-4">
-                <a href=./tutorial/distributions.html>
-                  <img src="_images/distributions_66_0.png" class="img-responsive center-block">
-                </a>
-              </div>
-              <div class="col-md-8">
+      .. grid-item::
+        :columns: 8
+        :margin: 2 0 0 0
 
-.. toctree::
-   :maxdepth: 2
+        .. toctree::
+          :maxdepth: 2
 
-   tutorial/distributions
+          tutorial/function_overview
 
-.. raw:: html
+  .. grid-item-card::
 
-              </div>
-            </div>
-            <hr>
-            <div class="row">
-              <div class="col-md-4">
-                <a href=./tutorial/categorical.html>
-                  <img src="_images/categorical_36_0.png" class="img-responsive center-block">
-                </a>
-              </div>
-              <div class="col-md-8">
+    .. grid:: 2
 
-.. toctree::
-   :maxdepth: 2
+      .. grid-item::
+        :columns: 4
 
-   tutorial/categorical
+        .. image:: ./tutorial/data_structure_files/data_structure_19_0.png
+          :target: ./tutorial/data_structure.html
 
-.. raw:: html
+      .. grid-item::
+        :columns: 8
 
-              </div>
-            </div>
-            <hr>
-            <div class="row">
-              <div class="col-md-4">
-                <a href=./tutorial/regression.html>
-                  <img src="_images/regression_37_0.png" class="img-responsive center-block">
-                </a>
-              </div>
-              <div class="col-md-8">
+        .. toctree::
+          :maxdepth: 2
 
-.. toctree::
-   :maxdepth: 2
+          tutorial/data_structure
 
-   tutorial/regression
+  .. grid-item-card::
 
-.. raw:: html
+    .. grid:: 2
 
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+      .. grid-item::
+        :columns: 4
 
-      <div class="col-md-6">
-        <div class="row">
-          <div class="panel panel-default">   
-            <div class="panel-heading">
-              <h3 class="panel-title">Multi-plot grids</h3>
-            </div>
-            <div class="panel-body">
-              <div class="row">
-                <div class="col-md-4">
-                  <a href=./tutorial/axis_grids.html>
-                    <img src="_images/axis_grids_46_0.png" class="img-responsive center-block">
-                  </a>
-                </div>
-                <div class="col-md-8">
+        .. image:: ./tutorial/error_bars_files/error_bars_2_0.png
+          :target: ./tutorial/error_bars.html
 
-.. toctree::
-   :maxdepth: 2
+      .. grid-item::
+        :columns: 8
 
-   tutorial/axis_grids
+        .. toctree::
+          :maxdepth: 2
 
-.. raw:: html
+          tutorial/error_bars
 
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="row">
-          <div class="panel panel-default">   
-            <div class="panel-heading">
-              <h3 class="panel-title">Plot aesthetics</h3>
-            </div>
-          <div class="panel-body">
-            <div class="row">
-              <div class="col-md-4">
-                <a href=tutorial/aesthetics.html>
-                  <img src="_images/aesthetics_24_0.png" class="img-responsive center-block">
-                </a>
-              </div>
-              <div class="col-md-8">
 
-.. toctree::
-   :maxdepth: 2
+Plotting functions
+------------------
 
-   tutorial/aesthetics
+.. grid:: 1
+  :gutter: 2
 
-.. raw:: html
+  .. grid-item-card::
 
-              </div>
-            </div>
-            <hr>
-            <div class="row">
-              <div class="col-md-4">
-                <a href=tutorial/color_palettes.html>
-                  <img src="_images/color_palettes_22_0.png" class="img-responsive center-block">
-                </a>
-              </div>
-              <div class="col-md-8">
+    .. grid:: 2
 
-.. toctree::
-   :maxdepth: 2
+      .. grid-item::
+        :columns: 4
 
-   tutorial/color_palettes
+        .. image:: ./tutorial/relational_files/relational_51_0.png
+          :target: ./tutorial/relational.html
 
-.. raw:: html
+      .. grid-item::
+        :columns: 8
 
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-  </div>
+        .. toctree::
+          :maxdepth: 2
+
+          tutorial/relational
+
+  .. grid-item-card::
+
+    .. grid:: 2
+
+      .. grid-item::
+        :columns: 4
+
+        .. image:: ./tutorial/distributions_files/distributions_66_0.png
+          :target: ./tutorial/distributions.html
+
+      .. grid-item::
+        :columns: 8
+
+        .. toctree::
+          :maxdepth: 2
+
+          tutorial/distributions
+
+  .. grid-item-card::
+
+    .. grid:: 2
+
+      .. grid-item::
+        :columns: 4
+
+        .. image:: ./tutorial/categorical_files/categorical_36_0.png
+          :target: ./tutorial/categorical.html
+
+      .. grid-item::
+        :columns: 8
+
+        .. toctree::
+          :maxdepth: 2
+
+          tutorial/categorical
+
+  .. grid-item-card::
+
+    .. grid:: 2
+
+      .. grid-item::
+        :columns: 4
+
+        .. image:: ./tutorial/regression_files/regression_37_0.png
+          :target: ./tutorial/regression.html
+
+      .. grid-item::
+        :columns: 8
+
+        .. toctree::
+          :maxdepth: 2
+
+          tutorial/regression
+
+
+Multi-plot grids
+----------------
+
+.. grid:: 1
+  :gutter: 2
+
+  .. grid-item-card::
+
+    .. grid:: 2
+
+      .. grid-item::
+        :columns: 4
+
+        .. image:: ./tutorial/axis_grids_files/axis_grids_46_0.png
+          :target: ./tutorial/axis_grids.html
+
+      .. grid-item::
+        :columns: 8
+
+        .. toctree::
+          :maxdepth: 2
+
+          tutorial/axis_grids
+
+
+Figure aesthetics
+-----------------
+
+.. grid:: 1
+
+  .. grid-item-card::
+
+    .. grid:: 2
+
+      .. grid-item::
+        :columns: 4
+
+        .. image:: ./tutorial/aesthetics_files/aesthetics_24_0.png
+          :target: ./tutorial/aesthetics.html
+
+      .. grid-item::
+        :columns: 8
+
+        .. toctree::
+          :maxdepth: 2
+
+          tutorial/aesthetics
+
+  .. grid-item-card::
+
+    .. grid:: 2
+
+      .. grid-item::
+        :columns: 4
+
+        .. image:: ./tutorial/color_palettes_files/color_palettes_22_0.png
+          :target: ./tutorial/color_palettes.html
+
+      .. grid-item::
+        :columns: 8
+
+        .. toctree::
+          :maxdepth: 2
+
+          tutorial/color_palettes

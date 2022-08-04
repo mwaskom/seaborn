@@ -121,5 +121,7 @@ def set_scale_obj(ax, axis, scale):
             trans = scale.get_transform()
             kws["functions"] = (trans._forward, trans._inverse)
         method(scale.name, **kws)
+        axis_obj = getattr(ax, f"{axis}axis")
+        scale.set_default_locators_and_formatters(axis_obj)
     else:
         ax.set(**{f"{axis}scale": scale})

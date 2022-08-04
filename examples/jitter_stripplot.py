@@ -19,7 +19,8 @@ sns.despine(bottom=True, left=True)
 
 # Show each observation with a scatterplot
 sns.stripplot(x="value", y="measurement", hue="species",
-              data=iris, dodge=True, alpha=.25, zorder=1)
+              data=iris, dodge=True, alpha=.25, zorder=1,
+              legend=False)
 
 # Show the conditional means, aligning each pointplot in the
 # center of the strips by adjusting the width allotted to each
@@ -30,7 +31,6 @@ sns.pointplot(x="value", y="measurement", hue="species",
               markers="d", scale=.75, ci=None)
 
 # Improve the legend
-handles, labels = ax.get_legend_handles_labels()
-ax.legend(handles[3:], labels[3:], title="species",
-          handletextpad=0, columnspacing=1,
-          loc="lower right", ncol=3, frameon=True)
+sns.move_legend(
+    ax, loc="lower right", ncol=3, frameon=True, columnspacing=1, handletextpad=0
+)

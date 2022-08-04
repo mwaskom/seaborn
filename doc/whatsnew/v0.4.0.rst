@@ -1,0 +1,45 @@
+
+v0.4.0 (September 2014)
+-----------------------
+
+This is a major release from 0.3. Highlights include new approaches for :ref:`quick, high-level dataset exploration <scatterplot_matrix>` (along with a more :ref:`flexible interface <pair_grid_with_kde>`) and easy creation of :ref:`perceptually-appropriate color palettes <cubehelix_palettes>` using the cubehelix system. Along with these additions, there are a number of smaller changes that make visualizing data with seaborn easier and more powerful.
+
+Plotting functions
+~~~~~~~~~~~~~~~~~~
+
+- A new object, :class:`PairGrid`, and a corresponding function :func:`pairplot`, for drawing grids of pairwise relationships in a dataset. This style of plot is sometimes called a "scatterplot matrix", but the representation of the data in :class:`PairGrid` is flexible and many styles other than scatterplots can be used. See the :ref:`docs <pair_grid>` for more information. **Note:** due to a bug in older versions of matplotlib, you will have best results if you use these functions with matplotlib 1.4 or later.
+
+- The rules for choosing default color palettes when variables are mapped to different colors have been unified (and thus changed in some cases). Now when no specific palette is requested, the current global color palette will be used, unless the number of variables to be mapped exceeds the number of unique colors in the palette, in which case the ``"husl"`` palette will be used to avoid cycling.
+
+- Added a keyword argument ``hist_norm`` to :func:`distplot`. When a :func:`distplot` is now drawn without a KDE or parametric density, the histogram is drawn as counts instead of a density. This can be overridden by by setting ``hist_norm`` to ``True``.
+
+- When using :class:`FacetGrid` with a ``hue`` variable, the legend is no longer drawn by default when you call :meth:`FacetGrid.map`. Instead, you have to call :meth:`FacetGrid.add_legend` manually. This should make it easier to layer multiple plots onto the grid without having duplicated legends.
+
+- Made some changes to ``factorplot`` so that it behaves better when not all levels of the ``x`` variable are represented in each facet.
+
+- Added the ``logx`` option to :func:`regplot` for fitting the regression in log space.
+
+- When :func:`violinplot` encounters a bin with only a single observation, it will now plot a horizontal line at that value instead of erroring out.
+
+Style and color palettes
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Added the :func:`cubehelix_palette` function for generating sequential palettes from the cubehelix system. See the :ref:`palette docs <cubehelix_palettes>` for more information on how these palettes can be used. There is also the :func:`choose_cubehelix` which will launch an interactive app to select cubehelix parameters in the notebook.
+
+- Added the :func:`xkcd_palette` and the ``xkcd_rgb`` dictionary so that colors can be specified with names from the `xkcd color survey <https://blog.xkcd.com/2010/05/03/color-survey-results/>`_.
+
+- Added the ``font_scale`` option to :func:`plotting_context`, :func:`set_context`, and :func:`set`. ``font_scale`` can independently increase or decrease the size of the font elements in the plot.
+
+- Font-handling should work better on systems without Arial installed. This is accomplished by adding the ``font.sans-serif`` field to the ``axes_style`` definition with Arial and Liberation Sans prepended to matplotlib defaults. The font family can also be set through the ``font`` keyword argument in :func:`set`. Due to matplotlib bugs, this might not work as expected on matplotlib 1.3.
+
+- The :func:`despine` function gets a new keyword argument ``offset``, which replaces the deprecated :func:`offset_spines` function. You no longer need to offset the spines before plotting data.
+
+- Added a default value for ``pdf.fonttype`` so that text in PDFs is editable in Adobe Illustrator.
+
+
+Other API Changes
+~~~~~~~~~~~~~~~~~
+
+- Removed the deprecated ``set_color_palette`` and ``palette_context`` functions. These were replaced in version 0.3 by the :func:`set_palette` function and ability to use :func:`color_palette` directly in a ``with`` statement.
+
+- Removed the ability to specify a ``nogrid`` style, which was renamed to ``white`` in 0.3.

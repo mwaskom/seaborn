@@ -5,23 +5,24 @@
 Installing and getting started
 ------------------------------
 
-.. raw:: html
-
-   <div class="col-md-9">
-
-Official releases of seaborn can be installed from `PyPI <https://pypi.org/project/seaborn/>`_:
+Official releases of seaborn can be installed from `PyPI <https://pypi.org/project/seaborn/>`_::
 
     pip install seaborn
 
 The basic invocation of `pip` will install seaborn and, if necessary, its mandatory dependencies.
-It is possible to include optional dependencies that give access to a few advanced features:
+It is possible to include optional dependencies that give access to a few advanced features::
 
     pip install seaborn[all]
 
 The library is also included as part of the `Anaconda <https://repo.anaconda.com/>`_ distribution,
-and it can be installed with `conda`:
+and it can be installed with `conda`::
 
     conda install seaborn
+
+As the main Anaconda repository can be slow to add new releaes, you may prefer using the
+`conda-forge <https://conda-forge.org/>`_ channel::
+
+    conda install seaborn -c conda-forge
 
 Dependencies
 ~~~~~~~~~~~~
@@ -134,7 +135,3 @@ will be higher if you include `runnable code
 <https://stackoverflow.com/help/minimal-reproducible-example>`_, a precise
 statement of what you are hoping to achieve, and a clear explanation of the
 problems that you have encountered.
-
-.. raw:: html
-
-   </div>

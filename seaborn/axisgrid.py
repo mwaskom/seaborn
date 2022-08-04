@@ -11,7 +11,9 @@ import matplotlib.pyplot as plt
 
 from ._oldcore import VectorPlotter, variable_type, categorical_order
 from . import utils
-from .utils import _check_argument, adjust_legend_subtitles, _draw_figure
+from .utils import (
+    adjust_legend_subtitles, _check_argument, _draw_figure, _disable_autolayout
+)
 from .palettes import color_palette, blend_palette
 from ._docstrings import (
     DocstringComponents,
@@ -50,6 +52,35 @@ class _BaseGrid:
         """Access the :class:`matplotlib.figure.Figure` object underlying the grid."""
         return self._figure
 
+    def apply(self, func, *args, **kwargs):
+        """
+        Pass the grid to a user-supplied function and return self.
+
+        The `func` must accept an object of this type for its first
+        positional argument. Additional arguments are passed through.
+        The return value of `func` is ignored; this method returns self.
+        See the `pipe` method if you want the return value.
+
+        Added in v0.12.0.
+
+        """
+        func(self, *args, **kwargs)
+        return self
+
+    def pipe(self, func, *args, **kwargs):
+        """
+        Pass the grid to a user-supplied function and return its value.
+
+        The `func` must accept an object of this type for its first
+        positional argument. Additional arguments are passed through.
+        The return value of `func` becomes the return value of this method.
+        See the `apply` method if you want to return self instead.
+
+        Added in v0.12.0.
+
+        """
+        return func(self, *args, **kwargs)
+
     def savefig(self, *args, **kwargs):
         """
         Save an image of the plot.
@@ -84,6 +115,7 @@ class Grid(_BaseGrid):
         if self._tight_layout_pad is not None:
             kwargs.setdefault("pad", self._tight_layout_pad)
         self._figure.tight_layout(*args, **kwargs)
+        return self
 
     def add_legend(self, legend_data=None, title=None, label_order=None,
                    adjust_subtitles=False, **kwargs):
@@ -389,8 +421,7 @@ class FacetGrid(Grid):
 
         # --- Initialize the subplot grid
 
-        # Disable autolayout so legend_out works properly
-        with mpl.rc_context({"figure.autolayout": False}):
+        with _disable_autolayout():
             fig = plt.figure(figsize=figsize)
 
         if col_wrap is None:
@@ -1006,6 +1037,8 @@ class FacetGrid(Grid):
         if y is not None:
             self.map(plt.axhline, y=y, **line_kws)
 
+        return self
+
     # ------ Properties that are part of the public API and documented by Sphinx
 
     @property
@@ -1215,8 +1248,7 @@ class PairGrid(Grid):
         # Create the figure and the array of subplots
         figsize = len(x_vars) * height * aspect, len(y_vars) * height
 
-        # Disable autolayout so legend_out works
-        with mpl.rc_context({"figure.autolayout": False}):
+        with _disable_autolayout():
             fig = plt.figure(figsize=figsize)
 
         axes = fig.subplots(len(y_vars), len(x_vars),

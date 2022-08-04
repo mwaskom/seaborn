@@ -31,6 +31,9 @@ class Hist(Stat):
     # Q: would Discrete() scale imply binwidth=1 or bins centered on integers?
     discrete: bool = False
 
+    # TODO Note that these methods are mostly copied from _statistics.Histogram,
+    # but it only computes univariate histograms. We should reconcile the code.
+
     def _define_bin_edges(self, vals, weight, bins, binwidth, binrange, discrete):
         """Inner function that takes bin parameters as arguments."""
         vals = vals.dropna()

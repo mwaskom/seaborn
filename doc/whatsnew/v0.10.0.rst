@@ -1,0 +1,17 @@
+
+v0.10.0 (January 2020)
+----------------------
+
+This is a major update that is being released simultaneously with version 0.9.1. It has all of the same features (and bugs!) as 0.9.1, but there are important changes to the dependencies.
+
+Most notably, all support for Python 2 has now been dropped. Support for Python 3.5 has also been dropped. Seaborn is now strictly compatible with Python 3.6+.
+
+Minimally supported versions of the dependent PyData libraries have also been increased, in some cases substantially. While seaborn has tended to be very conservative about maintaining compatibility with older dependencies, this was causing increasing pain during development. At the same time, these libraries are now much easier to install. Going forward, seaborn will likely stay close to the `Numpy community guidelines <https://numpy.org/neps/nep-0029-deprecation_policy.html>`_ for version support.
+
+This release also removes a few previously-deprecated features:
+
+- The ``tsplot`` function and ``seaborn.timeseries`` module have been removed. Recall that ``tsplot`` was replaced with :func:`lineplot`.
+
+- The ``seaborn.apionly`` entry-point has been removed.
+
+- The ``seaborn.linearmodels`` module (previously renamed to ``seaborn.regression``) has been removed.

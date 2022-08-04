@@ -45,23 +45,20 @@ clean:
 	-rm -rf examples/*
 	-rm -rf example_thumbs/*
 	-rm -rf generated/*
-	-rm -rf introduction_files/*
-	-rm introduction.rst
-	-make -C docstrings clean
-	-make -C tutorial clean
+	-make -C _docstrings clean
+	-make -C _tutorial clean
 
 .PHONY: tutorials
 tutorials:
-	make -C tutorial
+	@mkdir -p tutorial
+	@make -C _tutorial
 
 .PHONY: docstrings
 docstrings:
-	make -C docstrings
+	@mkdir -p docstrings
+	@make -C _docstrings
 
-introduction.rst: introduction.ipynb
-	tools/nb_to_doc.py ./introduction.ipynb
-
-notebooks: tutorials docstrings introduction.rst
+notebooks: tutorials docstrings
 
 html:
 	$(SPHINXBUILD) -b html $(ALLSPHINXOPTS) $(BUILDDIR)/html

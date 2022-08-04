@@ -264,7 +264,7 @@ class TestHeatmap:
         hm = mat._HeatMapper(self.df_unif, **kws)
         npt.assert_array_equal(cmap(np.inf), hm.cmap(np.inf))
 
-    def test_tickabels_off(self):
+    def test_ticklabels_off(self):
         kws = self.default_kws.copy()
         kws['xticklabels'] = False
         kws['yticklabels'] = False
@@ -345,6 +345,12 @@ class TestHeatmap:
         for val, text in zip(annot_data.values.flat, ax.texts):
             assert text.get_text() == f"{val:.1f}"
             assert text.get_fontsize() == 14
+
+    def test_heatmap_annotation_different_shapes(self):
+
+        annot_data = self.df_norm.iloc[:-1]
+        with pytest.raises(ValueError):
+            mat.heatmap(self.df_norm, annot=annot_data)
 
     def test_heatmap_annotation_with_limited_ticklabels(self):
         ax = mat.heatmap(self.df_norm, fmt=".2f", annot=True,

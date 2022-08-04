@@ -1,12 +1,14 @@
+import io
+import xml
 import functools
 import itertools
 import warnings
-import imghdr
 
 import numpy as np
 import pandas as pd
 import matplotlib as mpl
 import matplotlib.pyplot as plt
+from PIL import Image
 
 import pytest
 from pandas.testing import assert_frame_equal, assert_series_equal
@@ -15,7 +17,7 @@ from numpy.testing import assert_array_equal
 from seaborn._core.plot import Plot
 from seaborn._core.scales import Nominal, Continuous
 from seaborn._core.rules import categorical_order
-from seaborn._core.moves import Move, Shift
+from seaborn._core.moves import Move, Shift, Dodge
 from seaborn._marks.base import Mark
 from seaborn._stats.base import Stat
 from seaborn.external.version import Version
@@ -439,6 +441,52 @@ class TestScaling:
 
         assert_vector_equal(m.passed_data[0]["x"], expected)
 
+    def test_computed_var_ticks(self, long_df):
+
+        class Identity(Stat):
+            def __call__(self, df, groupby, orient, scales):
+                other = {"x": "y", "y": "x"}[orient]
+                return df.assign(**{other: df[orient]})
+
+        tick_locs = [1, 2, 5]
+        scale = Continuous().tick(at=tick_locs)
+        p = Plot(long_df, "x").add(MockMark(), Identity()).scale(y=scale).plot()
+        ax = p._figure.axes[0]
+        assert_array_equal(ax.get_yticks(), tick_locs)
+
+    def test_computed_var_transform(self, long_df):
+
+        class Identity(Stat):
+            def __call__(self, df, groupby, orient, scales):
+                other = {"x": "y", "y": "x"}[orient]
+                return df.assign(**{other: df[orient]})
+
+        p = Plot(long_df, "x").add(MockMark(), Identity()).scale(y="log").plot()
+        ax = p._figure.axes[0]
+        xfm = ax.yaxis.get_transform().transform
+        assert_array_equal(xfm([1, 10, 100]), [0, 1, 2])
+
+    def test_explicit_range_with_axis_scaling(self):
+
+        x = [1, 2, 3]
+        ymin = [10, 100, 1000]
+        ymax = [20, 200, 2000]
+        m = MockMark()
+        Plot(x=x, ymin=ymin, ymax=ymax).add(m).scale(y="log").plot()
+        assert_vector_equal(m.passed_data[0]["ymax"], pd.Series(ymax, dtype=float))
+
+    def test_derived_range_with_axis_scaling(self):
+
+        class AddOne(Stat):
+            def __call__(self, df, *args):
+                return df.assign(ymax=df["y"] + 1)
+
+        x = y = [1, 10, 100]
+
+        m = MockMark()
+        Plot(x, y).add(m, AddOne()).scale(y="log").plot()
+        assert_vector_equal(m.passed_data[0]["ymax"], pd.Series([10., 100., 1000.]))
+
     def test_facet_categories(self):
 
         m = MockMark()
@@ -813,7 +861,24 @@ class TestPlotting:
             assert_vector_equal(data["x"], long_df.loc[rows, x_i])
             assert_vector_equal(data["y"], long_df.loc[rows, y])
 
-    def test_movement(self, long_df):
+    def test_theme_default(self):
+
+        p = Plot().plot()
+        assert mpl.colors.same_color(p._figure.axes[0].get_facecolor(), "#EAEAF2")
+
+    def test_theme_params(self):
+
+        color = "r"
+        p = Plot().theme({"axes.facecolor": color}).plot()
+        assert mpl.colors.same_color(p._figure.axes[0].get_facecolor(), color)
+
+    def test_theme_error(self):
+
+        p = Plot()
+        with pytest.raises(TypeError, match=r"theme\(\) takes 1 positional"):
+            p.theme("arg1", "arg2")
+
+    def test_move(self, long_df):
 
         orig_df = long_df.copy(deep=True)
 
@@ -824,7 +889,7 @@ class TestPlotting:
 
         assert_frame_equal(long_df, orig_df)   # Test data was not mutated
 
-    def test_movement_log_scale(self, long_df):
+    def test_move_log_scale(self, long_df):
 
         m = MockMark()
         Plot(
@@ -845,6 +910,20 @@ class TestPlotting:
         Plot(long_df, x="x").pair(y=["y", "z"]).add(m, move=move_stack).plot()
         for frame in m.passed_data:
             assert_vector_equal(frame["x"], long_df["x"] + 3)
+
+    def test_move_with_range(self, long_df):
+
+        x = [0, 0, 1, 1, 2, 2]
+        group = [0, 1, 0, 1, 0, 1]
+        ymin = np.arange(6)
+        ymax = np.arange(6) * 2
+
+        m = MockMark()
+        Plot(x=x, group=group, ymin=ymin, ymax=ymax).add(m, move=Dodge()).plot()
+
+        signs = [-1, +1]
+        for i, df in m.passed_data[0].groupby("group"):
+            assert_array_equal(df["x"], np.arange(3) + signs[i] * 0.2)
 
     def test_methods_clone(self, long_df):
 
@@ -889,21 +968,31 @@ class TestPlotting:
         if not gui_backend:
             assert msg
 
-    def test_png_representation(self):
+    def test_png_repr(self):
 
         p = Plot()
         data, metadata = p._repr_png_()
+        img = Image.open(io.BytesIO(data))
 
         assert not hasattr(p, "_figure")
         assert isinstance(data, bytes)
-        assert imghdr.what("", data) == "png"
+        assert img.format == "PNG"
         assert sorted(metadata) == ["height", "width"]
         # TODO test retina scaling
 
-    @pytest.mark.xfail(reason="Plot.save not yet implemented")
     def test_save(self):
 
-        Plot().save()
+        buf = io.BytesIO()
+
+        p = Plot().save(buf)
+        assert isinstance(p, Plot)
+        img = Image.open(buf)
+        assert img.format == "PNG"
+
+        buf = io.StringIO()
+        Plot().save(buf, format="svg")
+        tag = xml.etree.ElementTree.fromstring(buf.getvalue()).tag
+        assert tag == "{http://www.w3.org/2000/svg}svg"
 
     def test_on_axes(self):
 
@@ -1036,6 +1125,34 @@ class TestPlotting:
         p = Plot(long_df, x="x", y="y", color="a").add(m).label(color=func).plot()
         assert p._figure.legends[0].get_title().get_text() == label
 
+    def test_labels_facets(self):
+
+        data = {"a": ["b", "c"], "x": ["y", "z"]}
+        p = Plot(data).facet("a", "x").label(col=str.capitalize, row="$x$").plot()
+        axs = np.reshape(p._figure.axes, (2, 2))
+        for (i, j), ax in np.ndenumerate(axs):
+            expected = f"A {data['a'][j]} | $x$ {data['x'][i]}"
+            assert ax.get_title() == expected
+
+    def test_title_single(self):
+
+        label = "A"
+        p = Plot().label(title=label).plot()
+        assert p._figure.axes[0].get_title() == label
+
+    def test_title_facet_function(self):
+
+        titles = ["a", "b"]
+        p = Plot().facet(titles).label(title=str.capitalize).plot()
+        for i, ax in enumerate(p._figure.axes):
+            assert ax.get_title() == titles[i].upper()
+
+        cols, rows = ["a", "b"], ["x", "y"]
+        p = Plot().facet(cols, rows).label(title=str.capitalize).plot()
+        for i, ax in enumerate(p._figure.axes):
+            expected = " | ".join([cols[i % 2].upper(), rows[i // 2].upper()])
+            assert ax.get_title() == expected
+
 
 class TestFacetInterface:
 
@@ -1063,7 +1180,7 @@ class TestFacetInterface:
         for subplot, level in zip(p._subplots, order):
             assert subplot[dim] == level
             assert subplot[other_dim] is None
-            assert subplot["ax"].get_title() == f"{key} = {level}"
+            assert subplot["ax"].get_title() == f"{level}"
             assert_gridspec_shape(subplot["ax"], **{f"n{dim}s": len(order)})
 
     def test_1d(self, long_df, dim):
@@ -1099,7 +1216,7 @@ class TestFacetInterface:
             assert subplot["row"] == row_level
             assert subplot["col"] == col_level
             assert subplot["axes"].get_title() == (
-                f"{variables['row']} = {row_level} | {variables['col']} = {col_level}"
+                f"{col_level} | {row_level}"
             )
             assert_gridspec_shape(
                 subplot["axes"], len(levels["row"]), len(levels["col"])
@@ -1121,6 +1238,12 @@ class TestFacetInterface:
 
         p = Plot(long_df).facet(**variables, order=order)
         self.check_facet_results_2d(p, long_df, variables, order)
+
+    def test_figsize(self):
+
+        figsize = (4, 2)
+        p = Plot().configure(figsize=figsize).plot()
+        assert tuple(p._figure.get_size_inches()) == figsize
 
     def test_axis_sharing(self, long_df):
 
@@ -1280,7 +1403,7 @@ class TestPairInterface:
             ax = subplot["ax"]
             assert ax.get_xlabel() == x
             assert ax.get_ylabel() == y_i
-            assert ax.get_title() == f"{col} = {col_i}"
+            assert ax.get_title() == f"{col_i}"
             assert_gridspec_shape(ax, len(y), len(facet_levels))
 
     @pytest.mark.parametrize("variables", [("rows", "y"), ("columns", "x")])
@@ -1668,7 +1791,7 @@ class TestLegend:
 
         labels = list(np.unique(s))  # assumes sorted order
 
-        assert e[0] == (None, id(s))
+        assert e[0] == ("", id(s))
         assert e[-1] == labels
 
         artists = e[1]
