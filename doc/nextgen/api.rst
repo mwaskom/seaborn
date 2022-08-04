@@ -28,6 +28,7 @@ Plot interface
     Plot.plot
     Plot.save
     Plot.show
+    Plot.theme
 
 Marks
 -----
@@ -40,6 +41,7 @@ Marks
     Bar
     Bars
     Dot
+    Interval
     Line
     Lines
     Path
@@ -55,6 +57,7 @@ Stats
     :nosignatures:
 
     Agg
+    Est
     Hist
     PolyFit
 

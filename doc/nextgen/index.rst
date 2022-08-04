@@ -13,9 +13,8 @@ with the new interface:
 
 .. code:: ipython3
 
-    import seaborn as sns
-    sns.set_theme()
-    tips = sns.load_dataset("tips")
+    from seaborn import load_dataset
+    tips = load_dataset("tips")
     
     import seaborn.objects as so
     (
