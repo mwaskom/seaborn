@@ -176,6 +176,7 @@ class Plot:
             raise TypeError(err)
 
         self._data = PlotData(data, variables)
+
         self._layers = []
 
         self._scales = {}
@@ -249,8 +250,9 @@ class Plot:
         new._layers.extend(self._layers)
 
         new._scales.update(self._scales)
-        new._labels.update(self._labels)
         new._limits.update(self._limits)
+        new._labels.update(self._labels)
+        new._theme.update(self._theme)
 
         new._facet_spec.update(self._facet_spec)
         new._pair_spec.update(self._pair_spec)
@@ -616,8 +618,6 @@ class Plot:
         When using a single subplot, `title=` sets its title.
 
         """
-        # TODO should col=... add a "label" to the facet titles?
-        # How does this interact with title=...?
         new = self._clone()
         if title is not None:
             new._labels["title"] = title
