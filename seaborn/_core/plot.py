@@ -11,7 +11,7 @@ import textwrap
 from contextlib import contextmanager
 from collections import abc
 from collections.abc import Callable, Generator, Hashable
-from typing import Any, Optional, cast
+from typing import Any, cast
 
 from cycler import cycler
 import pandas as pd
@@ -151,7 +151,7 @@ class Plot:
 
     _scales: dict[str, Scale]
     _limits: dict[str, tuple[Any, Any]]
-    _labels: dict[str, str | Callable[[str], str] | None]
+    _labels: dict[str, str | Callable[[str], str]]
     _theme: dict[str, Any]
 
     _facet_spec: FacetSpec
@@ -176,6 +176,7 @@ class Plot:
             raise TypeError(err)
 
         self._data = PlotData(data, variables)
+
         self._layers = []
 
         self._scales = {}
@@ -249,8 +250,9 @@ class Plot:
         new._layers.extend(self._layers)
 
         new._scales.update(self._scales)
-        new._labels.update(self._labels)
         new._limits.update(self._limits)
+        new._labels.update(self._labels)
+        new._theme.update(self._theme)
 
         new._facet_spec.update(self._facet_spec)
         new._pair_spec.update(self._pair_spec)
@@ -599,23 +601,27 @@ class Plot:
         new._limits.update(limits)
         return new
 
-    def label(self, **labels: str | Callable[[str], str] | None) -> Plot:
+    def label(self, *, title=None, **variables: str | Callable[[str], str]) -> Plot:
         """
-        Control the labels used for variables in the plot.
+        Add or modify labels for axes, legends, and subplots.
 
-        For coordinate variables, this sets the axis label.
-        For semantic variables, it sets the legend title.
-
-        Keywords correspond to variables defined in the plot.
+        Additional keywords correspond to variables defined in the plot.
         Values can be one of the following types:
 
-        - string (used literally)
+        - string (used literally; pass "" to clear the default label)
         - function (called on the default label)
-        - None (disables the label for this variable)
+
+        For coordinate variables, the value sets the axis label.
+        For semantic variables, the value sets the legend title.
+        For faceting variables, `title=` modifies the subplot-specific label,
+        while `col=` and/or `row=` add a label for the faceting variable.
+        When using a single subplot, `title=` sets its title.
 
         """
         new = self._clone()
-        new._labels.update(labels)
+        if title is not None:
+            new._labels["title"] = title
+        new._labels.update(variables)
         return new
 
     def configure(
@@ -773,7 +779,7 @@ class Plotter:
         self._pyplot = pyplot
         self._theme = theme
         self._legend_contents: list[tuple[
-            tuple[str | None, str | int], list[Artist], list[str],
+            tuple[str, str | int], list[Artist], list[str],
         ]] = []
         self._scales: dict[str, Scale] = {}
 
@@ -852,16 +858,17 @@ class Plotter:
 
         return common_data, layers
 
-    def _resolve_label(self, p: Plot, var: str, auto_label: str | None) -> str | None:
+    def _resolve_label(self, p: Plot, var: str, auto_label: str | None) -> str:
 
-        label: str | None
+        label: str
         if var in p._labels:
             manual_label = p._labels[var]
             if callable(manual_label) and auto_label is not None:
                 label = manual_label(auto_label)
             else:
-                # mypy needs a lot of help here, I'm not sure why
-                label = cast(Optional[str], manual_label)
+                label = cast(str, manual_label)
+        elif auto_label is None:
+            label = ""
         else:
             label = auto_label
         return label
@@ -935,10 +942,13 @@ class Plotter:
             # Let's have what we currently call "margin titles" but properly using the
             # ax.set_title interface (see my gist)
             title_parts = []
-            for dim in ["row", "col"]:
+            for dim in ["col", "row"]:
                 if sub[dim] is not None:
-                    name = common.names.get(dim)  # TODO None = val looks bad
-                    title_parts.append(f"{name} = {sub[dim]}")
+                    val = self._resolve_label(p, "title", f"{sub[dim]}")
+                    if dim in p._labels:
+                        key = self._resolve_label(p, dim, common.names.get(dim))
+                        val = f"{key} {val}"
+                    title_parts.append(val)
 
             has_col = sub["col"] is not None
             has_row = sub["row"] is not None
@@ -953,6 +963,9 @@ class Plotter:
                 title = " | ".join(title_parts)
                 title_text = ax.set_title(title)
                 title_text.set_visible(show_title)
+            elif not (has_col or has_row):
+                title = self._resolve_label(p, "title", None)
+                title_text = ax.set_title(title)
 
     def _compute_stats(self, spec: Plot, layers: list[Layer]) -> None:
 
@@ -1445,7 +1458,7 @@ class Plotter:
 
         # First pass: Identify the values that will be shown for each variable
         schema: list[tuple[
-            tuple[str | None, str | int], list[str], tuple[list, list[str]]
+            tuple[str, str | int], list[str], tuple[list, list[str]]
         ]] = []
         schema = []
         for var in legend_vars:
@@ -1458,8 +1471,7 @@ class Plotter:
                         part_vars.append(var)
                         break
                 else:
-                    auto_title = data.names[var]
-                    title = self._resolve_label(p, var, auto_title)
+                    title = self._resolve_label(p, var, data.names[var])
                     entry = (title, data.ids[var]), [var], (values, labels)
                     schema.append(entry)
 
@@ -1479,7 +1491,7 @@ class Plotter:
         # Input list has an entry for each distinct variable in each layer
         # Output dict has an entry for each distinct variable
         merged_contents: dict[
-            tuple[str | None, str | int], tuple[list[Artist], list[str]],
+            tuple[str, str | int], tuple[list[Artist], list[str]],
         ] = {}
         for key, artists, labels in self._legend_contents:
             # Key is (name, id); we need the id to resolve variable uniqueness,
@@ -1503,7 +1515,7 @@ class Plotter:
                 self._figure,
                 handles,
                 labels,
-                title="" if name is None else name,
+                title=name,
                 loc="center left",
                 bbox_to_anchor=(.98, .55),
             )
