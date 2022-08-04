@@ -779,7 +779,7 @@ class Plotter:
         self._pyplot = pyplot
         self._theme = theme
         self._legend_contents: list[tuple[
-            tuple[str | None, str | int], list[Artist], list[str],
+            tuple[str, str | int], list[Artist], list[str],
         ]] = []
         self._scales: dict[str, Scale] = {}
 
