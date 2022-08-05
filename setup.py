@@ -43,7 +43,7 @@ INSTALL_REQUIRES = [
 ]
 
 EXTRAS_REQUIRE = {
-    'all': [
+    'stats': [
         'scipy>=1.3',
         'statsmodels>=0.10',
     ]

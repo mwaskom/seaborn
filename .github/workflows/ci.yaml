@@ -26,7 +26,7 @@ jobs:
       - name: Install seaborn
         run: |
           pip install --upgrade pip
-          pip install .[all] -r ci/utils.txt
+          pip install .[stats] -r ci/utils.txt
 
       - name: Install doc tools
         run: |
@@ -46,14 +46,14 @@ jobs:
       matrix:
         python: ["3.7", "3.8", "3.9", "3.10"]
         target: [test]
-        install: [all]
+        install: [full]
         deps: [latest]
         backend: [agg]
 
         include:
           - python: "3.7"
             target: unittests
-            install: all
+            install: full
             deps: pinned
             backend: agg
           - python: "3.10"
@@ -63,7 +63,7 @@ jobs:
             backend: agg
           - python: "3.10"
             target: test
-            install: all
+            install: full
             deps: latest
             backend: tkagg
 
@@ -79,7 +79,7 @@ jobs:
       - name: Install seaborn
         run: |
           pip install --upgrade pip wheel
-          if [[ ${{matrix.install}} == 'all' ]]; then EXTRAS='[all]'; fi
+          if [[ ${{matrix.install}} == 'full' ]]; then EXTRAS='[stats]'; fi
           if [[ ${{matrix.deps }} == 'pinned' ]]; then DEPS='-r ci/deps_pinned.txt'; fi
           pip install .$EXTRAS $DEPS -r ci/utils.txt
 
