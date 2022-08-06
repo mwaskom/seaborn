@@ -100,7 +100,7 @@ Other updates
 
 - |Defaults| The `patch.facecolor` rc param is no longer set by :func:`set_palette` (or :func:`set_theme`). This should have no general effect, because the matplotlib default is now `"C0"` (:pr:`2906`).
 
-- |Deps| Made `scipy` an optional dependency and added `pip install seaborn[all]` as a method for ensuring the availability of compatible `scipy` and `statsmodels` libraries at install time. This has a few minor implications for existing code, which are explained in the Github pull request (:pr:`2398`).
+- |Deps| Made `scipy` an optional dependency and added `pip install seaborn[stats]` as a method for ensuring the availability of compatible `scipy` and `statsmodels` libraries at install time. This has a few minor implications for existing code, which are explained in the Github pull request (:pr:`2398`).
 
 - |Deps| Example datasets are now stored in an OS-specific cache location (as determined by `appdirs`) rather than in the user's home directory. Users should feel free to remove `~/seaborn-data` if desired (:pr:`2773`).
 

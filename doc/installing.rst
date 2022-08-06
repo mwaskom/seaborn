@@ -12,7 +12,7 @@ Official releases of seaborn can be installed from `PyPI <https://pypi.org/proje
 The basic invocation of `pip` will install seaborn and, if necessary, its mandatory dependencies.
 It is possible to include optional dependencies that give access to a few advanced features::
 
-    pip install seaborn[all]
+    pip install seaborn[stats]
 
 The library is also included as part of the `Anaconda <https://repo.anaconda.com/>`_ distribution,
 and it can be installed with `conda`::
