@@ -259,9 +259,6 @@ class IntervalProperty(Property):
 class PointSize(IntervalProperty):
     """Size (diameter) of a point mark, in points, with scaling by area."""
     _default_range = 2, 8  # TODO use rcparams?
-    # TODO N.B. both Scatter and Dot use this but have different expected sizes
-    # Is that something we need to handle? Or assume Dot size rarely scaled?
-    # Also will Line marks have a PointSize property?
 
     def _forward(self, values):
         """Square native values to implement linear scaling of point area."""

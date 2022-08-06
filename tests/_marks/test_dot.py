@@ -5,7 +5,7 @@ from numpy.testing import assert_array_equal
 
 from seaborn.palettes import color_palette
 from seaborn._core.plot import Plot
-from seaborn._marks.scatter import Dot, Dots
+from seaborn._marks.dot import Dot, Dots
 
 
 @pytest.fixture(autouse=True)

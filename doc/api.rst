@@ -29,13 +29,13 @@ Mark objects
     Bar
     Bars
     Dot
+    Dots
     Interval
     Path
     Paths
     Line
     Lines
     Ribbon
-    Scatter
 
 Stat objects
 ~~~~~~~~~~~~
