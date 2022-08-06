@@ -122,14 +122,12 @@ class Dot(DotBase):
     def _resolve_properties(self, data, scales):
 
         resolved = super()._resolve_properties(data, scales)
-
         filled = resolved["fill"]
 
         main_stroke = resolved["stroke"]
         edge_stroke = resolved["edgewidth"]
         resolved["linewidth"] = np.where(filled, edge_stroke, main_stroke)
 
-        # Overwrite the colors that the super class set
         main_color = resolve_color(self, data, "", scales)
         edge_color = resolve_color(self, data, "edge", scales)
 
@@ -140,6 +138,7 @@ class Dot(DotBase):
 
         filled = np.squeeze(filled)
         if isinstance(main_color, tuple):
+            # TODO handle this in resolve_color
             main_color = tuple([*main_color[:3], main_color[3] * filled])
         else:
             main_color = np.c_[main_color[:, :3], main_color[:, 3] * filled]
@@ -166,12 +165,9 @@ class Dots(DotBase):
     def _resolve_properties(self, data, scales):
 
         resolved = super()._resolve_properties(data, scales)
-
         resolved["linewidth"] = resolved.pop("stroke")
-
         resolved["facecolor"] = resolve_color(self, data, "fill", scales)
         resolved["edgecolor"] = resolve_color(self, data, "", scales)
-
         resolved.setdefault("edgestyle", (0, None))
 
         fc = resolved["facecolor"]
