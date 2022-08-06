@@ -6,7 +6,7 @@ from matplotlib.colors import same_color, to_rgba
 from numpy.testing import assert_array_equal
 
 from seaborn._core.plot import Plot
-from seaborn._marks.lines import Line, Path, Lines, Paths, Interval
+from seaborn._marks.line import Line, Path, Lines, Paths, Interval
 
 
 class TestPath:

@@ -6,7 +6,7 @@ import pytest
 from numpy.testing import assert_array_equal
 
 from seaborn._core.groupby import GroupBy
-from seaborn._stats.histograms import Hist
+from seaborn._stats.histogram import Hist
 
 
 class TestHist:
