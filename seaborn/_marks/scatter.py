@@ -24,19 +24,7 @@ if TYPE_CHECKING:
 
 
 @dataclass
-class Scatter(Mark):
-    """
-    A point mark defined by strokes with optional fills.
-    """
-    # TODO retype marker as MappableMarker
-    marker: MappableString = Mappable(rc="scatter.marker", grouping=False)
-    stroke: MappableFloat = Mappable(.75, grouping=False)  # TODO rcParam?
-    pointsize: MappableFloat = Mappable(3, grouping=False)  # TODO rcParam?
-    color: MappableColor = Mappable("C0", grouping=False)
-    alpha: MappableFloat = Mappable(1, grouping=False)  # TODO auto alpha?
-    fill: MappableBool = Mappable(True, grouping=False)
-    fillcolor: MappableColor = Mappable(depend="color", grouping=False)
-    fillalpha: MappableFloat = Mappable(.2, grouping=False)
+class DotBase(Mark):
 
     def _resolve_paths(self, data):
 
@@ -60,28 +48,14 @@ class Scatter(Mark):
 
         resolved = resolve_properties(self, data, scales)
         resolved["path"] = self._resolve_paths(resolved)
+        resolved["size"] = resolved["pointsize"] ** 2
 
-        if isinstance(data, dict):  # TODO need a better way to check
+        if isinstance(data, dict):  # Properties for single dot
             filled_marker = resolved["marker"].is_filled()
         else:
             filled_marker = [m.is_filled() for m in resolved["marker"]]
 
-        resolved["linewidth"] = resolved["stroke"]
         resolved["fill"] = resolved["fill"] * filled_marker
-        resolved["size"] = resolved["pointsize"] ** 2
-
-        resolved["edgecolor"] = resolve_color(self, data, "", scales)
-        resolved["facecolor"] = resolve_color(self, data, "fill", scales)
-
-        # Because only Dot, and not Scatter, has an edgestyle
-        resolved.setdefault("edgestyle", (0, None))
-
-        fc = resolved["facecolor"]
-        if isinstance(fc, tuple):
-            resolved["facecolor"] = fc[0], fc[1], fc[2], fc[3] * resolved["fill"]
-        else:
-            fc[:, 3] = fc[:, 3] * resolved["fill"]  # TODO Is inplace mod a problem?
-            resolved["facecolor"] = fc
 
         return resolved
 
@@ -129,24 +103,24 @@ class Scatter(Mark):
         )
 
 
-# TODO change this to depend on ScatterBase?
 @dataclass
-class Dot(Scatter):
+class Dot(DotBase):
     """
-    A point mark defined by shape with optional edges.
+    A mark suitable for dot plots or less-dense scatterplots.
     """
     marker: MappableString = Mappable("o", grouping=False)
+    pointsize: MappableFloat = Mappable(6, grouping=False)  # TODO rcParam?
+    stroke: MappableFloat = Mappable(.75, grouping=False)  # TODO rcParam?
     color: MappableColor = Mappable("C0", grouping=False)
     alpha: MappableFloat = Mappable(1, grouping=False)
     fill: MappableBool = Mappable(True, grouping=False)
     edgecolor: MappableColor = Mappable(depend="color", grouping=False)
     edgealpha: MappableFloat = Mappable(depend="alpha", grouping=False)
-    pointsize: MappableFloat = Mappable(6, grouping=False)  # TODO rcParam?
     edgewidth: MappableFloat = Mappable(.5, grouping=False)  # TODO rcParam?
     edgestyle: MappableStyle = Mappable("-", grouping=False)
 
     def _resolve_properties(self, data, scales):
-        # TODO this is maybe a little hacky, is there a better abstraction?
+
         resolved = super()._resolve_properties(data, scales)
 
         filled = resolved["fill"]
@@ -170,5 +144,41 @@ class Dot(Scatter):
         else:
             main_color = np.c_[main_color[:, :3], main_color[:, 3] * filled]
         resolved["facecolor"] = main_color
+
+        return resolved
+
+
+@dataclass
+class Dots(DotBase):
+    """
+    A dot mark defined by strokes to better handle overplotting.
+    """
+    # TODO retype marker as MappableMarker
+    marker: MappableString = Mappable(rc="scatter.marker", grouping=False)
+    pointsize: MappableFloat = Mappable(3, grouping=False)  # TODO rcParam?
+    stroke: MappableFloat = Mappable(.75, grouping=False)  # TODO rcParam?
+    color: MappableColor = Mappable("C0", grouping=False)
+    alpha: MappableFloat = Mappable(1, grouping=False)  # TODO auto alpha?
+    fill: MappableBool = Mappable(True, grouping=False)
+    fillcolor: MappableColor = Mappable(depend="color", grouping=False)
+    fillalpha: MappableFloat = Mappable(.2, grouping=False)
+
+    def _resolve_properties(self, data, scales):
+
+        resolved = super()._resolve_properties(data, scales)
+
+        resolved["linewidth"] = resolved.pop("stroke")
+
+        resolved["facecolor"] = resolve_color(self, data, "fill", scales)
+        resolved["edgecolor"] = resolve_color(self, data, "", scales)
+
+        resolved.setdefault("edgestyle", (0, None))
+
+        fc = resolved["facecolor"]
+        if isinstance(fc, tuple):
+            resolved["facecolor"] = fc[0], fc[1], fc[2], fc[3] * resolved["fill"]
+        else:
+            fc[:, 3] = fc[:, 3] * resolved["fill"]  # TODO Is inplace mod a problem?
+            resolved["facecolor"] = fc
 
         return resolved
