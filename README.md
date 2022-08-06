@@ -1,4 +1,4 @@
-<img src="doc/_static/logo-wide-lightbg.svg"><br>
+<img src="https://raw.githubusercontent.com/mwaskom/seaborn/master/doc/_static/logo-wide-lightbg.svg"><br>
 
 --------------------------------------
 
