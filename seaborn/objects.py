@@ -32,7 +32,7 @@ from seaborn._marks.base import Mark  # noqa: F401
 from seaborn._marks.area import Area, Ribbon  # noqa: F401
 from seaborn._marks.bar import Bar, Bars  # noqa: F401
 from seaborn._marks.line import Line, Lines, Path, Paths, Interval  # noqa: F401
-from seaborn._marks.scatter import Dot, Scatter  # noqa: F401
+from seaborn._marks.dot import Dot, Dots  # noqa: F401
 
 from seaborn._stats.base import Stat  # noqa: F401
 from seaborn._stats.aggregation import Agg, Est  # noqa: F401
