@@ -696,6 +696,19 @@ class TestFacetGrid:
         assert res == color
         assert g.figure.get_facecolor() == color
 
+    def test_tick_params(self):
+
+        g = ag.FacetGrid(self.df, row="a", col="b")
+        color = 'blue'
+        width = 2
+        g.tick_params(width=width, color=color)
+        for ax in g.axes.ravel():
+            for axis in ['xaxis', 'yaxis']:
+                for tick in getattr(ax, axis).get_major_ticks():
+                    assert tick.tick1line.get_color() == color
+                    assert tick.tick2line.get_color() == color
+                    assert tick._width == width
+
 
 class TestPairGrid:
 
@@ -1430,6 +1443,19 @@ class TestPairGrid:
 
         g2 = ag.pairplot(self.df)
         assert g2.legend is None
+
+    def test_tick_params(self):
+
+        g = ag.PairGrid(self.df)
+        color = 'red'
+        width = 3
+        g.tick_params(width=width, color=color)
+        for ax in g.axes.ravel():
+            for axis in ['xaxis', 'yaxis']:
+                for tick in getattr(ax, axis).get_major_ticks():
+                    assert tick.tick1line.get_color() == color
+                    assert tick.tick2line.get_color() == color
+                    assert tick._width == width
 
 
 class TestJointGrid:
