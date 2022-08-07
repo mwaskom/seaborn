@@ -26,6 +26,7 @@ Mark objects
     :nosignatures:
 
     Area
+    Band
     Bar
     Bars
     Dot
@@ -35,7 +36,6 @@ Mark objects
     Paths
     Line
     Lines
-    Ribbon
 
 Stat objects
 ~~~~~~~~~~~~

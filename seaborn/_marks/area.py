@@ -126,7 +126,7 @@ class Area(AreaBase, Mark):
 
 
 @dataclass
-class Ribbon(AreaBase, Mark):
+class Band(AreaBase, Mark):
     """
     An interval mark that fills between minimum and maximum values.
     """

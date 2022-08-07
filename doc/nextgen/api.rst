@@ -35,13 +35,13 @@ Marks
     :nosignatures:
 
     Area
+    Band
     Bar
     Dot
     Line
     Lines
     Path
     Paths
-    Ribbon
     Scatter
 
 Stats
