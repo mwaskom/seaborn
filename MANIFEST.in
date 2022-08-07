@@ -1,4 +1,0 @@
-include README.md
-include CONTRIBUTING.md
-include LICENSE.md
-recursive-include licences *
