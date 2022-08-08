@@ -37,12 +37,14 @@ Marks
     Area
     Band
     Bar
+    Bars
     Dot
+    Dots
     Line
     Lines
     Path
     Paths
-    Scatter
+    Range
 
 Stats
 -----

@@ -31,11 +31,11 @@ Mark objects
     Bars
     Dot
     Dots
-    Interval
-    Path
-    Paths
     Line
     Lines
+    Path
+    Paths
+    Range
 
 Stat objects
 ~~~~~~~~~~~~

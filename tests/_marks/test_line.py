@@ -6,7 +6,7 @@ from matplotlib.colors import same_color, to_rgba
 from numpy.testing import assert_array_equal
 
 from seaborn._core.plot import Plot
-from seaborn._marks.line import Line, Path, Lines, Paths, Interval
+from seaborn._marks.line import Line, Path, Lines, Paths, Range
 
 
 class TestPath:
@@ -244,7 +244,7 @@ class TestLines:
         assert_array_equal(verts[1], [3, 4])
 
 
-class TestInterval:
+class TestRange:
 
     def test_xy_data(self):
 
@@ -252,7 +252,7 @@ class TestInterval:
         ymin = [1, 4]
         ymax = [2, 3]
 
-        p = Plot(x=x, ymin=ymin, ymax=ymax).add(Interval()).plot()
+        p = Plot(x=x, ymin=ymin, ymax=ymax).add(Range()).plot()
         lines, = p._figure.axes[0].collections
 
         for i, path in enumerate(lines.get_paths()):
@@ -267,7 +267,7 @@ class TestInterval:
         ymax = [2, 3, 1, 4]
         group = ["a", "a", "b", "b"]
 
-        p = Plot(x=x, ymin=ymin, ymax=ymax, color=group).add(Interval()).plot()
+        p = Plot(x=x, ymin=ymin, ymax=ymax, color=group).add(Range()).plot()
         lines, = p._figure.axes[0].collections
 
         for i, path in enumerate(lines.get_paths()):
@@ -282,7 +282,7 @@ class TestInterval:
         ymin = [1, 4]
         ymax = [2, 3]
 
-        m = Interval(color="r", linewidth=4)
+        m = Range(color="r", linewidth=4)
         p = Plot(x=x, ymin=ymin, ymax=ymax).add(m).plot()
         lines, = p._figure.axes[0].collections
 
