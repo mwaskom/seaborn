@@ -478,7 +478,12 @@ class EstimateAggregator:
     def __call__(self, data, var):
         """Aggregate over `var` column of `data` with estimate and error interval."""
         vals = data[var]
-        estimate = vals.agg(self.estimator)
+        if callable(self.estimator):
+            # You would think we could pass to vals.agg, and yet:
+            # https://github.com/mwaskom/seaborn/issues/2943
+            estimate = self.estimator(vals)
+        else:
+            estimate = vals.agg(self.estimator)
 
         # Options that produce no error bars
         if self.error_method is None:
