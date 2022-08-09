@@ -653,14 +653,14 @@ class TestFacetGrid:
 
         g = ag.FacetGrid(self.df, row="a", col="b")
         g.refline()
-        for ax in g.axes.ravel():
+        for ax in g.axes.flat:
             assert not ax.lines
 
         refx = refy = 0.5
         hline = np.array([[0, refy], [1, refy]])
         vline = np.array([[refx, 0], [refx, 1]])
         g.refline(x=refx, y=refy)
-        for ax in g.axes.ravel():
+        for ax in g.axes.flat:
             assert ax.lines[0].get_color() == '.5'
             assert ax.lines[0].get_linestyle() == '--'
             assert len(ax.lines) == 2
@@ -702,11 +702,11 @@ class TestFacetGrid:
         color = 'blue'
         width = 2
         g.tick_params(width=width, color=color)
-        for ax in g.axes.ravel():
+        for ax in g.axes.flat:
             for axis in ['xaxis', 'yaxis']:
                 for tick in getattr(ax, axis).get_major_ticks():
-                    assert tick.tick1line.get_color() == color
-                    assert tick.tick2line.get_color() == color
+                    assert mpl.colors.same_color(tick.tick1line.get_color(), color)
+                    assert mpl.colors.same_color(tick.tick2line.get_color(), color)
                     assert tick._width == width
 
 
@@ -1450,11 +1450,11 @@ class TestPairGrid:
         color = 'red'
         width = 3
         g.tick_params(width=width, color=color)
-        for ax in g.axes.ravel():
+        for ax in g.axes.flat:
             for axis in ['xaxis', 'yaxis']:
                 for tick in getattr(ax, axis).get_major_ticks():
-                    assert tick.tick1line.get_color() == color
-                    assert tick.tick2line.get_color() == color
+                    assert mpl.colors.same_color(tick.tick1line.get_color(), color)
+                    assert mpl.colors.same_color(tick.tick2line.get_color(), color)
                     assert tick._width == width
 
 
