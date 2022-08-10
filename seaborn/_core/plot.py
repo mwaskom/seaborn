@@ -338,9 +338,7 @@ class Plot:
     def add(
         self,
         mark: Mark,
-        stat: Stat | None = None,
-        move: Move | list[Move] | None = None,
-        *,
+        *transforms: Stat | Mark,
         orient: str | None = None,
         legend: bool = True,
         data: DataSource = None,
@@ -357,32 +355,50 @@ class Plot:
         ----------
         mark : :class:`seaborn.objects.Mark`
             The visual representation of the data to use in this layer.
-        stat : :class:`seaborn.objects.Stat`
-            A transformation applied to the data before plotting.
-        move : :class:`seaborn.objects.Move`
-            Additional transformation(s) to handle over-plotting.
-        legend : bool
-            Option to suppress the mark/mappings for this layer from the legend.
+        transforms : :class:`seaborn.objects.Stat` or :class:`seaborn.objects.Move`
+            Objects representing transforms to be applied before plotting the data.
+            Current, at most one :class:`seaborn.objects.Stat` can be used, and it
+            must be passed first. This constraint will be relaxed in the future.
         orient : "x", "y", "v", or "h"
             The orientation of the mark, which affects how the stat is computed.
             Typically corresponds to the axis that defines groups for aggregation.
             The "v" (vertical) and "h" (horizontal) options are synonyms for "x" / "y",
             but may be more intuitive with some marks. When not provided, an
             orientation will be inferred from characteristics of the data and scales.
+        legend : bool
+            Option to suppress the mark/mappings for this layer from the legend.
         data : DataFrame or dict
             Data source to override the global source provided in the constructor.
         variables : data vectors or identifiers
             Additional layer-specific variables, including variables that will be
-            passed directly to the stat without scaling.
+            passed directly to the transforms without scaling.
 
         """
         if not isinstance(mark, Mark):
             msg = f"mark must be a Mark instance, not {type(mark)!r}."
             raise TypeError(msg)
 
-        if stat is not None and not isinstance(stat, Stat):
-            msg = f"stat must be a Stat instance, not {type(stat)!r}."
-            raise TypeError(msg)
+        # TODO This API for transforms was a late decision, and previously Plot.add
+        # accepted 0 or 1 Stat instances and 0, 1 or a list of Move instances.
+        # It will take some work to refactor the internals so that Stat and Move are
+        # treated identically, and until then well need to enforce these limitations.
+        if not transforms:
+            stat, move = None, None
+        elif isinstance(transforms[0], Stat):
+            stat, move = transforms[0], list(transforms[1:])
+        else:
+            stat, move = None, list(transforms)
+
+        if (
+            (stat is not None and not isinstance(stat, Stat))
+            or (move is not None and not all(isinstance(m, Move) for m in move))
+        ):
+            err = " ".join([
+                "Transforms must have at most one Stat type (in the first position),",
+                "and all other transforms must be a Move type. Given transform types:",
+                ", ".join(str(type(t).__name__) for t in transforms) + "."
+            ])
+            raise TypeError(err)
 
         # TODO decide how to allow Mark to have default Stat/Move
         # if stat is None and hasattr(mark, "default_stat"):
