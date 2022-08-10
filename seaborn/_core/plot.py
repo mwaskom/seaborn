@@ -392,7 +392,7 @@ class Plot:
         elif isinstance(transforms[0], Stat):
             stat = transforms[0]
             move = [m for m in transforms[1:] if isinstance(m, Move)]
-            error = not isinstance(stat, Stat) or len(move) != (len(transforms) - 1)
+            error = len(move) != len(transforms) - 1
         else:
             stat = None
             move = [m for m in transforms if isinstance(m, Move)]
