@@ -699,15 +699,15 @@ class TestFacetGrid:
     def test_tick_params(self):
 
         g = ag.FacetGrid(self.df, row="a", col="b")
-        color = 'blue'
-        width = 2
-        g.tick_params(width=width, color=color)
+        color = "blue"
+        pad = 3
+        g.tick_params(pad=pad, color=color)
         for ax in g.axes.flat:
-            for axis in ['xaxis', 'yaxis']:
+            for axis in ["xaxis", "yaxis"]:
                 for tick in getattr(ax, axis).get_major_ticks():
                     assert mpl.colors.same_color(tick.tick1line.get_color(), color)
                     assert mpl.colors.same_color(tick.tick2line.get_color(), color)
-                    assert tick._width == width
+                    assert tick.get_pad() == pad
 
 
 class TestPairGrid:
@@ -1447,15 +1447,15 @@ class TestPairGrid:
     def test_tick_params(self):
 
         g = ag.PairGrid(self.df)
-        color = 'red'
-        width = 3
-        g.tick_params(width=width, color=color)
+        color = "red"
+        pad = 3
+        g.tick_params(pad=pad, color=color)
         for ax in g.axes.flat:
-            for axis in ['xaxis', 'yaxis']:
+            for axis in ["xaxis", "yaxis"]:
                 for tick in getattr(ax, axis).get_major_ticks():
                     assert mpl.colors.same_color(tick.tick1line.get_color(), color)
                     assert mpl.colors.same_color(tick.tick2line.get_color(), color)
-                    assert tick._width == width
+                    assert tick.get_pad() == pad
 
 
 class TestJointGrid:
