@@ -345,7 +345,7 @@ class Plot:
         **variables: VariableSpec,
     ) -> Plot:
         """
-        Define a layer of the visualization.
+        Define a layer of the visualization in terms of mark and data transform(s).
 
         This is the main method for specifying how the data should be visualized.
         It can be called multiple times with different arguments to define
@@ -379,46 +379,39 @@ class Plot:
             raise TypeError(msg)
 
         # TODO This API for transforms was a late decision, and previously Plot.add
-        # accepted 0 or 1 Stat instances and 0, 1 or a list of Move instances.
+        # accepted 0 or 1 Stat instances and 0, 1, or a list of Move instances.
         # It will take some work to refactor the internals so that Stat and Move are
-        # treated identically, and until then well need to enforce these limitations.
+        # treated identically, and until then well need to "unpack" the transforms
+        # here and enforce limitations on the order / types.
+
         stat: Optional[Stat]
         move: Optional[List[Move]]
+        error = False
         if not transforms:
             stat, move = None, None
         elif isinstance(transforms[0], Stat):
             stat = transforms[0]
             move = [m for m in transforms[1:] if isinstance(m, Move)]
+            error = not isinstance(stat, Stat) or len(move) != (len(transforms) - 1)
         else:
             stat = None
             move = [m for m in transforms if isinstance(m, Move)]
+            error = len(move) != len(transforms)
 
-        if (
-            (stat is not None and not isinstance(stat, Stat))
-            or (move is not None and not all(isinstance(m, Move) for m in move))
-        ):
-            err = " ".join([
+        if error:
+            msg = " ".join([
                 "Transforms must have at most one Stat type (in the first position),",
-                "and all other transforms must be a Move type. Given transform types:",
+                "and all others must be a Move type. Given transform type(s):",
                 ", ".join(str(type(t).__name__) for t in transforms) + "."
             ])
-            raise TypeError(err)
-
-        # TODO decide how to allow Mark to have default Stat/Move
-        # if stat is None and hasattr(mark, "default_stat"):
-        #     stat = mark.default_stat()
-
-        # TODO it doesn't work to supply scalars to variables, but that would be nice
-
-        # TODO accept arbitrary variables defined by the stat (/move?) here
-        # (but not in the Plot constructor)
-        # Should stat variables ever go in the constructor, or just in the add call?
+            raise TypeError(msg)
 
         new = self._clone()
         new._layers.append({
             "mark": mark,
             "stat": stat,
             "move": move,
+            # TODO it doesn't work to supply scalars to variables, but it should
             "vars": variables,
             "source": data,
             "legend": legend,
