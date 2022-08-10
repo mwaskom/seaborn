@@ -11,7 +11,7 @@ import textwrap
 from contextlib import contextmanager
 from collections import abc
 from collections.abc import Callable, Generator, Hashable
-from typing import Any, cast
+from typing import Any, List, Optional, cast
 
 from cycler import cycler
 import pandas as pd
@@ -382,12 +382,16 @@ class Plot:
         # accepted 0 or 1 Stat instances and 0, 1 or a list of Move instances.
         # It will take some work to refactor the internals so that Stat and Move are
         # treated identically, and until then well need to enforce these limitations.
+        stat: Optional[Stat]
+        move: Optional[List[Move]]
         if not transforms:
             stat, move = None, None
         elif isinstance(transforms[0], Stat):
-            stat, move = transforms[0], list(transforms[1:])
+            stat = transforms[0]
+            move = [m for m in transforms[1:] if isinstance(m, Move)]
         else:
-            stat, move = None, list(transforms)
+            stat = None
+            move = [m for m in transforms if isinstance(m, Move)]
 
         if (
             (stat is not None and not isinstance(stat, Stat))
