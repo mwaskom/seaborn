@@ -62,6 +62,8 @@ Other updates
 
 - |Feature| Made it easier to customize :class:`FacetGrid` / :class:`PairGrid` / :class:`JointGrid` with a fluent (method-chained) style by adding `apply`/ `pipe` methods. Additionally, fixed the `tight_layout` and `refline` methods so that they return `self` (:pr:`2926`).
 
+- |Feature| Added :meth:`FacetGrid.tick_params` and :meth:`PairGrid.tick_params` to customize the appearance of the ticks, tick labels, and gridlines of all subplots at once (:pr:`2944`).
+
 - |Enhancement| Added a `width` parameter to :func:`barplot` (:pr:`2860`).
 
 - |Enhancement| It is now possible to specify `estimator` as a string in :func:`barplot` and :func:`pointplot`, in addition to a callable (:pr:`2866`).
