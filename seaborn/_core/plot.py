@@ -1245,7 +1245,7 @@ class Plotter:
                         move_groupers.insert(0, orient)
                     order = {var: get_order(var) for var in move_groupers}
                     groupby = GroupBy(order)
-                    df = move_step(df, groupby, orient)
+                    df = move_step(df, groupby, orient, scales)
 
             df = self._unscale_coords(subplots, df, orient)
 

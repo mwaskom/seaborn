@@ -83,7 +83,7 @@ class TestJitter(MoveFixtures):
         width = .4
         orient = "x"
         groupby = self.get_groupby(df, orient)
-        res = Jitter(width=width)(df, groupby, orient)
+        res = Jitter(width=width)(df, groupby, orient, {})
         self.check_same(res, df, "y", "grp2", "width")
         self.check_pos(res, df, "x", width * df["width"])
 
@@ -92,7 +92,7 @@ class TestJitter(MoveFixtures):
         val = .2
         orient = "x"
         groupby = self.get_groupby(df, orient)
-        res = Jitter(x=val)(df, groupby, orient)
+        res = Jitter(x=val)(df, groupby, orient, {})
         self.check_same(res, df, "y", "grp2", "width")
         self.check_pos(res, df, "x", val)
 
@@ -101,7 +101,7 @@ class TestJitter(MoveFixtures):
         val = .2
         orient = "x"
         groupby = self.get_groupby(df, orient)
-        res = Jitter(y=val)(df, groupby, orient)
+        res = Jitter(y=val)(df, groupby, orient, {})
         self.check_same(res, df, "x", "grp2", "width")
         self.check_pos(res, df, "y", val)
 
@@ -110,8 +110,8 @@ class TestJitter(MoveFixtures):
         kws = dict(width=.2, y=.1, seed=0)
         orient = "x"
         groupby = self.get_groupby(df, orient)
-        res1 = Jitter(**kws)(df, groupby, orient)
-        res2 = Jitter(**kws)(df, groupby, orient)
+        res1 = Jitter(**kws)(df, groupby, orient, {})
+        res2 = Jitter(**kws)(df, groupby, orient, {})
         for var in "xy":
             assert_series_equal(res1[var], res2[var])
 
@@ -123,7 +123,7 @@ class TestDodge(MoveFixtures):
     def test_default(self, toy_df):
 
         groupby = GroupBy(["x", "grp"])
-        res = Dodge()(toy_df, groupby, "x")
+        res = Dodge()(toy_df, groupby, "x", {})
 
         assert_array_equal(res["y"], [1, 2, 3]),
         assert_array_almost_equal(res["x"], [-.2, .2, 1.2])
@@ -132,7 +132,7 @@ class TestDodge(MoveFixtures):
     def test_fill(self, toy_df):
 
         groupby = GroupBy(["x", "grp"])
-        res = Dodge(empty="fill")(toy_df, groupby, "x")
+        res = Dodge(empty="fill")(toy_df, groupby, "x", {})
 
         assert_array_equal(res["y"], [1, 2, 3]),
         assert_array_almost_equal(res["x"], [-.2, .2, 1])
@@ -141,7 +141,7 @@ class TestDodge(MoveFixtures):
     def test_drop(self, toy_df):
 
         groupby = GroupBy(["x", "grp"])
-        res = Dodge("drop")(toy_df, groupby, "x")
+        res = Dodge("drop")(toy_df, groupby, "x", {})
 
         assert_array_equal(res["y"], [1, 2, 3])
         assert_array_almost_equal(res["x"], [-.2, .2, 1])
@@ -150,7 +150,7 @@ class TestDodge(MoveFixtures):
     def test_gap(self, toy_df):
 
         groupby = GroupBy(["x", "grp"])
-        res = Dodge(gap=.25)(toy_df, groupby, "x")
+        res = Dodge(gap=.25)(toy_df, groupby, "x", {})
 
         assert_array_equal(res["y"], [1, 2, 3])
         assert_array_almost_equal(res["x"], [-.2, .2, 1.2])
@@ -159,7 +159,7 @@ class TestDodge(MoveFixtures):
     def test_widths_default(self, toy_df_widths):
 
         groupby = GroupBy(["x", "grp"])
-        res = Dodge()(toy_df_widths, groupby, "x")
+        res = Dodge()(toy_df_widths, groupby, "x", {})
 
         assert_array_equal(res["y"], [1, 2, 3])
         assert_array_almost_equal(res["x"], [-.08, .32, 1.1])
@@ -168,7 +168,7 @@ class TestDodge(MoveFixtures):
     def test_widths_fill(self, toy_df_widths):
 
         groupby = GroupBy(["x", "grp"])
-        res = Dodge(empty="fill")(toy_df_widths, groupby, "x")
+        res = Dodge(empty="fill")(toy_df_widths, groupby, "x", {})
 
         assert_array_equal(res["y"], [1, 2, 3])
         assert_array_almost_equal(res["x"], [-.08, .32, 1])
@@ -177,7 +177,7 @@ class TestDodge(MoveFixtures):
     def test_widths_drop(self, toy_df_widths):
 
         groupby = GroupBy(["x", "grp"])
-        res = Dodge(empty="drop")(toy_df_widths, groupby, "x")
+        res = Dodge(empty="drop")(toy_df_widths, groupby, "x", {})
 
         assert_array_equal(res["y"], [1, 2, 3])
         assert_array_almost_equal(res["x"], [-.08, .32, 1])
@@ -186,7 +186,7 @@ class TestDodge(MoveFixtures):
     def test_faceted_default(self, toy_df_facets):
 
         groupby = GroupBy(["x", "grp", "col"])
-        res = Dodge()(toy_df_facets, groupby, "x")
+        res = Dodge()(toy_df_facets, groupby, "x", {})
 
         assert_array_equal(res["y"], [1, 2, 3, 1, 2, 3])
         assert_array_almost_equal(res["x"], [-.2, .2, .8, .2, .8, 2.2])
@@ -195,7 +195,7 @@ class TestDodge(MoveFixtures):
     def test_faceted_fill(self, toy_df_facets):
 
         groupby = GroupBy(["x", "grp", "col"])
-        res = Dodge(empty="fill")(toy_df_facets, groupby, "x")
+        res = Dodge(empty="fill")(toy_df_facets, groupby, "x", {})
 
         assert_array_equal(res["y"], [1, 2, 3, 1, 2, 3])
         assert_array_almost_equal(res["x"], [-.2, .2, 1, 0, 1, 2])
@@ -204,7 +204,7 @@ class TestDodge(MoveFixtures):
     def test_faceted_drop(self, toy_df_facets):
 
         groupby = GroupBy(["x", "grp", "col"])
-        res = Dodge(empty="drop")(toy_df_facets, groupby, "x")
+        res = Dodge(empty="drop")(toy_df_facets, groupby, "x", {})
 
         assert_array_equal(res["y"], [1, 2, 3, 1, 2, 3])
         assert_array_almost_equal(res["x"], [-.2, .2, 1, 0, 1, 2])
@@ -215,7 +215,7 @@ class TestDodge(MoveFixtures):
         df = toy_df.assign(x=toy_df["y"], y=toy_df["x"])
 
         groupby = GroupBy(["y", "grp"])
-        res = Dodge("drop")(df, groupby, "y")
+        res = Dodge("drop")(df, groupby, "y", {})
 
         assert_array_equal(res["x"], [1, 2, 3])
         assert_array_almost_equal(res["y"], [-.2, .2, 1])
@@ -227,7 +227,7 @@ class TestDodge(MoveFixtures):
     def test_single_semantic(self, df, grp):
 
         groupby = GroupBy(["x", grp])
-        res = Dodge()(df, groupby, "x")
+        res = Dodge()(df, groupby, "x", {})
 
         levels = categorical_order(df[grp])
         w, n = 0.8, len(levels)
@@ -245,7 +245,7 @@ class TestDodge(MoveFixtures):
     def test_two_semantics(self, df):
 
         groupby = GroupBy(["x", "grp2", "grp3"])
-        res = Dodge()(df, groupby, "x")
+        res = Dodge()(df, groupby, "x", {})
 
         levels = categorical_order(df["grp2"]), categorical_order(df["grp3"])
         w, n = 0.8, len(levels[0]) * len(levels[1])
@@ -266,7 +266,7 @@ class TestStack(MoveFixtures):
     def test_basic(self, toy_df):
 
         groupby = GroupBy(["color", "group"])
-        res = Stack()(toy_df, groupby, "x")
+        res = Stack()(toy_df, groupby, "x", {})
 
         assert_array_equal(res["x"], [0, 0, 1])
         assert_array_equal(res["y"], [1, 3, 3])
@@ -275,7 +275,7 @@ class TestStack(MoveFixtures):
     def test_faceted(self, toy_df_facets):
 
         groupby = GroupBy(["color", "group"])
-        res = Stack()(toy_df_facets, groupby, "x")
+        res = Stack()(toy_df_facets, groupby, "x", {})
 
         assert_array_equal(res["x"], [0, 0, 1, 0, 1, 2])
         assert_array_equal(res["y"], [1, 3, 3, 1, 2, 3])
@@ -288,7 +288,7 @@ class TestStack(MoveFixtures):
             "y": [2, np.nan, 1],
             "baseline": [0, 0, 0],
         })
-        res = Stack()(df, None, "x")
+        res = Stack()(df, None, "x", {})
         assert_array_equal(res["y"], [2, np.nan, 3])
         assert_array_equal(res["baseline"], [0, np.nan, 2])
 
@@ -299,7 +299,7 @@ class TestStack(MoveFixtures):
         move = Stack()
         err = "Stack move cannot be used when baselines"
         with pytest.raises(RuntimeError, match=err):
-            move(toy_df, groupby, "x")
+            move(toy_df, groupby, "x", {})
 
 
 class TestShift(MoveFixtures):
@@ -307,7 +307,7 @@ class TestShift(MoveFixtures):
     def test_default(self, toy_df):
 
         gb = GroupBy(["color", "group"])
-        res = Shift()(toy_df, gb, "x")
+        res = Shift()(toy_df, gb, "x", {})
         for col in toy_df:
             assert_series_equal(toy_df[col], res[col])
 
@@ -315,7 +315,7 @@ class TestShift(MoveFixtures):
     def test_moves(self, toy_df, x, y):
 
         gb = GroupBy(["color", "group"])
-        res = Shift(x=x, y=y)(toy_df, gb, "x")
+        res = Shift(x=x, y=y)(toy_df, gb, "x", {})
         assert_array_equal(res["x"], toy_df["x"] + x)
         assert_array_equal(res["y"], toy_df["y"] + y)
 
@@ -327,7 +327,7 @@ class TestNorm(MoveFixtures):
 
         other = {"x": "y", "y": "x"}[orient]
         gb = GroupBy(["null"])
-        res = Norm()(df, gb, orient)
+        res = Norm()(df, gb, orient, {})
         assert res[other].max() == pytest.approx(1)
 
     @pytest.mark.parametrize("orient", ["x", "y"])
@@ -335,24 +335,24 @@ class TestNorm(MoveFixtures):
 
         other = {"x": "y", "y": "x"}[orient]
         gb = GroupBy(["grp2"])
-        res = Norm()(df, gb, orient)
+        res = Norm()(df, gb, orient, {})
         for _, grp in res.groupby("grp2"):
             assert grp[other].max() == pytest.approx(1)
 
     def test_sum(self, df):
 
         gb = GroupBy(["null"])
-        res = Norm("sum")(df, gb, "x")
+        res = Norm("sum")(df, gb, "x", {})
         assert res["y"].sum() == pytest.approx(1)
 
     def test_where(self, df):
 
         gb = GroupBy(["null"])
-        res = Norm(where="x == 2")(df, gb, "x")
+        res = Norm(where="x == 2")(df, gb, "x", {})
         assert res.loc[res["x"] == 2, "y"].max() == pytest.approx(1)
 
     def test_percent(self, df):
 
         gb = GroupBy(["null"])
-        res = Norm(percent=True)(df, gb, "x")
+        res = Norm(percent=True)(df, gb, "x", {})
         assert res["y"].max() == pytest.approx(100)
