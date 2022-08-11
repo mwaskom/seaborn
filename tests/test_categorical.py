@@ -2354,8 +2354,8 @@ class TestBarPlotter(CategoricalFixture):
     def test_unaligned_index(self):
 
         f, (ax1, ax2) = plt.subplots(2)
-        cat.barplot(x=self.g, y=self.y, ci="sd", ax=ax1)
-        cat.barplot(x=self.g, y=self.y_perm, ci="sd", ax=ax2)
+        cat.barplot(x=self.g, y=self.y, errorbar="sd", ax=ax1)
+        cat.barplot(x=self.g, y=self.y_perm, errorbar="sd", ax=ax2)
         for l1, l2 in zip(ax1.lines, ax2.lines):
             assert approx(l1.get_xydata()) == l2.get_xydata()
         for p1, p2 in zip(ax1.patches, ax2.patches):
@@ -2366,9 +2366,9 @@ class TestBarPlotter(CategoricalFixture):
         f, (ax1, ax2) = plt.subplots(2)
         hue_order = self.h.unique()
         cat.barplot(x=self.g, y=self.y, hue=self.h,
-                    hue_order=hue_order, ci="sd", ax=ax1)
+                    hue_order=hue_order, errorbar="sd", ax=ax1)
         cat.barplot(x=self.g, y=self.y_perm, hue=self.h,
-                    hue_order=hue_order, ci="sd", ax=ax2)
+                    hue_order=hue_order, errorbar="sd", ax=ax2)
         for l1, l2 in zip(ax1.lines, ax2.lines):
             assert approx(l1.get_xydata()) == l2.get_xydata()
         for p1, p2 in zip(ax1.patches, ax2.patches):
@@ -2620,8 +2620,8 @@ class TestPointPlotter(CategoricalFixture):
     def test_unaligned_index(self):
 
         f, (ax1, ax2) = plt.subplots(2)
-        cat.pointplot(x=self.g, y=self.y, ci="sd", ax=ax1)
-        cat.pointplot(x=self.g, y=self.y_perm, ci="sd", ax=ax2)
+        cat.pointplot(x=self.g, y=self.y, errorbar="sd", ax=ax1)
+        cat.pointplot(x=self.g, y=self.y_perm, errorbar="sd", ax=ax2)
         for l1, l2 in zip(ax1.lines, ax2.lines):
             assert approx(l1.get_xydata()) == l2.get_xydata()
         for p1, p2 in zip(ax1.collections, ax2.collections):
@@ -2630,9 +2630,9 @@ class TestPointPlotter(CategoricalFixture):
         f, (ax1, ax2) = plt.subplots(2)
         hue_order = self.h.unique()
         cat.pointplot(x=self.g, y=self.y, hue=self.h,
-                      hue_order=hue_order, ci="sd", ax=ax1)
+                      hue_order=hue_order, errorbar="sd", ax=ax1)
         cat.pointplot(x=self.g, y=self.y_perm, hue=self.h,
-                      hue_order=hue_order, ci="sd", ax=ax2)
+                      hue_order=hue_order, errorbar="sd", ax=ax2)
         for l1, l2 in zip(ax1.lines, ax2.lines):
             assert approx(l1.get_xydata()) == l2.get_xydata()
         for p1, p2 in zip(ax1.collections, ax2.collections):
@@ -2882,9 +2882,9 @@ class TestCatPlot(CategoricalFixture):
             assert p1.get_facecolor() == p2.get_facecolor()
         plt.close("all")
 
-        ax = cat.barplot(x="g", y="y", data=self.df, palette="Set2")
+        ax = cat.barplot(x="g", y="y", data=self.df, palette="Set2", hue="h")
         g = cat.catplot(x="g", y="y", data=self.df,
-                        kind="bar", palette="Set2")
+                        kind="bar", palette="Set2", hue="h")
         for p1, p2 in zip(ax.patches, g.ax.patches):
             assert p1.get_facecolor() == p2.get_facecolor()
         plt.close("all")
@@ -2901,8 +2901,8 @@ class TestCatPlot(CategoricalFixture):
             assert l1.get_color() == l2.get_color()
         plt.close("all")
 
-        ax = cat.pointplot(x="g", y="y", data=self.df, palette="Set2")
-        g = cat.catplot(x="g", y="y", data=self.df, palette="Set2")
+        ax = cat.pointplot(x="g", y="y", data=self.df, palette="Set2", hue="h")
+        g = cat.catplot(x="g", y="y", data=self.df, palette="Set2", hue="h")
         for l1, l2 in zip(ax.lines, g.ax.lines):
             assert l1.get_color() == l2.get_color()
         plt.close("all")
