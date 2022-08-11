@@ -270,7 +270,7 @@ class TestLayerAddition:
                 return data
 
         class MockMoveTrackOrient(Move):
-            def __call__(self, data, groupby, orient):
+            def __call__(self, data, groupby, orient, scales):
                 self.orient_at_call = orient
                 return data
 
@@ -1561,7 +1561,7 @@ class TestPairInterface:
         orient_list = []
 
         class CaptureOrientMove(Move):
-            def __call__(self, data, groupby, orient):
+            def __call__(self, data, groupby, orient, scales):
                 orient_list.append(orient)
                 return data
 
