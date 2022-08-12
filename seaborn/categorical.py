@@ -2416,8 +2416,9 @@ def boxenplot(
     return ax
 
 
-boxenplot.__doc__ = dedent("""\
+boxenplot.__doc__ = dedent("""
     Draw an enhanced box plot for larger datasets.
+    
     This style of plot was originally named a "letter value" plot because it
     shows a large number of quantiles that are defined as "letter values".  It
     is similar to a box plot in plotting a nonparametric representation of a
@@ -2426,7 +2427,9 @@ boxenplot.__doc__ = dedent("""\
     the distribution, particularly in the tails. For a more extensive
     explanation, you can read the paper that introduced the plot:
     https://vita.had.co.nz/papers/letter-value-plot.html
+    
     {categorical_narrative}
+    
     Parameters
     ----------
     {categorical_data}
@@ -2474,17 +2477,22 @@ boxenplot.__doc__ = dedent("""\
         Other keyword arguments are passed through to
         :meth:`matplotlib.axes.Axes.plot` and
         :meth:`matplotlib.axes.Axes.scatter`.
+        
     Returns
     -------
     {ax_out}
+    
     See Also
     --------
     {violinplot}
     {boxplot}
     {catplot}
+    
     Examples
     --------
+    
     .. include:: ../docstrings/boxenplot.rst
+    
     """).format(**_categorical_docs)
 
 
