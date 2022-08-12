@@ -2049,8 +2049,7 @@ class _LVPlotter(_CategoricalPlotter):
 
     def plot(self, ax, box_kws=None, flier_kws=None, line_kws=None):
         """Make the plot."""
-        self.draw_letter_value_plot(ax, box_kws, flier_kws,
-                                    line_kws)  # , kwargs)
+        self.draw_letter_value_plot(ax, box_kws, flier_kws, line_kws)
         self.annotate_axes(ax)
         if self.orient == "h":
             ax.invert_yaxis()
@@ -2397,12 +2396,12 @@ violinplot.__doc__ = dedent("""\
 
 
 def boxenplot(
-        data=None, *, x=None, y=None, hue=None, order=None, hue_order=None,
-        orient=None, color=None, palette=None, saturation=.75,
-        width=.8, dodge=True, k_depth='tukey', linewidth=None,
-        scale='exponential', outlier_prop=0.007, trust_alpha=0.05,
-        showfliers=True,
-        ax=None, box_kws=None, flier_kws=None, line_kws=None,
+    data=None, *, x=None, y=None, hue=None, order=None, hue_order=None,
+    orient=None, color=None, palette=None, saturation=.75,
+    width=.8, dodge=True, k_depth='tukey', linewidth=None,
+    scale='exponential', outlier_prop=0.007, trust_alpha=0.05,
+    showfliers=True,
+    ax=None, box_kws=None, flier_kws=None, line_kws=None,
 ):
     plotter = _LVPlotter(x, y, hue, data, order, hue_order,
                          orient, color, palette, saturation,
