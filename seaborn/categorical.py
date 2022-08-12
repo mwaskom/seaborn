@@ -1846,9 +1846,9 @@ class _LVPlotter(_CategoricalPlotter):
 
         # -- Default keyword dicts - based on
         # distributions.plot_univariate_histogram
-        box_kws, flier_kws, line_kws = map(
-            lambda d: {} if d is None else d.copy(),
-            (box_kws, flier_kws, line_kws))
+        box_kws = {} if box_kws is None else box_kws.copy()
+        flier_kws = {} if flier_kws is None else flier_kws.copy()
+        line_kws = {} if line_kws is None else line_kws.copy()
 
         # Set the default kwargs for the lines denoting medians
         line_default_kws = dict(
