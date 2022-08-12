@@ -31,6 +31,9 @@ from seaborn.distributions import (
     kdeplot,
     rugplot,
 )
+from seaborn.relational import (
+    lineplot,
+)
 from seaborn.external.version import Version
 from seaborn.axisgrid import FacetGrid
 from seaborn._testing import (
@@ -301,6 +304,18 @@ class TestRugPlot(SharedAxesLevelTests):
         x2, y2 = ax.margins()
         assert x1 == x2
         assert y1 + height * 2 == pytest.approx(y2)
+
+    def test_multiple_rugs(self, long_df):
+
+        values = np.linspace(start=0, stop=1, num=5)
+        ax = lineplot(x=values, y=values)
+        rugplot(x=values, ax=ax)
+        ylim = ax.get_ylim()
+
+        for j in range(4):
+            rugplot(x=values, ax=ax, expand_margins=False)
+
+        assert_array_equal(ylim, ax.get_ylim())
 
     def test_matplotlib_kwargs(self, flat_series):
 
