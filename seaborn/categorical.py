@@ -1874,8 +1874,9 @@ class _LVPlotter(_CategoricalPlotter):
         # If we only have one data point, plot a line
         if len(box_data) == 1:
             line_kws.update({
-                'color': self.gray, 'linestyle': '-',
-                'linewidth': self.linewidth
+                'color': box_kws['edgecolor'],
+                'linestyle': box_kws.get('linestyle', '-'),
+                'linewidth': max(box_kws["linewidth"], line_kws["linewidth"])
             })
             ys = [box_data[0], box_data[0]]
             xs = [x - widths / 2, x + widths / 2]
