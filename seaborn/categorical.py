@@ -2047,7 +2047,7 @@ class _LVPlotter(_CategoricalPlotter):
         # Autoscale the values axis to make sure all patches are visible
         ax.autoscale_view(scalex=self.orient == "h", scaley=self.orient == "v")
 
-    def plot(self, ax, box_kws=None, flier_kws=None, line_kws=None):
+    def plot(self, ax, box_kws, flier_kws, line_kws):
         """Make the plot."""
         self.draw_letter_value_plot(ax, box_kws, flier_kws, line_kws)
         self.annotate_axes(ax)
