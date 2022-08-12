@@ -1850,23 +1850,22 @@ class _LVPlotter(_CategoricalPlotter):
         flier_kws = {} if flier_kws is None else flier_kws.copy()
         line_kws = {} if line_kws is None else line_kws.copy()
 
+        # Set the default kwargs for the boxes
+        box_default_kws = dict(edgecolor=self.gray,
+                               linewidth=self.linewidth)
+        for k, v in box_default_kws.items():
+            box_kws.setdefault(k, v)
+
         # Set the default kwargs for the lines denoting medians
-        line_default_kws = dict(
-            color=".15",
-            alpha=0.45,
-            solid_capstyle="butt",
-            linewidth=self.linewidth,
-        )
+        line_default_kws = dict(color=".15", alpha=0.45, solid_capstyle="butt",
+            linewidth=self.linewidth)
+        for k, v in line_default_kws.items():
+            line_kws.setdefault(k, v)
+
         # Set the default kwargs for the outliers scatterplot
         flier_default_kws = dict(marker='d', color=self.gray)
-
-        # Update each of the dicts containing box/line/fliers kwargs with the
-        # default values (if not defined by the user)
-        default_dicts = [line_default_kws, flier_default_kws]
-        user_input_dicts = [line_kws, flier_kws]
-        for default_dict, user_dict in zip(default_dicts, user_input_dicts):
-            for k, v in default_dict.items():
-                user_dict.setdefault(k, v)
+        for k, v in flier_default_kws.items():
+            flier_kws.setdefault(k, v)
 
         vert = self.orient == "v"
         x = positions[0]
@@ -1959,13 +1958,8 @@ class _LVPlotter(_CategoricalPlotter):
             rgb = [hex_color, cmap(.85)]
             cmap = mpl.colors.LinearSegmentedColormap.from_list('new_map', rgb)
 
-            # Set the default kwargs for the boxes
-            box_default_kws = dict(cmap=cmap,
-                                   edgecolor=self.gray,
-                                   linewidth=self.linewidth)
-
-            for k, v in box_default_kws.items():
-                box_kws.setdefault(k, v)
+            # Update box_kws with `cmap` if not defined in dict until now
+            box_kws.setdefault('cmap', cmap)
 
             boxes = [box_func(x, b[0], i, k, b[1])
                      for i, b in enumerate(zip(box_ends, w_area))]
