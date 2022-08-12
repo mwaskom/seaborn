@@ -1970,11 +1970,7 @@ class _LVPlotter(_CategoricalPlotter):
             boxes = [box_func(x, b[0], i, k, b[1])
                      for i, b in enumerate(zip(box_ends, w_area))]
 
-            collection = PatchCollection(
-                boxes,
-                # cmap=cmap, edgecolor=self.gray, linewidth=self.linewidth,
-                **box_kws
-            )
+            collection = PatchCollection(boxes, **box_kws)
 
             # Set the color gradation, first box will have color=hex_color
             collection.set_array(np.array(np.linspace(1, 0, len(boxes))))
