@@ -3357,6 +3357,20 @@ class TestBoxenPlotter(CategoricalFixture):
 
         plt.close("all")
 
+    def test_separate_line_kws(self):
+        line_kws = {'linewidth': 5, 'color': 'purple',
+                    'linestyle': '-.'}
+
+        ax = cat.boxenplot(data=self.df, y='y', line_kws=line_kws)
+
+        median_line = ax.get_children()[0]
+
+        assert median_line.get_linewidth() == line_kws['linewidth']
+        assert median_line.get_linestyle() == line_kws['linestyle']
+        assert median_line.get_color() == line_kws['color']
+
+        plt.close("all")
+
 
 class TestBeeswarm:
 
