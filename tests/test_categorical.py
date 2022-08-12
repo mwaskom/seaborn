@@ -3357,7 +3357,7 @@ class TestBoxenPlotter(CategoricalFixture):
 
         plt.close("all")
 
-    def test_separate_line_kws(self):
+    def test_line_kws(self):
         line_kws = {'linewidth': 5, 'color': 'purple',
                     'linestyle': '-.'}
 
@@ -3368,6 +3368,25 @@ class TestBoxenPlotter(CategoricalFixture):
         assert median_line.get_linewidth() == line_kws['linewidth']
         assert median_line.get_linestyle() == line_kws['linestyle']
         assert median_line.get_color() == line_kws['color']
+
+        plt.close("all")
+
+    def test_flier_kws(self):
+        flier_kws = {'marker': 'v',  'color': np.array([[1, 0, 0, 1]]),
+                     's': 5,}
+
+        ax = cat.boxenplot(data=self.df, y='y', flier_kws=flier_kws)
+
+        outliers_scatter = ax.get_children()[1]
+
+        # The number of vertices for a triangle is 3, the length of Path
+        # collection objects is defined as n + 1 vertices.
+        assert len(outliers_scatter.get_paths()[0]) == 4
+        assert len(outliers_scatter.get_paths()[-1]) == 4
+
+        assert (outliers_scatter.get_facecolor() == flier_kws['color']).all()
+
+        assert np.unique(outliers_scatter.get_sizes()) == flier_kws['s']
 
         plt.close("all")
 
