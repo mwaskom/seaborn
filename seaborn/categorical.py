@@ -2455,7 +2455,7 @@ boxenplot.__doc__ = dedent("""
     {ax_in}
     box_kws: key, value mappings
         Other keyword arguments are passed through to
-        :meth:`matplotlib.patches.Rectangle`.
+        :class:`matplotlib.patches.Rectangle`.
     line_kws: key, value mappings
         Other keyword arguments are passed through to
         :meth:`matplotlib.axes.Axes.plot`.
