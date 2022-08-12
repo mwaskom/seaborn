@@ -2453,15 +2453,15 @@ boxenplot.__doc__ = dedent("""
     showfliers : bool, optional
         If False, suppress the plotting of outliers.
     {ax_in}
-    box_kws: key, value mappings
-        Other keyword arguments are passed through to
+    box_kws: dict, optional
+        Keyword arguments for the box artists; passed to
         :class:`matplotlib.patches.Rectangle`.
-    line_kws: key, value mappings
-        Other keyword arguments are passed through to
+    line_kws: dict, optional
+        Keyword arguments for the line denoting the median; passed to 
         :meth:`matplotlib.axes.Axes.plot`.
-    flier_kws: line_kws: key, value mappings
-        Other keyword arguments are passed through to
-        :meth:`matplotlib.axes.Axes.scatter`.
+    flier_kws: dict, optional
+        Keyword arguments for the scatter denoting the outlier observations; 
+        passed to :meth:`matplotlib.axes.Axes.scatter`.
         
     Returns
     -------
