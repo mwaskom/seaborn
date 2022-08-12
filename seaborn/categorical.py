@@ -2462,10 +2462,6 @@ boxenplot.__doc__ = dedent("""
     flier_kws: line_kws: key, value mappings
         Other keyword arguments are passed through to
         :meth:`matplotlib.axes.Axes.scatter`.
-    kwargs : key, value mappings
-        Other keyword arguments are passed through to
-        :meth:`matplotlib.axes.Axes.plot` and
-        :meth:`matplotlib.axes.Axes.scatter`.
         
     Returns
     -------
