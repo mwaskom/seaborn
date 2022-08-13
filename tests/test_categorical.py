@@ -3196,16 +3196,18 @@ class TestBoxenPlotter(CategoricalFixture):
         fig = plt.figure()
         ax = cat.boxenplot(x="g", y="y", data=self.df, saturation=1)
         fig.canvas.draw()
+        patches = ax.findobj(mpl.collections.PatchCollection)
         pal = palettes.color_palette(n_colors=3)
-        patches = filter(self.ispatch, ax.collections)
-        assert same_color([patch.get_facecolor()[0] for patch in patches], pal)
+        for patch, color in zip(patches, pal):
+            assert same_color(patch.get_facecolor()[0], color)
 
         fig = plt.figure()
         ax = cat.boxenplot(x="g", y="y", hue="h", data=self.df, saturation=1)
         fig.canvas.draw()
+        patches = ax.findobj(mpl.collections.PatchCollection)
         pal = palettes.color_palette(n_colors=2)
-        patches = filter(self.ispatch, ax.collections)
-        assert same_color([patch.get_facecolor()[0] for patch in patches], pal * 3)
+        for patch, color in zip(patches, pal):
+            assert same_color(patch.get_facecolor()[0], color)
 
         plt.close("all")
 
@@ -3363,7 +3365,7 @@ class TestBoxenPlotter(CategoricalFixture):
 
         ax = cat.boxenplot(data=self.df, y='y', line_kws=line_kws)
 
-        median_line = ax.get_children()[0]
+        median_line = ax.lines[0]
 
         assert median_line.get_linewidth() == line_kws['linewidth']
         assert median_line.get_linestyle() == line_kws['linestyle']
@@ -3380,7 +3382,7 @@ class TestBoxenPlotter(CategoricalFixture):
 
         ax = cat.boxenplot(data=self.df, y='y', x='g', flier_kws=flier_kws)
 
-        outliers_scatter = ax.get_children()[1]
+        outliers_scatter = ax.findobj(mpl.collections.PathCollection)[0]
 
         # The number of vertices for a triangle is 3, the length of Path
         # collection objects is defined as n + 1 vertices.
@@ -3400,7 +3402,7 @@ class TestBoxenPlotter(CategoricalFixture):
         ax = cat.boxenplot(data=self.df, y='y', x='g',
                            box_kws=box_kws)
 
-        boxes = ax.get_children()[2]
+        boxes = ax.findobj(mpl.collections.PatchCollection)[0]
 
         # The number of vertices for a triangle is 3, the length of Path
         # collection objects is defined as n + 1 vertices.
