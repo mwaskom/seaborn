@@ -630,7 +630,7 @@ class Plot:
     def layout(
         self,
         *,
-        figsize: tuple[float, float] | None = None,  # TODO change to size
+        size: tuple[float, float] | None = None,
         algo: str | None = "tight",  # TODO document
         sharex: bool | str | None = None,
         sharey: bool | str | None = None,
@@ -640,8 +640,9 @@ class Plot:
 
         Parameters
         ----------
-        figsize : (width, height)
-            Size of the resulting figure, in inches.
+        size : (width, height)
+            Size of the resulting figure, in inches. Size is inclusive of legend when
+            using pyplot, but not otherwise.
         algo : {{"tight", "constrained", None}}
             Name of algorithm for automatically adjusting the layout to remove overlap.
         sharex, sharey : bool, "row", or "col"
@@ -657,7 +658,7 @@ class Plot:
 
         new = self._clone()
 
-        new._figure_spec["figsize"] = figsize
+        new._figure_spec["figsize"] = size
 
         if sharex is not None:
             new._subplot_spec["sharex"] = sharex

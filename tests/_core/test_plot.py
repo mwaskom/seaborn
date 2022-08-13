@@ -1239,11 +1239,11 @@ class TestFacetInterface:
         p = Plot(long_df).facet(**variables, order=order)
         self.check_facet_results_2d(p, long_df, variables, order)
 
-    def test_figsize(self):
+    def test_layout_size(self):
 
-        figsize = (4, 2)
-        p = Plot().layout(figsize=figsize).plot()
-        assert tuple(p._figure.get_size_inches()) == figsize
+        size = (4, 2)
+        p = Plot().layout(size=size).plot()
+        assert tuple(p._figure.get_size_inches()) == size
 
     def test_layout_algo(self):
 
