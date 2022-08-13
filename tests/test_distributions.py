@@ -31,9 +31,6 @@ from seaborn.distributions import (
     kdeplot,
     rugplot,
 )
-from seaborn.relational import (
-    lineplot,
-)
 from seaborn.external.version import Version
 from seaborn.axisgrid import FacetGrid
 from seaborn._testing import (
