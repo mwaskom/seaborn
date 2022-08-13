@@ -159,6 +159,7 @@ class Plot:
 
     _figure_spec: dict[str, Any]
     _subplot_spec: dict[str, Any]
+    _layout_spec: dict[str, Any]
 
     def __init__(
         self,
@@ -189,6 +190,7 @@ class Plot:
 
         self._figure_spec = {}
         self._subplot_spec = {}
+        self._layout_spec = {}
 
         self._target = None
 
@@ -259,6 +261,7 @@ class Plot:
 
         new._figure_spec.update(self._figure_spec)
         new._subplot_spec.update(self._subplot_spec)
+        new._layout_spec.update(self._layout_spec)
 
         new._target = self._target
 
@@ -272,7 +275,7 @@ class Plot:
             "xaxis", "xtick", "yaxis", "ytick",
         ]
         base = {
-            k: v for k, v in mpl.rcParamsDefault.items()
+            k: mpl.rcParamsDefault[k] for k in mpl.rcParams
             if any(k.startswith(p) for p in style_groups)
         }
         theme = {
@@ -624,9 +627,11 @@ class Plot:
         new._labels.update(variables)
         return new
 
-    def configure(
+    def layout(
         self,
-        figsize: tuple[float, float] | None = None,
+        *,
+        figsize: tuple[float, float] | None = None,  # TODO change to size
+        algo: str = "tight",  # TODO document
         sharex: bool | str | None = None,
         sharey: bool | str | None = None,
     ) -> Plot:
@@ -656,6 +661,8 @@ class Plot:
             new._subplot_spec["sharex"] = sharex
         if sharey is not None:
             new._subplot_spec["sharey"] = sharey
+
+        new._layout_spec["algo"] = algo
 
         return new
 
@@ -915,7 +922,7 @@ class Plotter:
 
                 # ~~ Decoration visibility
 
-                # TODO there should be some override (in Plot.configure?) so that
+                # TODO there should be some override (in Plot.layout?) so that
                 # tick labels can be shown on interior shared axes
                 axis_obj = getattr(ax, f"{axis}axis")
                 visible_side = {"x": "bottom", "y": "left"}.get(axis)
@@ -935,10 +942,7 @@ class Plotter:
                     for t in getattr(axis_obj, f"get_{group}ticklabels")():
                         t.set_visible(show_tick_labels)
 
-            # TODO title template should be configurable
-            # ---- Also we want right-side titles for row facets in most cases?
-            # ---- Or wrapped? That can get annoying too.
-            # TODO should configure() accept a title= kwarg (for single subplot plots)?
+            # TODO we want right-side titles for row facets in most cases?
             # Let's have what we currently call "margin titles" but properly using the
             # ax.set_title interface (see my gist)
             title_parts = []
@@ -1508,6 +1512,9 @@ class Plotter:
             else:
                 merged_contents[key] = artists.copy(), labels
 
+        # TODO explain
+        loc = "center right" if self._pyplot else "center left"
+
         base_legend = None
         for (name, _), (handles, labels) in merged_contents.items():
 
@@ -1516,7 +1523,7 @@ class Plotter:
                 handles,
                 labels,
                 title=name,
-                loc="center left",
+                loc=loc,
                 bbox_to_anchor=(.98, .55),
             )
 
@@ -1550,9 +1557,11 @@ class Plotter:
                         hi = cast(float, hi) + 0.5
                     ax.set(**{f"{axis}lim": (lo, hi)})
 
-        # TODO this should be configurable
-        if not self._figure.get_constrained_layout():
+        layout_algo = p._layout_spec.get("algo", "tight")
+        if layout_algo == "tight":
             self._figure.set_tight_layout(True)
+        elif layout_algo == "constrained":
+            self._figure.set_constrained_layout(True)
 
 
 @contextmanager
