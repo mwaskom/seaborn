@@ -74,6 +74,8 @@ Other updates
 
 - |Enhancement| It is now possible to plot a discrete :func:`histplot` as a step function or polygon (:pr:`2859`).
 
+- |Enhancement| It is now possible to customize the appearance of elements in a :func:`boxenplot` with `box_kws`/`line_kws`/`flier_kws` (:pr:`2909`).
+
 - |Fix| Improved integration with the matplotlib color cycle in most axes-level functions (:pr:`2449`).
 
 - |Fix| Fixed a regression in 0.11.2 that caused some functions to stall indefinitely or raise when the input data had a duplicate index (:pr:`2776`).
