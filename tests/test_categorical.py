@@ -3193,21 +3193,23 @@ class TestBoxenPlotter(CategoricalFixture):
 
     def test_box_colors(self):
 
-        fig = plt.figure()
-        ax = cat.boxenplot(x="g", y="y", data=self.df, saturation=1)
-        fig.canvas.draw()
-        patches = ax.findobj(mpl.collections.PatchCollection)
-        pal = palettes.color_palette(n_colors=3)
-        for patch, color in zip(patches, pal):
-            assert same_color(patch.get_facecolor()[0], color)
+        pal = palettes.color_palette()
 
-        fig = plt.figure()
-        ax = cat.boxenplot(x="g", y="y", hue="h", data=self.df, saturation=1)
-        fig.canvas.draw()
-        patches = ax.findobj(mpl.collections.PatchCollection)
-        pal = palettes.color_palette(n_colors=2)
-        for patch, color in zip(patches, pal):
-            assert same_color(patch.get_facecolor()[0], color)
+        ax = cat.boxenplot(
+            x="g", y="y", data=self.df, saturation=1, showfliers=False
+        )
+        ax.figure.canvas.draw()
+        for i, box in enumerate(ax.collections):
+            assert same_color(box.get_facecolor()[0], pal[i])
+
+        plt.close("all")
+
+        ax = cat.boxenplot(
+            x="g", y="y", hue="h", data=self.df, saturation=1, showfliers=False
+        )
+        ax.figure.canvas.draw()
+        for i, box in enumerate(ax.collections):
+            assert same_color(box.get_facecolor()[0], pal[i % 2])
 
         plt.close("all")
 
