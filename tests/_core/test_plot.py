@@ -18,6 +18,7 @@ from seaborn._core.plot import Plot
 from seaborn._core.scales import Nominal, Continuous
 from seaborn._core.rules import categorical_order
 from seaborn._core.moves import Move, Shift, Dodge
+from seaborn._stats.aggregation import Agg
 from seaborn._marks.base import Mark
 from seaborn._stats.base import Stat
 from seaborn.external.version import Version
@@ -269,7 +270,7 @@ class TestLayerAddition:
                 return data
 
         class MockMoveTrackOrient(Move):
-            def __call__(self, data, groupby, orient):
+            def __call__(self, data, groupby, orient, scales):
                 self.orient_at_call = orient
                 return data
 
@@ -313,8 +314,19 @@ class TestLayerAddition:
         class MockStat(Stat):
             pass
 
-        with pytest.raises(TypeError, match="stat must be a Stat instance"):
+        class MockMove(Move):
+            pass
+
+        err = "Transforms must have at most one Stat type"
+
+        with pytest.raises(TypeError, match=err):
             p.add(MockMark(), MockStat)
+
+        with pytest.raises(TypeError, match=err):
+            p.add(MockMark(), MockMove(), MockStat())
+
+        with pytest.raises(TypeError, match=err):
+            p.add(MockMark(), MockMark(), MockStat())
 
 
 class TestScaling:
@@ -878,14 +890,48 @@ class TestPlotting:
         with pytest.raises(TypeError, match=r"theme\(\) takes 1 positional"):
             p.theme("arg1", "arg2")
 
+    def test_stat(self, long_df):
+
+        orig_df = long_df.copy(deep=True)
+
+        m = MockMark()
+        Plot(long_df, x="a", y="z").add(m, Agg()).plot()
+
+        expected = long_df.groupby("a", sort=False)["z"].mean().reset_index(drop=True)
+        assert_vector_equal(m.passed_data[0]["y"], expected)
+
+        assert_frame_equal(long_df, orig_df)   # Test data was not mutated
+
     def test_move(self, long_df):
 
         orig_df = long_df.copy(deep=True)
 
         m = MockMark()
-        Plot(long_df, x="z", y="z").add(m, move=Shift(x=1)).plot()
+        Plot(long_df, x="z", y="z").add(m, Shift(x=1)).plot()
         assert_vector_equal(m.passed_data[0]["x"], long_df["z"] + 1)
         assert_vector_equal(m.passed_data[0]["y"], long_df["z"])
+
+        assert_frame_equal(long_df, orig_df)   # Test data was not mutated
+
+    def test_stat_and_move(self, long_df):
+
+        m = MockMark()
+        Plot(long_df, x="a", y="z").add(m, Agg(), Shift(y=1)).plot()
+
+        expected = long_df.groupby("a", sort=False)["z"].mean().reset_index(drop=True)
+        assert_vector_equal(m.passed_data[0]["y"], expected + 1)
+
+    def test_stat_log_scale(self, long_df):
+
+        orig_df = long_df.copy(deep=True)
+
+        m = MockMark()
+        Plot(long_df, x="a", y="z").add(m, Agg()).scale(y="log").plot()
+
+        x = long_df["a"]
+        y = np.log10(long_df["z"])
+        expected = y.groupby(x, sort=False).mean().reset_index(drop=True)
+        assert_vector_equal(m.passed_data[0]["y"], 10 ** expected)
 
         assert_frame_equal(long_df, orig_df)   # Test data was not mutated
 
@@ -894,20 +940,20 @@ class TestPlotting:
         m = MockMark()
         Plot(
             long_df, x="z", y="z"
-        ).scale(x="log").add(m, move=Shift(x=-1)).plot()
+        ).scale(x="log").add(m, Shift(x=-1)).plot()
         assert_vector_equal(m.passed_data[0]["x"], long_df["z"] / 10)
 
     def test_multi_move(self, long_df):
 
         m = MockMark()
         move_stack = [Shift(1), Shift(2)]
-        Plot(long_df, x="x", y="y").add(m, move=move_stack).plot()
+        Plot(long_df, x="x", y="y").add(m, *move_stack).plot()
         assert_vector_equal(m.passed_data[0]["x"], long_df["x"] + 3)
 
     def test_multi_move_with_pairing(self, long_df):
         m = MockMark()
         move_stack = [Shift(1), Shift(2)]
-        Plot(long_df, x="x").pair(y=["y", "z"]).add(m, move=move_stack).plot()
+        Plot(long_df, x="x").pair(y=["y", "z"]).add(m, *move_stack).plot()
         for frame in m.passed_data:
             assert_vector_equal(frame["x"], long_df["x"] + 3)
 
@@ -919,7 +965,7 @@ class TestPlotting:
         ymax = np.arange(6) * 2
 
         m = MockMark()
-        Plot(x=x, group=group, ymin=ymin, ymax=ymax).add(m, move=Dodge()).plot()
+        Plot(x=x, group=group, ymin=ymin, ymax=ymax).add(m, Dodge()).plot()
 
         signs = [-1, +1]
         for i, df in m.passed_data[0].groupby("group"):
@@ -1515,14 +1561,14 @@ class TestPairInterface:
         orient_list = []
 
         class CaptureOrientMove(Move):
-            def __call__(self, data, groupby, orient):
+            def __call__(self, data, groupby, orient, scales):
                 orient_list.append(orient)
                 return data
 
         (
             Plot(long_df, x="x")
             .pair(y=["b", "z"])
-            .add(MockMark(), move=CaptureOrientMove())
+            .add(MockMark(), CaptureOrientMove())
             .plot()
         )
 

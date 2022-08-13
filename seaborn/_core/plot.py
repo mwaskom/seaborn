@@ -11,7 +11,7 @@ import textwrap
 from contextlib import contextmanager
 from collections import abc
 from collections.abc import Callable, Generator, Hashable
-from typing import Any, cast
+from typing import Any, List, Optional, cast
 
 from cycler import cycler
 import pandas as pd
@@ -338,16 +338,14 @@ class Plot:
     def add(
         self,
         mark: Mark,
-        stat: Stat | None = None,
-        move: Move | list[Move] | None = None,
-        *,
+        *transforms: Stat | Mark,
         orient: str | None = None,
         legend: bool = True,
         data: DataSource = None,
         **variables: VariableSpec,
     ) -> Plot:
         """
-        Define a layer of the visualization.
+        Define a layer of the visualization in terms of mark and data transform(s).
 
         This is the main method for specifying how the data should be visualized.
         It can be called multiple times with different arguments to define
@@ -357,48 +355,63 @@ class Plot:
         ----------
         mark : :class:`seaborn.objects.Mark`
             The visual representation of the data to use in this layer.
-        stat : :class:`seaborn.objects.Stat`
-            A transformation applied to the data before plotting.
-        move : :class:`seaborn.objects.Move`
-            Additional transformation(s) to handle over-plotting.
-        legend : bool
-            Option to suppress the mark/mappings for this layer from the legend.
+        transforms : :class:`seaborn.objects.Stat` or :class:`seaborn.objects.Move`
+            Objects representing transforms to be applied before plotting the data.
+            Current, at most one :class:`seaborn.objects.Stat` can be used, and it
+            must be passed first. This constraint will be relaxed in the future.
         orient : "x", "y", "v", or "h"
             The orientation of the mark, which affects how the stat is computed.
             Typically corresponds to the axis that defines groups for aggregation.
             The "v" (vertical) and "h" (horizontal) options are synonyms for "x" / "y",
             but may be more intuitive with some marks. When not provided, an
             orientation will be inferred from characteristics of the data and scales.
+        legend : bool
+            Option to suppress the mark/mappings for this layer from the legend.
         data : DataFrame or dict
             Data source to override the global source provided in the constructor.
         variables : data vectors or identifiers
             Additional layer-specific variables, including variables that will be
-            passed directly to the stat without scaling.
+            passed directly to the transforms without scaling.
 
         """
         if not isinstance(mark, Mark):
             msg = f"mark must be a Mark instance, not {type(mark)!r}."
             raise TypeError(msg)
 
-        if stat is not None and not isinstance(stat, Stat):
-            msg = f"stat must be a Stat instance, not {type(stat)!r}."
+        # TODO This API for transforms was a late decision, and previously Plot.add
+        # accepted 0 or 1 Stat instances and 0, 1, or a list of Move instances.
+        # It will take some work to refactor the internals so that Stat and Move are
+        # treated identically, and until then well need to "unpack" the transforms
+        # here and enforce limitations on the order / types.
+
+        stat: Optional[Stat]
+        move: Optional[List[Move]]
+        error = False
+        if not transforms:
+            stat, move = None, None
+        elif isinstance(transforms[0], Stat):
+            stat = transforms[0]
+            move = [m for m in transforms[1:] if isinstance(m, Move)]
+            error = len(move) != len(transforms) - 1
+        else:
+            stat = None
+            move = [m for m in transforms if isinstance(m, Move)]
+            error = len(move) != len(transforms)
+
+        if error:
+            msg = " ".join([
+                "Transforms must have at most one Stat type (in the first position),",
+                "and all others must be a Move type. Given transform type(s):",
+                ", ".join(str(type(t).__name__) for t in transforms) + "."
+            ])
             raise TypeError(msg)
-
-        # TODO decide how to allow Mark to have default Stat/Move
-        # if stat is None and hasattr(mark, "default_stat"):
-        #     stat = mark.default_stat()
-
-        # TODO it doesn't work to supply scalars to variables, but that would be nice
-
-        # TODO accept arbitrary variables defined by the stat (/move?) here
-        # (but not in the Plot constructor)
-        # Should stat variables ever go in the constructor, or just in the add call?
 
         new = self._clone()
         new._layers.append({
             "mark": mark,
             "stat": stat,
             "move": move,
+            # TODO it doesn't work to supply scalars to variables, but it should
             "vars": variables,
             "source": data,
             "legend": legend,
@@ -1232,7 +1245,7 @@ class Plotter:
                         move_groupers.insert(0, orient)
                     order = {var: get_order(var) for var in move_groupers}
                     groupby = GroupBy(order)
-                    df = move_step(df, groupby, orient)
+                    df = move_step(df, groupby, orient, scales)
 
             df = self._unscale_coords(subplots, df, orient)
 
