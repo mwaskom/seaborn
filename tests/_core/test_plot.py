@@ -503,7 +503,7 @@ class TestScaling:
         p = (
             Plot(x=["a", "b", "a", "c"])
             .facet(col=["x", "x", "y", "y"])
-            .layout(sharex=False)
+            .share(x=False)
             .add(m)
             .plot()
         )
@@ -527,7 +527,7 @@ class TestScaling:
             Plot(df, x="x")
             .facet(row="row", col="col")
             .add(m)
-            .layout(sharex="row")
+            .share(x="row")
             .plot()
         )
 
@@ -562,7 +562,7 @@ class TestScaling:
         data = [("a", "a"), ("b", "c")]
         df = pd.DataFrame(data, columns=["x1", "x2"]).assign(y=1)
         m = MockMark()
-        p = Plot(df, y="y").pair(x=["x1", "x2"]).add(m).layout(sharex=True).plot()
+        p = Plot(df, y="y").pair(x=["x1", "x2"]).add(m).share(x=True).plot()
 
         for ax in p._figure.axes:
             assert ax.get_xticks() == [0, 1, 2]
@@ -1275,13 +1275,13 @@ class TestFacetInterface:
             shareset = getattr(root, f"get_shared_{axis}_axes")()
             assert all(shareset.joined(root, ax) for ax in other)
 
-        p2 = p.layout(sharex=False, sharey=False).plot()
+        p2 = p.share(x=False, y=False).plot()
         root, *other = p2._figure.axes
         for axis in "xy":
             shareset = getattr(root, f"get_shared_{axis}_axes")()
             assert not any(shareset.joined(root, ax) for ax in other)
 
-        p3 = p.layout(sharex="col", sharey="row").plot()
+        p3 = p.share(x="col", y="row").plot()
         shape = (
             len(categorical_order(long_df[variables["row"]])),
             len(categorical_order(long_df[variables["col"]])),
@@ -1466,7 +1466,7 @@ class TestPairInterface:
             y_shareset = getattr(root, "get_shared_y_axes")()
             assert not any(y_shareset.joined(root, ax) for ax in other)
 
-        p2 = p.layout(sharex=False, sharey=False).plot()
+        p2 = p.share(x=False, y=False).plot()
         root, *other = p2._figure.axes
         for axis in "xy":
             shareset = getattr(root, f"get_shared_{axis}_axes")()
@@ -1730,7 +1730,7 @@ class TestLabelVisibility:
         p = (
             Plot()
             .facet(col=["a", "b"], row=["x", "y"])
-            .layout(sharex=False, sharey=False)
+            .share(x=False, y=False)
             .plot()
         )
         subplots = list(p._subplots)

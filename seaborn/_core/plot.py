@@ -150,6 +150,7 @@ class Plot:
     _layers: list[Layer]
 
     _scales: dict[str, Scale]
+    _shares: dict[str, bool | str]
     _limits: dict[str, tuple[Any, Any]]
     _labels: dict[str, str | Callable[[str], str]]
     _theme: dict[str, Any]
@@ -181,6 +182,7 @@ class Plot:
         self._layers = []
 
         self._scales = {}
+        self._shares = {}
         self._limits = {}
         self._labels = {}
         self._theme = {}
@@ -252,6 +254,7 @@ class Plot:
         new._layers.extend(self._layers)
 
         new._scales.update(self._scales)
+        new._shares.update(self._shares)
         new._limits.update(self._limits)
         new._labels.update(self._labels)
         new._theme.update(self._theme)
@@ -587,6 +590,21 @@ class Plot:
         new._scales.update(scales)
         return new
 
+    def share(self, **shares: bool | str) -> Plot:
+        """
+        Control sharing of axis limits and ticks across subplots.
+
+        Keywords correspond to variables defined in the plot, and values can be
+        boolean (to share across all subplots), or one of "row" or "col" (to share
+        more selectively across one dimension of a grid).
+
+        Behavior for non-coordinate variables is currently undefined.
+
+        """
+        new = self._clone()
+        new._shares.update(shares)
+        return new
+
     def limit(self, **limits: tuple[Any, Any]) -> Plot:
         """
         Control the range of visible data.
@@ -632,8 +650,6 @@ class Plot:
         *,
         size: tuple[float, float] | None = None,
         algo: str | None = "tight",  # TODO document
-        sharex: bool | str | None = None,
-        sharey: bool | str | None = None,
     ) -> Plot:
         """
         Control the figure size and layout.
@@ -645,10 +661,6 @@ class Plot:
             using pyplot, but not otherwise.
         algo : {{"tight", "constrained", None}}
             Name of algorithm for automatically adjusting the layout to remove overlap.
-        sharex, sharey : bool, "row", or "col"
-            Whether axis limits should be shared across subplots. Boolean values apply
-            across the entire grid, whereas `"row"` or `"col"` have a smaller scope.
-            Shared axes will have tick labels disabled.
 
         """
         # TODO add an "auto" mode for figsize that roughly scales with the rcParams
@@ -659,12 +671,6 @@ class Plot:
         new = self._clone()
 
         new._figure_spec["figsize"] = size
-
-        if sharex is not None:
-            new._subplot_spec["sharex"] = sharex
-        if sharey is not None:
-            new._subplot_spec["sharey"] = sharey
-
         new._layout_spec["algo"] = algo
 
         return new
@@ -890,6 +896,10 @@ class Plotter:
         subplot_spec = p._subplot_spec.copy()
         facet_spec = p._facet_spec.copy()
         pair_spec = p._pair_spec.copy()
+
+        for axis in "xy":
+            if axis in p._shares:
+                subplot_spec[f"share{axis}"] = p._shares[axis]
 
         for dim in ["col", "row"]:
             if dim in common.frame and dim not in facet_spec["structure"]:
