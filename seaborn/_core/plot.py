@@ -631,7 +631,7 @@ class Plot:
         self,
         *,
         figsize: tuple[float, float] | None = None,  # TODO change to size
-        algo: str = "tight",  # TODO document
+        algo: str | None = "tight",  # TODO document
         sharex: bool | str | None = None,
         sharey: bool | str | None = None,
     ) -> Plot:
@@ -640,8 +640,10 @@ class Plot:
 
         Parameters
         ----------
-        figsize: (width, height)
+        figsize : (width, height)
             Size of the resulting figure, in inches.
+        algo : {{"tight", "constrained", None}}
+            Name of algorithm for automatically adjusting the layout to remove overlap.
         sharex, sharey : bool, "row", or "col"
             Whether axis limits should be shared across subplots. Boolean values apply
             across the entire grid, whereas `"row"` or `"col"` have a smaller scope.

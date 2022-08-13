@@ -1245,6 +1245,24 @@ class TestFacetInterface:
         p = Plot().layout(figsize=figsize).plot()
         assert tuple(p._figure.get_size_inches()) == figsize
 
+    def test_layout_algo(self):
+
+        p = Plot().facet(["a", "b"]).limit(x=(.1, .9))
+
+        p1 = p.plot()
+        p2 = p.layout(algo=None).plot()
+
+        # Force a draw (we probably need a method for this)
+        p1.save(io.BytesIO())
+        p2.save(io.BytesIO())
+
+        bb11, bb12 = [ax.get_position() for ax in p1._figure.axes]
+        bb21, bb22 = [ax.get_position() for ax in p2._figure.axes]
+
+        sep1 = bb12.corners()[0, 0] - bb11.corners()[2, 0]
+        sep2 = bb22.corners()[0, 0] - bb21.corners()[2, 0]
+        assert sep1 < sep2
+
     def test_axis_sharing(self, long_df):
 
         variables = {"row": "a", "col": "c"}
