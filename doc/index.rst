@@ -1,4 +1,4 @@
-:theme_html_remove_secondary_sidebar:
+:html_theme.sidebar_secondary.remove:
 
 seaborn: statistical data visualization
 =======================================

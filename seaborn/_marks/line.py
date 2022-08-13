@@ -201,7 +201,7 @@ class Lines(Paths):
 
 
 @dataclass
-class Interval(Paths):
+class Range(Paths):
     """
     An oriented line mark drawn between min/max values.
     """

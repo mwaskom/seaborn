@@ -278,6 +278,27 @@ class Grid(_BaseGrid):
         except AttributeError:
             return None
 
+    def tick_params(self, axis='both', **kwargs):
+        """Modify the ticks, tick labels, and gridlines.
+
+        Parameters
+        ----------
+        axis : {'x', 'y', 'both'}
+            The axis on which to apply the formatting.
+        kwargs : keyword arguments
+            Additional keyword arguments to pass to
+            :meth:`matplotlib.axes.Axes.tick_params`.
+
+        Returns
+        -------
+        self : Grid instance
+            Returns self for easy chaining.
+
+        """
+        for ax in self.figure.axes:
+            ax.tick_params(axis=axis, **kwargs)
+        return self
+
 
 _facet_docs = dict(
 

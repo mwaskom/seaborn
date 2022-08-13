@@ -499,6 +499,15 @@ class TestEstimateAggregator:
         out = agg(long_df, "x")
         assert out["x"] == long_df["x"].mean()
 
+    def test_custom_func_estimator(self, long_df):
+
+        def func(x):
+            return np.asarray(x).min()
+
+        agg = EstimateAggregator(func)
+        out = agg(long_df, "x")
+        assert out["x"] == func(long_df["x"])
+
     def test_se_errorbars(self, long_df):
 
         agg = EstimateAggregator("mean", "se")

@@ -43,8 +43,7 @@ RST_TEMPLATE = """
 
 
 INDEX_TEMPLATE = """
-:theme_html_remove_secondary_sidebar:
-
+:html_theme.sidebar_secondary.remove:
 
 .. raw:: html
 

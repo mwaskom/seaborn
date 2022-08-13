@@ -18,15 +18,16 @@ Plot interface
 
     Plot
     Plot.add
-    Plot.scale
     Plot.facet
-    Plot.pair
-    Plot.configure
-    Plot.limit
     Plot.label
+    Plot.layout
+    Plot.limit
     Plot.on
+    Plot.pair
     Plot.plot
     Plot.save
+    Plot.scale
+    Plot.share
     Plot.show
     Plot.theme
 
@@ -38,16 +39,16 @@ Marks
     :nosignatures:
 
     Area
+    Band
     Bar
     Bars
     Dot
-    Interval
+    Dots
     Line
     Lines
     Path
     Paths
-    Ribbon
-    Scatter
+    Range
 
 Stats
 -----

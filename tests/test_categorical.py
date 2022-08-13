@@ -2354,8 +2354,8 @@ class TestBarPlotter(CategoricalFixture):
     def test_unaligned_index(self):
 
         f, (ax1, ax2) = plt.subplots(2)
-        cat.barplot(x=self.g, y=self.y, ci="sd", ax=ax1)
-        cat.barplot(x=self.g, y=self.y_perm, ci="sd", ax=ax2)
+        cat.barplot(x=self.g, y=self.y, errorbar="sd", ax=ax1)
+        cat.barplot(x=self.g, y=self.y_perm, errorbar="sd", ax=ax2)
         for l1, l2 in zip(ax1.lines, ax2.lines):
             assert approx(l1.get_xydata()) == l2.get_xydata()
         for p1, p2 in zip(ax1.patches, ax2.patches):
@@ -2366,9 +2366,9 @@ class TestBarPlotter(CategoricalFixture):
         f, (ax1, ax2) = plt.subplots(2)
         hue_order = self.h.unique()
         cat.barplot(x=self.g, y=self.y, hue=self.h,
-                    hue_order=hue_order, ci="sd", ax=ax1)
+                    hue_order=hue_order, errorbar="sd", ax=ax1)
         cat.barplot(x=self.g, y=self.y_perm, hue=self.h,
-                    hue_order=hue_order, ci="sd", ax=ax2)
+                    hue_order=hue_order, errorbar="sd", ax=ax2)
         for l1, l2 in zip(ax1.lines, ax2.lines):
             assert approx(l1.get_xydata()) == l2.get_xydata()
         for p1, p2 in zip(ax1.patches, ax2.patches):
@@ -2620,8 +2620,8 @@ class TestPointPlotter(CategoricalFixture):
     def test_unaligned_index(self):
 
         f, (ax1, ax2) = plt.subplots(2)
-        cat.pointplot(x=self.g, y=self.y, ci="sd", ax=ax1)
-        cat.pointplot(x=self.g, y=self.y_perm, ci="sd", ax=ax2)
+        cat.pointplot(x=self.g, y=self.y, errorbar="sd", ax=ax1)
+        cat.pointplot(x=self.g, y=self.y_perm, errorbar="sd", ax=ax2)
         for l1, l2 in zip(ax1.lines, ax2.lines):
             assert approx(l1.get_xydata()) == l2.get_xydata()
         for p1, p2 in zip(ax1.collections, ax2.collections):
@@ -2630,9 +2630,9 @@ class TestPointPlotter(CategoricalFixture):
         f, (ax1, ax2) = plt.subplots(2)
         hue_order = self.h.unique()
         cat.pointplot(x=self.g, y=self.y, hue=self.h,
-                      hue_order=hue_order, ci="sd", ax=ax1)
+                      hue_order=hue_order, errorbar="sd", ax=ax1)
         cat.pointplot(x=self.g, y=self.y_perm, hue=self.h,
-                      hue_order=hue_order, ci="sd", ax=ax2)
+                      hue_order=hue_order, errorbar="sd", ax=ax2)
         for l1, l2 in zip(ax1.lines, ax2.lines):
             assert approx(l1.get_xydata()) == l2.get_xydata()
         for p1, p2 in zip(ax1.collections, ax2.collections):
@@ -2882,9 +2882,9 @@ class TestCatPlot(CategoricalFixture):
             assert p1.get_facecolor() == p2.get_facecolor()
         plt.close("all")
 
-        ax = cat.barplot(x="g", y="y", data=self.df, palette="Set2")
+        ax = cat.barplot(x="g", y="y", data=self.df, palette="Set2", hue="h")
         g = cat.catplot(x="g", y="y", data=self.df,
-                        kind="bar", palette="Set2")
+                        kind="bar", palette="Set2", hue="h")
         for p1, p2 in zip(ax.patches, g.ax.patches):
             assert p1.get_facecolor() == p2.get_facecolor()
         plt.close("all")
@@ -2901,8 +2901,8 @@ class TestCatPlot(CategoricalFixture):
             assert l1.get_color() == l2.get_color()
         plt.close("all")
 
-        ax = cat.pointplot(x="g", y="y", data=self.df, palette="Set2")
-        g = cat.catplot(x="g", y="y", data=self.df, palette="Set2")
+        ax = cat.pointplot(x="g", y="y", data=self.df, palette="Set2", hue="h")
+        g = cat.catplot(x="g", y="y", data=self.df, palette="Set2", hue="h")
         for l1, l2 in zip(ax.lines, g.ax.lines):
             assert l1.get_color() == l2.get_color()
         plt.close("all")
@@ -3193,19 +3193,23 @@ class TestBoxenPlotter(CategoricalFixture):
 
     def test_box_colors(self):
 
-        fig = plt.figure()
-        ax = cat.boxenplot(x="g", y="y", data=self.df, saturation=1)
-        fig.canvas.draw()
-        pal = palettes.color_palette(n_colors=3)
-        patches = filter(self.ispatch, ax.collections)
-        assert same_color([patch.get_facecolor()[0] for patch in patches], pal)
+        pal = palettes.color_palette()
 
-        fig = plt.figure()
-        ax = cat.boxenplot(x="g", y="y", hue="h", data=self.df, saturation=1)
-        fig.canvas.draw()
-        pal = palettes.color_palette(n_colors=2)
-        patches = filter(self.ispatch, ax.collections)
-        assert same_color([patch.get_facecolor()[0] for patch in patches], pal * 3)
+        ax = cat.boxenplot(
+            x="g", y="y", data=self.df, saturation=1, showfliers=False
+        )
+        ax.figure.canvas.draw()
+        for i, box in enumerate(ax.collections):
+            assert same_color(box.get_facecolor()[0], pal[i])
+
+        plt.close("all")
+
+        ax = cat.boxenplot(
+            x="g", y="y", hue="h", data=self.df, saturation=1, showfliers=False
+        )
+        ax.figure.canvas.draw()
+        for i, box in enumerate(ax.collections):
+            assert same_color(box.get_facecolor()[0], pal[i % 2])
 
         plt.close("all")
 
@@ -3354,6 +3358,60 @@ class TestBoxenPlotter(CategoricalFixture):
         )
         data['y'] = data['y'].astype(pd.Float64Dtype())
         _ = cat.boxenplot(x="x", y="y", data=data)
+
+        plt.close("all")
+
+    def test_line_kws(self):
+        line_kws = {'linewidth': 5, 'color': 'purple',
+                    'linestyle': '-.'}
+
+        ax = cat.boxenplot(data=self.df, y='y', line_kws=line_kws)
+
+        median_line = ax.lines[0]
+
+        assert median_line.get_linewidth() == line_kws['linewidth']
+        assert median_line.get_linestyle() == line_kws['linestyle']
+        assert median_line.get_color() == line_kws['color']
+
+        plt.close("all")
+
+    def test_flier_kws(self):
+        flier_kws = {
+            'marker': 'v',
+            'color': np.array([[1, 0, 0, 1]]),
+            's': 5,
+        }
+
+        ax = cat.boxenplot(data=self.df, y='y', x='g', flier_kws=flier_kws)
+
+        outliers_scatter = ax.findobj(mpl.collections.PathCollection)[0]
+
+        # The number of vertices for a triangle is 3, the length of Path
+        # collection objects is defined as n + 1 vertices.
+        assert len(outliers_scatter.get_paths()[0]) == 4
+        assert len(outliers_scatter.get_paths()[-1]) == 4
+
+        assert (outliers_scatter.get_facecolor() == flier_kws['color']).all()
+
+        assert np.unique(outliers_scatter.get_sizes()) == flier_kws['s']
+
+        plt.close("all")
+
+    def test_box_kws(self):
+
+        box_kws = {'linewidth': 5, 'edgecolor': np.array([[0, 1, 0, 1]])}
+
+        ax = cat.boxenplot(data=self.df, y='y', x='g',
+                           box_kws=box_kws)
+
+        boxes = ax.findobj(mpl.collections.PatchCollection)[0]
+
+        # The number of vertices for a triangle is 3, the length of Path
+        # collection objects is defined as n + 1 vertices.
+        assert len(boxes.get_paths()[0]) == 5
+        assert len(boxes.get_paths()[-1]) == 5
+
+        assert np.unique(boxes.get_linewidth() == box_kws['linewidth'])
 
         plt.close("all")
 

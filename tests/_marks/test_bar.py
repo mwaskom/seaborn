@@ -7,7 +7,7 @@ import pytest
 from numpy.testing import assert_array_equal
 
 from seaborn._core.plot import Plot
-from seaborn._marks.bars import Bar, Bars
+from seaborn._marks.bar import Bar, Bars
 
 
 class TestBar:

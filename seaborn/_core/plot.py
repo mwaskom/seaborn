@@ -11,7 +11,7 @@ import textwrap
 from contextlib import contextmanager
 from collections import abc
 from collections.abc import Callable, Generator, Hashable
-from typing import Any, cast
+from typing import Any, List, Optional, cast
 
 from cycler import cycler
 import pandas as pd
@@ -150,6 +150,7 @@ class Plot:
     _layers: list[Layer]
 
     _scales: dict[str, Scale]
+    _shares: dict[str, bool | str]
     _limits: dict[str, tuple[Any, Any]]
     _labels: dict[str, str | Callable[[str], str]]
     _theme: dict[str, Any]
@@ -159,6 +160,7 @@ class Plot:
 
     _figure_spec: dict[str, Any]
     _subplot_spec: dict[str, Any]
+    _layout_spec: dict[str, Any]
 
     def __init__(
         self,
@@ -180,6 +182,7 @@ class Plot:
         self._layers = []
 
         self._scales = {}
+        self._shares = {}
         self._limits = {}
         self._labels = {}
         self._theme = {}
@@ -189,6 +192,7 @@ class Plot:
 
         self._figure_spec = {}
         self._subplot_spec = {}
+        self._layout_spec = {}
 
         self._target = None
 
@@ -250,6 +254,7 @@ class Plot:
         new._layers.extend(self._layers)
 
         new._scales.update(self._scales)
+        new._shares.update(self._shares)
         new._limits.update(self._limits)
         new._labels.update(self._labels)
         new._theme.update(self._theme)
@@ -259,6 +264,7 @@ class Plot:
 
         new._figure_spec.update(self._figure_spec)
         new._subplot_spec.update(self._subplot_spec)
+        new._layout_spec.update(self._layout_spec)
 
         new._target = self._target
 
@@ -272,7 +278,7 @@ class Plot:
             "xaxis", "xtick", "yaxis", "ytick",
         ]
         base = {
-            k: v for k, v in mpl.rcParamsDefault.items()
+            k: mpl.rcParamsDefault[k] for k in mpl.rcParams
             if any(k.startswith(p) for p in style_groups)
         }
         theme = {
@@ -338,16 +344,14 @@ class Plot:
     def add(
         self,
         mark: Mark,
-        stat: Stat | None = None,
-        move: Move | list[Move] | None = None,
-        *,
+        *transforms: Stat | Mark,
         orient: str | None = None,
         legend: bool = True,
         data: DataSource = None,
         **variables: VariableSpec,
     ) -> Plot:
         """
-        Define a layer of the visualization.
+        Define a layer of the visualization in terms of mark and data transform(s).
 
         This is the main method for specifying how the data should be visualized.
         It can be called multiple times with different arguments to define
@@ -357,48 +361,63 @@ class Plot:
         ----------
         mark : :class:`seaborn.objects.Mark`
             The visual representation of the data to use in this layer.
-        stat : :class:`seaborn.objects.Stat`
-            A transformation applied to the data before plotting.
-        move : :class:`seaborn.objects.Move`
-            Additional transformation(s) to handle over-plotting.
-        legend : bool
-            Option to suppress the mark/mappings for this layer from the legend.
+        transforms : :class:`seaborn.objects.Stat` or :class:`seaborn.objects.Move`
+            Objects representing transforms to be applied before plotting the data.
+            Current, at most one :class:`seaborn.objects.Stat` can be used, and it
+            must be passed first. This constraint will be relaxed in the future.
         orient : "x", "y", "v", or "h"
             The orientation of the mark, which affects how the stat is computed.
             Typically corresponds to the axis that defines groups for aggregation.
             The "v" (vertical) and "h" (horizontal) options are synonyms for "x" / "y",
             but may be more intuitive with some marks. When not provided, an
             orientation will be inferred from characteristics of the data and scales.
+        legend : bool
+            Option to suppress the mark/mappings for this layer from the legend.
         data : DataFrame or dict
             Data source to override the global source provided in the constructor.
         variables : data vectors or identifiers
             Additional layer-specific variables, including variables that will be
-            passed directly to the stat without scaling.
+            passed directly to the transforms without scaling.
 
         """
         if not isinstance(mark, Mark):
             msg = f"mark must be a Mark instance, not {type(mark)!r}."
             raise TypeError(msg)
 
-        if stat is not None and not isinstance(stat, Stat):
-            msg = f"stat must be a Stat instance, not {type(stat)!r}."
+        # TODO This API for transforms was a late decision, and previously Plot.add
+        # accepted 0 or 1 Stat instances and 0, 1, or a list of Move instances.
+        # It will take some work to refactor the internals so that Stat and Move are
+        # treated identically, and until then well need to "unpack" the transforms
+        # here and enforce limitations on the order / types.
+
+        stat: Optional[Stat]
+        move: Optional[List[Move]]
+        error = False
+        if not transforms:
+            stat, move = None, None
+        elif isinstance(transforms[0], Stat):
+            stat = transforms[0]
+            move = [m for m in transforms[1:] if isinstance(m, Move)]
+            error = len(move) != len(transforms) - 1
+        else:
+            stat = None
+            move = [m for m in transforms if isinstance(m, Move)]
+            error = len(move) != len(transforms)
+
+        if error:
+            msg = " ".join([
+                "Transforms must have at most one Stat type (in the first position),",
+                "and all others must be a Move type. Given transform type(s):",
+                ", ".join(str(type(t).__name__) for t in transforms) + "."
+            ])
             raise TypeError(msg)
-
-        # TODO decide how to allow Mark to have default Stat/Move
-        # if stat is None and hasattr(mark, "default_stat"):
-        #     stat = mark.default_stat()
-
-        # TODO it doesn't work to supply scalars to variables, but that would be nice
-
-        # TODO accept arbitrary variables defined by the stat (/move?) here
-        # (but not in the Plot constructor)
-        # Should stat variables ever go in the constructor, or just in the add call?
 
         new = self._clone()
         new._layers.append({
             "mark": mark,
             "stat": stat,
             "move": move,
+            # TODO it doesn't work to supply scalars to variables, but it should
             "vars": variables,
             "source": data,
             "legend": legend,
@@ -584,6 +603,21 @@ class Plot:
         new._scales.update(scales)
         return new
 
+    def share(self, **shares: bool | str) -> Plot:
+        """
+        Control sharing of axis limits and ticks across subplots.
+
+        Keywords correspond to variables defined in the plot, and values can be
+        boolean (to share across all subplots), or one of "row" or "col" (to share
+        more selectively across one dimension of a grid).
+
+        Behavior for non-coordinate variables is currently undefined.
+
+        """
+        new = self._clone()
+        new._shares.update(shares)
+        return new
+
     def limit(self, **limits: tuple[Any, Any]) -> Plot:
         """
         Control the range of visible data.
@@ -624,23 +658,22 @@ class Plot:
         new._labels.update(variables)
         return new
 
-    def configure(
+    def layout(
         self,
-        figsize: tuple[float, float] | None = None,
-        sharex: bool | str | None = None,
-        sharey: bool | str | None = None,
+        *,
+        size: tuple[float, float] | None = None,
+        algo: str | None = "tight",  # TODO document
     ) -> Plot:
         """
         Control the figure size and layout.
 
         Parameters
         ----------
-        figsize: (width, height)
-            Size of the resulting figure, in inches.
-        sharex, sharey : bool, "row", or "col"
-            Whether axis limits should be shared across subplots. Boolean values apply
-            across the entire grid, whereas `"row"` or `"col"` have a smaller scope.
-            Shared axes will have tick labels disabled.
+        size : (width, height)
+            Size of the resulting figure, in inches. Size is inclusive of legend when
+            using pyplot, but not otherwise.
+        algo : {{"tight", "constrained", None}}
+            Name of algorithm for automatically adjusting the layout to remove overlap.
 
         """
         # TODO add an "auto" mode for figsize that roughly scales with the rcParams
@@ -650,12 +683,8 @@ class Plot:
 
         new = self._clone()
 
-        new._figure_spec["figsize"] = figsize
-
-        if sharex is not None:
-            new._subplot_spec["sharex"] = sharex
-        if sharey is not None:
-            new._subplot_spec["sharey"] = sharey
+        new._figure_spec["figsize"] = size
+        new._layout_spec["algo"] = algo
 
         return new
 
@@ -881,6 +910,10 @@ class Plotter:
         facet_spec = p._facet_spec.copy()
         pair_spec = p._pair_spec.copy()
 
+        for axis in "xy":
+            if axis in p._shares:
+                subplot_spec[f"share{axis}"] = p._shares[axis]
+
         for dim in ["col", "row"]:
             if dim in common.frame and dim not in facet_spec["structure"]:
                 order = categorical_order(common.frame[dim])
@@ -915,7 +948,7 @@ class Plotter:
 
                 # ~~ Decoration visibility
 
-                # TODO there should be some override (in Plot.configure?) so that
+                # TODO there should be some override (in Plot.layout?) so that
                 # tick labels can be shown on interior shared axes
                 axis_obj = getattr(ax, f"{axis}axis")
                 visible_side = {"x": "bottom", "y": "left"}.get(axis)
@@ -935,10 +968,7 @@ class Plotter:
                     for t in getattr(axis_obj, f"get_{group}ticklabels")():
                         t.set_visible(show_tick_labels)
 
-            # TODO title template should be configurable
-            # ---- Also we want right-side titles for row facets in most cases?
-            # ---- Or wrapped? That can get annoying too.
-            # TODO should configure() accept a title= kwarg (for single subplot plots)?
+            # TODO we want right-side titles for row facets in most cases?
             # Let's have what we currently call "margin titles" but properly using the
             # ax.set_title interface (see my gist)
             title_parts = []
@@ -1232,7 +1262,7 @@ class Plotter:
                         move_groupers.insert(0, orient)
                     order = {var: get_order(var) for var in move_groupers}
                     groupby = GroupBy(order)
-                    df = move_step(df, groupby, orient)
+                    df = move_step(df, groupby, orient, scales)
 
             df = self._unscale_coords(subplots, df, orient)
 
@@ -1508,6 +1538,9 @@ class Plotter:
             else:
                 merged_contents[key] = artists.copy(), labels
 
+        # TODO explain
+        loc = "center right" if self._pyplot else "center left"
+
         base_legend = None
         for (name, _), (handles, labels) in merged_contents.items():
 
@@ -1516,7 +1549,7 @@ class Plotter:
                 handles,
                 labels,
                 title=name,
-                loc="center left",
+                loc=loc,
                 bbox_to_anchor=(.98, .55),
             )
 
@@ -1550,9 +1583,11 @@ class Plotter:
                         hi = cast(float, hi) + 0.5
                     ax.set(**{f"{axis}lim": (lo, hi)})
 
-        # TODO this should be configurable
-        if not self._figure.get_constrained_layout():
+        layout_algo = p._layout_spec.get("algo", "tight")
+        if layout_algo == "tight":
             self._figure.set_tight_layout(True)
+        elif layout_algo == "constrained":
+            self._figure.set_constrained_layout(True)
 
 
 @contextmanager

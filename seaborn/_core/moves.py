@@ -6,6 +6,7 @@ import numpy as np
 from pandas import DataFrame
 
 from seaborn._core.groupby import GroupBy
+from seaborn._core.scales import Scale
 
 
 @dataclass
@@ -13,7 +14,9 @@ class Move:
 
     group_by_orient: ClassVar[bool] = True
 
-    def __call__(self, data: DataFrame, groupby: GroupBy, orient: str) -> DataFrame:
+    def __call__(
+        self, data: DataFrame, groupby: GroupBy, orient: str, scales: dict[str, Scale],
+    ) -> DataFrame:
         raise NotImplementedError
 
 
@@ -31,7 +34,9 @@ class Jitter(Move):
     # TODO what is the best way to have a reasonable default?
     # The problem is that "reasonable" seems dependent on the mark
 
-    def __call__(self, data: DataFrame, groupby: GroupBy, orient: str) -> DataFrame:
+    def __call__(
+        self, data: DataFrame, groupby: GroupBy, orient: str, scales: dict[str, Scale],
+    ) -> DataFrame:
 
         # TODO is it a problem that GroupBy is not used for anything here?
         # Should we type it as optional?
@@ -68,7 +73,9 @@ class Dodge(Move):
     # TODO should the default be an "all" singleton?
     by: Optional[list[str]] = None
 
-    def __call__(self, data: DataFrame, groupby: GroupBy, orient: str) -> DataFrame:
+    def __call__(
+        self, data: DataFrame, groupby: GroupBy, orient: str, scales: dict[str, Scale],
+    ) -> DataFrame:
 
         grouping_vars = [v for v in groupby.order if v in data]
         groups = groupby.agg(data, {"width": "max"})
@@ -138,7 +145,9 @@ class Stack(Move):
 
         return df
 
-    def __call__(self, data: DataFrame, groupby: GroupBy, orient: str) -> DataFrame:
+    def __call__(
+        self, data: DataFrame, groupby: GroupBy, orient: str, scales: dict[str, Scale],
+    ) -> DataFrame:
 
         # TODO where to ensure that other semantic variables are sorted properly?
         # TODO why are we not using the passed in groupby here?
@@ -154,7 +163,9 @@ class Shift(Move):
     x: float = 0
     y: float = 0
 
-    def __call__(self, data: DataFrame, groupby: GroupBy, orient: str) -> DataFrame:
+    def __call__(
+        self, data: DataFrame, groupby: GroupBy, orient: str, scales: dict[str, Scale],
+    ) -> DataFrame:
 
         data = data.copy(deep=False)
         data["x"] = data["x"] + self.x
@@ -188,7 +199,9 @@ class Norm(Move):
 
         return df
 
-    def __call__(self, data: DataFrame, groupby: GroupBy, orient: str) -> DataFrame:
+    def __call__(
+        self, data: DataFrame, groupby: GroupBy, orient: str, scales: dict[str, Scale],
+    ) -> DataFrame:
 
         other = {"x": "y", "y": "x"}[orient]
         return groupby.apply(data, self._norm, other)

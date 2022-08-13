@@ -100,7 +100,7 @@ def _default_color(method, hue, color, kws):
 
     elif method.__name__ == "plot":
 
-        scout, = method([], [], **kws)
+        scout, = method([], [], scalex=False, scaley=False, **kws)
         color = scout.get_color()
         scout.remove()
 
