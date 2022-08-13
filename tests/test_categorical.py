@@ -3372,8 +3372,11 @@ class TestBoxenPlotter(CategoricalFixture):
         plt.close("all")
 
     def test_flier_kws(self):
-        flier_kws = {'marker': 'v',  'color': np.array([[1, 0, 0, 1]]),
-                     's': 5,}
+        flier_kws = {
+            'marker': 'v',
+            'color': np.array([[1, 0, 0, 1]]),
+            's': 5,
+        }
 
         ax = cat.boxenplot(data=self.df, y='y', x='g', flier_kws=flier_kws)
 
@@ -3389,7 +3392,6 @@ class TestBoxenPlotter(CategoricalFixture):
         assert np.unique(outliers_scatter.get_sizes()) == flier_kws['s']
 
         plt.close("all")
-
 
     def test_box_kws(self):
 
@@ -3408,6 +3410,7 @@ class TestBoxenPlotter(CategoricalFixture):
         assert np.unique(boxes.get_linewidth() == box_kws['linewidth'])
 
         plt.close("all")
+
 
 class TestBeeswarm:
 

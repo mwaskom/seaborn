@@ -1857,8 +1857,9 @@ class _LVPlotter(_CategoricalPlotter):
             box_kws.setdefault(k, v)
 
         # Set the default kwargs for the lines denoting medians
-        line_default_kws = dict(color=".15", alpha=0.45, solid_capstyle="butt",
-            linewidth=self.linewidth)
+        line_default_kws = dict(
+            color=".15", alpha=0.45, solid_capstyle="butt", linewidth=self.linewidth
+        )
         for k, v in line_default_kws.items():
             line_kws.setdefault(k, v)
 
@@ -2414,9 +2415,9 @@ def boxenplot(
     return ax
 
 
-boxenplot.__doc__ = dedent("""
+boxenplot.__doc__ = dedent("""\
     Draw an enhanced box plot for larger datasets.
-    
+
     This style of plot was originally named a "letter value" plot because it
     shows a large number of quantiles that are defined as "letter values".  It
     is similar to a box plot in plotting a nonparametric representation of a
@@ -2425,9 +2426,9 @@ boxenplot.__doc__ = dedent("""
     the distribution, particularly in the tails. For a more extensive
     explanation, you can read the paper that introduced the plot:
     https://vita.had.co.nz/papers/letter-value-plot.html
-    
+
     {categorical_narrative}
-    
+
     Parameters
     ----------
     {categorical_data}
@@ -2466,27 +2467,27 @@ boxenplot.__doc__ = dedent("""
         Keyword arguments for the box artists; passed to
         :class:`matplotlib.patches.Rectangle`.
     line_kws: dict, optional
-        Keyword arguments for the line denoting the median; passed to 
+        Keyword arguments for the line denoting the median; passed to
         :meth:`matplotlib.axes.Axes.plot`.
     flier_kws: dict, optional
-        Keyword arguments for the scatter denoting the outlier observations; 
+        Keyword arguments for the scatter denoting the outlier observations;
         passed to :meth:`matplotlib.axes.Axes.scatter`.
-        
+
     Returns
     -------
     {ax_out}
-    
+
     See Also
     --------
     {violinplot}
     {boxplot}
     {catplot}
-    
+
     Examples
     --------
-    
+
     .. include:: ../docstrings/boxenplot.rst
-    
+
     """).format(**_categorical_docs)
 
 
