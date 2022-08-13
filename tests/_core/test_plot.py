@@ -515,7 +515,7 @@ class TestScaling:
         p = (
             Plot(x=["a", "b", "a", "c"])
             .facet(col=["x", "x", "y", "y"])
-            .configure(sharex=False)
+            .share(x=False)
             .add(m)
             .plot()
         )
@@ -539,7 +539,7 @@ class TestScaling:
             Plot(df, x="x")
             .facet(row="row", col="col")
             .add(m)
-            .configure(sharex="row")
+            .share(x="row")
             .plot()
         )
 
@@ -574,7 +574,7 @@ class TestScaling:
         data = [("a", "a"), ("b", "c")]
         df = pd.DataFrame(data, columns=["x1", "x2"]).assign(y=1)
         m = MockMark()
-        p = Plot(df, y="y").pair(x=["x1", "x2"]).add(m).configure(sharex=True).plot()
+        p = Plot(df, y="y").pair(x=["x1", "x2"]).add(m).share(x=True).plot()
 
         for ax in p._figure.axes:
             assert ax.get_xticks() == [0, 1, 2]
@@ -1040,6 +1040,12 @@ class TestPlotting:
         tag = xml.etree.ElementTree.fromstring(buf.getvalue()).tag
         assert tag == "{http://www.w3.org/2000/svg}svg"
 
+    def test_layout_size(self):
+
+        size = (4, 2)
+        p = Plot().layout(size=size).plot()
+        assert tuple(p._figure.get_size_inches()) == size
+
     def test_on_axes(self):
 
         ax = mpl.figure.Figure().subplots()
@@ -1285,11 +1291,27 @@ class TestFacetInterface:
         p = Plot(long_df).facet(**variables, order=order)
         self.check_facet_results_2d(p, long_df, variables, order)
 
-    def test_figsize(self):
+    @pytest.mark.parametrize("algo", ["tight", "constrained"])
+    def test_layout_algo(self, algo):
 
-        figsize = (4, 2)
-        p = Plot().configure(figsize=figsize).plot()
-        assert tuple(p._figure.get_size_inches()) == figsize
+        if algo == "constrained" and Version(mpl.__version__) < Version("3.3.0"):
+            pytest.skip("constrained_layout requires matplotlib>=3.3")
+
+        p = Plot().facet(["a", "b"]).limit(x=(.1, .9))
+
+        p1 = p.layout(algo=algo).plot()
+        p2 = p.layout(algo=None).plot()
+
+        # Force a draw (we probably need a method for this)
+        p1.save(io.BytesIO())
+        p2.save(io.BytesIO())
+
+        bb11, bb12 = [ax.get_position() for ax in p1._figure.axes]
+        bb21, bb22 = [ax.get_position() for ax in p2._figure.axes]
+
+        sep1 = bb12.corners()[0, 0] - bb11.corners()[2, 0]
+        sep2 = bb22.corners()[0, 0] - bb21.corners()[2, 0]
+        assert sep1 < sep2
 
     def test_axis_sharing(self, long_df):
 
@@ -1303,13 +1325,13 @@ class TestFacetInterface:
             shareset = getattr(root, f"get_shared_{axis}_axes")()
             assert all(shareset.joined(root, ax) for ax in other)
 
-        p2 = p.configure(sharex=False, sharey=False).plot()
+        p2 = p.share(x=False, y=False).plot()
         root, *other = p2._figure.axes
         for axis in "xy":
             shareset = getattr(root, f"get_shared_{axis}_axes")()
             assert not any(shareset.joined(root, ax) for ax in other)
 
-        p3 = p.configure(sharex="col", sharey="row").plot()
+        p3 = p.share(x="col", y="row").plot()
         shape = (
             len(categorical_order(long_df[variables["row"]])),
             len(categorical_order(long_df[variables["col"]])),
@@ -1494,7 +1516,7 @@ class TestPairInterface:
             y_shareset = getattr(root, "get_shared_y_axes")()
             assert not any(y_shareset.joined(root, ax) for ax in other)
 
-        p2 = p.configure(sharex=False, sharey=False).plot()
+        p2 = p.share(x=False, y=False).plot()
         root, *other = p2._figure.axes
         for axis in "xy":
             shareset = getattr(root, f"get_shared_{axis}_axes")()
@@ -1758,7 +1780,7 @@ class TestLabelVisibility:
         p = (
             Plot()
             .facet(col=["a", "b"], row=["x", "y"])
-            .configure(sharex=False, sharey=False)
+            .share(x=False, y=False)
             .plot()
         )
         subplots = list(p._subplots)

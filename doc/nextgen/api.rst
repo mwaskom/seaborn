@@ -18,13 +18,14 @@ Plot interface
 
     Plot
     Plot.add
-    Plot.scale
     Plot.facet
     Plot.pair
-    Plot.configure
+    Plot.layout
     Plot.on
     Plot.plot
     Plot.save
+    Plot.scale
+    Plot.share
     Plot.show
 
 Marks

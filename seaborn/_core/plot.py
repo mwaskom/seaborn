@@ -150,6 +150,7 @@ class Plot:
     _layers: list[Layer]
 
     _scales: dict[str, Scale]
+    _shares: dict[str, bool | str]
     _limits: dict[str, tuple[Any, Any]]
     _labels: dict[str, str | Callable[[str], str]]
     _theme: dict[str, Any]
@@ -159,6 +160,7 @@ class Plot:
 
     _figure_spec: dict[str, Any]
     _subplot_spec: dict[str, Any]
+    _layout_spec: dict[str, Any]
 
     def __init__(
         self,
@@ -180,6 +182,7 @@ class Plot:
         self._layers = []
 
         self._scales = {}
+        self._shares = {}
         self._limits = {}
         self._labels = {}
         self._theme = {}
@@ -189,6 +192,7 @@ class Plot:
 
         self._figure_spec = {}
         self._subplot_spec = {}
+        self._layout_spec = {}
 
         self._target = None
 
@@ -250,6 +254,7 @@ class Plot:
         new._layers.extend(self._layers)
 
         new._scales.update(self._scales)
+        new._shares.update(self._shares)
         new._limits.update(self._limits)
         new._labels.update(self._labels)
         new._theme.update(self._theme)
@@ -259,6 +264,7 @@ class Plot:
 
         new._figure_spec.update(self._figure_spec)
         new._subplot_spec.update(self._subplot_spec)
+        new._layout_spec.update(self._layout_spec)
 
         new._target = self._target
 
@@ -272,7 +278,7 @@ class Plot:
             "xaxis", "xtick", "yaxis", "ytick",
         ]
         base = {
-            k: v for k, v in mpl.rcParamsDefault.items()
+            k: mpl.rcParamsDefault[k] for k in mpl.rcParams
             if any(k.startswith(p) for p in style_groups)
         }
         theme = {
@@ -597,6 +603,21 @@ class Plot:
         new._scales.update(scales)
         return new
 
+    def share(self, **shares: bool | str) -> Plot:
+        """
+        Control sharing of axis limits and ticks across subplots.
+
+        Keywords correspond to variables defined in the plot, and values can be
+        boolean (to share across all subplots), or one of "row" or "col" (to share
+        more selectively across one dimension of a grid).
+
+        Behavior for non-coordinate variables is currently undefined.
+
+        """
+        new = self._clone()
+        new._shares.update(shares)
+        return new
+
     def limit(self, **limits: tuple[Any, Any]) -> Plot:
         """
         Control the range of visible data.
@@ -637,23 +658,22 @@ class Plot:
         new._labels.update(variables)
         return new
 
-    def configure(
+    def layout(
         self,
-        figsize: tuple[float, float] | None = None,
-        sharex: bool | str | None = None,
-        sharey: bool | str | None = None,
+        *,
+        size: tuple[float, float] | None = None,
+        algo: str | None = "tight",  # TODO document
     ) -> Plot:
         """
         Control the figure size and layout.
 
         Parameters
         ----------
-        figsize: (width, height)
-            Size of the resulting figure, in inches.
-        sharex, sharey : bool, "row", or "col"
-            Whether axis limits should be shared across subplots. Boolean values apply
-            across the entire grid, whereas `"row"` or `"col"` have a smaller scope.
-            Shared axes will have tick labels disabled.
+        size : (width, height)
+            Size of the resulting figure, in inches. Size is inclusive of legend when
+            using pyplot, but not otherwise.
+        algo : {{"tight", "constrained", None}}
+            Name of algorithm for automatically adjusting the layout to remove overlap.
 
         """
         # TODO add an "auto" mode for figsize that roughly scales with the rcParams
@@ -663,12 +683,8 @@ class Plot:
 
         new = self._clone()
 
-        new._figure_spec["figsize"] = figsize
-
-        if sharex is not None:
-            new._subplot_spec["sharex"] = sharex
-        if sharey is not None:
-            new._subplot_spec["sharey"] = sharey
+        new._figure_spec["figsize"] = size
+        new._layout_spec["algo"] = algo
 
         return new
 
@@ -894,6 +910,10 @@ class Plotter:
         facet_spec = p._facet_spec.copy()
         pair_spec = p._pair_spec.copy()
 
+        for axis in "xy":
+            if axis in p._shares:
+                subplot_spec[f"share{axis}"] = p._shares[axis]
+
         for dim in ["col", "row"]:
             if dim in common.frame and dim not in facet_spec["structure"]:
                 order = categorical_order(common.frame[dim])
@@ -928,7 +948,7 @@ class Plotter:
 
                 # ~~ Decoration visibility
 
-                # TODO there should be some override (in Plot.configure?) so that
+                # TODO there should be some override (in Plot.layout?) so that
                 # tick labels can be shown on interior shared axes
                 axis_obj = getattr(ax, f"{axis}axis")
                 visible_side = {"x": "bottom", "y": "left"}.get(axis)
@@ -948,10 +968,7 @@ class Plotter:
                     for t in getattr(axis_obj, f"get_{group}ticklabels")():
                         t.set_visible(show_tick_labels)
 
-            # TODO title template should be configurable
-            # ---- Also we want right-side titles for row facets in most cases?
-            # ---- Or wrapped? That can get annoying too.
-            # TODO should configure() accept a title= kwarg (for single subplot plots)?
+            # TODO we want right-side titles for row facets in most cases?
             # Let's have what we currently call "margin titles" but properly using the
             # ax.set_title interface (see my gist)
             title_parts = []
@@ -1521,6 +1538,9 @@ class Plotter:
             else:
                 merged_contents[key] = artists.copy(), labels
 
+        # TODO explain
+        loc = "center right" if self._pyplot else "center left"
+
         base_legend = None
         for (name, _), (handles, labels) in merged_contents.items():
 
@@ -1529,7 +1549,7 @@ class Plotter:
                 handles,
                 labels,
                 title=name,
-                loc="center left",
+                loc=loc,
                 bbox_to_anchor=(.98, .55),
             )
 
@@ -1563,9 +1583,11 @@ class Plotter:
                         hi = cast(float, hi) + 0.5
                     ax.set(**{f"{axis}lim": (lo, hi)})
 
-        # TODO this should be configurable
-        if not self._figure.get_constrained_layout():
+        layout_algo = p._layout_spec.get("algo", "tight")
+        if layout_algo == "tight":
             self._figure.set_tight_layout(True)
+        elif layout_algo == "constrained":
+            self._figure.set_constrained_layout(True)
 
 
 @contextmanager
