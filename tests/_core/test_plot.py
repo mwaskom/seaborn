@@ -1248,6 +1248,9 @@ class TestFacetInterface:
     @pytest.mark.parametrize("algo", ["tight", "constrained"])
     def test_layout_algo(self, algo):
 
+        if algo == "constrained" and Version(mpl.__version__) < Version("3.3.0"):
+            pytest.skip("constrained_layout requires matplotlib>=3.3")
+
         p = Plot().facet(["a", "b"]).limit(x=(.1, .9))
 
         p1 = p.layout(algo=algo).plot()
