@@ -994,6 +994,12 @@ class TestPlotting:
         tag = xml.etree.ElementTree.fromstring(buf.getvalue()).tag
         assert tag == "{http://www.w3.org/2000/svg}svg"
 
+    def test_layout_size(self):
+
+        size = (4, 2)
+        p = Plot().layout(size=size).plot()
+        assert tuple(p._figure.get_size_inches()) == size
+
     def test_on_axes(self):
 
         ax = mpl.figure.Figure().subplots()
@@ -1239,17 +1245,12 @@ class TestFacetInterface:
         p = Plot(long_df).facet(**variables, order=order)
         self.check_facet_results_2d(p, long_df, variables, order)
 
-    def test_layout_size(self):
-
-        size = (4, 2)
-        p = Plot().layout(size=size).plot()
-        assert tuple(p._figure.get_size_inches()) == size
-
-    def test_layout_algo(self):
+    @pytest.mark.parametrize("algo", ["tight", "constrained"])
+    def test_layout_algo(self, algo):
 
         p = Plot().facet(["a", "b"]).limit(x=(.1, .9))
 
-        p1 = p.plot()
+        p1 = p.layout(algo=algo).plot()
         p2 = p.layout(algo=None).plot()
 
         # Force a draw (we probably need a method for this)
