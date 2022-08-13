@@ -23,8 +23,8 @@ with the new interface:
             color="smoker", marker="smoker", pointsize="size",
         )
         .facet("time")
-        .add(so.Scatter())
-        .configure(figsize=(7, 4))
+        .add(so.Dots())
+        .layout(size=(7, 4))
     )
 
 
