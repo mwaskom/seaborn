@@ -35,14 +35,16 @@ Marks
     :nosignatures:
 
     Area
+    Band
     Bar
+    Bars
     Dot
+    Dots
     Line
     Lines
     Path
     Paths
-    Ribbon
-    Scatter
+    Range
 
 Stats
 -----

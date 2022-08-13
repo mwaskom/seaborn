@@ -5,7 +5,7 @@ from matplotlib.colors import to_rgba, to_rgba_array
 from numpy.testing import assert_array_equal
 
 from seaborn._core.plot import Plot
-from seaborn._marks.area import Area, Ribbon
+from seaborn._marks.area import Area, Band
 
 
 class TestAreaMarks:
@@ -94,10 +94,10 @@ class TestAreaMarks:
         poly = ax.patches[0]
         assert poly.get_facecolor() == to_rgba("C0", 0)
 
-    def test_ribbon(self):
+    def test_band(self):
 
         x, ymin, ymax = [1, 2, 4], [2, 1, 4], [3, 3, 5]
-        p = Plot(x=x, ymin=ymin, ymax=ymax).add(Ribbon()).plot()
+        p = Plot(x=x, ymin=ymin, ymax=ymax).add(Band()).plot()
         ax = p._figure.axes[0]
         verts = ax.patches[0].get_path().vertices.T
 

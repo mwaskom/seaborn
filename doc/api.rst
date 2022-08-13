@@ -26,16 +26,16 @@ Mark objects
     :nosignatures:
 
     Area
+    Band
     Bar
     Bars
     Dot
     Dots
-    Interval
-    Path
-    Paths
     Line
     Lines
-    Ribbon
+    Path
+    Paths
+    Range
 
 Stat objects
 ~~~~~~~~~~~~
