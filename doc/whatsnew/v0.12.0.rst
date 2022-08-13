@@ -100,6 +100,8 @@ Other updates
 
 - |Fix| Improved robustness to numerical errors in :func:`kdeplot` (:pr:`2862`).
 
+- |Fix| Fixed a bug where :func:`rugplot` was ignoring expand_margins=False (:pr:`2953`).
+
 - |Defaults| The `patch.facecolor` rc param is no longer set by :func:`set_palette` (or :func:`set_theme`). This should have no general effect, because the matplotlib default is now `"C0"` (:pr:`2906`).
 
 - |Deps| Made `scipy` an optional dependency and added `pip install seaborn[stats]` as a method for ensuring the availability of compatible `scipy` and `statsmodels` libraries at install time. This has a few minor implications for existing code, which are explained in the Github pull request (:pr:`2398`).

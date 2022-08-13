@@ -305,17 +305,15 @@ class TestRugPlot(SharedAxesLevelTests):
         assert x1 == x2
         assert y1 + height * 2 == pytest.approx(y2)
 
-    def test_multiple_rugs(self, long_df):
+    def test_multiple_rugs(self):
 
         values = np.linspace(start=0, stop=1, num=5)
-        ax = lineplot(x=values, y=values)
-        rugplot(x=values, ax=ax)
+        ax = rugplot(x=values)
         ylim = ax.get_ylim()
 
-        for j in range(4):
-            rugplot(x=values, ax=ax, expand_margins=False)
+        rugplot(x=values, ax=ax, expand_margins=False)
 
-        assert_array_equal(ylim, ax.get_ylim())
+        assert ylim == ax.get_ylim()
 
     def test_matplotlib_kwargs(self, flat_series):
 
