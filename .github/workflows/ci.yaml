@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [master, nextgen/**]
+    branches: [master, v0.*]
   pull_request:
     branches: master
   workflow_dispatch:
@@ -48,24 +48,16 @@ jobs:
         target: [test]
         install: [full]
         deps: [latest]
-        backend: [agg]
 
         include:
           - python: "3.7"
             target: unittests
             install: full
             deps: pinned
-            backend: agg
           - python: "3.10"
             target: unittests
             install: light
             deps: latest
-            backend: agg
-          - python: "3.10"
-            target: test
-            install: full
-            deps: latest
-            backend: tkagg
 
     steps:
       - uses: actions/checkout@v3
@@ -87,11 +79,7 @@ jobs:
         run: python ci/cache_test_datasets.py
 
       - name: Run tests
-        env:
-          MPLBACKEND: ${{ matrix.backend }}
-        run: |
-          if [[ ${{ matrix.backend }} == 'tkagg' ]]; then PREFIX='xvfb-run -a'; fi
-          $PREFIX make ${{ matrix.target }}
+        run: make ${{ matrix.target }}
 
       - name: Upload coverage
         uses: codecov/codecov-action@v2
