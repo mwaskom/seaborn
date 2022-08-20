@@ -5,14 +5,16 @@ repos:
     -   id: check-yaml
     -   id: end-of-file-fixer
     -   id: trailing-whitespace
+        exclude: \.svg$
 -   repo: https://github.com/pycqa/flake8
     rev: 5.0.4
     hooks:
     -   id: flake8
+        files: seaborn/
         types: [file, python]
 -   repo: https://github.com/pre-commit/mirrors-mypy
     rev: v0.971
     hooks:
      -  id: mypy
         args: [--follow-imports=skip]
-        files: seaborn/_(core|marks|stats)
+        files: seaborn/_(core|marks|stats)/
