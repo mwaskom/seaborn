@@ -599,6 +599,11 @@ class Plot:
 
         Behavior for non-coordinate variables is currently undefined.
 
+        Examples
+        --------
+
+        .. include:: ../docstrings/objects.Plot.share.rst
+
         """
         new = self._clone()
         new._shares.update(shares)
@@ -609,12 +614,17 @@ class Plot:
         Control the range of visible data.
 
         Keywords correspond to variables defined in the plot, and values are a
-        (min, max) tuple (where either can be `None` to leave unset).
+        `(min, max)` tuple (where either can be `None` to leave unset).
 
         Limits apply only to the axis; data outside the visible range are
         still used for any stat transforms and added to the plot.
 
         Behavior for non-coordinate variables is currently undefined.
+
+        Examples
+        --------
+
+        .. include:: ../docstrings/objects.Plot.limit.rst
 
         """
         new = self._clone()
@@ -636,6 +646,12 @@ class Plot:
         For faceting variables, `title=` modifies the subplot-specific label,
         while `col=` and/or `row=` add a label for the faceting variable.
         When using a single subplot, `title=` sets its title.
+
+        Examples
+        --------
+
+        .. include:: ../docstrings/objects.Plot.label.rst
+
 
         """
         new = self._clone()
