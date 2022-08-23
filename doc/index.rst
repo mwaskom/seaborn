@@ -68,7 +68,7 @@ seaborn: statistical data visualization
       Installing <installing>
       Gallery <examples/index>
       Tutorial <tutorial>
-      Reference <api>
+      API <api>
       Releases <whatsnew/index>
 
   .. grid-item-card:: Features

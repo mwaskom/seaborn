@@ -325,7 +325,12 @@ class Plot:
 
     def on(self, target: Axes | SubFigure | Figure) -> Plot:
         """
-        Draw the plot into an existing Matplotlib object.
+        Draw the plot using an existing Matplotlib object.
+
+        When using this method, you will also need to explicitly call a method that
+        triggers compilation, such as :meth:`Plot.show` or :meth:`Plot.save`. If you
+        want to postprocess using matplotlib, you'd need to call :meth:`Plot.plot`
+        first to compile the plot without rendering it.
 
         Parameters
         ----------
@@ -335,9 +340,12 @@ class Plot:
             created within the space of the given :class:`matplotlib.figure.Figure` or
             :class:`matplotlib.figure.SubFigure`.
 
-        """
-        # TODO alternate name: target?
+        Examples
+        --------
 
+        .. include:: ../docstrings/objects.Plot.on.rst
+
+        """
         accepted_types: tuple  # Allow tuple of various length
         if hasattr(mpl.figure, "SubFigure"):  # Added in mpl 3.4
             accepted_types = (
