@@ -50,10 +50,6 @@ jobs:
         deps: [latest]
 
         include:
-          - python: "3.7"
-            target: unittests
-            install: full
-            deps: pinned
           - python: "3.10"
             target: unittests
             install: light
