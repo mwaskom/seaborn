@@ -333,6 +333,10 @@ def test_locator_to_legend_entries():
     )
     if Version(mpl.__version__) >= Version("3.1"):
         assert str_levels == ['1e-04', '1e-03', '1e-02']
+    elif Version(mpl.__version__) >= Version("3.6"):
+        # Change to use minus sign rather than hyphen
+        # (yes it's a VERY subtle difference!)
+        assert str_levels == ['1e−04', '1e−03', '1e−02']
 
 
 def test_move_legend_matplotlib_objects():
