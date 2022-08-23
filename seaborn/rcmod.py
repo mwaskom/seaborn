@@ -1,5 +1,4 @@
 """Control plot style and scaling using the matplotlib rcParams interface."""
-import warnings
 import functools
 import matplotlib as mpl
 from cycler import cycler
@@ -141,9 +140,7 @@ def reset_defaults():
 def reset_orig():
     """Restore all RC params to original settings (respects custom rc)."""
     from . import _orig_rc_params
-    with warnings.catch_warnings():
-        warnings.simplefilter('ignore', mpl.cbook.MatplotlibDeprecationWarning)
-        mpl.rcParams.update(_orig_rc_params)
+    mpl.rcParams.update(_orig_rc_params)
 
 
 def axes_style(style=None, rc=None):
