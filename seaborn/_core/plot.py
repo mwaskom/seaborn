@@ -31,7 +31,7 @@ from seaborn._core.groupby import GroupBy
 from seaborn._core.properties import PROPERTIES, Property
 from seaborn._core.typing import DataSource, VariableSpec, OrderSpec
 from seaborn._core.rules import categorical_order
-from seaborn._compat import set_scale_obj
+from seaborn._compat import set_scale_obj, set_layout_engine
 from seaborn.rcmod import axes_style, plotting_context
 from seaborn.palettes import color_palette
 from seaborn.external.version import Version
@@ -1584,10 +1584,7 @@ class Plotter:
                     ax.set(**{f"{axis}lim": (lo, hi)})
 
         layout_algo = p._layout_spec.get("algo", "tight")
-        if layout_algo == "tight":
-            self._figure.set_tight_layout(True)
-        elif layout_algo == "constrained":
-            self._figure.set_constrained_layout(True)
+        set_layout_engine(self._figure, layout_algo)
 
 
 @contextmanager

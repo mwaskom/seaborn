@@ -141,3 +141,14 @@ def register_colormap(name, cmap):
         mpl.colormaps.register(cmap, name=name)
     except AttributeError:
         mpl.cm.register_cmap(name, cmap)
+
+
+def set_layout_engine(fig, algo):
+
+    if hasattr(fig, "set_layout_engine"):
+        fig.set_layout_engine(algo)
+    else:
+        if algo == "tight":
+            fig.set_tight_layout(True)
+        elif algo == "constrained":
+            fig.set_constrained_layout(True)
