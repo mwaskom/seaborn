@@ -81,7 +81,7 @@ class PairSpec(TypedDict, total=False):
 
 class Default:
     def __repr__(self):
-        return "<...>"  # TODO optimize
+        return "<default>"
 
 
 default = Default()
