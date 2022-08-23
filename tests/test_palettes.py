@@ -7,6 +7,7 @@ import numpy.testing as npt
 
 from seaborn import palettes, utils, rcmod
 from seaborn.external import husl
+from seaborn._compat import get_colormap
 from seaborn.colors import xkcd_rgb, crayons
 
 
@@ -95,7 +96,7 @@ class TestColorPalettes:
         pal2 = palettes.color_palette("Reds")
         npt.assert_array_equal(pal1, pal2)
 
-        cmap1 = mpl.cm.get_cmap("Reds")
+        cmap1 = get_colormap("Reds")
         cmap2 = palettes.mpl_palette("Reds", as_cmap=True)
         cmap3 = palettes.color_palette("Reds", as_cmap=True)
         npt.assert_array_equal(cmap1, cmap2)

@@ -15,6 +15,7 @@ except ImportError:
 
 from . import cm
 from .axisgrid import Grid
+from ._compat import get_colormap
 from .utils import (
     despine,
     axis_ticklabels_overlap,
@@ -213,7 +214,7 @@ class _HeatMapper:
             else:
                 self.cmap = cm.icefire
         elif isinstance(cmap, str):
-            self.cmap = mpl.cm.get_cmap(cmap)
+            self.cmap = get_colormap(cmap)
         elif isinstance(cmap, list):
             self.cmap = mpl.colors.ListedColormap(cmap)
         else:
