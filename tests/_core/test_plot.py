@@ -1101,6 +1101,12 @@ class TestPlotting:
         with pytest.raises(RuntimeError, match="Cannot create multiple subplots"):
             p2.plot()
 
+    def test_on_disables_layout_algo(self):
+
+        f = mpl.figure.Figure()
+        p = Plot().on(f).plot()
+        assert not p._figure.get_tight_layout()
+
     def test_axis_labels_from_constructor(self, long_df):
 
         ax, = Plot(long_df, x="a", y="b").plot()._figure.axes
