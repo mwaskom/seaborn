@@ -239,7 +239,7 @@ class TestHueMapping:
 
     def test_hue_map_numeric(self, long_df):
 
-        vals = np.concatenate(np.linspace(0, 1, 256), [-.1, 1.1, np.nan])
+        vals = np.concatenate([np.linspace(0, 1, 256), [-.1, 1.1, np.nan]])
 
         # Test default colormap
         p = VectorPlotter(
