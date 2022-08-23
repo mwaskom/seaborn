@@ -260,7 +260,7 @@ class TestHueMapping:
         # Test colormap object
         palette = get_colormap("Greens")
         m = HueMapping(p, palette=palette)
-        assert_array_equal(m.cmap(vals), get_colormap(palette)(vals))
+        assert_array_equal(m.cmap(vals), palette(vals))
 
         # Test cubehelix shorthand
         palette = "ch:2,0,light=.2"
