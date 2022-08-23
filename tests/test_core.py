@@ -9,6 +9,7 @@ from numpy.testing import assert_array_equal
 from pandas.testing import assert_frame_equal
 
 from seaborn.axisgrid import FacetGrid
+from seaborn._compat import get_colormap
 from seaborn._oldcore import (
     SemanticMapping,
     HueMapping,
@@ -252,12 +253,12 @@ class TestHueMapping:
         # Test named colormap
         palette = "Purples"
         m = HueMapping(p, palette=palette)
-        assert m.cmap is mpl.cm.get_cmap(palette)
+        assert m.cmap is get_colormap(palette)
 
         # Test colormap object
-        palette = mpl.cm.get_cmap("Greens")
+        palette = get_colormap("Greens")
         m = HueMapping(p, palette=palette)
-        assert m.cmap is mpl.cm.get_cmap(palette)
+        assert m.cmap is get_colormap(palette)
 
         # Test cubehelix shorthand
         palette = "ch:2,0,light=.2"

@@ -125,3 +125,19 @@ def set_scale_obj(ax, axis, scale):
         scale.set_default_locators_and_formatters(axis_obj)
     else:
         ax.set(**{f"{axis}scale": scale})
+
+
+def get_colormap(name):
+    """Handle changes to matplotlib colormap interface in 3.6."""
+    try:
+        return mpl.colormaps[name]
+    except AttributeError:
+        return mpl.cm.get_cmap(name)
+
+
+def register_colormap(cmap, name):
+    """Handle changes to matplotlib colormap interface in 3.6."""
+    try:
+        mpl.colormaps.register_cmap(cmap, name)
+    except AttributeError:
+        mpl.cm.register_cmap(cmap, name)
