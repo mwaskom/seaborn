@@ -138,7 +138,8 @@ def get_colormap(name):
 def register_colormap(name, cmap):
     """Handle changes to matplotlib colormap interface in 3.6."""
     try:
-        mpl.colormaps.register(cmap, name=name)
+        if name not in mpl.colormaps:
+            mpl.colormaps.register(cmap, name=name)
     except AttributeError:
         mpl.cm.register_cmap(name, cmap)
 
