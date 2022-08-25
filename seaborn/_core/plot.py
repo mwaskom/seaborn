@@ -77,7 +77,25 @@ class PairSpec(TypedDict, total=False):
     wrap: int | None
 
 
-# ---- The main interface for declarative plotting -------------------- #
+# --- Local helpers ----------------------------------------------------------------
+
+class Default:
+    def __repr__(self):
+        return "<default>"
+
+
+default = Default()
+
+
+@contextmanager
+def theme_context(params: dict[str, Any]) -> Generator:
+    """Temporarily modify specifc matplotlib rcParams."""
+    orig = {k: mpl.rcParams[k] for k in params}
+    try:
+        mpl.rcParams.update(params)
+        yield
+    finally:
+        mpl.rcParams.update(orig)
 
 
 def build_plot_signature(cls):
@@ -109,6 +127,9 @@ def build_plot_signature(cls):
         cls.__doc__ = cls.__doc__.format(known_properties=known_properties)
 
     return cls
+
+
+# ---- The main interface for declarative plotting -------------------- #
 
 
 @build_plot_signature
@@ -661,8 +682,8 @@ class Plot:
     def layout(
         self,
         *,
-        size: tuple[float, float] | None = None,
-        algo: str | None = "tight",  # TODO document
+        size: tuple[float, float] | Default = default,
+        algo: str | None | Default = default,
     ) -> Plot:
         """
         Control the figure size and layout.
@@ -674,6 +695,7 @@ class Plot:
             using pyplot, but not otherwise.
         algo : {{"tight", "constrained", None}}
             Name of algorithm for automatically adjusting the layout to remove overlap.
+            The default depends on whether :meth:`Plot.on` has been called.
 
         """
         # TODO add an "auto" mode for figsize that roughly scales with the rcParams
@@ -683,8 +705,10 @@ class Plot:
 
         new = self._clone()
 
-        new._figure_spec["figsize"] = size
-        new._layout_spec["algo"] = algo
+        if size is not default:
+            new._figure_spec["figsize"] = size
+        if algo is not default:
+            new._layout_spec["algo"] = algo
 
         return new
 
@@ -1583,19 +1607,9 @@ class Plotter:
                         hi = cast(float, hi) + 0.5
                     ax.set(**{f"{axis}lim": (lo, hi)})
 
-        layout_algo = p._layout_spec.get("algo", "tight")
+        algo_default = None if p._target is not None else "tight"
+        layout_algo = p._layout_spec.get("algo", algo_default)
         if layout_algo == "tight":
             self._figure.set_tight_layout(True)
         elif layout_algo == "constrained":
             self._figure.set_constrained_layout(True)
-
-
-@contextmanager
-def theme_context(params: dict[str, Any]) -> Generator:
-    """Temporarily modify specifc matplotlib rcParams."""
-    orig = {k: mpl.rcParams[k] for k in params}
-    try:
-        mpl.rcParams.update(params)
-        yield
-    finally:
-        mpl.rcParams.update(orig)

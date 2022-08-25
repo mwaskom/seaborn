@@ -14,7 +14,7 @@ import pytest
 from pandas.testing import assert_frame_equal, assert_series_equal
 from numpy.testing import assert_array_equal
 
-from seaborn._core.plot import Plot
+from seaborn._core.plot import Plot, Default
 from seaborn._core.scales import Nominal, Continuous
 from seaborn._core.rules import categorical_order
 from seaborn._core.moves import Move, Shift, Dodge
@@ -1101,6 +1101,12 @@ class TestPlotting:
         with pytest.raises(RuntimeError, match="Cannot create multiple subplots"):
             p2.plot()
 
+    def test_on_disables_layout_algo(self):
+
+        f = mpl.figure.Figure()
+        p = Plot().on(f).plot()
+        assert not p._figure.get_tight_layout()
+
     def test_axis_labels_from_constructor(self, long_df):
 
         ax, = Plot(long_df, x="a", y="b").plot()._figure.axes
@@ -1976,3 +1982,10 @@ class TestLegend:
         p = Plot(**xy, color=["a", "b", "c", "d"]).add(MockMark()).plot()
         legend, = p._figure.legends
         assert legend.get_title().get_text() == ""
+
+
+class TestHelpers:
+
+    def test_default_repr(self):
+
+        assert repr(Default()) == "<default>"
