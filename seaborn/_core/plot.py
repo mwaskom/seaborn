@@ -711,11 +711,21 @@ class Plot:
         """
         Control the default appearance of elements in the plot.
 
-        The API for customizing plot appearance is not yet finalized.
-        Currently, the only valid argument is a dict of matplotlib rc parameters.
-        (This dict must be passed as a positional argument.)
+        .. note::
 
-        It is likely that this method will be enhanced in future releases.
+            The API for customizing plot appearance is not yet finalized.
+            Currently, the only valid argument is a dict of matplotlib rc parameters.
+            (This dict must be passed as a positional argument.)
+
+            It is likely that this method will be enhanced in future releases.
+
+        Matplotlib rc parameters are documented on the following page:
+        https://matplotlib.org/stable/tutorials/introductory/customizing.html
+
+        Examples
+        --------
+
+        .. include:: ../docstrings/objects.Plot.theme.rst
 
         """
         new = self._clone()
@@ -752,6 +762,14 @@ class Plot:
     def show(self, **kwargs) -> None:
         """
         Compile and display the plot by hooking into pyplot.
+
+        Calling this method is not necessary to render a plot in notebook context,
+        but it may be in other environments (e.g., in a terminal). After compiling the
+        plot, it calls :func:`matplotlib.pyplot.show` (passing any keyword parameters).
+
+        Unlike other :class:`Plot` methods, there is no return value. This should be
+        the last method you call when specifying a plot.
+
         """
         # TODO make pyplot configurable at the class level, and when not using,
         # import IPython.display and call on self to populate cell output?
@@ -840,6 +858,12 @@ class Plotter:
         return self
 
     def show(self, **kwargs) -> None:
+        """
+        Display the plot by hooking into pyplot.
+
+        This method calls :func:`matplotlib.pyplot.show` with any keyword parameters.
+
+        """
         # TODO if we did not create the Plotter with pyplot, is it possible to do this?
         # If not we should clearly raise.
         import matplotlib.pyplot as plt
