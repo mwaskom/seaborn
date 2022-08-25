@@ -516,7 +516,6 @@ class Plot:
 
     def facet(
         self,
-        # TODO require kwargs?
         col: VariableSpec = None,
         row: VariableSpec = None,
         order: OrderSpec | dict[str, OrderSpec] = None,
@@ -535,6 +534,11 @@ class Plot:
         wrap : int
             Maximum height/width of the grid, with additional subplots "wrapped"
             on the other dimension. Requires that only one of `x` or `y` are set here.
+
+        Examples
+        --------
+
+        .. include:: ../docstrings/objects.Plot.facet.rst
 
         """
         variables = {}
