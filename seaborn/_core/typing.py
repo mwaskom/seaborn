@@ -9,6 +9,7 @@ from matplotlib.colors import Colormap, Normalize
 Vector = Union[Series, Index, ndarray]
 PaletteSpec = Union[str, list, dict, Colormap, None]
 VariableSpec = Union[Hashable, Vector, None]
+VariableSpecList = Union[List[VariableSpec], Index, None]
 # TODO can we better unify the VarType object and the VariableType alias?
 DataSource = Union[DataFrame, Mapping[Hashable, Vector], None]
 

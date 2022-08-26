@@ -10,12 +10,12 @@ import itertools
 import textwrap
 from contextlib import contextmanager
 from collections import abc
-from collections.abc import Callable, Generator, Hashable
+from collections.abc import Callable, Generator
 from typing import Any, List, Optional, cast
 
 from cycler import cycler
 import pandas as pd
-from pandas import DataFrame, Series, Index
+from pandas import DataFrame, Series
 import matplotlib as mpl
 from matplotlib.axes import Axes
 from matplotlib.artist import Artist
@@ -29,7 +29,7 @@ from seaborn._core.scales import Scale
 from seaborn._core.subplots import Subplots
 from seaborn._core.groupby import GroupBy
 from seaborn._core.properties import PROPERTIES, Property
-from seaborn._core.typing import DataSource, VariableSpec, OrderSpec
+from seaborn._core.typing import DataSource, VariableSpec, VariableSpecList, OrderSpec
 from seaborn._core.rules import categorical_order
 from seaborn._compat import set_scale_obj
 from seaborn.rcmod import axes_style, plotting_context
@@ -449,12 +449,10 @@ class Plot:
 
     def pair(
         self,
-        x: list[Hashable] | Index[Hashable] | None = None,
-        y: list[Hashable] | Index[Hashable] | None = None,
+        x: VariableSpecList = None,
+        y: VariableSpecList = None,
         wrap: int | None = None,
         cross: bool = True,
-        # TODO other existing PairGrid things like corner?
-        # TODO transpose, so that e.g. multiple y axes go across the columns
     ) -> Plot:
         """
         Produce subplots with distinct `x` and/or `y` variables.
@@ -472,47 +470,11 @@ class Plot:
             entries in by position.
 
         """
-        # TODO Problems to solve:
-        #
-        # - Unclear is how to handle the diagonal plots that PairGrid offers
-        #
-        # - Implementing this will require lots of downscale changes in figure setup,
-        #   and especially the axis scaling, which will need to be pair specific
-
-        # TODO lists of vectors currently work, but I'm not sure where best to test
-        # Will need to update the signature typing to keep them
-
-        # TODO is it weird to call .pair() to create univariate plots?
-        # i.e. Plot(data).pair(x=[...]). The basic logic is fine.
-        # But maybe a different verb (e.g. Plot.spread) would be more clear?
-        # Then Plot(data).pair(x=[...]) would show the given x vars vs all.
-
-        # TODO would like to add transpose=True, which would then draw
-        # Plot(x=...).pair(y=[...]) across the rows
-        # This may also be possible by setting `wrap=1`, although currently the axes
-        # are shared and the interior labels are disabled (this is a bug either way)
+        # TODO Add transpose= arg, which would then draw pair(y=[...]) across rows
+        # This may also be possible by setting `wrap=1`, but is that too unobvious?
+        # TODO PairGrid features not currently implemented: diagonals, corner
 
         pair_spec: PairSpec = {}
-
-        if x is None and y is None:
-
-            # Default to using all columns in the input source data, aside from
-            # those that were assigned to a variable in the constructor
-            # TODO Do we want to allow additional filtering by variable type?
-            # (Possibly even default to using only numeric columns)
-
-            if self._data.source_data is None:
-                err = "You must pass `data` in the constructor to use default pairing."
-                raise RuntimeError(err)
-
-            all_unused_columns = [
-                key for key in self._data.source_data
-                if key not in self._data.names.values()
-            ]
-            if "x" not in self._data:
-                x = all_unused_columns
-            if "y" not in self._data:
-                y = all_unused_columns
 
         axes = {"x": [] if x is None else x, "y": [] if y is None else y}
         for axis, arg in axes.items():
@@ -533,7 +495,10 @@ class Plot:
             if keys:
                 pair_spec["structure"][axis] = keys
 
-        # TODO raise here if cross is False and len(x) != len(y)?
+        if cross and len(axes["x"]) != len(axes["y"]):
+            err = "The lengths of the `x` and `y` lists must match with cross=True"
+            raise ValueError(err)
+
         pair_spec["cross"] = cross
         pair_spec["wrap"] = wrap
 
