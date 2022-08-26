@@ -495,8 +495,8 @@ class Plot:
             if keys:
                 pair_spec["structure"][axis] = keys
 
-        if cross and len(axes["x"]) != len(axes["y"]):
-            err = "The lengths of the `x` and `y` lists must match with cross=True"
+        if not cross and len(axes["x"]) != len(axes["y"]):
+            err = "Lengths of the `x` and `y` lists must match with cross=False"
             raise ValueError(err)
 
         pair_spec["cross"] = cross

@@ -1570,8 +1570,8 @@ class TestPairInterface:
     def test_cross_mismatched_lengths(self, long_df):
 
         p = Plot(long_df)
-        with pytest.raises(ValueError, match="The lengths of the `x` and `y`"):
-            p.pair(x=["a", "b"], y=["x", "y", "z"], cross=True)
+        with pytest.raises(ValueError, match="Lengths of the `x` and `y`"):
+            p.pair(x=["a", "b"], y=["x", "y", "z"], cross=False)
 
     def test_orient_inference(self, long_df):
 
