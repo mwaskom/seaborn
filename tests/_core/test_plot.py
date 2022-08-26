@@ -1390,9 +1390,7 @@ class TestPairInterface:
             assert ax.get_ylabel() == "" if y_i is None else y_i
             assert_gridspec_shape(subplot["ax"], len(y), len(x))
 
-    @pytest.mark.parametrize(
-        "vector_type", [list, np.array, pd.Series, pd.Index]
-    )
+    @pytest.mark.parametrize("vector_type", [list, pd.Index])
     def test_all_numeric(self, long_df, vector_type):
 
         x, y = ["x", "y", "z"], ["s", "f"]
@@ -1433,33 +1431,18 @@ class TestPairInterface:
             shareset = getattr(root, f"get_shared_{axis}_axes")()
             assert not any(shareset.joined(root, ax) for ax in other)
 
+    def test_list_of_vectors(self, long_df):
+
+        x_vars = ["x", "z"]
+        p = Plot(long_df, y="y").pair(x=[long_df[x] for x in x_vars]).plot()
+        assert len(p._figure.axes) == len(x_vars)
+        for ax, x_i in zip(p._figure.axes, x_vars):
+            assert ax.get_xlabel() == x_i
+
     def test_with_no_variables(self, long_df):
 
-        all_cols = long_df.columns
-
-        p1 = Plot(long_df).pair()
-        for axis in "xy":
-            actual = [
-                v for k, v in p1._pair_spec["variables"].items() if k.startswith(axis)
-            ]
-            assert actual == all_cols.to_list()
-
-        p2 = Plot(long_df, y="y").pair()
-        x_vars = [
-            v for k, v in p2._pair_spec["variables"].items() if k.startswith("x")
-        ]
-        assert all_cols.difference(x_vars).item() == "y"
-        assert "y" not in p2._pair_spec
-
-        p3 = Plot(long_df, color="a").pair()
-        for axis in "xy":
-            x_vars = [
-                v for k, v in p3._pair_spec["variables"].items() if k.startswith("x")
-            ]
-            assert all_cols.difference(x_vars).item() == "a"
-
-        with pytest.raises(RuntimeError, match="You must pass `data`"):
-            Plot().pair()
+        p = Plot(long_df).pair().plot()
+        assert len(p._figure.axes) == 1
 
     def test_with_facets(self, long_df):
 
@@ -1583,6 +1566,12 @@ class TestPairInterface:
 
         assert_gridspec_shape(p._figure.axes[0], len(x_vars) // wrap + 1, wrap)
         assert len(p._figure.axes) == len(x_vars)
+
+    def test_cross_mismatched_lengths(self, long_df):
+
+        p = Plot(long_df)
+        with pytest.raises(ValueError, match="Lengths of the `x` and `y`"):
+            p.pair(x=["a", "b"], y=["x", "y", "z"], cross=False)
 
     def test_orient_inference(self, long_df):
 
