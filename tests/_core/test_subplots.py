@@ -191,6 +191,18 @@ class TestSubplotSpec:
         assert s.subplot_spec["sharex"] is True
         assert s.subplot_spec["sharey"] is False
 
+    def test_y_paired_and_wrapped_single_row(self):
+
+        y = ["x", "y", "z"]
+        wrap = 1
+        s = Subplots({}, {}, {"structure": {"y": y}, "wrap": wrap})
+
+        assert s.n_subplots == len(y)
+        assert s.subplot_spec["ncols"] == len(y)
+        assert s.subplot_spec["nrows"] == 1
+        assert s.subplot_spec["sharex"] is True
+        assert s.subplot_spec["sharey"] is False
+
     def test_col_faceted_y_paired(self):
 
         y = ["x", "y", "z"]
