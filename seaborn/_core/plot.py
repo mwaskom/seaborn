@@ -1152,7 +1152,7 @@ class Plotter:
             # behavior, so we will raise rather than hack together a workaround.
             if axis is not None and Version(mpl.__version__) < Version("3.4.0"):
                 from seaborn._core.scales import Nominal
-                paired_axis = axis in p._pair_spec["structure"]
+                paired_axis = axis in p._pair_spec.get("structure", {})
                 cat_scale = isinstance(scale, Nominal)
                 ok_dim = {"x": "col", "y": "row"}[axis]
                 shared_axes = share_state not in [False, "none", ok_dim]
