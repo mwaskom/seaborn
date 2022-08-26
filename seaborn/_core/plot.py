@@ -467,7 +467,7 @@ class Plot:
 
         Parameters
         ----------
-        x, y : sequence(s) of data identifiers
+        x, y : sequence(s) of data vectors or identifiers
             Variables that will define the grid of subplots.
         wrap : int
             Maximum height/width of the grid, with additional subplots "wrapped"
@@ -476,6 +476,11 @@ class Plot:
             When True, define a two-dimensional grid using the Cartesian product of `x`
             and `y`.  Otherwise, define a one-dimensional grid by pairing `x` and `y`
             entries in by position.
+
+        Examples
+        --------
+
+        .. include:: ../docstrings/objects.Plot.pair.rst
 
         """
         # TODO Add transpose= arg, which would then draw pair(y=[...]) across rows
