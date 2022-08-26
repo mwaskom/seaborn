@@ -463,19 +463,19 @@ class Plot:
         cross: bool = True,
     ) -> Plot:
         """
-        Produce subplots with distinct `x` and/or `y` variables.
+        Produce subplots by pairing multiple `x` and/or `y` variables.
 
         Parameters
         ----------
         x, y : sequence(s) of data vectors or identifiers
             Variables that will define the grid of subplots.
         wrap : int
-            Maximum height/width of the grid, with additional subplots "wrapped"
-            on the other dimension. Requires that only one of `x` or `y` are set here.
+            When using only `x` or `y`, "wrap" subplots across a two-dimensional grid
+            with this many columns (when using `x`) or rows (when using `y`).
         cross : bool
-            When True, define a two-dimensional grid using the Cartesian product of `x`
-            and `y`.  Otherwise, define a one-dimensional grid by pairing `x` and `y`
-            entries in by position.
+            When False, zip the `x` and `y` lists such that the first subplot gets the
+            first pair, the second gets the second pair, etc. Otherwise, create a
+            two-dimensional grid from the cartesian product of the lists.
 
         Examples
         --------
@@ -537,8 +537,8 @@ class Plot:
         order : list of strings, or dict with dimensional keys
             Define the order of the faceting variables.
         wrap : int
-            Maximum height/width of the grid, with additional subplots "wrapped"
-            on the other dimension. Requires that only one of `x` or `y` are set here.
+            When using only `col` or `row`, wrap subplots across a two-dimensional
+            grid with this many subplots on the faceting dimension.
 
         Examples
         --------
