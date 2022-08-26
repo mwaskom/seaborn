@@ -13,6 +13,7 @@ Plot object
 
 .. autosummary::
     :toctree: generated/
+    :template: plot
     :nosignatures:
 
     Plot
