@@ -943,8 +943,11 @@ class Plotter:
                 visible_side = {"x": "bottom", "y": "left"}.get(axis)
                 show_axis_label = (
                     sub[visible_side]
-                    or axis in p._pair_spec and bool(p._pair_spec.get("wrap"))
                     or not p._pair_spec.get("cross", True)
+                    or (
+                        axis in p._pair_spec.get("structure", {})
+                        and bool(p._pair_spec.get("wrap"))
+                    )
                 )
                 axis_obj.get_label().set_visible(show_axis_label)
                 show_tick_labels = (
@@ -1149,7 +1152,7 @@ class Plotter:
             # behavior, so we will raise rather than hack together a workaround.
             if axis is not None and Version(mpl.__version__) < Version("3.4.0"):
                 from seaborn._core.scales import Nominal
-                paired_axis = axis in p._pair_spec
+                paired_axis = axis in p._pair_spec["structure"]
                 cat_scale = isinstance(scale, Nominal)
                 ok_dim = {"x": "col", "y": "row"}[axis]
                 shared_axes = share_state not in [False, "none", ok_dim]
