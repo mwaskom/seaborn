@@ -77,6 +77,19 @@ Scale objects
     Nominal
     Temporal
 
+Base classes
+~~~~~~~~~~~~
+
+.. autosummary::
+    :toctree: generated/
+    :template: object
+    :nosignatures:
+
+    Mark
+    Stat
+    Move
+    Scale
+
 .. currentmodule:: seaborn
 
 Function interface

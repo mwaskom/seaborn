@@ -388,14 +388,14 @@ class Plot:
 
         Parameters
         ----------
-        mark : :class:`seaborn.objects.Mark`
+        mark : :class:`Mark`
             The visual representation of the data to use in this layer.
-        transforms : :class:`seaborn.objects.Stat` or :class:`seaborn.objects.Move`
+        transforms : :class:`Stat` or :class:`Move`
             Objects representing transforms to be applied before plotting the data.
-            Current, at most one :class:`seaborn.objects.Stat` can be used, and it
+            Currently, at most one :class:`Stat` can be used, and it
             must be passed first. This constraint will be relaxed in the future.
         orient : "x", "y", "v", or "h"
-            The orientation of the mark, which affects how the stat is computed.
+            The orientation of the mark, which also affects how transforms are computed.
             Typically corresponds to the axis that defines groups for aggregation.
             The "v" (vertical) and "h" (horizontal) options are synonyms for "x" / "y",
             but may be more intuitive with some marks. When not provided, an

@@ -15,7 +15,7 @@
       add
       scale
 
-   .. rubric:: Subplot methods
+   .. rubric:: Grid methods
 
    .. autosummary::
       :toctree: ./
@@ -23,7 +23,6 @@
 
       facet
       pair
-      on
 
    .. rubric:: Customization methods
 
@@ -31,11 +30,12 @@
       :toctree: ./
       :nosignatures:
 
-      theme
       layout
       label
       limit
+      on
       share
+      theme
 
    .. rubric:: Output methods
 

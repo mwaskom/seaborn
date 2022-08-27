@@ -36,9 +36,9 @@ from seaborn._marks.dot import Dot, Dots  # noqa: F401
 
 from seaborn._stats.base import Stat  # noqa: F401
 from seaborn._stats.aggregation import Agg, Est  # noqa: F401
-from seaborn._stats.regression import OLSFit, PolyFit  # noqa: F401
+from seaborn._stats.regression import PolyFit  # noqa: F401
 from seaborn._stats.histogram import Hist  # noqa: F401
 
-from seaborn._core.moves import Dodge, Jitter, Norm, Shift, Stack  # noqa: F401
+from seaborn._core.moves import Dodge, Jitter, Norm, Shift, Stack, Move  # noqa: F401
 
-from seaborn._core.scales import Nominal, Continuous, Temporal  # noqa: F401
+from seaborn._core.scales import Nominal, Continuous, Temporal, Scale  # noqa: F401
