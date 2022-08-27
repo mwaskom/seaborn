@@ -626,6 +626,8 @@ class Continuous(ContinuousBase):
         elif unit is not None:
             if isinstance(unit, tuple):
                 sep, unit = unit
+            elif not unit:
+                sep = ""
             else:
                 sep = " "
             formatter = EngFormatter(unit, sep=sep)
