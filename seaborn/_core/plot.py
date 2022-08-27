@@ -601,6 +601,11 @@ class Plot:
         or :class:`Nominal`. Or use `None` to use an "identity" scale, which treats data
         values as literally encoding visual properties.
 
+        Examples
+        --------
+
+        .. include:: ../docstrings/objects.Plot.scale.rst
+
         """
         new = self._clone()
         new._scales.update(scales)
@@ -995,7 +1000,8 @@ class Plotter:
                 # ~~ Decoration visibility
 
                 # TODO there should be some override (in Plot.layout?) so that
-                # tick labels can be shown on interior shared axes
+                # axis / tick labels can be shown on interior shared axes if desired
+
                 axis_obj = getattr(ax, f"{axis}axis")
                 visible_side = {"x": "bottom", "y": "left"}.get(axis)
                 show_axis_label = (
@@ -1007,6 +1013,7 @@ class Plotter:
                     )
                 )
                 axis_obj.get_label().set_visible(show_axis_label)
+
                 show_tick_labels = (
                     show_axis_label
                     or subplot_spec.get(f"share{axis}") not in (
