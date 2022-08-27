@@ -13,6 +13,7 @@ Plot object
 
 .. autosummary::
     :toctree: generated/
+    :template: plot
     :nosignatures:
 
     Plot
@@ -75,6 +76,19 @@ Scale objects
     Continuous
     Nominal
     Temporal
+
+Base classes
+~~~~~~~~~~~~
+
+.. autosummary::
+    :toctree: generated/
+    :template: object
+    :nosignatures:
+
+    Mark
+    Stat
+    Move
+    Scale
 
 .. currentmodule:: seaborn
 

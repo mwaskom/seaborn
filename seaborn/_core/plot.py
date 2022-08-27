@@ -325,7 +325,12 @@ class Plot:
 
     def on(self, target: Axes | SubFigure | Figure) -> Plot:
         """
-        Draw the plot into an existing Matplotlib object.
+        Provide existing Matplotlib figure or axes for drawing the plot.
+
+        When using this method, you will also need to explicitly call a method that
+        triggers compilation, such as :meth:`Plot.show` or :meth:`Plot.save`. If you
+        want to postprocess using matplotlib, you'd need to call :meth:`Plot.plot`
+        first to compile the plot without rendering it.
 
         Parameters
         ----------
@@ -335,9 +340,12 @@ class Plot:
             created within the space of the given :class:`matplotlib.figure.Figure` or
             :class:`matplotlib.figure.SubFigure`.
 
-        """
-        # TODO alternate name: target?
+        Examples
+        --------
 
+        .. include:: ../docstrings/objects.Plot.on.rst
+
+        """
         accepted_types: tuple  # Allow tuple of various length
         if hasattr(mpl.figure, "SubFigure"):  # Added in mpl 3.4
             accepted_types = (
@@ -372,7 +380,7 @@ class Plot:
         **variables: VariableSpec,
     ) -> Plot:
         """
-        Define a layer of the visualization in terms of mark and data transform(s).
+        Specify a layer of the visualization in terms of mark and data transform(s).
 
         This is the main method for specifying how the data should be visualized.
         It can be called multiple times with different arguments to define
@@ -380,14 +388,14 @@ class Plot:
 
         Parameters
         ----------
-        mark : :class:`seaborn.objects.Mark`
+        mark : :class:`Mark`
             The visual representation of the data to use in this layer.
-        transforms : :class:`seaborn.objects.Stat` or :class:`seaborn.objects.Move`
+        transforms : :class:`Stat` or :class:`Move`
             Objects representing transforms to be applied before plotting the data.
-            Current, at most one :class:`seaborn.objects.Stat` can be used, and it
+            Currently, at most one :class:`Stat` can be used, and it
             must be passed first. This constraint will be relaxed in the future.
         orient : "x", "y", "v", or "h"
-            The orientation of the mark, which affects how the stat is computed.
+            The orientation of the mark, which also affects how transforms are computed.
             Typically corresponds to the axis that defines groups for aggregation.
             The "v" (vertical) and "h" (horizontal) options are synonyms for "x" / "y",
             but may be more intuitive with some marks. When not provided, an
@@ -399,6 +407,11 @@ class Plot:
         variables : data vectors or identifiers
             Additional layer-specific variables, including variables that will be
             passed directly to the transforms without scaling.
+
+        Examples
+        --------
+
+        .. include:: ../docstrings/objects.Plot.add.rst
 
         """
         if not isinstance(mark, Mark):
@@ -455,19 +468,24 @@ class Plot:
         cross: bool = True,
     ) -> Plot:
         """
-        Produce subplots with distinct `x` and/or `y` variables.
+        Produce subplots by pairing multiple `x` and/or `y` variables.
 
         Parameters
         ----------
-        x, y : sequence(s) of data identifiers
+        x, y : sequence(s) of data vectors or identifiers
             Variables that will define the grid of subplots.
         wrap : int
-            Maximum height/width of the grid, with additional subplots "wrapped"
-            on the other dimension. Requires that only one of `x` or `y` are set here.
+            When using only `x` or `y`, "wrap" subplots across a two-dimensional grid
+            with this many columns (when using `x`) or rows (when using `y`).
         cross : bool
-            When True, define a two-dimensional grid using the Cartesian product of `x`
-            and `y`.  Otherwise, define a one-dimensional grid by pairing `x` and `y`
-            entries in by position.
+            When False, zip the `x` and `y` lists such that the first subplot gets the
+            first pair, the second gets the second pair, etc. Otherwise, create a
+            two-dimensional grid from the cartesian product of the lists.
+
+        Examples
+        --------
+
+        .. include:: ../docstrings/objects.Plot.pair.rst
 
         """
         # TODO Add transpose= arg, which would then draw pair(y=[...]) across rows
@@ -508,7 +526,6 @@ class Plot:
 
     def facet(
         self,
-        # TODO require kwargs?
         col: VariableSpec = None,
         row: VariableSpec = None,
         order: OrderSpec | dict[str, OrderSpec] = None,
@@ -525,8 +542,13 @@ class Plot:
         order : list of strings, or dict with dimensional keys
             Define the order of the faceting variables.
         wrap : int
-            Maximum height/width of the grid, with additional subplots "wrapped"
-            on the other dimension. Requires that only one of `x` or `y` are set here.
+            When using only `col` or `row`, wrap subplots across a two-dimensional
+            grid with this many subplots on the faceting dimension.
+
+        Examples
+        --------
+
+        .. include:: ../docstrings/objects.Plot.facet.rst
 
         """
         variables = {}
@@ -568,7 +590,7 @@ class Plot:
 
     def scale(self, **scales: Scale) -> Plot:
         """
-        Control mappings from data units to visual properties.
+        Specify mappings from data units to visual properties.
 
         Keywords correspond to variables defined in the plot, including coordinate
         variables (`x`, `y`) and semantic variables (`color`, `pointsize`, etc.).
@@ -583,6 +605,11 @@ class Plot:
         For more explicit control, pass a scale spec object such as :class:`Continuous`
         or :class:`Nominal`. Or use `None` to use an "identity" scale, which treats data
         values as literally encoding visual properties.
+
+        Examples
+        --------
+
+        .. include:: ../docstrings/objects.Plot.scale.rst
 
         """
         new = self._clone()
@@ -599,6 +626,11 @@ class Plot:
 
         Behavior for non-coordinate variables is currently undefined.
 
+        Examples
+        --------
+
+        .. include:: ../docstrings/objects.Plot.share.rst
+
         """
         new = self._clone()
         new._shares.update(shares)
@@ -609,12 +641,17 @@ class Plot:
         Control the range of visible data.
 
         Keywords correspond to variables defined in the plot, and values are a
-        (min, max) tuple (where either can be `None` to leave unset).
+        `(min, max)` tuple (where either can be `None` to leave unset).
 
         Limits apply only to the axis; data outside the visible range are
         still used for any stat transforms and added to the plot.
 
         Behavior for non-coordinate variables is currently undefined.
+
+        Examples
+        --------
+
+        .. include:: ../docstrings/objects.Plot.limit.rst
 
         """
         new = self._clone()
@@ -623,7 +660,7 @@ class Plot:
 
     def label(self, *, title=None, **variables: str | Callable[[str], str]) -> Plot:
         """
-        Add or modify labels for axes, legends, and subplots.
+        Control the labels and titles for axes, legends, and subplots.
 
         Additional keywords correspond to variables defined in the plot.
         Values can be one of the following types:
@@ -636,6 +673,12 @@ class Plot:
         For faceting variables, `title=` modifies the subplot-specific label,
         while `col=` and/or `row=` add a label for the faceting variable.
         When using a single subplot, `title=` sets its title.
+
+        Examples
+        --------
+
+        .. include:: ../docstrings/objects.Plot.label.rst
+
 
         """
         new = self._clone()
@@ -653,6 +696,12 @@ class Plot:
         """
         Control the figure size and layout.
 
+        .. note::
+
+            Default figure sizes and the API for specifying the figure size are subject
+            to change in future "experimental" releases of the objects API. The default
+            layout engine may also change.
+
         Parameters
         ----------
         size : (width, height)
@@ -660,7 +709,12 @@ class Plot:
             using pyplot, but not otherwise.
         algo : {{"tight", "constrained", None}}
             Name of algorithm for automatically adjusting the layout to remove overlap.
-            The default depends on whether :meth:`Plot.on` has been called.
+            The default depends on whether :meth:`Plot.on` is used.
+
+        Examples
+        --------
+
+        .. include:: ../docstrings/objects.Plot.layout.rst
 
         """
         # TODO add an "auto" mode for figsize that roughly scales with the rcParams
@@ -683,11 +737,21 @@ class Plot:
         """
         Control the default appearance of elements in the plot.
 
-        The API for customizing plot appearance is not yet finalized.
-        Currently, the only valid argument is a dict of matplotlib rc parameters.
-        (This dict must be passed as a positional argument.)
+        .. note::
 
-        It is likely that this method will be enhanced in future releases.
+            The API for customizing plot appearance is not yet finalized.
+            Currently, the only valid argument is a dict of matplotlib rc parameters.
+            (This dict must be passed as a positional argument.)
+
+            It is likely that this method will be enhanced in future releases.
+
+        Matplotlib rc parameters are documented on the following page:
+        https://matplotlib.org/stable/tutorials/introductory/customizing.html
+
+        Examples
+        --------
+
+        .. include:: ../docstrings/objects.Plot.theme.rst
 
         """
         new = self._clone()
@@ -723,7 +787,15 @@ class Plot:
 
     def show(self, **kwargs) -> None:
         """
-        Compile and display the plot by hooking into pyplot.
+        Compile the plot and display it by hooking into pyplot.
+
+        Calling this method is not necessary to render a plot in notebook context,
+        but it may be in other environments (e.g., in a terminal). After compiling the
+        plot, it calls :func:`matplotlib.pyplot.show` (passing any keyword parameters).
+
+        Unlike other :class:`Plot` methods, there is no return value. This should be
+        the last method you call when specifying a plot.
+
         """
         # TODO make pyplot configurable at the class level, and when not using,
         # import IPython.display and call on self to populate cell output?
@@ -812,6 +884,12 @@ class Plotter:
         return self
 
     def show(self, **kwargs) -> None:
+        """
+        Display the plot by hooking into pyplot.
+
+        This method calls :func:`matplotlib.pyplot.show` with any keyword parameters.
+
+        """
         # TODO if we did not create the Plotter with pyplot, is it possible to do this?
         # If not we should clearly raise.
         import matplotlib.pyplot as plt
@@ -938,7 +1016,8 @@ class Plotter:
                 # ~~ Decoration visibility
 
                 # TODO there should be some override (in Plot.layout?) so that
-                # tick labels can be shown on interior shared axes
+                # axis / tick labels can be shown on interior shared axes if desired
+
                 axis_obj = getattr(ax, f"{axis}axis")
                 visible_side = {"x": "bottom", "y": "left"}.get(axis)
                 show_axis_label = (
@@ -950,6 +1029,7 @@ class Plotter:
                     )
                 )
                 axis_obj.get_label().set_visible(show_axis_label)
+
                 show_tick_labels = (
                     show_axis_label
                     or subplot_spec.get(f"share{axis}") not in (

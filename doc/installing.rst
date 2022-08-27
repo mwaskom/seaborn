@@ -74,8 +74,12 @@ typically assume the following imports::
 
     import numpy as np
     import pandas as pd
-    import seaborn as sns
+
+    import matplotlib as mpl
     import matplotlib.pyplot as plt
+
+    import seaborn as sns
+    import seaborn.objects as so
 
 Debugging install issues
 ~~~~~~~~~~~~~~~~~~~~~~~~

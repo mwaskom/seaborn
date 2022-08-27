@@ -100,6 +100,7 @@ MappableStyle = Union[str, DashPattern, DashPatternWithOffset, Mappable]
 
 @dataclass
 class Mark:
+    """Base class for objects that visually represent data."""
 
     artist_kws: dict = field(default_factory=dict)
 

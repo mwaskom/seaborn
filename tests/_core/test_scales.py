@@ -279,6 +279,13 @@ class TestContinuous:
         for text in labels[1:-1]:
             assert re.match(r"^\d+mg$", text)
 
+    def test_label_empty_unit(self, x):
+
+        a, locs = self.setup_labels(1000 * x, unit="")
+        labels = a.major.formatter.format_ticks(locs)
+        for text in labels[1:-1]:
+            assert re.match(r"^\d+m$", text)
+
     def test_label_base_from_transform(self, x):
 
         s = Continuous(trans="log")

@@ -49,6 +49,7 @@ if TYPE_CHECKING:
 
 
 class Scale:
+    """Base class for objects that map data values to visual properties."""
 
     values: tuple | str | list | dict | None
 
@@ -626,6 +627,8 @@ class Continuous(ContinuousBase):
         elif unit is not None:
             if isinstance(unit, tuple):
                 sep, unit = unit
+            elif not unit:
+                sep = ""
             else:
                 sep = " "
             formatter = EngFormatter(unit, sep=sep)
