@@ -1538,8 +1538,10 @@ class TestPairInterface:
 
         assert_gridspec_shape(p._figure.axes[0], len(x_vars) // wrap + 1, wrap)
         assert len(p._figure.axes) == len(x_vars)
-
-        # TODO test axis labels and visibility
+        for ax, var in zip(p._figure.axes, x_vars):
+            label = ax.xaxis.get_label()
+            assert label.get_visible()
+            assert label.get_text() == var
 
     def test_y_wrapping(self, long_df):
 
@@ -1547,10 +1549,17 @@ class TestPairInterface:
         wrap = 3
         p = Plot(long_df, x="x").pair(y=y_vars, wrap=wrap).plot()
 
-        assert_gridspec_shape(p._figure.axes[0], wrap, len(y_vars) // wrap + 1)
+        n_row, n_col = wrap, len(y_vars) // wrap + 1
+        assert_gridspec_shape(p._figure.axes[0], n_row, n_col)
         assert len(p._figure.axes) == len(y_vars)
-
-        # TODO test axis labels and visibility
+        label_array = np.empty(n_row * n_col, object)
+        label_array[:len(y_vars)] = y_vars
+        label_array = label_array.reshape((n_row, n_col), order="F")
+        label_array = [y for y in label_array.flat if y is not None]
+        for i, ax in enumerate(p._figure.axes):
+            label = ax.yaxis.get_label()
+            assert label.get_visible()
+            assert label.get_text() == label_array[i]
 
     def test_non_cross_wrapping(self, long_df):
 
