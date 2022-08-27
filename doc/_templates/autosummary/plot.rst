@@ -15,7 +15,7 @@
       add
       scale
 
-   .. rubric:: Grid methods
+   .. rubric:: Subplot methods
 
    .. autosummary::
       :toctree: ./
@@ -33,9 +33,16 @@
       layout
       label
       limit
-      on
       share
       theme
+
+   .. rubric:: Integration methods
+
+   .. autosummary::
+      :toctree: ./
+      :nosignatures:
+
+      on
 
    .. rubric:: Output methods
 

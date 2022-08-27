@@ -325,7 +325,7 @@ class Plot:
 
     def on(self, target: Axes | SubFigure | Figure) -> Plot:
         """
-        Draw the plot using an existing Matplotlib object.
+        Provide existing Matplotlib figure or axes for drawing the plot.
 
         When using this method, you will also need to explicitly call a method that
         triggers compilation, such as :meth:`Plot.show` or :meth:`Plot.save`. If you
@@ -380,7 +380,7 @@ class Plot:
         **variables: VariableSpec,
     ) -> Plot:
         """
-        Define a layer of the visualization in terms of mark and data transform(s).
+        Specify a layer of the visualization in terms of mark and data transform(s).
 
         This is the main method for specifying how the data should be visualized.
         It can be called multiple times with different arguments to define
@@ -590,7 +590,7 @@ class Plot:
 
     def scale(self, **scales: Scale) -> Plot:
         """
-        Control mappings from data units to visual properties.
+        Specify mappings from data units to visual properties.
 
         Keywords correspond to variables defined in the plot, including coordinate
         variables (`x`, `y`) and semantic variables (`color`, `pointsize`, etc.).
@@ -660,7 +660,7 @@ class Plot:
 
     def label(self, *, title=None, **variables: str | Callable[[str], str]) -> Plot:
         """
-        Add or modify labels for axes, legends, and subplots.
+        Control the labels and titles for axes, legends, and subplots.
 
         Additional keywords correspond to variables defined in the plot.
         Values can be one of the following types:
@@ -696,6 +696,12 @@ class Plot:
         """
         Control the figure size and layout.
 
+        .. note::
+
+            Default figure sizes and the API for specifying the figure size are subject
+            to change in future "experimental" releases of the objects API. The default
+            layout engine may also change.
+
         Parameters
         ----------
         size : (width, height)
@@ -703,7 +709,12 @@ class Plot:
             using pyplot, but not otherwise.
         algo : {{"tight", "constrained", None}}
             Name of algorithm for automatically adjusting the layout to remove overlap.
-            The default depends on whether :meth:`Plot.on` has been called.
+            The default depends on whether :meth:`Plot.on` is used.
+
+        Examples
+        --------
+
+        .. include:: ../docstrings/objects.Plot.layout.rst
 
         """
         # TODO add an "auto" mode for figsize that roughly scales with the rcParams
@@ -776,7 +787,7 @@ class Plot:
 
     def show(self, **kwargs) -> None:
         """
-        Compile and display the plot by hooking into pyplot.
+        Compile the plot and display it by hooking into pyplot.
 
         Calling this method is not necessary to render a plot in notebook context,
         but it may be in other environments (e.g., in a terminal). After compiling the
