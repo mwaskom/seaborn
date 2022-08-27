@@ -408,6 +408,11 @@ class Plot:
             Additional layer-specific variables, including variables that will be
             passed directly to the transforms without scaling.
 
+        Examples
+        --------
+
+        .. include:: ../docstrings/objects.Plot.add.rst
+
         """
         if not isinstance(mark, Mark):
             msg = f"mark must be a Mark instance, not {type(mark)!r}."
