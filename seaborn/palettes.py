@@ -8,6 +8,7 @@ from .external import husl
 
 from .utils import desaturate, get_color_cycle
 from .colors import xkcd_rgb, crayons
+from ._compat import get_colormap
 
 
 __all__ = ["color_palette", "hls_palette", "husl_palette", "mpl_palette",
@@ -204,7 +205,7 @@ def color_palette(palette=None, n_colors=None, desat=None, as_cmap=False):
             try:
                 # Perhaps a named matplotlib colormap?
                 palette = mpl_palette(palette, n_colors, as_cmap=as_cmap)
-            except ValueError:
+            except (ValueError, KeyError):  # Error class changed in mpl36
                 raise ValueError(f"{palette} is not a valid palette name")
 
     if desat is not None:
@@ -440,7 +441,7 @@ def mpl_palette(name, n_colors=6, as_cmap=False):
             pal = pal[::-1]
         cmap = blend_palette(pal, n_colors, as_cmap=True)
     else:
-        cmap = mpl.cm.get_cmap(name)
+        cmap = get_colormap(name)
 
     if name in MPL_QUAL_PALS:
         bins = np.linspace(0, 1, MPL_QUAL_PALS[name])[:n_colors]

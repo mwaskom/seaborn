@@ -21,7 +21,7 @@ from seaborn._core.properties import (
     Marker,
     PointSize,
 )
-from seaborn._compat import MarkerStyle
+from seaborn._compat import MarkerStyle, get_colormap
 from seaborn.palettes import color_palette
 
 
@@ -168,7 +168,7 @@ class TestColor(DataFixtures):
 
     def test_continuous_callable_palette(self, num_vector):
 
-        cmap = mpl.cm.get_cmap("viridis")
+        cmap = get_colormap("viridis")
         m = Color().get_mapping(Continuous(cmap), num_vector)
         self.assert_same_rgb(m(num_vector), cmap(num_vector))
 
@@ -186,7 +186,7 @@ class TestColor(DataFixtures):
     def test_bad_scale_values_nominal(self, cat_vector):
 
         with pytest.raises(TypeError, match="Scale values for color with a Nominal"):
-            Color().get_mapping(Nominal(mpl.cm.get_cmap("viridis")), cat_vector)
+            Color().get_mapping(Nominal(get_colormap("viridis")), cat_vector)
 
     def test_bad_inference_arg(self, cat_vector):
 
@@ -225,7 +225,7 @@ class TestColor(DataFixtures):
             ({2: "r", 4: "g", 8: "b"}, "num", Nominal),  # Based on dict palette
             (("r", "b"), "num", Continuous),  # Based on tuple / variable type
             (("g", "m"), "cat", Nominal),  # Based on tuple / variable type
-            (mpl.cm.get_cmap("inferno"), "num", Continuous),  # Based on callable
+            (get_colormap("inferno"), "num", Continuous),  # Based on callable
         ]
     )
     def test_inference(self, values, data_type, scale_class, vectors):

@@ -10,6 +10,7 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 
 from ._oldcore import VectorPlotter, variable_type, categorical_order
+from ._compat import share_axis
 from . import utils
 from .utils import (
     adjust_legend_subtitles, _check_argument, _draw_figure, _disable_autolayout
@@ -1468,11 +1469,8 @@ class PairGrid(Grid):
                             # when drawing a corner plot?
 
             if self.diag_sharey and diag_axes:
-                # This may change in future matplotlibs
-                # See https://github.com/matplotlib/matplotlib/pull/9923
-                group = diag_axes[0].get_shared_y_axes()
                 for ax in diag_axes[1:]:
-                    group.join(ax, diag_axes[0])
+                    share_axis(diag_axes[0], ax, "y")
 
             self.diag_vars = np.array(diag_vars, np.object_)
             self.diag_axes = np.array(diag_axes, np.object_)

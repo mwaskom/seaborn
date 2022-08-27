@@ -125,3 +125,40 @@ def set_scale_obj(ax, axis, scale):
         scale.set_default_locators_and_formatters(axis_obj)
     else:
         ax.set(**{f"{axis}scale": scale})
+
+
+def get_colormap(name):
+    """Handle changes to matplotlib colormap interface in 3.6."""
+    try:
+        return mpl.colormaps[name]
+    except AttributeError:
+        return mpl.cm.get_cmap(name)
+
+
+def register_colormap(name, cmap):
+    """Handle changes to matplotlib colormap interface in 3.6."""
+    try:
+        if name not in mpl.colormaps:
+            mpl.colormaps.register(cmap, name=name)
+    except AttributeError:
+        mpl.cm.register_cmap(name, cmap)
+
+
+def set_layout_engine(fig, algo):
+    """Handle changes to auto layout engine interface in 3.6"""
+    if hasattr(fig, "set_layout_engine"):
+        fig.set_layout_engine(algo)
+    else:
+        if algo == "tight":
+            fig.set_tight_layout(True)
+        elif algo == "constrained":
+            fig.set_constrained_layout(True)
+
+
+def share_axis(ax0, ax1, which):
+    """Handle changes to post-hoc axis sharing."""
+    if Version(mpl.__version__) < Version("3.5.0"):
+        group = getattr(ax0, f"get_shared_{which}_axes")()
+        group.join(ax1, ax0)
+    else:
+        getattr(ax1, f"share{which}")(ax0)
