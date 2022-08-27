@@ -6,26 +6,45 @@
 
    {% block methods %}
 
-   {% if methods %}
-   .. rubric:: Methods
+   .. rubric:: Specification methods
 
    .. autosummary::
       :toctree: ./
-   {% for item in methods %}
-      {% if item != '__init__' %}
-         ~{{ name }}.{{ item }}
-      {%- endif %}
-   {%- endfor %}
-   {% endif %}
-   {% endblock %}
+      :nosignatures:
 
-   {% block attributes %}
-   {% if attributes %}
-   .. rubric:: Attributes
+      add
+      scale
+
+   .. rubric:: Subplot methods
 
    .. autosummary::
-   {% for item in attributes %}
-      ~{{ name }}.{{ item }}
-   {%- endfor %}
-   {% endif %}
+      :toctree: ./
+      :nosignatures:
+
+      facet
+      pair
+      on
+
+   .. rubric:: Customization methods
+
+   .. autosummary::
+      :toctree: ./
+      :nosignatures:
+
+      theme
+      layout
+      label
+      limit
+      share
+
+   .. rubric:: Output methods
+
+   .. autosummary::
+      :toctree: ./
+      :nosignatures:
+
+      plot
+      save
+      show
+
    {% endblock %}
