@@ -118,7 +118,7 @@ for path in html_static_path:
     if not os.path.exists(path):
         os.makedirs(path)
 
-html_css_files = ['css/custom.css']
+html_css_files = [f'css/custom.css?v={seaborn.__version__}']
 
 html_logo = "_static/logo-wide-lightbg.svg"
 html_favicon = "_static/favicon.ico"
