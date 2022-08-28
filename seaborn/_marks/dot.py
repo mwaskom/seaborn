@@ -154,7 +154,7 @@ class Dots(DotBase):
     """
     # TODO retype marker as MappableMarker
     marker: MappableString = Mappable(rc="scatter.marker", grouping=False)
-    pointsize: MappableFloat = Mappable(3, grouping=False)  # TODO rcParam?
+    pointsize: MappableFloat = Mappable(4, grouping=False)  # TODO rcParam?
     stroke: MappableFloat = Mappable(.75, grouping=False)  # TODO rcParam?
     color: MappableColor = Mappable("C0", grouping=False)
     alpha: MappableFloat = Mappable(1, grouping=False)  # TODO auto alpha?
