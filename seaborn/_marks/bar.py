@@ -105,7 +105,16 @@ class BarBase(Mark):
 @dataclass
 class Bar(BarBase):
     """
-    An rectangular mark drawn between baseline and data values.
+    A bar mark drawn between baseline and data values.
+
+    See also
+    --------
+    Bars : A faster bar mark with defaults more suitable for histograms.
+
+    Examples
+    --------
+    .. include:: ../docstrings/objects.Bar.rst
+
     """
     color: MappableColor = Mappable("C0", grouping=False)
     alpha: MappableFloat = Mappable(.7, grouping=False)
@@ -165,7 +174,16 @@ class Bar(BarBase):
 @dataclass
 class Bars(BarBase):
     """
-    A faster Bar mark with defaults that are more suitable for histograms.
+    A faster bar mark with defaults more suitable histograms.
+
+    See also
+    --------
+    Bar : A bar mark drawn between baseline and data values.
+
+    Examples
+    --------
+    .. include:: ../docstrings/objects.Bars.rst
+
     """
     color: MappableColor = Mappable("C0", grouping=False)
     alpha: MappableFloat = Mappable(.7, grouping=False)

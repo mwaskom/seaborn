@@ -107,6 +107,15 @@ class DotBase(Mark):
 class Dot(DotBase):
     """
     A mark suitable for dot plots or less-dense scatterplots.
+
+    See also
+    --------
+    Dots : A dot mark defined by strokes to better handle overplotting.
+
+    Examples
+    --------
+    .. include:: ../docstrings/objects.Dot.rst
+
     """
     marker: MappableString = Mappable("o", grouping=False)
     pointsize: MappableFloat = Mappable(6, grouping=False)  # TODO rcParam?
@@ -151,10 +160,19 @@ class Dot(DotBase):
 class Dots(DotBase):
     """
     A dot mark defined by strokes to better handle overplotting.
+
+    See also
+    --------
+    Dot : A mark suitable for dot plots or less-dense scatterplots.
+
+    Examples
+    --------
+    .. include:: ../docstrings/objects.Dots.rst
+
     """
     # TODO retype marker as MappableMarker
     marker: MappableString = Mappable(rc="scatter.marker", grouping=False)
-    pointsize: MappableFloat = Mappable(3, grouping=False)  # TODO rcParam?
+    pointsize: MappableFloat = Mappable(4, grouping=False)  # TODO rcParam?
     stroke: MappableFloat = Mappable(.75, grouping=False)  # TODO rcParam?
     color: MappableColor = Mappable("C0", grouping=False)
     alpha: MappableFloat = Mappable(1, grouping=False)  # TODO auto alpha?

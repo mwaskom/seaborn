@@ -88,7 +88,16 @@ class AreaBase:
 @dataclass
 class Area(AreaBase, Mark):
     """
-    An interval mark that fills between baseline and data values.
+    A fill mark drawn from a baseline to data values.
+
+    See also
+    --------
+    Band : A fill mark representing an interval between values.
+
+    Examples
+    --------
+    .. include:: ../docstrings/objects.Area.rst
+
     """
     color: MappableColor = Mappable("C0", )
     alpha: MappableFloat = Mappable(.2, )
@@ -128,7 +137,16 @@ class Area(AreaBase, Mark):
 @dataclass
 class Band(AreaBase, Mark):
     """
-    An interval mark that fills between minimum and maximum values.
+    A fill mark representing an interval between values.
+
+    See also
+    --------
+    Area : A fill mark drawn from a baseline to data values.
+
+    Examples
+    --------
+    .. include:: ../docstrings/objects.Band.rst
+
     """
     color: MappableColor = Mappable("C0", )
     alpha: MappableFloat = Mappable(.2, )

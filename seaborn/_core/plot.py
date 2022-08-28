@@ -342,7 +342,6 @@ class Plot:
 
         Examples
         --------
-
         .. include:: ../docstrings/objects.Plot.on.rst
 
         """
@@ -410,7 +409,6 @@ class Plot:
 
         Examples
         --------
-
         .. include:: ../docstrings/objects.Plot.add.rst
 
         """
@@ -484,7 +482,6 @@ class Plot:
 
         Examples
         --------
-
         .. include:: ../docstrings/objects.Plot.pair.rst
 
         """
@@ -547,7 +544,6 @@ class Plot:
 
         Examples
         --------
-
         .. include:: ../docstrings/objects.Plot.facet.rst
 
         """
@@ -608,7 +604,6 @@ class Plot:
 
         Examples
         --------
-
         .. include:: ../docstrings/objects.Plot.scale.rst
 
         """
@@ -628,7 +623,6 @@ class Plot:
 
         Examples
         --------
-
         .. include:: ../docstrings/objects.Plot.share.rst
 
         """
@@ -650,7 +644,6 @@ class Plot:
 
         Examples
         --------
-
         .. include:: ../docstrings/objects.Plot.limit.rst
 
         """
@@ -676,7 +669,6 @@ class Plot:
 
         Examples
         --------
-
         .. include:: ../docstrings/objects.Plot.label.rst
 
 
@@ -713,7 +705,6 @@ class Plot:
 
         Examples
         --------
-
         .. include:: ../docstrings/objects.Plot.layout.rst
 
         """
@@ -750,7 +741,6 @@ class Plot:
 
         Examples
         --------
-
         .. include:: ../docstrings/objects.Plot.theme.rst
 
         """

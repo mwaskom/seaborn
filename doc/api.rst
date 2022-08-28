@@ -21,6 +21,41 @@ Plot object
 Mark objects
 ~~~~~~~~~~~~
 
+.. rubric:: Dot marks
+
+.. autosummary::
+    :toctree: generated/
+    :template: object
+    :nosignatures:
+
+    Dot
+    Dots
+
+.. rubric:: Line marks
+
+.. autosummary::
+    :toctree: generated/
+    :template: object
+    :nosignatures:
+
+    Line
+    Lines
+    Path
+    Paths
+    Range
+
+.. rubric:: Bar marks
+
+.. autosummary::
+    :toctree: generated/
+    :template: object
+    :nosignatures:
+
+    Bar
+    Bars
+
+.. rubric:: Fill marks
+
 .. autosummary::
     :toctree: generated/
     :template: object
@@ -28,15 +63,6 @@ Mark objects
 
     Area
     Band
-    Bar
-    Bars
-    Dot
-    Dots
-    Line
-    Lines
-    Path
-    Paths
-    Range
 
 Stat objects
 ~~~~~~~~~~~~
