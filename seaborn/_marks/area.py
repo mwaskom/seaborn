@@ -89,6 +89,12 @@ class AreaBase:
 class Area(AreaBase, Mark):
     """
     An interval mark that fills between baseline and data values.
+
+    Examples
+    --------
+
+    .. include:: ../docstrings/objects.Area.rst
+
     """
     color: MappableColor = Mappable("C0", )
     alpha: MappableFloat = Mappable(.2, )
