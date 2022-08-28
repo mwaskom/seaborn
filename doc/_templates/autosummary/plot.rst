@@ -12,8 +12,8 @@
       :toctree: ./
       :nosignatures:
 
-      add
-      scale
+      ~Plot.add
+      ~Plot.scale
 
    .. rubric:: Subplot methods
 
@@ -21,8 +21,8 @@
       :toctree: ./
       :nosignatures:
 
-      facet
-      pair
+      ~Plot.facet
+      ~Plot.pair
 
    .. rubric:: Customization methods
 
@@ -30,11 +30,11 @@
       :toctree: ./
       :nosignatures:
 
-      layout
-      label
-      limit
-      share
-      theme
+      ~Plot.layout
+      ~Plot.label
+      ~Plot.limit
+      ~Plot.share
+      ~Plot.theme
 
    .. rubric:: Integration methods
 
@@ -42,7 +42,7 @@
       :toctree: ./
       :nosignatures:
 
-      on
+      ~Plot.on
 
    .. rubric:: Output methods
 
@@ -50,8 +50,8 @@
       :toctree: ./
       :nosignatures:
 
-      plot
-      save
-      show
+      ~Plot.plot
+      ~Plot.save
+      ~Plot.show
 
    {% endblock %}
