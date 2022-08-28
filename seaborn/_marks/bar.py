@@ -105,11 +105,11 @@ class BarBase(Mark):
 @dataclass
 class Bar(BarBase):
     """
-    A rectangular mark drawn between baseline and data values.
+    A bar mark drawn between baseline and data values.
 
     See also
     --------
-    Bars : A faster mark with more suitable defaults for continuous histograms.
+    Bars : A faster bar mark with defaults more suitable for histograms.
 
     Examples
     --------
@@ -174,11 +174,11 @@ class Bar(BarBase):
 @dataclass
 class Bars(BarBase):
     """
-    A faster Bar mark with more suitable defaults for continuous histograms.
+    A faster bar mark with defaults more suitable histograms.
 
     See also
     --------
-    Bar : A rectangular mark drawn between baseline and data values.
+    Bar : A bar mark drawn between baseline and data values.
 
     Examples
     --------
