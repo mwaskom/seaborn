@@ -14,6 +14,7 @@ from seaborn._marks.base import (
     MappableStyle,
     resolve_properties,
     resolve_color,
+    document_properties,
 )
 
 from typing import TYPE_CHECKING
@@ -23,7 +24,6 @@ if TYPE_CHECKING:
     from seaborn._core.scales import Scale
 
 
-@dataclass
 class DotBase(Mark):
 
     def _resolve_paths(self, data):
@@ -103,6 +103,7 @@ class DotBase(Mark):
         )
 
 
+@document_properties
 @dataclass
 class Dot(DotBase):
     """
@@ -156,6 +157,7 @@ class Dot(DotBase):
         return resolved
 
 
+@document_properties
 @dataclass
 class Dots(DotBase):
     """

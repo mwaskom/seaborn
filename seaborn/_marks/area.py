@@ -14,6 +14,7 @@ from seaborn._marks.base import (
     MappableStyle,
     resolve_properties,
     resolve_color,
+    document_properties,
 )
 
 
@@ -85,6 +86,7 @@ class AreaBase:
         )
 
 
+@document_properties
 @dataclass
 class Area(AreaBase, Mark):
     """
@@ -134,6 +136,7 @@ class Area(AreaBase, Mark):
         artist.sticky_edges[val_idx][:] = (0, np.inf)
 
 
+@document_properties
 @dataclass
 class Band(AreaBase, Mark):
     """

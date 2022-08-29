@@ -14,6 +14,8 @@ import os
 import sys
 import time
 import seaborn
+from seaborn._core.properties import PROPERTIES
+
 sys.path.insert(0, os.path.abspath('sphinxext'))
 
 
@@ -102,6 +104,10 @@ rst_epilog = """
 .. |Deps| replace:: :raw-html:`<span class="badge badge-dependencies">Deps</span>` :raw-latex:`{\small\sc [Deps]}`
 
 """  # noqa
+
+rst_epilog += "\n".join([
+    f".. |{prop}| replace:: :ref:`{prop} <{prop}_property>`" for prop in PROPERTIES
+])
 
 # -- Options for HTML output -------------------------------------------------
 

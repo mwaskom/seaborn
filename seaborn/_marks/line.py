@@ -13,10 +13,12 @@ from seaborn._marks.base import (
     MappableColor,
     resolve_properties,
     resolve_color,
+    document_properties,
 )
 from seaborn.external.version import Version
 
 
+@document_properties
 @dataclass
 class Path(Mark):
     """
@@ -115,6 +117,7 @@ class Path(Mark):
             kws["dash_capstyle"] = capstyle
 
 
+@document_properties
 @dataclass
 class Line(Path):
     """
@@ -133,6 +136,7 @@ class Line(Path):
     _sort: ClassVar[bool] = True
 
 
+@document_properties
 @dataclass
 class Paths(Mark):
     """
@@ -221,6 +225,7 @@ class Paths(Mark):
         )
 
 
+@document_properties
 @dataclass
 class Lines(Paths):
     """
@@ -238,6 +243,7 @@ class Lines(Paths):
     _sort: ClassVar[bool] = True
 
 
+@document_properties
 @dataclass
 class Range(Paths):
     """
