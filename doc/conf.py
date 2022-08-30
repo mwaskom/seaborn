@@ -106,7 +106,8 @@ rst_epilog = """
 """  # noqa
 
 rst_epilog += "\n".join([
-    f".. |{prop}| replace:: :ref:`{prop} <{prop}_property>`" for prop in PROPERTIES
+    f".. |{key}| replace:: :ref:`{key} <{val.__class__.__name__.lower()}_property>`"
+    for key, val in PROPERTIES.items()
 ])
 
 # -- Options for HTML output -------------------------------------------------
