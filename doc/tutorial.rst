@@ -104,7 +104,7 @@ Objects interface
       .. grid-item::
         :columns: 4
 
-        .. image:: ./tutorial/properties_files/TODO.png
+        .. image:: ./tutorial/properties_files/properties_3_0.png
           :target: ./tutorial/properties.html
 
       .. grid-item::
