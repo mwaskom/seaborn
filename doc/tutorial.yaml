@@ -5,16 +5,18 @@
   pages:
     - function_overview
     - data_structure
-    - error_bars
+- title: Objects interface
+  pages:
+    - properties
 - title: Plotting functions
   pages:
     - relational
     - distributions
     - categorical
-    - regression
-- title: Objects interface
+- title: Statistical operations
   pages:
-    - properties
+    - error_bars
+    - regression
 - title: Multi-plot grids
   pages:
     - axis_grids
