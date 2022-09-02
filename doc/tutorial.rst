@@ -3,7 +3,7 @@
 .. _tutorial:
 
 User guide and tutorial
-===============================
+=======================
 
 .. grid:: 1
   :gutter: 2
@@ -13,14 +13,14 @@ User guide and tutorial
     .. grid:: 2
 
       .. grid-item::
-        :columns: 4
+        :columns: 3
 
-        .. image:: ./tutorial/introduction_files/introduction_33_0.png
+        .. image:: /_static/logo-mark-lightbg.svg
           :target: ./tutorial/introduction.html
 
 
       .. grid-item::
-        :columns: 8
+        :columns: 9
         :margin: 2 0 0 0
 
         .. toctree::
@@ -40,14 +40,14 @@ API Overview
     .. grid:: 2
 
       .. grid-item::
-        :columns: 4
+        :columns: 3
 
-        .. image:: ./tutorial/function_overview_files/function_overview_8_0.png
+        .. image:: ./tutorial/_images/function_overview.svg
           :target: ./tutorial/function_overview.html
 
 
       .. grid-item::
-        :columns: 8
+        :columns: 9
         :margin: 2 0 0 0
 
         .. toctree::
@@ -60,13 +60,13 @@ API Overview
     .. grid:: 2
 
       .. grid-item::
-        :columns: 4
+        :columns: 3
 
-        .. image:: ./tutorial/data_structure_files/data_structure_19_0.png
+        .. image:: ./tutorial/_images/data_structure.svg
           :target: ./tutorial/data_structure.html
 
       .. grid-item::
-        :columns: 8
+        :columns: 9
 
         .. toctree::
           :maxdepth: 2
@@ -78,13 +78,13 @@ API Overview
     .. grid:: 2
 
       .. grid-item::
-        :columns: 4
+        :columns: 3
 
         .. image:: ./tutorial/error_bars_files/error_bars_2_0.png
           :target: ./tutorial/error_bars.html
 
       .. grid-item::
-        :columns: 8
+        :columns: 9
 
         .. toctree::
           :maxdepth: 2
@@ -127,13 +127,13 @@ Plotting functions
     .. grid:: 2
 
       .. grid-item::
-        :columns: 4
+        :columns: 3
 
-        .. image:: ./tutorial/relational_files/relational_51_0.png
+        .. image:: ./tutorial/_images/relational.svg
           :target: ./tutorial/relational.html
 
       .. grid-item::
-        :columns: 8
+        :columns: 9
 
         .. toctree::
           :maxdepth: 2
@@ -145,13 +145,13 @@ Plotting functions
     .. grid:: 2
 
       .. grid-item::
-        :columns: 4
+        :columns: 3
 
-        .. image:: ./tutorial/distributions_files/distributions_66_0.png
+        .. image:: ./tutorial/_images/distributions.svg
           :target: ./tutorial/distributions.html
 
       .. grid-item::
-        :columns: 8
+        :columns: 9
 
         .. toctree::
           :maxdepth: 2
@@ -163,13 +163,13 @@ Plotting functions
     .. grid:: 2
 
       .. grid-item::
-        :columns: 4
+        :columns: 3
 
-        .. image:: ./tutorial/categorical_files/categorical_36_0.png
+        .. image:: ./tutorial/_images/categorical.svg
           :target: ./tutorial/categorical.html
 
       .. grid-item::
-        :columns: 8
+        :columns: 9
 
         .. toctree::
           :maxdepth: 2
@@ -181,13 +181,13 @@ Plotting functions
     .. grid:: 2
 
       .. grid-item::
-        :columns: 4
+        :columns: 3
 
-        .. image:: ./tutorial/regression_files/regression_37_0.png
+        .. image:: ./tutorial/_images/regression.svg
           :target: ./tutorial/regression.html
 
       .. grid-item::
-        :columns: 8
+        :columns: 9
 
         .. toctree::
           :maxdepth: 2
@@ -206,13 +206,13 @@ Multi-plot grids
     .. grid:: 2
 
       .. grid-item::
-        :columns: 4
+        :columns: 3
 
-        .. image:: ./tutorial/axis_grids_files/axis_grids_46_0.png
+        .. image:: ./tutorial/_images/axis_grids.svg
           :target: ./tutorial/axis_grids.html
 
       .. grid-item::
-        :columns: 8
+        :columns: 9
 
         .. toctree::
           :maxdepth: 2
@@ -230,13 +230,13 @@ Figure aesthetics
     .. grid:: 2
 
       .. grid-item::
-        :columns: 4
+        :columns: 3
 
         .. image:: ./tutorial/aesthetics_files/aesthetics_24_0.png
           :target: ./tutorial/aesthetics.html
 
       .. grid-item::
-        :columns: 8
+        :columns: 9
 
         .. toctree::
           :maxdepth: 2
@@ -248,13 +248,13 @@ Figure aesthetics
     .. grid:: 2
 
       .. grid-item::
-        :columns: 4
+        :columns: 3
 
-        .. image:: ./tutorial/color_palettes_files/color_palettes_22_0.png
+        .. image:: ./tutorial/_images/color_palettes.svg
           :target: ./tutorial/color_palettes.html
 
       .. grid-item::
-        :columns: 8
+        :columns: 9
 
         .. toctree::
           :maxdepth: 2
