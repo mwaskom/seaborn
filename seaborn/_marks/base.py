@@ -1,5 +1,6 @@
 from __future__ import annotations
 from dataclasses import dataclass, fields, field
+import textwrap
 from typing import Any, Callable, Union
 from collections.abc import Generator
 
@@ -286,9 +287,23 @@ def resolve_color(
     # (i.e. set fillalpha to 0 when fill=False)
 
 
-class MultiMark(Mark):
+def document_properties(mark):
 
-    # TODO implement this as a way to wrap multiple marks (e.g. line and ribbon)
-    # It should be fairly lightweight, the main thing is to expose the union
-    # of each mark's parameters and then to call them sequentially in _plot.
-    pass
+    properties = [f.name for f in fields(mark) if isinstance(f.default, Mappable)]
+    text = [
+        "",
+        "    This mark defines the following properties:",
+        textwrap.fill(
+            ", ".join([f"|{p}|" for p in properties]),
+            width=78, initial_indent=" " * 8, subsequent_indent=" " * 8,
+        ),
+    ]
+
+    docstring_lines = mark.__doc__.split("\n")
+    new_docstring = "\n".join([
+        *docstring_lines[:2],
+        *text,
+        *docstring_lines[2:],
+    ])
+    mark.__doc__ = new_docstring
+    return mark

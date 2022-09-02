@@ -91,6 +91,30 @@ API Overview
 
           tutorial/error_bars
 
+Objects interface
+-----------------
+
+.. grid:: 1
+  :gutter: 2
+
+  .. grid-item-card::
+
+    .. grid:: 2
+
+      .. grid-item::
+        :columns: 4
+
+        .. image:: ./tutorial/properties_files/properties_3_0.png
+          :target: ./tutorial/properties.html
+
+      .. grid-item::
+        :columns: 8
+
+        .. toctree::
+          :maxdepth: 2
+
+          tutorial/properties
+
 
 Plotting functions
 ------------------

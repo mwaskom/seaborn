@@ -14,6 +14,7 @@ from seaborn._marks.base import (
     MappableStyle,
     resolve_properties,
     resolve_color,
+    document_properties
 )
 from seaborn.external.version import Version
 
@@ -102,6 +103,7 @@ class BarBase(Mark):
         return artist
 
 
+@document_properties
 @dataclass
 class Bar(BarBase):
     """
@@ -171,6 +173,7 @@ class Bar(BarBase):
             ax.add_container(container)
 
 
+@document_properties
 @dataclass
 class Bars(BarBase):
     """

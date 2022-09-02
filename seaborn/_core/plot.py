@@ -120,7 +120,8 @@ def build_plot_signature(cls):
     cls.__signature__ = new_sig
 
     known_properties = textwrap.fill(
-        ", ".join(PROPERTIES), 78, subsequent_indent=" " * 8,
+        ", ".join([f"|{p}|" for p in PROPERTIES]),
+        width=78, subsequent_indent=" " * 8,
     )
 
     if cls.__doc__ is not None:  # support python -OO mode
