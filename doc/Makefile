@@ -45,6 +45,7 @@ clean:
 	-rm -rf examples/*
 	-rm -rf example_thumbs/*
 	-rm -rf generated/*
+	-rm -rf tutorial.rst
 	-make -C _docstrings clean
 	-make -C _tutorial clean
 

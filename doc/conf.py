@@ -30,7 +30,7 @@ version = release = seaborn.__version__
 # -- General configuration ---------------------------------------------------
 
 # Add any Sphinx extension module names here, as strings. They can be
-# extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
+# extensions coming with Sphinx (amed 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
     'sphinx.ext.autodoc',
@@ -41,6 +41,7 @@ extensions = [
     'sphinx.ext.intersphinx',
     'matplotlib.sphinxext.plot_directive',
     'gallery_generator',
+    'tutorial_builder',
     'numpydoc',
     'sphinx_copybutton',
     'sphinx_issues',
