@@ -5,3 +5,4 @@ ipykernel
 sphinx-copybutton
 sphinx-issues
 sphinx-design
+pyyaml
