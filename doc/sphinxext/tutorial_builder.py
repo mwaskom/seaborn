@@ -79,7 +79,7 @@ def main(app):
 def write_thumbnail(svg_path, page):
 
     with (
-        sns.axes_style("darkgrid"),
+        sns.axes_style("dark"),
         sns.plotting_context("notebook"),
         sns.color_palette("deep")
     ):
@@ -237,7 +237,7 @@ def properties():
         axs = f.subplots(len(plots))
     for p, ax in zip(plots, axs):
         p.on(ax).plot()
-        ax.set(xticks=x, yticks=[], xticklabels=[], ylim=(-.1, .1))
+        ax.set(xticks=x, yticks=[], xticklabels=[], ylim=(-.2, .3))
         sns.despine(ax=ax, left=True)
     f.legends = []
     return f
