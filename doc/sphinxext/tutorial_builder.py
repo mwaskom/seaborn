@@ -89,7 +89,7 @@ def write_thumbnail(svg_path, page):
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
             fig.tight_layout()
-        fig.savefig(svg_path)
+        fig.savefig(svg_path, format="svg")
 
 
 def introduction():
@@ -245,7 +245,30 @@ def properties():
 
 def objects_interface():
 
-    return mpl.figure.Figure(figsize=(5, 5))
+    f = mpl.figure.Figure(figsize=(5, 3))
+    C = sns.color_palette("deep")
+    ax = f.subplots()
+    fontsize = 22
+    rects = [((.135, .51), .69), ((.275, .37), .26), ((.59, .37), .40)]
+    for i, (xy, w) in enumerate(rects):
+        ax.add_artist(mpl.patches.Rectangle(xy, w, .12, color=C[i], alpha=.3))
+    ax.text(0, .54, "Plot(data, 'x', 'y', color='var1')", size=fontsize, color=".2")
+    ax.text(0, .40, ".add(Dot(alpha=.5), marker='var2')", size=fontsize, color=".2")
+    annots = [
+        ("Mapped\nin all layers", (.48, .67), (0, 55)),
+        ("Set directly", (.41, .34), (0, -55)),
+        ("Mapped\nin this layer", (.80, .34), (0, -55)),
+    ]
+    for i, (text, xy, xytext) in enumerate(annots):
+        ax.annotate(
+            text, xy, xytext,
+            textcoords="offset points", fontsize=18, ha="center", va="center",
+            arrowprops=dict(arrowstyle="->", linewidth=1.5, color=C[i]), color=C[i],
+        )
+    ax.set_axis_off()
+    f.subplots_adjust(0, 0, 1, 1)
+
+    return f
 
 
 def relational():
