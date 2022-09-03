@@ -243,6 +243,11 @@ def properties():
     return f
 
 
+def objects_interface():
+
+    return mpl.figure.Figure(figsize=(5, 5))
+
+
 def relational():
 
     mpg = sns.load_dataset("mpg")
