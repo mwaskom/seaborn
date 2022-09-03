@@ -130,12 +130,9 @@ so that you can report it in the right place. But it is alright to skip this
 step if it's not obvious how to do it.
 
 General support questions are more at home on either `stackoverflow
-<https://stackoverflow.com/questions/tagged/seaborn/>`_ or `discourse
-<https://discourse.matplotlib.org/c/3rdparty/seaborn/21>`_, which have a larger
-audience of people who will see your post and may be able to offer
-assistance. StackOverflow is better for specific issues, while discourse is
-better for more open-ended discussion. Your chance of getting a quick answer
-will be higher if you include `runnable code
-<https://stackoverflow.com/help/minimal-reproducible-example>`_, a precise
-statement of what you are hoping to achieve, and a clear explanation of the
-problems that you have encountered.
+<https://stackoverflow.com/questions/tagged/seaborn/>`_, where there is a
+larger audience of people who will see your post and may be able to offer
+assistance. Your chance of getting a quick answer will be higher if you include
+`runnable code <https://stackoverflow.com/help/minimal-reproducible-example>`_,
+a precise statement of what you are hoping to achieve, and a clear explanation
+of the problems that you have encountered.
