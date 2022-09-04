@@ -245,19 +245,19 @@ def properties():
 
 def objects_interface():
 
-    f = mpl.figure.Figure(figsize=(5, 3))
+    f = mpl.figure.Figure(figsize=(5, 4))
     C = sns.color_palette("deep")
     ax = f.subplots()
     fontsize = 22
-    rects = [((.135, .51), .69), ((.275, .37), .26), ((.59, .37), .40)]
+    rects = [((.135, .50), .69), ((.275, .38), .26), ((.59, .38), .40)]
     for i, (xy, w) in enumerate(rects):
-        ax.add_artist(mpl.patches.Rectangle(xy, w, .12, color=C[i], alpha=.3))
-    ax.text(0, .54, "Plot(data, 'x', 'y', color='var1')", size=fontsize, color=".2")
+        ax.add_artist(mpl.patches.Rectangle(xy, w, .09, color=C[i], alpha=.2, lw=0))
+    ax.text(0, .52, "Plot(data, 'x', 'y', color='var1')", size=fontsize, color=".2")
     ax.text(0, .40, ".add(Dot(alpha=.5), marker='var2')", size=fontsize, color=".2")
     annots = [
-        ("Mapped\nin all layers", (.48, .67), (0, 55)),
-        ("Set directly", (.41, .34), (0, -55)),
-        ("Mapped\nin this layer", (.80, .34), (0, -55)),
+        ("Mapped\nin all layers", (.48, .62), (0, 55)),
+        ("Set directly", (.41, .35), (0, -55)),
+        ("Mapped\nin this layer", (.80, .35), (0, -55)),
     ]
     for i, (text, xy, xytext) in enumerate(annots):
         ax.annotate(

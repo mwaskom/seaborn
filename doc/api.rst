@@ -5,6 +5,8 @@ API reference
 
 .. currentmodule:: seaborn.objects
 
+.. _objects_api:
+
 Objects interface
 -----------------
 

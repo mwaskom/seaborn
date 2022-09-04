@@ -51,7 +51,7 @@ seaborn: statistical data visualization
     :doc:`installation page <installing>` to see how you can download the package
     and get started with it. You can browse the :doc:`example gallery
     <examples/index>` to see some of the things that you can do with seaborn,
-    and then check out the :doc:`tutorial <tutorial>` or :doc:`API reference <api>`
+    and then check out the :doc:`tutorials <tutorial>` or :doc:`API reference <api>`
     to find out how.
 
     To see the code or report a bug, please visit the `GitHub repository
@@ -60,7 +60,9 @@ seaborn: statistical data visualization
     has a dedicated channel for seaborn.
 
   .. grid-item-card:: Contents
-    :columns: 12 12 3 3
+    :columns: 12 12 2 2
+    :class-title: sd-fs-5
+    :class-body: sd-pl-4
 
     .. toctree::
       :maxdepth: 1
@@ -70,20 +72,19 @@ seaborn: statistical data visualization
       Tutorial <tutorial>
       API <api>
       Releases <whatsnew/index>
-
-  .. grid-item-card:: Features
-    :columns: 12 12 3 3
-
-    .. toctree::
-      :hidden:
-
       Citing <citing>
 
-    * Relational: :ref:`API <relational_api>` | :doc:`Tutorial <tutorial/relational>`
-    * Distribution: :ref:`API <distribution_api>` | :doc:`Tutorial <tutorial/distributions>`
-    * Categorical: :ref:`API <categorical_api>` | :doc:`Tutorial <tutorial/categorical>`
-    * Regression: :ref:`API <regression_api>` | :doc:`Tutorial <tutorial/regression>`
-    * Multiples: :ref:`API <grid_api>` | :doc:`Tutorial <tutorial/axis_grids>`
-    * Style: :ref:`API <style_api>` | :doc:`Tutorial <tutorial/aesthetics>`
-    * Color: :ref:`API <palette_api>` | :doc:`Tutorial <tutorial/color_palettes>`
+  .. grid-item-card:: Features
+    :columns: 12 12 4 4
+    :class-title: sd-fs-5
+    :class-body: sd-pl-3
+
+    * :bdg-secondary:`New` Objects: :ref:`API <objects_api>` | :doc:`Tutorial <tutorial/objects_interface>`
+    * Relational plots: :ref:`API <relational_api>` | :doc:`Tutorial <tutorial/relational>`
+    * Distribution plots: :ref:`API <distribution_api>` | :doc:`Tutorial <tutorial/distributions>`
+    * Categorical plots: :ref:`API <categorical_api>` | :doc:`Tutorial <tutorial/categorical>`
+    * Regression plots: :ref:`API <regression_api>` | :doc:`Tutorial <tutorial/regression>`
+    * Multi-plot grids: :ref:`API <grid_api>` | :doc:`Tutorial <tutorial/axis_grids>`
+    * Figure theming: :ref:`API <style_api>` | :doc:`Tutorial <tutorial/aesthetics>`
+    * Color palettes: :ref:`API <palette_api>` | :doc:`Tutorial <tutorial/color_palettes>`
  
