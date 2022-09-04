@@ -108,6 +108,6 @@ dt:target, span.highlighted {
 .badge-fix {
     background-color: #ccb974;
 }
-.badge-dependencies {
+.badge-build {
     background-color: #937860;
 }
