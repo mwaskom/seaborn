@@ -694,7 +694,7 @@ class Plot:
         self,
         *,
         size: tuple[float, float] | Default = default,
-        algo: str | None | Default = default,
+        engine: str | None | Default = default,
     ) -> Plot:
         """
         Control the figure size and layout.
@@ -710,8 +710,8 @@ class Plot:
         size : (width, height)
             Size of the resulting figure, in inches. Size is inclusive of legend when
             using pyplot, but not otherwise.
-        algo : {{"tight", "constrained", None}}
-            Name of algorithm for automatically adjusting the layout to remove overlap.
+        engine : {{"tight", "constrained", None}}
+            Name of method for automatically adjusting the layout to remove overlap.
             The default depends on whether :meth:`Plot.on` is used.
 
         Examples
@@ -728,8 +728,8 @@ class Plot:
 
         if size is not default:
             new._figure_spec["figsize"] = size
-        if algo is not default:
-            new._layout_spec["algo"] = algo
+        if engine is not default:
+            new._layout_spec["engine"] = engine
 
         return new
 
@@ -1656,6 +1656,6 @@ class Plotter:
                         hi = cast(float, hi) + 0.5
                     ax.set(**{f"{axis}lim": (lo, hi)})
 
-        algo_default = None if p._target is not None else "tight"
-        layout_algo = p._layout_spec.get("algo", algo_default)
-        set_layout_engine(self._figure, layout_algo)
+        engine_default = None if p._target is not None else "tight"
+        layout_engine = p._layout_spec.get("engine", engine_default)
+        set_layout_engine(self._figure, layout_engine)
