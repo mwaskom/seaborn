@@ -61,7 +61,7 @@ class TestBar:
         for i, bar in enumerate(bars):
             self.check_bar(bar, 0, y[i] - w / 2, x[i], w)
 
-    def test_direct_properties(self):
+    def test_set_properties(self):
 
         x = ["a", "b", "c"]
         y = [1, 3, 2]
@@ -69,7 +69,7 @@ class TestBar:
         mark = Bar(
             color="C2",
             alpha=.5,
-            edgecolor="k",
+            edgecolor=".3",
             edgealpha=.9,
             edgestyle=(2, 1),
             edgewidth=1.5,

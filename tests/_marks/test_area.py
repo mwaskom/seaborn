@@ -33,13 +33,13 @@ class TestAreaMarks:
         lw = poly.get_linewidth()
         assert_array_equal(lw, mpl.rcParams["patch.linewidth"] * 2)
 
-    def test_direct_parameters(self):
+    def test_set_parameters(self):
 
         x, y = [1, 2, 3], [1, 2, 1]
         mark = Area(
             color="C2",
             alpha=.3,
-            edgecolor="k",
+            edgecolor=".3",
             edgealpha=.8,
             edgewidth=2,
             edgestyle=(0, (2, 1)),
