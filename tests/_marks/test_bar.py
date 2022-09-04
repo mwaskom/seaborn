@@ -69,7 +69,7 @@ class TestBar:
         mark = Bar(
             color="C2",
             alpha=.5,
-            edgecolor="#444",
+            edgecolor=".3",
             edgealpha=.9,
             edgestyle=(2, 1),
             edgewidth=1.5,

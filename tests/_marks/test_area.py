@@ -39,7 +39,7 @@ class TestAreaMarks:
         mark = Area(
             color="C2",
             alpha=.3,
-            edgecolor="#444",
+            edgecolor=".3",
             edgealpha=.8,
             edgewidth=2,
             edgestyle=(0, (2, 1)),
