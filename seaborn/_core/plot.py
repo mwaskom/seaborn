@@ -92,7 +92,7 @@ def theme_context(params: dict[str, Any]) -> Generator:
     """Temporarily modify specifc matplotlib rcParams."""
     orig_params = {k: mpl.rcParams[k] for k in params}
     color_codes = "bgrmyck"
-    nice_colors = [*color_palette("deep6"), (.2, .2, .2)]
+    nice_colors = [*color_palette("deep6"), (.15, .15, .15)]
     orig_colors = [mpl.colors.colorConverter.colors[x] for x in color_codes]
     # TODO how to allow this to reflect the color cycle when relevant?
     try:
