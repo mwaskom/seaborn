@@ -144,14 +144,14 @@ def register_colormap(name, cmap):
         mpl.cm.register_cmap(name, cmap)
 
 
-def set_layout_engine(fig, algo):
+def set_layout_engine(fig, engine):
     """Handle changes to auto layout engine interface in 3.6"""
     if hasattr(fig, "set_layout_engine"):
-        fig.set_layout_engine(algo)
+        fig.set_layout_engine(engine)
     else:
-        if algo == "tight":
+        if engine == "tight":
             fig.set_tight_layout(True)
-        elif algo == "constrained":
+        elif engine == "constrained":
             fig.set_constrained_layout(True)
 
 
