@@ -8,12 +8,12 @@ html[data-theme=light]{
 }
 
 :root {
-  --pst-font-size-h1: 34px;
-  --pst-font-size-h2: 28px;
-  --pst-font-size-h3: 23px;
-  --pst-font-size-h4: 19px;
-  --pst-font-size-h5: 17px;
-  --pst-font-size-h6: 16px;
+  --pst-font-size-h1: 38px;
+  --pst-font-size-h2: 32px;
+  --pst-font-size-h3: 27px;
+  --pst-font-size-h4: 22px;
+  --pst-font-size-h5: 18px;
+  --pst-font-size-h6: 15px;
 
 }
 
@@ -108,6 +108,6 @@ dt:target, span.highlighted {
 .badge-fix {
     background-color: #ccb974;
 }
-.badge-dependencies {
+.badge-build {
     background-color: #937860;
 }

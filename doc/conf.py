@@ -102,7 +102,7 @@ rst_epilog = """
 .. |Feature| replace:: :raw-html:`<span class="badge badge-feature">Feature</span>` :raw-latex:`{\small\sc [Feature]}`
 .. |Enhancement| replace:: :raw-html:`<span class="badge badge-enhancement">Enhancement</span>` :raw-latex:`{\small\sc [Enhancement]}`
 .. |Fix| replace:: :raw-html:`<span class="badge badge-fix">Fix</span>` :raw-latex:`{\small\sc [Fix]}`
-.. |Deps| replace:: :raw-html:`<span class="badge badge-dependencies">Deps</span>` :raw-latex:`{\small\sc [Deps]}`
+.. |Build| replace:: :raw-html:`<span class="badge badge-build">Build</span>` :raw-latex:`{\small\sc [Deps]}`
 
 """  # noqa
 
