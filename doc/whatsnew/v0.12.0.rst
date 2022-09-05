@@ -4,11 +4,11 @@ v0.12.0 (September 2022)
 Introduction of the objects interface
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-This release debuts the `seaborn.objects` interface, an entirely new approach to making plots with seaborn. It is the product of several years of design and 16 months of implementation work. The objects interface aims to provide a more declarative, composable, and extensible API for making statistical graphics. It is inspired by Wilkinson's grammar of graphics and its implementations in libraries such as `ggplot2` and `vega-lite`. But it is not a "port" of these libraries. Instead, it aims to translate the ideas into a natural and Pythonic API that is infomed by lessons about what has and has not worked over the past 10 years of seaborn's development.
+This release debuts the `seaborn.objects` interface, an entirely new approach to making plots with seaborn. It is the product of several years of design and 16 months of implementation work. The interface aims to provide a more declarative, composable, and extensible API for making statistical graphics. It is inspired by Wilkinson's grammar of graphics, offering a Pythonic API that is informed by the design of libraries such as `ggplot2` and `vega-lite` along with lessons from the past 10 years of seaborn's development.
 
 For more information and numerous examples, see the :doc:`tutorial chapter </tutorial/objects_interface>` and :ref:`API reference <objects_api>`
 
-This initial release of the objects interface should be considered "experimental". While stable enough for serious use, there are definitely some rough edges, and some key features remain to be implemented. It is possible that breaking changes may occur over the next few minor releases. Please be patient with any limitations that you encounter and help the development by reporting issues when you find behavior surprising.
+This initial release should be considered "experimental". While it is stable enough for serious use, there are definitely some rough edges, and some key features remain to be implemented. It is possible that breaking changes may occur over the next few minor releases. Please be patient with any limitations that you encounter and help the development by reporting issues when you find behavior surprising.
 
 Keyword-only arguments
 ~~~~~~~~~~~~~~~~~~~~~~
