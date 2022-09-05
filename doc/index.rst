@@ -71,6 +71,7 @@ seaborn: statistical data visualization
       Gallery <examples/index>
       Tutorial <tutorial>
       API <api>
+      FAQ <faq>
       Releases <whatsnew/index>
       Citing <citing>
 
