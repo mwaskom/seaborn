@@ -1,0 +1,27 @@
+- title:
+  pages:
+    - introduction
+- title: API Overview
+  pages:
+    - function_overview
+    - data_structure
+- title: Objects interface
+  pages:
+    - objects_interface
+    - properties
+- title: Plotting functions
+  pages:
+    - relational
+    - distributions
+    - categorical
+- title: Statistical operations
+  pages:
+    - error_bars
+    - regression
+- title: Multi-plot grids
+  pages:
+    - axis_grids
+- title: Figure aesthetics
+  pages:
+    - aesthetics
+    - color_palettes

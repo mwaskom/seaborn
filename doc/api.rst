@@ -5,6 +5,8 @@ API reference
 
 .. currentmodule:: seaborn.objects
 
+.. _objects_api:
+
 Objects interface
 -----------------
 
@@ -13,12 +15,48 @@ Plot object
 
 .. autosummary::
     :toctree: generated/
+    :template: plot
     :nosignatures:
 
     Plot
 
 Mark objects
 ~~~~~~~~~~~~
+
+.. rubric:: Dot marks
+
+.. autosummary::
+    :toctree: generated/
+    :template: object
+    :nosignatures:
+
+    Dot
+    Dots
+
+.. rubric:: Line marks
+
+.. autosummary::
+    :toctree: generated/
+    :template: object
+    :nosignatures:
+
+    Line
+    Lines
+    Path
+    Paths
+    Range
+
+.. rubric:: Bar marks
+
+.. autosummary::
+    :toctree: generated/
+    :template: object
+    :nosignatures:
+
+    Bar
+    Bars
+
+.. rubric:: Fill marks
 
 .. autosummary::
     :toctree: generated/
@@ -27,15 +65,6 @@ Mark objects
 
     Area
     Band
-    Bar
-    Bars
-    Dot
-    Dots
-    Line
-    Lines
-    Path
-    Paths
-    Range
 
 Stat objects
 ~~~~~~~~~~~~
@@ -75,6 +104,19 @@ Scale objects
     Continuous
     Nominal
     Temporal
+
+Base classes
+~~~~~~~~~~~~
+
+.. autosummary::
+    :toctree: generated/
+    :template: object
+    :nosignatures:
+
+    Mark
+    Stat
+    Move
+    Scale
 
 .. currentmodule:: seaborn
 

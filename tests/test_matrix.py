@@ -29,6 +29,7 @@ import pytest
 
 from seaborn import matrix as mat
 from seaborn import color_palette
+from seaborn._compat import get_colormap
 from seaborn._testing import assert_colors_equal
 
 
@@ -228,7 +229,7 @@ class TestHeatmap:
     def test_cmap_with_properties(self):
 
         kws = self.default_kws.copy()
-        cmap = copy.copy(mpl.cm.get_cmap("BrBG"))
+        cmap = copy.copy(get_colormap("BrBG"))
         cmap.set_bad("red")
         kws["cmap"] = cmap
         hm = mat._HeatMapper(self.df_unif, **kws)
@@ -243,7 +244,7 @@ class TestHeatmap:
             hm.cmap(np.ma.masked_invalid([np.nan])))
 
         kws = self.default_kws.copy()
-        cmap = copy.copy(mpl.cm.get_cmap("BrBG"))
+        cmap = copy.copy(get_colormap("BrBG"))
         cmap.set_under("red")
         kws["cmap"] = cmap
         hm = mat._HeatMapper(self.df_unif, **kws)
@@ -254,7 +255,7 @@ class TestHeatmap:
         npt.assert_array_equal(cmap(-np.inf), hm.cmap(-np.inf))
 
         kws = self.default_kws.copy()
-        cmap = copy.copy(mpl.cm.get_cmap("BrBG"))
+        cmap = copy.copy(get_colormap("BrBG"))
         cmap.set_over("red")
         kws["cmap"] = cmap
         hm = mat._HeatMapper(self.df_unif, **kws)

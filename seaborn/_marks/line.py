@@ -13,14 +13,26 @@ from seaborn._marks.base import (
     MappableColor,
     resolve_properties,
     resolve_color,
+    document_properties,
 )
 from seaborn.external.version import Version
 
 
+@document_properties
 @dataclass
 class Path(Mark):
     """
     A mark connecting data points in the order they appear.
+
+    See also
+    --------
+    Line : A mark connecting data points with sorting along the orientation axis.
+    Paths : A faster but less-flexible mark for drawing many paths.
+
+    Examples
+    --------
+    .. include:: ../docstrings/objects.Path.rst
+
     """
     color: MappableColor = Mappable("C0")
     alpha: MappableFloat = Mappable(1)
@@ -105,18 +117,39 @@ class Path(Mark):
             kws["dash_capstyle"] = capstyle
 
 
+@document_properties
 @dataclass
 class Line(Path):
     """
     A mark connecting data points with sorting along the orientation axis.
+
+    See also
+    --------
+    Path : A mark connecting data points in the order they appear.
+    Lines : A faster but less-flexible mark for drawing many lines.
+
+    Examples
+    --------
+    .. include:: ../docstrings/objects.Line.rst
+
     """
     _sort: ClassVar[bool] = True
 
 
+@document_properties
 @dataclass
 class Paths(Mark):
     """
     A faster but less-flexible mark for drawing many paths.
+
+    See also
+    --------
+    Path : A mark connecting data points in the order they appear.
+
+    Examples
+    --------
+    .. include:: ../docstrings/objects.Paths.rst
+
     """
     color: MappableColor = Mappable("C0")
     alpha: MappableFloat = Mappable(1)
@@ -192,18 +225,34 @@ class Paths(Mark):
         )
 
 
+@document_properties
 @dataclass
 class Lines(Paths):
     """
     A faster but less-flexible mark for drawing many lines.
+
+    See also
+    --------
+    Line : A mark connecting data points with sorting along the orientation axis.
+
+    Examples
+    --------
+    .. include:: ../docstrings/objects.Lines.rst
+
     """
     _sort: ClassVar[bool] = True
 
 
+@document_properties
 @dataclass
 class Range(Paths):
     """
     An oriented line mark drawn between min/max values.
+
+    Examples
+    --------
+    .. include:: ../docstrings/objects.Range.rst
+
     """
     def _setup_lines(self, split_gen, scales, orient):
 

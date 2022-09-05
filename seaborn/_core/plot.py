@@ -10,12 +10,12 @@ import itertools
 import textwrap
 from contextlib import contextmanager
 from collections import abc
-from collections.abc import Callable, Generator, Hashable
+from collections.abc import Callable, Generator
 from typing import Any, List, Optional, cast
 
 from cycler import cycler
 import pandas as pd
-from pandas import DataFrame, Series, Index
+from pandas import DataFrame, Series
 import matplotlib as mpl
 from matplotlib.axes import Axes
 from matplotlib.artist import Artist
@@ -29,9 +29,9 @@ from seaborn._core.scales import Scale
 from seaborn._core.subplots import Subplots
 from seaborn._core.groupby import GroupBy
 from seaborn._core.properties import PROPERTIES, Property
-from seaborn._core.typing import DataSource, VariableSpec, OrderSpec
+from seaborn._core.typing import DataSource, VariableSpec, VariableSpecList, OrderSpec
 from seaborn._core.rules import categorical_order
-from seaborn._compat import set_scale_obj
+from seaborn._compat import set_scale_obj, set_layout_engine
 from seaborn.rcmod import axes_style, plotting_context
 from seaborn.palettes import color_palette
 from seaborn.external.version import Version
@@ -77,7 +77,35 @@ class PairSpec(TypedDict, total=False):
     wrap: int | None
 
 
-# ---- The main interface for declarative plotting -------------------- #
+# --- Local helpers ----------------------------------------------------------------
+
+class Default:
+    def __repr__(self):
+        return "<default>"
+
+
+default = Default()
+
+
+@contextmanager
+def theme_context(params: dict[str, Any]) -> Generator:
+    """Temporarily modify specifc matplotlib rcParams."""
+    orig_params = {k: mpl.rcParams[k] for k in params}
+    color_codes = "bgrmyck"
+    nice_colors = [*color_palette("deep6"), (.15, .15, .15)]
+    orig_colors = [mpl.colors.colorConverter.colors[x] for x in color_codes]
+    # TODO how to allow this to reflect the color cycle when relevant?
+    try:
+        mpl.rcParams.update(params)
+        for (code, color) in zip(color_codes, nice_colors):
+            mpl.colors.colorConverter.colors[code] = color
+            mpl.colors.colorConverter.cache[code] = color
+        yield
+    finally:
+        mpl.rcParams.update(orig_params)
+        for (code, color) in zip(color_codes, orig_colors):
+            mpl.colors.colorConverter.colors[code] = color
+            mpl.colors.colorConverter.cache[code] = color
 
 
 def build_plot_signature(cls):
@@ -102,13 +130,17 @@ def build_plot_signature(cls):
     cls.__signature__ = new_sig
 
     known_properties = textwrap.fill(
-        ", ".join(PROPERTIES), 78, subsequent_indent=" " * 8,
+        ", ".join([f"|{p}|" for p in PROPERTIES]),
+        width=78, subsequent_indent=" " * 8,
     )
 
     if cls.__doc__ is not None:  # support python -OO mode
         cls.__doc__ = cls.__doc__.format(known_properties=known_properties)
 
     return cls
+
+
+# ---- The main interface for declarative plotting -------------------- #
 
 
 @build_plot_signature
@@ -304,7 +336,12 @@ class Plot:
 
     def on(self, target: Axes | SubFigure | Figure) -> Plot:
         """
-        Draw the plot into an existing Matplotlib object.
+        Provide existing Matplotlib figure or axes for drawing the plot.
+
+        When using this method, you will also need to explicitly call a method that
+        triggers compilation, such as :meth:`Plot.show` or :meth:`Plot.save`. If you
+        want to postprocess using matplotlib, you'd need to call :meth:`Plot.plot`
+        first to compile the plot without rendering it.
 
         Parameters
         ----------
@@ -314,9 +351,11 @@ class Plot:
             created within the space of the given :class:`matplotlib.figure.Figure` or
             :class:`matplotlib.figure.SubFigure`.
 
-        """
-        # TODO alternate name: target?
+        Examples
+        --------
+        .. include:: ../docstrings/objects.Plot.on.rst
 
+        """
         accepted_types: tuple  # Allow tuple of various length
         if hasattr(mpl.figure, "SubFigure"):  # Added in mpl 3.4
             accepted_types = (
@@ -351,7 +390,7 @@ class Plot:
         **variables: VariableSpec,
     ) -> Plot:
         """
-        Define a layer of the visualization in terms of mark and data transform(s).
+        Specify a layer of the visualization in terms of mark and data transform(s).
 
         This is the main method for specifying how the data should be visualized.
         It can be called multiple times with different arguments to define
@@ -359,14 +398,14 @@ class Plot:
 
         Parameters
         ----------
-        mark : :class:`seaborn.objects.Mark`
+        mark : :class:`Mark`
             The visual representation of the data to use in this layer.
-        transforms : :class:`seaborn.objects.Stat` or :class:`seaborn.objects.Move`
+        transforms : :class:`Stat` or :class:`Move`
             Objects representing transforms to be applied before plotting the data.
-            Current, at most one :class:`seaborn.objects.Stat` can be used, and it
+            Currently, at most one :class:`Stat` can be used, and it
             must be passed first. This constraint will be relaxed in the future.
         orient : "x", "y", "v", or "h"
-            The orientation of the mark, which affects how the stat is computed.
+            The orientation of the mark, which also affects how transforms are computed.
             Typically corresponds to the axis that defines groups for aggregation.
             The "v" (vertical) and "h" (horizontal) options are synonyms for "x" / "y",
             but may be more intuitive with some marks. When not provided, an
@@ -378,6 +417,10 @@ class Plot:
         variables : data vectors or identifiers
             Additional layer-specific variables, including variables that will be
             passed directly to the transforms without scaling.
+
+        Examples
+        --------
+        .. include:: ../docstrings/objects.Plot.add.rst
 
         """
         if not isinstance(mark, Mark):
@@ -428,70 +471,36 @@ class Plot:
 
     def pair(
         self,
-        x: list[Hashable] | Index[Hashable] | None = None,
-        y: list[Hashable] | Index[Hashable] | None = None,
+        x: VariableSpecList = None,
+        y: VariableSpecList = None,
         wrap: int | None = None,
         cross: bool = True,
-        # TODO other existing PairGrid things like corner?
-        # TODO transpose, so that e.g. multiple y axes go across the columns
     ) -> Plot:
         """
-        Produce subplots with distinct `x` and/or `y` variables.
+        Produce subplots by pairing multiple `x` and/or `y` variables.
 
         Parameters
         ----------
-        x, y : sequence(s) of data identifiers
+        x, y : sequence(s) of data vectors or identifiers
             Variables that will define the grid of subplots.
         wrap : int
-            Maximum height/width of the grid, with additional subplots "wrapped"
-            on the other dimension. Requires that only one of `x` or `y` are set here.
+            When using only `x` or `y`, "wrap" subplots across a two-dimensional grid
+            with this many columns (when using `x`) or rows (when using `y`).
         cross : bool
-            When True, define a two-dimensional grid using the Cartesian product of `x`
-            and `y`.  Otherwise, define a one-dimensional grid by pairing `x` and `y`
-            entries in by position.
+            When False, zip the `x` and `y` lists such that the first subplot gets the
+            first pair, the second gets the second pair, etc. Otherwise, create a
+            two-dimensional grid from the cartesian product of the lists.
+
+        Examples
+        --------
+        .. include:: ../docstrings/objects.Plot.pair.rst
 
         """
-        # TODO Problems to solve:
-        #
-        # - Unclear is how to handle the diagonal plots that PairGrid offers
-        #
-        # - Implementing this will require lots of downscale changes in figure setup,
-        #   and especially the axis scaling, which will need to be pair specific
-
-        # TODO lists of vectors currently work, but I'm not sure where best to test
-        # Will need to update the signature typing to keep them
-
-        # TODO is it weird to call .pair() to create univariate plots?
-        # i.e. Plot(data).pair(x=[...]). The basic logic is fine.
-        # But maybe a different verb (e.g. Plot.spread) would be more clear?
-        # Then Plot(data).pair(x=[...]) would show the given x vars vs all.
-
-        # TODO would like to add transpose=True, which would then draw
-        # Plot(x=...).pair(y=[...]) across the rows
-        # This may also be possible by setting `wrap=1`, although currently the axes
-        # are shared and the interior labels are disabled (this is a bug either way)
+        # TODO Add transpose= arg, which would then draw pair(y=[...]) across rows
+        # This may also be possible by setting `wrap=1`, but is that too unobvious?
+        # TODO PairGrid features not currently implemented: diagonals, corner
 
         pair_spec: PairSpec = {}
-
-        if x is None and y is None:
-
-            # Default to using all columns in the input source data, aside from
-            # those that were assigned to a variable in the constructor
-            # TODO Do we want to allow additional filtering by variable type?
-            # (Possibly even default to using only numeric columns)
-
-            if self._data.source_data is None:
-                err = "You must pass `data` in the constructor to use default pairing."
-                raise RuntimeError(err)
-
-            all_unused_columns = [
-                key for key in self._data.source_data
-                if key not in self._data.names.values()
-            ]
-            if "x" not in self._data:
-                x = all_unused_columns
-            if "y" not in self._data:
-                y = all_unused_columns
 
         axes = {"x": [] if x is None else x, "y": [] if y is None else y}
         for axis, arg in axes.items():
@@ -512,7 +521,10 @@ class Plot:
             if keys:
                 pair_spec["structure"][axis] = keys
 
-        # TODO raise here if cross is False and len(x) != len(y)?
+        if not cross and len(axes["x"]) != len(axes["y"]):
+            err = "Lengths of the `x` and `y` lists must match with cross=False"
+            raise ValueError(err)
+
         pair_spec["cross"] = cross
         pair_spec["wrap"] = wrap
 
@@ -522,7 +534,6 @@ class Plot:
 
     def facet(
         self,
-        # TODO require kwargs?
         col: VariableSpec = None,
         row: VariableSpec = None,
         order: OrderSpec | dict[str, OrderSpec] = None,
@@ -539,8 +550,12 @@ class Plot:
         order : list of strings, or dict with dimensional keys
             Define the order of the faceting variables.
         wrap : int
-            Maximum height/width of the grid, with additional subplots "wrapped"
-            on the other dimension. Requires that only one of `x` or `y` are set here.
+            When using only `col` or `row`, wrap subplots across a two-dimensional
+            grid with this many subplots on the faceting dimension.
+
+        Examples
+        --------
+        .. include:: ../docstrings/objects.Plot.facet.rst
 
         """
         variables = {}
@@ -582,7 +597,7 @@ class Plot:
 
     def scale(self, **scales: Scale) -> Plot:
         """
-        Control mappings from data units to visual properties.
+        Specify mappings from data units to visual properties.
 
         Keywords correspond to variables defined in the plot, including coordinate
         variables (`x`, `y`) and semantic variables (`color`, `pointsize`, etc.).
@@ -597,6 +612,10 @@ class Plot:
         For more explicit control, pass a scale spec object such as :class:`Continuous`
         or :class:`Nominal`. Or use `None` to use an "identity" scale, which treats data
         values as literally encoding visual properties.
+
+        Examples
+        --------
+        .. include:: ../docstrings/objects.Plot.scale.rst
 
         """
         new = self._clone()
@@ -613,6 +632,10 @@ class Plot:
 
         Behavior for non-coordinate variables is currently undefined.
 
+        Examples
+        --------
+        .. include:: ../docstrings/objects.Plot.share.rst
+
         """
         new = self._clone()
         new._shares.update(shares)
@@ -623,12 +646,16 @@ class Plot:
         Control the range of visible data.
 
         Keywords correspond to variables defined in the plot, and values are a
-        (min, max) tuple (where either can be `None` to leave unset).
+        `(min, max)` tuple (where either can be `None` to leave unset).
 
         Limits apply only to the axis; data outside the visible range are
         still used for any stat transforms and added to the plot.
 
         Behavior for non-coordinate variables is currently undefined.
+
+        Examples
+        --------
+        .. include:: ../docstrings/objects.Plot.limit.rst
 
         """
         new = self._clone()
@@ -637,7 +664,7 @@ class Plot:
 
     def label(self, *, title=None, **variables: str | Callable[[str], str]) -> Plot:
         """
-        Add or modify labels for axes, legends, and subplots.
+        Control the labels and titles for axes, legends, and subplots.
 
         Additional keywords correspond to variables defined in the plot.
         Values can be one of the following types:
@@ -651,6 +678,11 @@ class Plot:
         while `col=` and/or `row=` add a label for the faceting variable.
         When using a single subplot, `title=` sets its title.
 
+        Examples
+        --------
+        .. include:: ../docstrings/objects.Plot.label.rst
+
+
         """
         new = self._clone()
         if title is not None:
@@ -661,19 +693,30 @@ class Plot:
     def layout(
         self,
         *,
-        size: tuple[float, float] | None = None,
-        algo: str | None = "tight",  # TODO document
+        size: tuple[float, float] | Default = default,
+        engine: str | None | Default = default,
     ) -> Plot:
         """
         Control the figure size and layout.
+
+        .. note::
+
+            Default figure sizes and the API for specifying the figure size are subject
+            to change in future "experimental" releases of the objects API. The default
+            layout engine may also change.
 
         Parameters
         ----------
         size : (width, height)
             Size of the resulting figure, in inches. Size is inclusive of legend when
             using pyplot, but not otherwise.
-        algo : {{"tight", "constrained", None}}
-            Name of algorithm for automatically adjusting the layout to remove overlap.
+        engine : {{"tight", "constrained", None}}
+            Name of method for automatically adjusting the layout to remove overlap.
+            The default depends on whether :meth:`Plot.on` is used.
+
+        Examples
+        --------
+        .. include:: ../docstrings/objects.Plot.layout.rst
 
         """
         # TODO add an "auto" mode for figsize that roughly scales with the rcParams
@@ -683,8 +726,10 @@ class Plot:
 
         new = self._clone()
 
-        new._figure_spec["figsize"] = size
-        new._layout_spec["algo"] = algo
+        if size is not default:
+            new._figure_spec["figsize"] = size
+        if engine is not default:
+            new._layout_spec["engine"] = engine
 
         return new
 
@@ -694,11 +739,20 @@ class Plot:
         """
         Control the default appearance of elements in the plot.
 
-        The API for customizing plot appearance is not yet finalized.
-        Currently, the only valid argument is a dict of matplotlib rc parameters.
-        (This dict must be passed as a positional argument.)
+        .. note::
 
-        It is likely that this method will be enhanced in future releases.
+            The API for customizing plot appearance is not yet finalized.
+            Currently, the only valid argument is a dict of matplotlib rc parameters.
+            (This dict must be passed as a positional argument.)
+
+            It is likely that this method will be enhanced in future releases.
+
+        Matplotlib rc parameters are documented on the following page:
+        https://matplotlib.org/stable/tutorials/introductory/customizing.html
+
+        Examples
+        --------
+        .. include:: ../docstrings/objects.Plot.theme.rst
 
         """
         new = self._clone()
@@ -734,7 +788,15 @@ class Plot:
 
     def show(self, **kwargs) -> None:
         """
-        Compile and display the plot by hooking into pyplot.
+        Compile the plot and display it by hooking into pyplot.
+
+        Calling this method is not necessary to render a plot in notebook context,
+        but it may be in other environments (e.g., in a terminal). After compiling the
+        plot, it calls :func:`matplotlib.pyplot.show` (passing any keyword parameters).
+
+        Unlike other :class:`Plot` methods, there is no return value. This should be
+        the last method you call when specifying a plot.
+
         """
         # TODO make pyplot configurable at the class level, and when not using,
         # import IPython.display and call on self to populate cell output?
@@ -823,6 +885,12 @@ class Plotter:
         return self
 
     def show(self, **kwargs) -> None:
+        """
+        Display the plot by hooking into pyplot.
+
+        This method calls :func:`matplotlib.pyplot.show` with any keyword parameters.
+
+        """
         # TODO if we did not create the Plotter with pyplot, is it possible to do this?
         # If not we should clearly raise.
         import matplotlib.pyplot as plt
@@ -949,15 +1017,20 @@ class Plotter:
                 # ~~ Decoration visibility
 
                 # TODO there should be some override (in Plot.layout?) so that
-                # tick labels can be shown on interior shared axes
+                # axis / tick labels can be shown on interior shared axes if desired
+
                 axis_obj = getattr(ax, f"{axis}axis")
                 visible_side = {"x": "bottom", "y": "left"}.get(axis)
                 show_axis_label = (
                     sub[visible_side]
-                    or axis in p._pair_spec and bool(p._pair_spec.get("wrap"))
                     or not p._pair_spec.get("cross", True)
+                    or (
+                        axis in p._pair_spec.get("structure", {})
+                        and bool(p._pair_spec.get("wrap"))
+                    )
                 )
                 axis_obj.get_label().set_visible(show_axis_label)
+
                 show_tick_labels = (
                     show_axis_label
                     or subplot_spec.get(f"share{axis}") not in (
@@ -1160,7 +1233,7 @@ class Plotter:
             # behavior, so we will raise rather than hack together a workaround.
             if axis is not None and Version(mpl.__version__) < Version("3.4.0"):
                 from seaborn._core.scales import Nominal
-                paired_axis = axis in p._pair_spec
+                paired_axis = axis in p._pair_spec.get("structure", {})
                 cat_scale = isinstance(scale, Nominal)
                 ok_dim = {"x": "col", "y": "row"}[axis]
                 shared_axes = share_state not in [False, "none", ok_dim]
@@ -1583,19 +1656,6 @@ class Plotter:
                         hi = cast(float, hi) + 0.5
                     ax.set(**{f"{axis}lim": (lo, hi)})
 
-        layout_algo = p._layout_spec.get("algo", "tight")
-        if layout_algo == "tight":
-            self._figure.set_tight_layout(True)
-        elif layout_algo == "constrained":
-            self._figure.set_constrained_layout(True)
-
-
-@contextmanager
-def theme_context(params: dict[str, Any]) -> Generator:
-    """Temporarily modify specifc matplotlib rcParams."""
-    orig = {k: mpl.rcParams[k] for k in params}
-    try:
-        mpl.rcParams.update(params)
-        yield
-    finally:
-        mpl.rcParams.update(orig)
+        engine_default = None if p._target is not None else "tight"
+        layout_engine = p._layout_spec.get("engine", engine_default)
+        set_layout_engine(self._figure, layout_engine)

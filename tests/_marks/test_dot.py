@@ -50,13 +50,13 @@ class TestDot(DotBase):
         marker = ["a", "b"]
         shapes = ["o", "x"]
 
-        mark = Dot(edgecolor="k", stroke=2, edgewidth=1)
+        mark = Dot(edgecolor="w", stroke=2, edgewidth=1)
         p = Plot(x=x, y=y).add(mark, marker=marker).scale(marker=shapes).plot()
         ax = p._figure.axes[0]
         points, = ax.collections
         self.check_offsets(points, x, y)
         self.check_colors("face", points, ["C0", to_rgba("C0", 0)], None)
-        self.check_colors("edge", points, ["k", "C0"], 1)
+        self.check_colors("edge", points, ["w", "C0"], 1)
 
         expected = [mark.edgewidth, mark.stroke]
         assert_array_equal(points.get_linewidths(), expected)

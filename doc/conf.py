@@ -14,6 +14,8 @@ import os
 import sys
 import time
 import seaborn
+from seaborn._core.properties import PROPERTIES
+
 sys.path.insert(0, os.path.abspath('sphinxext'))
 
 
@@ -28,7 +30,7 @@ version = release = seaborn.__version__
 # -- General configuration ---------------------------------------------------
 
 # Add any Sphinx extension module names here, as strings. They can be
-# extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
+# extensions coming with Sphinx (amed 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
     'sphinx.ext.autodoc',
@@ -39,6 +41,7 @@ extensions = [
     'sphinx.ext.intersphinx',
     'matplotlib.sphinxext.plot_directive',
     'gallery_generator',
+    'tutorial_builder',
     'numpydoc',
     'sphinx_copybutton',
     'sphinx_issues',
@@ -99,9 +102,14 @@ rst_epilog = """
 .. |Feature| replace:: :raw-html:`<span class="badge badge-feature">Feature</span>` :raw-latex:`{\small\sc [Feature]}`
 .. |Enhancement| replace:: :raw-html:`<span class="badge badge-enhancement">Enhancement</span>` :raw-latex:`{\small\sc [Enhancement]}`
 .. |Fix| replace:: :raw-html:`<span class="badge badge-fix">Fix</span>` :raw-latex:`{\small\sc [Fix]}`
-.. |Deps| replace:: :raw-html:`<span class="badge badge-dependencies">Deps</span>` :raw-latex:`{\small\sc [Deps]}`
+.. |Build| replace:: :raw-html:`<span class="badge badge-build">Build</span>` :raw-latex:`{\small\sc [Deps]}`
 
 """  # noqa
+
+rst_epilog += "\n".join([
+    f".. |{key}| replace:: :ref:`{key} <{val.__class__.__name__.lower()}_property>`"
+    for key, val in PROPERTIES.items()
+])
 
 # -- Options for HTML output -------------------------------------------------
 
@@ -118,7 +126,7 @@ for path in html_static_path:
     if not os.path.exists(path):
         os.makedirs(path)
 
-html_css_files = ['css/custom.css']
+html_css_files = [f'css/custom.css?v={seaborn.__version__}']
 
 html_logo = "_static/logo-wide-lightbg.svg"
 html_favicon = "_static/favicon.ico"

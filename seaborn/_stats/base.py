@@ -12,17 +12,15 @@ if TYPE_CHECKING:
 
 @dataclass
 class Stat:
-    """
-    Base class for objects that define statistical transformations on plot data.
+    """Base class for objects that apply statistical transformations."""
 
-    The class supports a partial-function application pattern. The object is
-    initialized with desired parameters and the result is a callable that
-    accepts and returns dataframes.
+    # The class supports a partial-function application pattern. The object is
+    # initialized with desired parameters and the result is a callable that
+    # accepts and returns dataframes.
 
-    The statistical transformation logic should not add any state to the instance
-    beyond what is defined with the initialization parameters.
+    # The statistical transformation logic should not add any state to the instance
+    # beyond what is defined with the initialization parameters.
 
-    """
     # Subclasses can declare whether the orient dimension should be used in grouping
     # TODO consider whether this should be a parameter. Motivating example:
     # use the same KDE class violin plots and univariate density estimation.

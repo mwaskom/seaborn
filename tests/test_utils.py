@@ -1,4 +1,5 @@
 """Tests for seaborn utility functions."""
+import re
 import tempfile
 from urllib.request import urlopen
 from http.client import HTTPException
@@ -328,11 +329,10 @@ def test_locator_to_legend_entries():
         assert str_levels == ['10', '100', '1000']
 
     limits = (0.00003, 0.02)
-    levels, str_levels = utils.locator_to_legend_entries(
-        locator, limits, float
-    )
-    if Version(mpl.__version__) >= Version("3.1"):
-        assert str_levels == ['1e-04', '1e-03', '1e-02']
+    _, str_levels = utils.locator_to_legend_entries(locator, limits, float)
+    for i, exp in enumerate([4, 3, 2]):
+        # Use regex as mpl switched to minus sign, not hyphen, in 3.6
+        assert re.match(f"1e.0{exp}", str_levels[i])
 
 
 def test_move_legend_matplotlib_objects():

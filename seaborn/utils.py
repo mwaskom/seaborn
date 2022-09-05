@@ -629,6 +629,12 @@ def load_dataset(name, cache=True, data_home=None, **kws):
         df["pickup"] = pd.to_datetime(df["pickup"])
         df["dropoff"] = pd.to_datetime(df["dropoff"])
 
+    elif name == "seaice":
+        df["Date"] = pd.to_datetime(df["Date"])
+
+    elif name == "dowjones":
+        df["Date"] = pd.to_datetime(df["Date"])
+
     return df
 
 

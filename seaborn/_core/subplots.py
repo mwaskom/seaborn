@@ -30,9 +30,8 @@ class Subplots:
 
     """
     def __init__(
-        # TODO defined TypedDict types for these specs
         self,
-        subplot_spec: dict,
+        subplot_spec: dict,  # TODO define as TypedDict
         facet_spec: FacetSpec,
         pair_spec: PairSpec,
     ):
@@ -130,7 +129,7 @@ class Subplots:
             if key not in self.subplot_spec:
                 if axis in pair_spec.get("structure", {}):
                     # Paired axes are shared along one dimension by default
-                    if self.wrap in [None, 1] and pair_spec.get("cross", True):
+                    if self.wrap is None and pair_spec.get("cross", True):
                         val = axis_to_dim[axis]
                     else:
                         val = False

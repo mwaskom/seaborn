@@ -1,13 +1,21 @@
+v0.12.0 (September 2022)
+------------------------
 
-v0.12.0 (Unreleased)
---------------------
+Introduction of the objects interface
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-A paper describing seaborn was published in the `Journal of Open Source Software <https://joss.theoj.org/papers/10.21105/joss.03021>`_. The paper serves as an introduction to the library and can be used to cite seaborn if it has been integral to a scientific publication.
+This release debuts the `seaborn.objects` interface, an entirely new approach to making plots with seaborn. It is the product of several years of design and 16 months of implementation work. The interface aims to provide a more declarative, composable, and extensible API for making statistical graphics. It is inspired by Wilkinson's grammar of graphics, offering a Pythonic API that is informed by the design of libraries such as `ggplot2` and `vega-lite` along with lessons from the past 10 years of seaborn's development.
+
+For more information and numerous examples, see the :doc:`tutorial chapter </tutorial/objects_interface>` and :ref:`API reference <objects_api>`
+
+This initial release should be considered "experimental". While it is stable enough for serious use, there are definitely some rough edges, and some key features remain to be implemented. It is possible that breaking changes may occur over the next few minor releases. Please be patient with any limitations that you encounter and help the development by reporting issues when you find behavior surprising.
 
 Keyword-only arguments
 ~~~~~~~~~~~~~~~~~~~~~~
 
-|API| Seaborn's plotting functions now require explicit keywords for most arguments, following the deprecation of positional arguments in v0.11.0. With this enforcement, most functions have also had their parameter lists rearranged so that `data` is the first and only positional argument. This adds consistency across the various functions in the library. It also means that calling `func(data)` will do something for nearly all functions (those that support wide-form data) and that :class:`pandas.DataFrame` can be piped directly into a plot. It is possible that the signatures will be loosened a bit in future releases so that `x` and `y` can be positional, but minimal support for positional arguments after this change will reduce the chance of inadvertent mis-specification (:pr:`2804`).
+|API|
+
+Seaborn's plotting functions now require explicit keywords for most arguments, following the deprecation of positional arguments in v0.11.0. With this enforcement, most functions have also had their parameter lists rearranged so that `data` is the first and only positional argument. This adds consistency across the various functions in the library. It also means that calling `func(data)` will do something for nearly all functions (those that support wide-form data) and that :class:`pandas.DataFrame` can be piped directly into a plot. It is possible that the signatures will be loosened a bit in future releases so that `x` and `y` can be positional, but minimal support for positional arguments after this change will reduce the chance of inadvertent mis-specification (:pr:`2804`).
 
 Modernization of categorical scatterplots
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -106,13 +114,13 @@ Other updates
 
 - |Defaults| The `patch.facecolor` rc param is no longer set by :func:`set_palette` (or :func:`set_theme`). This should have no general effect, because the matplotlib default is now `"C0"` (:pr:`2906`).
 
-- |Deps| Made `scipy` an optional dependency and added `pip install seaborn[stats]` as a method for ensuring the availability of compatible `scipy` and `statsmodels` libraries at install time. This has a few minor implications for existing code, which are explained in the Github pull request (:pr:`2398`).
+- |Build| Made `scipy` an optional dependency and added `pip install seaborn[stats]` as a method for ensuring the availability of compatible `scipy` and `statsmodels` libraries at install time. This has a few minor implications for existing code, which are explained in the Github pull request (:pr:`2398`).
 
-- |Deps| Example datasets are now stored in an OS-specific cache location (as determined by `appdirs`) rather than in the user's home directory. Users should feel free to remove `~/seaborn-data` if desired (:pr:`2773`).
+- |Build| Example datasets are now stored in an OS-specific cache location (as determined by `appdirs`) rather than in the user's home directory. Users should feel free to remove `~/seaborn-data` if desired (:pr:`2773`).
 
-- |Deps| The unit test suite is no longer part of the source or wheel distribution. Seaborn has never had a runtime API for exercising the tests, so this should not have workflow implications (:pr:`2833`).
+- |Build| The unit test suite is no longer part of the source or wheel distribution. Seaborn has never had a runtime API for exercising the tests, so this should not have workflow implications (:pr:`2833`).
 
-- |Deps| Following `NEP29 <https://numpy.org/neps/nep-0029-deprecation_policy.html>`_, dropped support for Python 3.6 and bumped the minimally-supported versions of the library dependencies.
+- |Build| Following `NEP29 <https://numpy.org/neps/nep-0029-deprecation_policy.html>`_, dropped support for Python 3.6 and bumped the minimally-supported versions of the library dependencies.
 
 - |API| Removed the previously-deprecated `factorplot` along with several previously-deprecated utility functions (`iqr`, `percentiles`, `pmf_hist`, and `sort_df`).
 

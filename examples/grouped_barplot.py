@@ -13,7 +13,7 @@ penguins = sns.load_dataset("penguins")
 g = sns.catplot(
     data=penguins, kind="bar",
     x="species", y="body_mass_g", hue="sex",
-    ci="sd", palette="dark", alpha=.6, height=6
+    errorbar="sd", palette="dark", alpha=.6, height=6
 )
 g.despine(left=True)
 g.set_axis_labels("", "Body mass (g)")

@@ -11,6 +11,7 @@ from seaborn._core.scales import Scale
 
 @dataclass
 class Move:
+    """Base class for objects that apply simple positional transforms."""
 
     group_by_orient: ClassVar[bool] = True
 
