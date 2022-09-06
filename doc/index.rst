@@ -71,9 +71,9 @@ seaborn: statistical data visualization
       Gallery <examples/index>
       Tutorial <tutorial>
       API <api>
-      FAQ <faq>
       Releases <whatsnew/index>
       Citing <citing>
+      FAQ <faq>
 
   .. grid-item-card:: Features
     :columns: 12 12 4 4
