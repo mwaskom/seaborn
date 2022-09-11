@@ -1,19 +1,26 @@
 """
-Cache test datasets before running test suites to avoid
-race conditions to due tests parallelization
-"""
-import seaborn as sns
+Cache test datasets before running tests / building docs.
 
-datasets = (
-    "anscombe",
-    "attention",
-    "dots",
-    "exercise",
-    "flights",
-    "fmri",
-    "iris",
-    "planets",
-    "tips",
-    "titanic"
-)
-list(map(sns.load_dataset, datasets))
+Avoids race conditions that would arise from parallelization.
+"""
+import pathlib
+import re
+
+from seaborn import load_dataset
+
+path = pathlib.Path(".")
+py_files = path.rglob("*.py")
+ipynb_files = path.rglob("*.ipynb")
+
+datasets = []
+
+for fname in py_files:
+    with open(fname) as fid:
+        datasets += re.findall(r"load_dataset\(['\"](\w+)['\"]\)", fid.read())
+
+for p in ipynb_files:
+    with p.open() as fid:
+        datasets += re.findall(r"load_dataset\(\\['\"](\w+)\\['\"]\)", fid.read())
+
+for name in set(datasets):
+    load_dataset(name)

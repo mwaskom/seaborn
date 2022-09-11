@@ -31,10 +31,14 @@ jobs:
         run: |
           sudo apt-get install pandoc
 
+      - name: Cache datastes
+        run: python ci/cache_test_datasets.py
+
       - name: Build docs
         run: |
-          make -C doc -j `nproc` notebooks
-          make -C doc html
+          cd doc
+          make -j `nproc` notebooks
+          make html
 
 
   run-tests:
