@@ -1,3 +1,5 @@
+import warnings
+
 import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -400,7 +402,8 @@ class TestRegressionPlotter:
         y = self.df.x > self.df.x.mean()
         p = lm._RegressionPlotter("x", y, data=self.df,
                                   logistic=True, n_boot=10)
-        with np.errstate(all="ignore"):
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", RuntimeWarning)
             _, yhat, _ = p.fit_regression(x_range=(-3, 3))
         assert np.isnan(yhat).all()
 

@@ -1,5 +1,6 @@
 import itertools
 from functools import partial
+import warnings
 
 import numpy as np
 import pandas as pd
@@ -2943,19 +2944,19 @@ class TestCatPlot(CategoricalFixture):
                 assert len(ax.patches) == 1
 
         # Make sure no warning is raised if color is provided on unshared plot
-        with pytest.warns(None) as record:
+        with warnings.catch_warnings():
+            warnings.simplefilter("error")
             g = cat.catplot(
                 x="g", y="y", col="g", data=self.df, sharex=False, color="b"
             )
-            assert not len(record)
         for ax in g.axes.flat:
             assert ax.get_xlim() == (-.5, .5)
 
-        with pytest.warns(None) as record:
+        with warnings.catch_warnings():
+            warnings.simplefilter("error")
             g = cat.catplot(
                 x="y", y="g", col="g", data=self.df, sharey=False, color="r"
             )
-            assert not len(record)
         for ax in g.axes.flat:
             assert ax.get_ylim() == (.5, -.5)
 
