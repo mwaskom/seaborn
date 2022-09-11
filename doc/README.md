@@ -1,7 +1,7 @@
 Building the seaborn docs
 =========================
 
-Building the docs requires additional dependencies listed in [`./requirements.txt`](./requirements.txt).
+Building the docs requires additional dependencies; they can be installed with `pip install seaborn[docs]`.
 
 The build process involves conversion of Jupyter notebooks to `rst` files. To facilitate this, you may need to set `NB_KERNEL` environment variable to the name of a kernel on your machine (e.g. `export NB_KERNEL="python3"`). To get a list of available Python kernels, run `jupyter kernelspec list`.
 
