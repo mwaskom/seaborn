@@ -68,7 +68,7 @@ The default "inline" backend (defined by `IPython <https://github.com/ipython/ma
 You can increase the DPI by resetting the rc parameters through the matplotlib API, using
 
 ::
-    
+
     plt.rcParams.update({"figure.dpi": 96})
 
 Or do it as you activate the seaborn theme::
@@ -80,9 +80,9 @@ If you have a high pixel-density monitor, you can make your plots sharper using 
     %config InlineBackend.figure_format = "retina"
 
 This won't change the apparent size of your plots in a Jupyter interface, but they might appear very large in other contexts (i.e. on GitHub). And they will take up 4x the disk space. Alternatively, you can make SVG plots::
-    
+
     %config InlineBackend.figure_format = "svg"
-    
+
 This will configure matplotlib to emit `vector graphics <https://en.wikipedia.org/wiki/Vector_graphics>`_ with "infinite resolution". The downside is that file size will now scale with the number and complexity of the artists in your plot, and in some cases (e.g., a large scatterplot matrix) the load will impact browser responsiveness.
 
 Tricky concepts
