@@ -16,11 +16,12 @@ datasets = []
 
 for fname in py_files:
     with open(fname) as fid:
-        datasets += re.findall(r"load_dataset\(['\"](\w+)['\"]\)", fid.read())
+        datasets += re.findall(r"load_dataset\(['\"](\w+)['\"]", fid.read())
 
 for p in ipynb_files:
     with p.open() as fid:
-        datasets += re.findall(r"load_dataset\(\\['\"](\w+)\\['\"]\)", fid.read())
+        datasets += re.findall(r"load_dataset\(\\['\"](\w+)\\['\"]", fid.read())
 
-for name in set(datasets):
+for name in sorted(set(datasets)):
+    print(f"Caching {name}")
     load_dataset(name)
