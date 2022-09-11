@@ -64,12 +64,11 @@ To test the code, run `make test` in the source directory. This will exercise bo
 
 The doctests require a network connection (unless all example datasets are cached), but the unit tests can be run offline with `make unittests`.
 
-Code style is enforced with `flake8` using the settings in the [`setup.cfg`](./setup.cfg) file. Run `make lint` to check.
- 
+Code style is enforced with `flake8` using the settings in the [`setup.cfg`](./setup.cfg) file. Run `make lint` to check. Alternately, you can use `pre-commit` to automatically run lint checks on any files you are committing &ndash; just run `pre-commit install` to set it up, and then commit as usual going forward.
+
 Development
 -----------
 
 Seaborn development takes place on Github: https://github.com/mwaskom/seaborn
 
 Please submit bugs that you encounter to the [issue tracker](https://github.com/mwaskom/seaborn/issues) with a reproducible example demonstrating the problem. Questions about usage are more at home on StackOverflow, where there is a [seaborn tag](https://stackoverflow.com/questions/tagged/seaborn).
-
