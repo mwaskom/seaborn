@@ -26,11 +26,10 @@ jobs:
       - name: Install seaborn
         run: |
           pip install --upgrade pip
-          pip install .[stats] -r ci/utils.txt
+          pip install .[stats,docs]
 
-      - name: Install doc tools
+      - name: Install pandoc
         run: |
-          pip install -r doc/requirements.txt
           sudo apt-get install pandoc
 
       - name: Build docs
@@ -71,9 +70,9 @@ jobs:
       - name: Install seaborn
         run: |
           pip install --upgrade pip wheel
-          if [[ ${{matrix.install}} == 'full' ]]; then EXTRAS='[stats]'; fi
+          if [[ ${{matrix.install}} == 'full' ]]; then EXTRAS=',stats'; fi
           if [[ ${{matrix.deps }} == 'pinned' ]]; then DEPS='-r ci/deps_pinned.txt'; fi
-          pip install .$EXTRAS $DEPS -r ci/utils.txt
+          pip install .[dev$EXTRAS] $DEPS
 
       - name: Cache datastes
         run: python ci/cache_test_datasets.py

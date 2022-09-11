@@ -1,8 +1,0 @@
-pydata-sphinx-theme==0.10.0rc1
-numpydoc
-nbconvert
-ipykernel
-sphinx-copybutton
-sphinx-issues
-sphinx-design
-pyyaml

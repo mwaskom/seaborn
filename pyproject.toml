@@ -34,6 +34,22 @@ stats = [
     "scipy>=1.3",
     "statsmodels>=0.10",
 ]
+dev = [
+    "pytest",
+    "pytest-cov",
+    "pytest-xdist",
+    "flake8",
+    "mypy",
+]
+docs = [
+    "numpydoc",
+    "nbconvert",
+    "ipykernel",
+    "sphinx-copybutton",
+    "sphinx-issues",
+    "sphinx-design",
+    "pyyaml",
+]
 
 [project.urls]
 Source = "https://github.com/mwaskom/seaborn"
