@@ -31,8 +31,8 @@ jobs:
         run: |
           sudo apt-get install pandoc
 
-      - name: Cache datastes
-        run: python ci/cache_test_datasets.py
+      - name: Cache datasets
+        run: python ci/cache_datasets.py
 
       - name: Build docs
         run: |
@@ -76,8 +76,8 @@ jobs:
           if [[ ${{matrix.deps }} == 'pinned' ]]; then DEPS='-r ci/deps_pinned.txt'; fi
           pip install .[dev$EXTRAS] $DEPS
 
-      - name: Cache datastes
-        run: python ci/cache_test_datasets.py
+      - name: Cache datasets
+        run: python ci/cache_datasets.py
 
       - name: Run tests
         run: make ${{ matrix.target }}
