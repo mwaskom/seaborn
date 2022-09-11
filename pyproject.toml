@@ -49,6 +49,7 @@ docs = [
     "sphinx-issues",
     "sphinx-design",
     "pyyaml",
+    "pydata_sphinx_theme==0.10.0rc2",
 ]
 
 [project.urls]
