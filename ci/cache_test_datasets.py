@@ -12,6 +12,7 @@ datasets = (
     "flights",
     "fmri",
     "iris",
+    "penguins",
     "planets",
     "tips",
     "titanic"
