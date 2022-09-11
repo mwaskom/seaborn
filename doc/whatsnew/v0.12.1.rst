@@ -1,0 +1,5 @@
+
+v0.12.1 (Unreleased)
+--------------------
+
+- |Fix| Make :class:`objects.PolyFit` robust to missing data (:pr:`3010`).
