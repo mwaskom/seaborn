@@ -2,4 +2,6 @@
 v0.12.1 (Unreleased)
 --------------------
 
+- |Enhancement| |Fix| Add a `label` parameter to :func:`pointplot`, which addresses a regression in 0.12.0 when :func:`pointplot` is passed to :class:`FacetGrid` (:pr:`3016`).
+
 - |Fix| Make :class:`objects.PolyFit` robust to missing data (:pr:`3010`).
