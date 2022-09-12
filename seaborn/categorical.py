@@ -1596,7 +1596,7 @@ class _PointPlotter(_CategoricalStatPlotter):
     def __init__(self, x, y, hue, data, order, hue_order,
                  estimator, errorbar, n_boot, units, seed,
                  markers, linestyles, dodge, join, scale,
-                 orient, color, palette, errwidth=None, capsize=None):
+                 orient, color, palette, errwidth, capsize, label):
         """Initialize the plotter."""
         self.establish_variables(x, y, hue, data, orient,
                                  order, hue_order, units)
@@ -1631,6 +1631,7 @@ class _PointPlotter(_CategoricalStatPlotter):
         self.scale = scale
         self.errwidth = errwidth
         self.capsize = capsize
+        self.label = label
 
     @property
     def hue_offsets(self):
@@ -1678,7 +1679,7 @@ class _PointPlotter(_CategoricalStatPlotter):
                 x, y = pointpos, self.statistic
             ax.scatter(x, y,
                        linewidth=mew, marker=marker, s=markersize,
-                       facecolor=colors, edgecolor=colors)
+                       facecolor=colors, edgecolor=colors, label=self.label)
 
         else:
 
@@ -2829,7 +2830,7 @@ def pointplot(
     estimator="mean", errorbar=("ci", 95), n_boot=1000, units=None, seed=None,
     markers="o", linestyles="-", dodge=False, join=True, scale=1,
     orient=None, color=None, palette=None, errwidth=None, ci="deprecated",
-    capsize=None, ax=None,
+    capsize=None, label=None, ax=None,
 ):
 
     errorbar = utils._deprecate_ci(errorbar, ci)
@@ -2837,7 +2838,7 @@ def pointplot(
     plotter = _PointPlotter(x, y, hue, data, order, hue_order,
                             estimator, errorbar, n_boot, units, seed,
                             markers, linestyles, dodge, join, scale,
-                            orient, color, palette, errwidth, capsize)
+                            orient, color, palette, errwidth, capsize, label)
 
     if ax is None:
         ax = plt.gca()
@@ -2893,6 +2894,8 @@ pointplot.__doc__ = dedent("""\
     {palette}
     {errwidth}
     {capsize}
+    label : string, optional
+        Label to represent the plot in a legend, only relevant when not using `hue`.
     {ax_in}
 
     Returns
