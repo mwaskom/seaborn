@@ -37,6 +37,8 @@ jobs:
         run: python ci/cache_datasets.py
 
       - name: Build docs
+        env:
+          SPHINXOPTS: -j `nproc`
         run: |
           cd doc
           make -j `nproc` notebooks
