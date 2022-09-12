@@ -4,6 +4,7 @@ import pandas as pd
 
 import pytest
 from numpy.testing import assert_array_equal, assert_array_almost_equal
+from pandas.testing import assert_frame_equal
 
 from seaborn._core.groupby import GroupBy
 from seaborn._stats.regression import PolyFit
@@ -50,3 +51,11 @@ class TestPolyFit:
             grid = np.linspace(part["x"].min(), part["x"].max(), gridsize)
             assert_array_equal(part["x"], grid)
             assert part["y"].diff().diff().dropna().abs().gt(0).all()
+
+    def test_missing_data(self, df):
+
+        groupby = GroupBy(["group"])
+        df.iloc[5:10] = np.nan
+        res1 = PolyFit()(df[["x", "y"]], groupby, "x", {})
+        res2 = PolyFit()(df[["x", "y"]].dropna(), groupby, "x", {})
+        assert_frame_equal(res1, res2)
