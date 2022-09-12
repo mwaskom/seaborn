@@ -1,4 +1,6 @@
 from itertools import product
+import warnings
+
 import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -1735,9 +1737,9 @@ class TestScatterPlotter(SharedAxesLevelTests, Helpers):
 
     def test_unfilled_marker_edgecolor_warning(self, long_df):  # GH2636
 
-        with pytest.warns(None) as record:
+        with warnings.catch_warnings():
+            warnings.simplefilter("error")
             scatterplot(data=long_df, x="x", y="y", marker="+")
-        assert not record
 
     def test_scatterplot_vs_relplot(self, long_df, long_semantics):
 
