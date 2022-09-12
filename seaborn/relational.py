@@ -641,7 +641,7 @@ def lineplot(
 
 
 lineplot.__doc__ = """\
-Draw a line plot with possibility of several semantic groupings.
+Draw a line plot with the possibility of several semantic groupings.
 
 {narrative.main_api}
 
@@ -758,7 +758,7 @@ def scatterplot(
 
 
 scatterplot.__doc__ = """\
-Draw a scatter plot with possibility of several semantic groupings.
+Draw a scatter plot with the possibility of several semantic groupings.
 
 {narrative.main_api}
 
