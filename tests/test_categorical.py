@@ -2476,8 +2476,10 @@ class TestPointPlotter(CategoricalFixture):
         n_boot=100, units=None, seed=None,
         order=None, hue_order=None,
         markers="o", linestyles="-", dodge=0,
-        join=True, scale=1,
-        orient=None, color=None, palette=None,
+        join=True, scale=1, orient=None,
+        color=None, palette=None,
+        errwidth=None, capsize=None, label=None,
+
     )
 
     def test_different_defualt_colors(self):
