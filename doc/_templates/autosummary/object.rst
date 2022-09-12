@@ -3,4 +3,3 @@
 .. currentmodule:: {{ module }}
 
 .. autoclass:: {{ objname }}
-

@@ -34,7 +34,7 @@ API changes
   allows for increased flexibility in specifying the bandwidth and kernel, and
   smarter choices for defining the range of the support. Default options should
   produce plots that are very close to the old defaults.
-  
+
 - The ``kdeplot()`` function now takes a second positional argument of data for
   drawing bivariate densities.
 
@@ -150,4 +150,3 @@ Bug fixes
 
 - All axis styling has been moved out of the top-level ``seaborn.set()``
   function, so context or color palette can be cleanly changed.
-

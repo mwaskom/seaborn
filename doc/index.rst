@@ -88,4 +88,3 @@ seaborn: statistical data visualization
     * Multi-plot grids: :ref:`API <grid_api>` | :doc:`Tutorial <tutorial/axis_grids>`
     * Figure theming: :ref:`API <style_api>` | :doc:`Tutorial <tutorial/aesthetics>`
     * Color palettes: :ref:`API <palette_api>` | :doc:`Tutorial <tutorial/color_palettes>`
- 

@@ -33,7 +33,7 @@ The axes-level :func:`histplot` function draws univariate or bivariate histogram
 - normalization to show density, probability, or frequency statistics
 - flexible parameterization of bin size, including proper bins for discrete variables
 - adding a KDE fit to show a smoothed distribution over all bin statistics
-- experimental support for histograms over categorical and datetime variables. 
+- experimental support for histograms over categorical and datetime variables.
 
 The axes-level :func:`ecdfplot` function draws univariate empirical cumulative distribution functions, using a similar interface.
 
@@ -133,7 +133,7 @@ Relational plots
 
 - |Defaults| Changed how :func:`scatterplot` sets the default linewidth for the edges of the scatter points. New behavior is to scale with the point sizes themselves (on a plot-wise, not point-wise basis). This change also slightly reduces the default width when point sizes are not varied. Set ``linewidth=0.75`` to reproduce the previous behavior. (:pr:`2708`).
 
-- |Enhancement| Improved support for datetime variables in :func:`scatterplot` and :func:`lineplot` (:pr:`2138`). 
+- |Enhancement| Improved support for datetime variables in :func:`scatterplot` and :func:`lineplot` (:pr:`2138`).
 
 - |Fix| Fixed a bug where :func:`lineplot` did not pass the ``linestyle`` parameter down to matplotlib (:pr:`2095`).
 
