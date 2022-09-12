@@ -29,8 +29,8 @@ _relational_narrative = DocstringComponents(dict(
 The relationship between `x` and `y` can be shown for different subsets
 of the data using the `hue`, `size`, and `style` parameters. These
 parameters control what visual semantics are used to identify the different
-subsets. It is possible to show up to three dimensions independently by
-using all three semantic types, but this style of plot can be hard to
+subsets. Whilst it is possible to show up to three dimensions independently by
+using all three semantic types, this style of plotting can be hard to
 interpret and is often ineffective. Using redundant semantics (i.e. both
 `hue` and `style` for the same variable) can be helpful for making
 graphics more accessible.
