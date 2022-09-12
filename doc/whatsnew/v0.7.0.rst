@@ -14,7 +14,7 @@ This is a major release from 0.6. The main new feature is :func:`swarmplot` whic
 
 - Improve performance for large dendrograms in :func:`clustermap`.
 
-- Added ``font.size`` to the plotting context definition so that the default output from ``plt.text`` will be scaled appropriately. 
+- Added ``font.size`` to the plotting context definition so that the default output from ``plt.text`` will be scaled appropriately.
 
 - Fixed a bug in :func:`clustermap` when ``fastcluster`` is not installed.
 

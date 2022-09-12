@@ -427,7 +427,7 @@ def test_move_legend_input_checks():
 
 def check_load_dataset(name):
     ds = load_dataset(name, cache=False)
-    assert(isinstance(ds, pd.DataFrame))
+    assert isinstance(ds, pd.DataFrame)
 
 
 def check_load_cached_dataset(name):
