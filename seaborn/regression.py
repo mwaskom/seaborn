@@ -728,98 +728,7 @@ lmplot.__doc__ = dedent("""\
     Examples
     --------
 
-    These examples focus on basic regression model plots to exhibit the
-    various faceting options; see the :func:`regplot` docs for demonstrations
-    of the other options for plotting the data and models. There are also
-    other examples for how to manipulate plot using the returned object on
-    the :class:`FacetGrid` docs.
-
-    Plot a simple linear relationship between two variables:
-
-    .. plot::
-        :context: close-figs
-
-        >>> import seaborn as sns; sns.set_theme(color_codes=True)
-        >>> tips = sns.load_dataset("tips")
-        >>> g = sns.lmplot(x="total_bill", y="tip", data=tips)
-
-    Condition on a third variable and plot the levels in different colors:
-
-    .. plot::
-        :context: close-figs
-
-        >>> g = sns.lmplot(x="total_bill", y="tip", hue="smoker", data=tips)
-
-    Use different markers as well as colors so the plot will reproduce to
-    black-and-white more easily:
-
-    .. plot::
-        :context: close-figs
-
-        >>> g = sns.lmplot(x="total_bill", y="tip", hue="smoker", data=tips,
-        ...                markers=["o", "x"])
-
-    Use a different color palette:
-
-    .. plot::
-        :context: close-figs
-
-        >>> g = sns.lmplot(x="total_bill", y="tip", hue="smoker", data=tips,
-        ...                palette="Set1")
-
-    Map ``hue`` levels to colors with a dictionary:
-
-    .. plot::
-        :context: close-figs
-
-        >>> g = sns.lmplot(x="total_bill", y="tip", hue="smoker", data=tips,
-        ...                palette=dict(Yes="g", No="m"))
-
-    Plot the levels of the third variable across different columns:
-
-    .. plot::
-        :context: close-figs
-
-        >>> g = sns.lmplot(x="total_bill", y="tip", col="smoker", data=tips)
-
-    Change the height and aspect ratio of the facets:
-
-    .. plot::
-        :context: close-figs
-
-        >>> g = sns.lmplot(x="size", y="total_bill", hue="day", col="day",
-        ...                data=tips, height=6, aspect=.4, x_jitter=.1)
-
-    Wrap the levels of the column variable into multiple rows:
-
-    .. plot::
-        :context: close-figs
-
-        >>> g = sns.lmplot(x="total_bill", y="tip", col="day", hue="day",
-        ...                data=tips, col_wrap=2, height=3)
-
-    Condition on two variables to make a full grid:
-
-    .. plot::
-        :context: close-figs
-
-        >>> g = sns.lmplot(x="total_bill", y="tip", row="sex", col="time",
-        ...                data=tips, height=3)
-
-    Use methods on the returned :class:`FacetGrid` instance to further tweak
-    the plot:
-
-    .. plot::
-        :context: close-figs
-
-        >>> g = sns.lmplot(x="total_bill", y="tip", row="sex", col="time",
-        ...                data=tips, height=3)
-        >>> g = (g.set_axis_labels("Total bill (US Dollars)", "Tip")
-        ...       .set(xlim=(0, 60), ylim=(0, 12),
-        ...            xticks=[10, 30, 50], yticks=[2, 6, 10])
-        ...       .fig.subplots_adjust(wspace=.02))
-
-
+    .. include:: ../docstrings/lmplot.rst
 
     """).format(**_regression_docs)
 
@@ -921,101 +830,7 @@ regplot.__doc__ = dedent("""\
     Examples
     --------
 
-    Plot the relationship between two variables in a DataFrame:
-
-    .. plot::
-        :context: close-figs
-
-        >>> import seaborn as sns; sns.set_theme(color_codes=True)
-        >>> tips = sns.load_dataset("tips")
-        >>> ax = sns.regplot(x="total_bill", y="tip", data=tips)
-
-    Plot with two variables defined as numpy arrays; use a different color:
-
-    .. plot::
-        :context: close-figs
-
-        >>> import numpy as np; np.random.seed(8)
-        >>> mean, cov = [4, 6], [(1.5, .7), (.7, 1)]
-        >>> x, y = np.random.multivariate_normal(mean, cov, 80).T
-        >>> ax = sns.regplot(x=x, y=y, color="g")
-
-    Plot with two variables defined as pandas Series; use a different marker:
-
-    .. plot::
-        :context: close-figs
-
-        >>> import pandas as pd
-        >>> x, y = pd.Series(x, name="x_var"), pd.Series(y, name="y_var")
-        >>> ax = sns.regplot(x=x, y=y, marker="+")
-
-    Use a 68% confidence interval, which corresponds with the standard error
-    of the estimate, and extend the regression line to the axis limits:
-
-    .. plot::
-        :context: close-figs
-
-        >>> ax = sns.regplot(x=x, y=y, ci=68, truncate=False)
-
-    Plot with a discrete ``x`` variable and add some jitter:
-
-    .. plot::
-        :context: close-figs
-
-        >>> ax = sns.regplot(x="size", y="total_bill", data=tips, x_jitter=.1)
-
-    Plot with a discrete ``x`` variable showing means and confidence intervals
-    for unique values:
-
-    .. plot::
-        :context: close-figs
-
-        >>> ax = sns.regplot(x="size", y="total_bill", data=tips,
-        ...                  x_estimator=np.mean)
-
-    Plot with a continuous variable divided into discrete bins:
-
-    .. plot::
-        :context: close-figs
-
-        >>> ax = sns.regplot(x=x, y=y, x_bins=4)
-
-    Fit a higher-order polynomial regression:
-
-    .. plot::
-        :context: close-figs
-
-        >>> ans = sns.load_dataset("anscombe")
-        >>> ax = sns.regplot(x="x", y="y", data=ans.loc[ans.dataset == "II"],
-        ...                  scatter_kws={{"s": 80}},
-        ...                  order=2, ci=None)
-
-    Fit a robust regression and don't plot a confidence interval:
-
-    .. plot::
-        :context: close-figs
-
-        >>> ax = sns.regplot(x="x", y="y", data=ans.loc[ans.dataset == "III"],
-        ...                  scatter_kws={{"s": 80}},
-        ...                  robust=True, ci=None)
-
-    Fit a logistic regression; jitter the y variable and use fewer bootstrap
-    iterations:
-
-    .. plot::
-        :context: close-figs
-
-        >>> tips["big_tip"] = (tips.tip / tips.total_bill) > .175
-        >>> ax = sns.regplot(x="total_bill", y="big_tip", data=tips,
-        ...                  logistic=True, n_boot=500, y_jitter=.03)
-
-    Fit the regression model using log(x):
-
-    .. plot::
-        :context: close-figs
-
-        >>> ax = sns.regplot(x="size", y="total_bill", data=tips,
-        ...                  x_estimator=np.mean, logx=True)
+    .. include: ../docstrings/regplot.rst
 
     """).format(**_regression_docs)
 
@@ -1074,6 +889,11 @@ def residplot(
     regplot : Plot a simple linear regression model.
     jointplot : Draw a :func:`residplot` with univariate marginal distributions
                 (when used with ``kind="resid"``).
+
+    Examples
+    --------
+
+    .. include:: ../docstrings/residplot.rst
 
     """
     plotter = _RegressionPlotter(x, y, data, ci=None,
