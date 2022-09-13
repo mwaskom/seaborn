@@ -12,6 +12,7 @@ on:
 env:
   NB_KERNEL: python
   MPLBACKEND: Agg
+  SEABORN_DATA: ~/seaborn-data
 
 jobs:
   build-docs:
@@ -34,7 +35,8 @@ jobs:
           sudo apt-get install pandoc
 
       - name: Cache datasets
-        run: python ci/cache_datasets.py
+        run: |
+          git clone https://github.com/mwaskom/seaborn-data.git
 
       - name: Build docs
         run: |
@@ -77,9 +79,6 @@ jobs:
           if [[ ${{matrix.install}} == 'full' ]]; then EXTRAS=',stats'; fi
           if [[ ${{matrix.deps }} == 'pinned' ]]; then DEPS='-r ci/deps_pinned.txt'; fi
           pip install .[dev$EXTRAS] $DEPS
-
-      - name: Cache datasets
-        run: python ci/cache_datasets.py
 
       - name: Run tests
         run: make ${{ matrix.target }}
