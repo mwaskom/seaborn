@@ -416,9 +416,22 @@ class TestColorPalettes:
         pal_out = palettes.color_palette(pal_in)
         assert pal_in == pal_out
 
-    def test_html_rep(self):
+    def test_html_repr(self):
 
         pal = palettes.color_palette()
         html = pal._repr_html_()
         for color in pal.as_hex():
             assert color in html
+
+    def test_colormap_display_patch(self):
+
+        orig_repr_png = mpl.colors.Colormap._repr_png_
+        orig_repr_html = mpl.colors.Colormap._repr_html_
+
+        try:
+            palettes._patch_colormap_display()
+            cmap = mpl.cm.Reds
+            assert cmap._repr_html_().startswith('<img alt="Reds')
+        finally:
+            mpl.colors.Colormap._repr_png_ = orig_repr_png
+            mpl.colors.Colormap._repr_html_ = orig_repr_html
