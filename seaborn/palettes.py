@@ -814,32 +814,17 @@ def set_color_codes(palette="deep"):
     set_palette : Color codes can also be set through the function that
                   sets the matplotlib color cycle.
 
-    Examples
-    --------
-
-    Map matplotlib color codes to the default seaborn palette.
-
-    .. plot::
-        :context: close-figs
-
-        >>> import matplotlib.pyplot as plt
-        >>> import seaborn as sns; sns.set_theme()
-        >>> sns.set_color_codes()
-        >>> _ = plt.plot([0, 1], color="r")
-
-    Use a different seaborn palette.
-
-    .. plot::
-        :context: close-figs
-
-        >>> sns.set_color_codes("dark")
-        >>> _ = plt.plot([0, 1], color="g")
-        >>> _ = plt.plot([0, 2], color="m")
-
     """
     if palette == "reset":
-        colors = [(0., 0., 1.), (0., .5, 0.), (1., 0., 0.), (.75, 0., .75),
-                  (.75, .75, 0.), (0., .75, .75), (0., 0., 0.)]
+        colors = [
+            (0., 0., 1.),
+            (0., .5, 0.),
+            (1., 0., 0.),
+            (.75, 0., .75),
+            (.75, .75, 0.),
+            (0., .75, .75),
+            (0., 0., 0.)
+        ]
     elif not isinstance(palette, str):
         err = "set_color_codes requires a named seaborn palette"
         raise TypeError(err)

@@ -516,12 +516,6 @@ def set_palette(palette, n_colors=None, desat=None, color_codes=False):
         If ``True`` and ``palette`` is a seaborn palette, remap the shorthand
         color codes (e.g. "b", "g", "r", etc.) to the colors from this palette.
 
-    Examples
-    --------
-    >>> set_palette("Reds")
-
-    >>> set_palette("Set1", 8, .75)
-
     See Also
     --------
     color_palette : build a color palette or set the color cycle temporarily
