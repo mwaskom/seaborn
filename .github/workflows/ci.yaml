@@ -53,17 +53,14 @@ jobs:
     strategy:
       matrix:
         python: ["3.7", "3.8", "3.9", "3.10"]
-        target: [test]
         install: [full]
         deps: [latest]
 
         include:
           - python: "3.7"
-            target: unittests
             install: full
             deps: pinned
           - python: "3.10"
-            target: unittests
             install: light
             deps: latest
 
@@ -83,7 +80,7 @@ jobs:
           pip install .[dev$EXTRAS] $DEPS
 
       - name: Run tests
-        run: make ${{ matrix.target }}
+        run: make test
 
       - name: Upload coverage
         uses: codecov/codecov-action@v2
