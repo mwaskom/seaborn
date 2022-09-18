@@ -9,7 +9,6 @@ from seaborn import palettes, utils, rcmod
 from seaborn.external import husl
 from seaborn._compat import get_colormap
 from seaborn.colors import xkcd_rgb, crayons
-from seaborn.external.version import Version
 
 
 class TestColorPalettes:
@@ -424,16 +423,17 @@ class TestColorPalettes:
         for color in pal.as_hex():
             assert color in html
 
-    @pytest.mark.skipif(Version(mpl.__version__) < Version("3.4.0"))
     def test_colormap_display_patch(self):
 
-        orig_repr_png = mpl.colors.Colormap._repr_png_
-        orig_repr_html = mpl.colors.Colormap._repr_html_
+        orig_repr_png = getattr(mpl.colors.Colormap, "_repr_png_", None)
+        orig_repr_html = getattr(mpl.colors.Colormap, "_repr_html_", None)
 
         try:
             palettes._patch_colormap_display()
             cmap = mpl.cm.Reds
             assert cmap._repr_html_().startswith('<img alt="Reds')
         finally:
-            mpl.colors.Colormap._repr_png_ = orig_repr_png
-            mpl.colors.Colormap._repr_html_ = orig_repr_html
+            if orig_repr_png is not None:
+                mpl.colors.Colormap._repr_png_ = orig_repr_png
+            if orig_repr_html is not None:
+                mpl.colors.Colormap._repr_html_ = orig_repr_html
