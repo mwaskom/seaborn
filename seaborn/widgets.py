@@ -2,26 +2,12 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.colors import LinearSegmentedColormap
 
-# Lots of different places that widgets could come from...
 try:
     from ipywidgets import interact, FloatSlider, IntSlider
 except ImportError:
-    import warnings
-    # ignore ShimWarning raised by IPython, see GH #892
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore")
-        try:
-            from IPython.html.widgets import interact, FloatSlider, IntSlider
-        except ImportError:
-            try:
-                from IPython.html.widgets import (interact,
-                                                  FloatSliderWidget,
-                                                  IntSliderWidget)
-                FloatSlider = FloatSliderWidget
-                IntSlider = IntSliderWidget
-            except ImportError:
-                pass
-
+    def interact(f):
+        msg = "Interactive palettes require `ipywidgets`, which is not installed."
+        raise ImportError(msg)
 
 from .miscplot import palplot
 from .palettes import (color_palette, dark_palette, light_palette,
