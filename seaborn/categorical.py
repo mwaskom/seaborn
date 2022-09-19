@@ -2095,10 +2095,10 @@ _categorical_docs = dict(
     stat_api_params=dedent("""\
     estimator : string or callable that maps vector -> scalar, optional
         Statistical function to estimate within each categorical bin.
-    errorbar : string, (string, number) tuple, or callable
+    errorbar : string, (string, number) tuple, callable or None
         Name of errorbar method (either "ci", "pi", "se", or "sd"), or a tuple
         with a method name and a level parameter, or a function that maps from a
-        vector to a (min, max) interval.
+        vector to a (min, max) interval, or None to hide errorbar.
     n_boot : int, optional
         Number of bootstrap samples used to compute confidence intervals.
     units : name of variable in ``data`` or vector data, optional
