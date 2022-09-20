@@ -1140,7 +1140,7 @@ class TestVectorPlotter:
         p = VectorPlotter(data=long_df, variables={"x": "x", "y": "t"})
         p._attach(ax)
         assert ax.xaxis.converter is None
-        assert "DateConverter" in ax.yaxis.converter.__class__.__name__
+        assert "Date" in ax.yaxis.converter.__class__.__name__
 
         _, ax = plt.subplots()
         p = VectorPlotter(data=long_df, variables={"x": "a", "y": "y"})
