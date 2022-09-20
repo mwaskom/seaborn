@@ -466,7 +466,7 @@ class _CategoricalPlotter:
                 group_label = data.columns.name
 
                 # Convert to a list of arrays, the common representation
-                iter_data = plot_data.iteritems()
+                iter_data = plot_data.items()
                 plot_data = [np.asarray(s, float) for k, s in iter_data]
 
             # Option 1b:
