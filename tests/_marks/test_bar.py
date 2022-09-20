@@ -67,7 +67,7 @@ class TestBar:
         y = [1, 3, 2]
 
         mark = Bar(
-            color="C2",
+            color=".8",
             alpha=.5,
             edgecolor=".3",
             edgealpha=.9,
@@ -92,9 +92,10 @@ class TestBar:
         mark = Bar(alpha=.2)
         p = Plot(x, y, color=x, edgewidth=y).add(mark).plot()
         ax = p._figure.axes[0]
+        colors = p._theme["axes.prop_cycle"].by_key()["color"]
         for i, bar in enumerate(ax.patches):
-            assert bar.get_facecolor() == to_rgba(f"C{i}", mark.alpha)
-            assert bar.get_edgecolor() == to_rgba(f"C{i}", 1)
+            assert bar.get_facecolor() == to_rgba(colors[i], mark.alpha)
+            assert bar.get_edgecolor() == to_rgba(colors[i], 1)
         assert ax.patches[0].get_linewidth() < ax.patches[1].get_linewidth()
 
     def test_zero_height_skipped(self):
@@ -166,7 +167,8 @@ class TestBars:
         p = Plot(x, y, color=color).add(Bars(alpha=alpha)).plot()
         ax = p._figure.axes[0]
         fcs = ax.collections[0].get_facecolors()
-        expected = to_rgba_array(["C0", "C1", "C2", "C0", "C2"], alpha)
+        C0, C1, C2, *_ = p._theme["axes.prop_cycle"].by_key()["color"]
+        expected = to_rgba_array([C0, C1, C2, C0, C2], alpha)
         assert_array_equal(fcs, expected)
 
     def test_mapped_edgewidth(self, x, y):
@@ -195,5 +197,6 @@ class TestBars:
         ax = p._figure.axes[0]
         fcs = ax.collections[0].get_facecolors()
         ecs = ax.collections[0].get_edgecolors()
-        assert_array_equal(fcs, to_rgba_array(["C0"] * len(x), 0))
-        assert_array_equal(ecs, to_rgba_array(["C4"] * len(x), 1))
+        colors = p._theme["axes.prop_cycle"].by_key()["color"]
+        assert_array_equal(fcs, to_rgba_array([colors[0]] * len(x), 0))
+        assert_array_equal(ecs, to_rgba_array([colors[4]] * len(x), 1))

@@ -1140,12 +1140,12 @@ class TestVectorPlotter:
         p = VectorPlotter(data=long_df, variables={"x": "x", "y": "t"})
         p._attach(ax)
         assert ax.xaxis.converter is None
-        assert isinstance(ax.yaxis.converter, mpl.dates.DateConverter)
+        assert "DateConverter" in ax.yaxis.converter.__class__.__name__
 
         _, ax = plt.subplots()
         p = VectorPlotter(data=long_df, variables={"x": "a", "y": "y"})
         p._attach(ax)
-        assert isinstance(ax.xaxis.converter, mpl.category.StrCategoryConverter)
+        assert "CategoryConverter" in ax.xaxis.converter.__class__.__name__
         assert ax.yaxis.converter is None
 
     def test_attach_facets(self, long_df):

@@ -30,7 +30,12 @@ def has_verdana():
     return verdana_font != unlikely_font
 
 
-class RCParamTester:
+class RCParamFixtures:
+
+    @pytest.fixture(autouse=True)
+    def reset_params(self):
+        yield
+        rcmod.reset_orig()
 
     def flatten_list(self, orig_list):
 
@@ -65,7 +70,7 @@ class RCParamTester:
                 assert v1 == v2
 
 
-class TestAxesStyle(RCParamTester):
+class TestAxesStyle(RCParamFixtures):
 
     styles = ["white", "dark", "whitegrid", "darkgrid", "ticks"]
 
@@ -175,7 +180,7 @@ class TestAxesStyle(RCParamTester):
         rcmod.set_theme()
 
 
-class TestPlottingContext(RCParamTester):
+class TestPlottingContext(RCParamFixtures):
 
     contexts = ["paper", "notebook", "talk", "poster"]
 
@@ -244,7 +249,7 @@ class TestPlottingContext(RCParamTester):
         self.assert_rc_params(orig_params)
 
 
-class TestPalette:
+class TestPalette(RCParamFixtures):
 
     def test_set_palette(self):
 
@@ -265,7 +270,7 @@ class TestPalette:
         )
 
 
-class TestFonts:
+class TestFonts(RCParamFixtures):
 
     _no_verdana = not has_verdana()
 
