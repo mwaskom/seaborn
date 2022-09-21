@@ -289,7 +289,7 @@ class _CategoricalPlotterNew(_RelationalPlotter):
             jitter_move = jitterer(size=len(sub_data)) if len(sub_data) > 1 else 0
 
             adjusted_data = sub_data[self.cat_axis] + dodge_move + jitter_move
-            sub_data.loc[:, self.cat_axis] = adjusted_data
+            sub_data[self.cat_axis] = adjusted_data
 
             for var in "xy":
                 if self._log_scaled(var):
@@ -346,7 +346,7 @@ class _CategoricalPlotterNew(_RelationalPlotter):
                 dodge_move = offsets[sub_data["hue"].map(self._hue_map.levels.index)]
 
             if not sub_data.empty:
-                sub_data.loc[:, self.cat_axis] = sub_data[self.cat_axis] + dodge_move
+                sub_data[self.cat_axis] = sub_data[self.cat_axis] + dodge_move
 
             for var in "xy":
                 if self._log_scaled(var):

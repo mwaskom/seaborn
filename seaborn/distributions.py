@@ -246,30 +246,26 @@ class _DistributionPlotter(VectorPlotter):
 
             # Find column groups that are nested within col/row variables
             column_groups = {}
-            for i, keyd in enumerate(map(dict, curves.columns.tolist())):
+            for i, keyd in enumerate(map(dict, curves.columns)):
                 facet_key = keyd.get("col", None), keyd.get("row", None)
                 column_groups.setdefault(facet_key, [])
                 column_groups[facet_key].append(i)
 
             baselines = curves.copy()
-            for cols in column_groups.values():
+            for col_idxs in column_groups.values():
+                cols = curves.columns[col_idxs]
 
-                norm_constant = curves.iloc[:, cols].sum(axis="columns")
+                norm_constant = curves[cols].sum(axis="columns")
 
                 # Take the cumulative sum to stack
-                curves.iloc[:, cols] = curves.iloc[:, cols].cumsum(axis="columns")
+                curves[cols] = curves[cols].cumsum(axis="columns")
 
                 # Normalize by row sum to fill
                 if multiple == "fill":
-                    curves.iloc[:, cols] = (curves
-                                            .iloc[:, cols]
-                                            .div(norm_constant, axis="index"))
+                    curves[cols] = curves[cols].div(norm_constant, axis="index")
 
                 # Define where each segment starts
-                baselines.iloc[:, cols] = (curves
-                                           .iloc[:, cols]
-                                           .shift(1, axis=1)
-                                           .fillna(0))
+                baselines[cols] = curves[cols].shift(1, axis=1).fillna(0)
 
         if multiple == "dodge":
 

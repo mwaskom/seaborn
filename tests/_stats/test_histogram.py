@@ -157,7 +157,7 @@ class TestHist:
 
         h = Hist(stat="percent", common_norm=["a"])
         out = h(long_df, *triple_args)
-        for _, out_part in out.groupby(["a"]):
+        for _, out_part in out.groupby("a"):
             assert out_part["y"].sum() == pytest.approx(100)
 
     def test_common_bins_default(self, long_df, triple_args):
@@ -183,7 +183,7 @@ class TestHist:
         h = Hist(common_bins=False)
         out = h(long_df, *triple_args)
         bins = []
-        for _, out_part in out.groupby(["a"]):
+        for _, out_part in out.groupby("a"):
             bins.append(tuple(out_part["x"]))
         assert len(set(bins)) == out["a"].nunique()
 
