@@ -1,27 +1,13 @@
 import numpy as np
 import pandas as pd
-import datetime
-import matplotlib as mpl
-import matplotlib.pyplot as plt
 
 import pytest
-
-
-@pytest.fixture(scope="session", autouse=True)
-def remove_pandas_unit_conversion():
-    # Prior to pandas 1.0, it registered its own datetime converters,
-    # but they are less powerful than what matplotlib added in 2.2,
-    # and we rely on that functionality in seaborn.
-    # https://github.com/matplotlib/matplotlib/pull/9779
-    # https://github.com/pandas-dev/pandas/issues/27036
-    mpl.units.registry[np.datetime64] = mpl.dates.DateConverter()
-    mpl.units.registry[datetime.date] = mpl.dates.DateConverter()
-    mpl.units.registry[datetime.datetime] = mpl.dates.DateConverter()
 
 
 @pytest.fixture(autouse=True)
 def close_figs():
     yield
+    import matplotlib.pyplot as plt
     plt.close("all")
 
 

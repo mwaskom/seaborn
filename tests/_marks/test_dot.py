@@ -39,9 +39,10 @@ class TestDot(DotBase):
         p = Plot(x=x, y=y).add(Dot()).plot()
         ax = p._figure.axes[0]
         points, = ax.collections
+        C0, *_ = p._theme["axes.prop_cycle"].by_key()["color"]
         self.check_offsets(points, x, y)
-        self.check_colors("face", points, ["C0"] * 3, 1)
-        self.check_colors("edge", points, ["C0"] * 3, 1)
+        self.check_colors("face", points, [C0] * 3, 1)
+        self.check_colors("edge", points, [C0] * 3, 1)
 
     def test_filled_unfilled_mix(self):
 
@@ -54,9 +55,10 @@ class TestDot(DotBase):
         p = Plot(x=x, y=y).add(mark, marker=marker).scale(marker=shapes).plot()
         ax = p._figure.axes[0]
         points, = ax.collections
+        C0, *_ = p._theme["axes.prop_cycle"].by_key()["color"]
         self.check_offsets(points, x, y)
-        self.check_colors("face", points, ["C0", to_rgba("C0", 0)], None)
-        self.check_colors("edge", points, ["w", "C0"], 1)
+        self.check_colors("face", points, [C0, to_rgba(C0, 0)], None)
+        self.check_colors("edge", points, ["w", C0], 1)
 
         expected = [mark.edgewidth, mark.stroke]
         assert_array_equal(points.get_linewidths(), expected)
@@ -93,22 +95,24 @@ class TestDots(DotBase):
         p = Plot(x=x, y=y).add(Dots()).plot()
         ax = p._figure.axes[0]
         points, = ax.collections
+        C0, *_ = p._theme["axes.prop_cycle"].by_key()["color"]
         self.check_offsets(points, x, y)
-        self.check_colors("face", points, ["C0"] * 3, .2)
-        self.check_colors("edge", points, ["C0"] * 3, 1)
+        self.check_colors("face", points, [C0] * 3, .2)
+        self.check_colors("edge", points, [C0] * 3, 1)
 
-    def test_color_direct(self):
+    def test_set_color(self):
 
         x = [1, 2, 3]
         y = [4, 5, 2]
-        p = Plot(x=x, y=y).add(Dots(color="g")).plot()
+        m = Dots(color=".25")
+        p = Plot(x=x, y=y).add(m).plot()
         ax = p._figure.axes[0]
         points, = ax.collections
         self.check_offsets(points, x, y)
-        self.check_colors("face", points, ["g"] * 3, .2)
-        self.check_colors("edge", points, ["g"] * 3, 1)
+        self.check_colors("face", points, [m.color] * 3, .2)
+        self.check_colors("edge", points, [m.color] * 3, 1)
 
-    def test_color_mapped(self):
+    def test_map_color(self):
 
         x = [1, 2, 3]
         y = [4, 5, 2]
@@ -116,9 +120,10 @@ class TestDots(DotBase):
         p = Plot(x=x, y=y, color=c).add(Dots()).plot()
         ax = p._figure.axes[0]
         points, = ax.collections
+        C0, C1, *_ = p._theme["axes.prop_cycle"].by_key()["color"]
         self.check_offsets(points, x, y)
-        self.check_colors("face", points, ["C0", "C1", "C0"], .2)
-        self.check_colors("edge", points, ["C0", "C1", "C0"], 1)
+        self.check_colors("face", points, [C0, C1, C0], .2)
+        self.check_colors("edge", points, [C0, C1, C0], 1)
 
     def test_fill(self):
 
@@ -128,9 +133,10 @@ class TestDots(DotBase):
         p = Plot(x=x, y=y, color=c).add(Dots(fill=False)).plot()
         ax = p._figure.axes[0]
         points, = ax.collections
+        C0, C1, *_ = p._theme["axes.prop_cycle"].by_key()["color"]
         self.check_offsets(points, x, y)
-        self.check_colors("face", points, ["C0", "C1", "C0"], 0)
-        self.check_colors("edge", points, ["C0", "C1", "C0"], 1)
+        self.check_colors("face", points, [C0, C1, C0], 0)
+        self.check_colors("edge", points, [C0, C1, C0], 1)
 
     def test_pointsize(self):
 
@@ -165,7 +171,8 @@ class TestDots(DotBase):
         p = Plot(x=x, y=y).add(mark, marker=marker).scale(marker=shapes).plot()
         ax = p._figure.axes[0]
         points, = ax.collections
+        C0, C1, *_ = p._theme["axes.prop_cycle"].by_key()["color"]
         self.check_offsets(points, x, y)
-        self.check_colors("face", points, [to_rgba("C0", .2), to_rgba("C0", 0)], None)
-        self.check_colors("edge", points, ["C0", "C0"], 1)
+        self.check_colors("face", points, [to_rgba(C0, .2), to_rgba(C0, 0)], None)
+        self.check_colors("edge", points, [C0, C0], 1)
         assert_array_equal(points.get_linewidths(), [mark.stroke] * 2)

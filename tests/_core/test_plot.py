@@ -880,7 +880,7 @@ class TestPlotting:
 
     def test_theme_params(self):
 
-        color = "r"
+        color = ".888"
         p = Plot().theme({"axes.facecolor": color}).plot()
         assert mpl.colors.same_color(p._figure.axes[0].get_facecolor(), color)
 
