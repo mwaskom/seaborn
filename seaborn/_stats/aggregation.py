@@ -83,7 +83,7 @@ class Est(Stat):
         boot_kws = {"n_boot": self.n_boot, "seed": self.seed}
         engine = EstimateAggregator(self.func, self.errorbar, **boot_kws)
 
-        var = {"x": "y", "y": "x"}.get(orient)
+        var = {"x": "y", "y": "x"}[orient]
         res = (
             groupby
             .apply(data, self._process, var, engine)

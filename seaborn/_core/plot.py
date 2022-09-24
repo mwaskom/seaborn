@@ -1373,7 +1373,7 @@ class Plotter:
                 axes_df = axes_df.dropna()
             for var, values in axes_df.items():
                 scale = view[f"{str(var)[0]}scale"]
-                out_df.loc[values.index, var] = scale(values)
+                out_df.loc[values.index, str(var)] = scale(values)
 
         return out_df
 
@@ -1399,7 +1399,7 @@ class Plotter:
                 # TODO see https://github.com/matplotlib/matplotlib/issues/22713
                 transform = axis.get_transform().inverted().transform
                 inverted = transform(values)
-                out_df.loc[values.index, var] = inverted
+                out_df.loc[values.index, str(var)] = inverted
 
                 if var == orient and "width" in view_df:
                     width = view_df["width"]
