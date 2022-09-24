@@ -4,7 +4,7 @@ from copy import copy
 from collections.abc import Sequence
 from dataclasses import dataclass
 from functools import partial
-from typing import Any, Callable, Tuple, Optional, Union, ClassVar
+from typing import Any, Callable, Tuple, Optional, ClassVar
 
 import numpy as np
 import matplotlib as mpl
@@ -39,13 +39,15 @@ from seaborn._core.rules import categorical_order
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from seaborn._core.properties import Property
-    from numpy.typing import ArrayLike
+    from numpy.typing import ArrayLike, NDArray
 
-    Transforms = Tuple[
+    TransFuncs = Tuple[
         Callable[[ArrayLike], ArrayLike], Callable[[ArrayLike], ArrayLike]
     ]
 
-    Pipeline = Sequence[Optional[Callable[[Union[Series, ArrayLike]], ArrayLike]]]
+    # TODO Reverting typing to Any as it was proving too complicated to
+    # work out the right way to communicate the types to mypy. Revisit!
+    Pipeline = Sequence[Optional[Callable[[Any], Any]]]
 
 
 class Scale:
@@ -101,20 +103,24 @@ class Scale:
 
     def __call__(self, data: Series) -> ArrayLike:
 
+        trans_data: Series | NDArray | list
+
         # TODO sometimes we need to handle scalars (e.g. for Line)
         # but what is the best way to do that?
         scalar_data = np.isscalar(data)
         if scalar_data:
-            data = np.array([data])
+            trans_data = np.array([data])
+        else:
+            trans_data = data
 
         for func in self._pipeline:
             if func is not None:
-                data = func(data)
+                trans_data = func(trans_data)
 
         if scalar_data:
-            data = data[0]
-
-        return data
+            return trans_data[0]
+        else:
+            return trans_data
 
     @staticmethod
     def _identity():
@@ -319,7 +325,7 @@ class ContinuousBase(Scale):
 
         forward, inverse = new._get_transform()
 
-        mpl_scale = new._get_scale(data.name, forward, inverse)
+        mpl_scale = new._get_scale(str(data.name), forward, inverse)
 
         if axis is None:
             axis = PseudoAxis(mpl_scale)
@@ -411,7 +417,7 @@ class Continuous(ContinuousBase):
     A numeric scale supporting norms and functional transforms.
     """
     values: tuple | str | None = None
-    trans: str | Transforms | None = None
+    trans: str | TransFuncs | None = None
 
     # TODO Add this to deal with outliers?
     # outside: Literal["keep", "drop", "clip"] = "keep"
@@ -530,7 +536,7 @@ class Continuous(ContinuousBase):
         return new
 
     def _parse_for_log_params(
-        self, trans: str | Transforms | None
+        self, trans: str | TransFuncs | None
     ) -> tuple[float | None, float | None]:
 
         log_base = symlog_thresh = None
@@ -877,7 +883,7 @@ class PseudoAxis:
 # Transform function creation
 
 
-def _make_identity_transforms() -> Transforms:
+def _make_identity_transforms() -> TransFuncs:
 
     def identity(x):
         return x
@@ -885,7 +891,7 @@ def _make_identity_transforms() -> Transforms:
     return identity, identity
 
 
-def _make_logit_transforms(base: float = None) -> Transforms:
+def _make_logit_transforms(base: float = None) -> TransFuncs:
 
     log, exp = _make_log_transforms(base)
 
@@ -900,8 +906,9 @@ def _make_logit_transforms(base: float = None) -> Transforms:
     return logit, expit
 
 
-def _make_log_transforms(base: float | None = None) -> Transforms:
+def _make_log_transforms(base: float | None = None) -> TransFuncs:
 
+    fs: TransFuncs
     if base is None:
         fs = np.log, np.exp
     elif base == 2:
@@ -913,18 +920,18 @@ def _make_log_transforms(base: float | None = None) -> Transforms:
             return np.log(x) / np.log(base)
         fs = forward, partial(np.power, base)
 
-    def log(x):
+    def log(x: ArrayLike) -> ArrayLike:
         with np.errstate(invalid="ignore", divide="ignore"):
             return fs[0](x)
 
-    def exp(x):
+    def exp(x: ArrayLike) -> ArrayLike:
         with np.errstate(invalid="ignore", divide="ignore"):
             return fs[1](x)
 
     return log, exp
 
 
-def _make_symlog_transforms(c: float = 1, base: float = 10) -> Transforms:
+def _make_symlog_transforms(c: float = 1, base: float = 10) -> TransFuncs:
 
     # From https://iopscience.iop.org/article/10.1088/0957-0233/24/2/027001
 
@@ -944,7 +951,7 @@ def _make_symlog_transforms(c: float = 1, base: float = 10) -> Transforms:
     return symlog, symexp
 
 
-def _make_sqrt_transforms() -> Transforms:
+def _make_sqrt_transforms() -> TransFuncs:
 
     def sqrt(x):
         return np.sign(x) * np.sqrt(np.abs(x))
@@ -955,7 +962,7 @@ def _make_sqrt_transforms() -> Transforms:
     return sqrt, square
 
 
-def _make_power_transforms(exp: float) -> Transforms:
+def _make_power_transforms(exp: float) -> TransFuncs:
 
     def forward(x):
         return np.sign(x) * np.power(np.abs(x), exp)
