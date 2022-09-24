@@ -1110,7 +1110,7 @@ class Plotter:
                 for axis, var in zip(*pairings):
                     if axis != var:
                         df = df.rename(columns={var: axis})
-                        drop_cols = [x for x in df if re.match(rf"{axis}\d+", x)]
+                        drop_cols = [x for x in df if re.match(rf"{axis}\d+", str(x))]
                         df = df.drop(drop_cols, axis=1)
                         scales[axis] = scales[var]
 
@@ -1446,7 +1446,7 @@ class Plotter:
             for axis, var in zip("xy", (x, y)):
                 if axis != var:
                     out_df = out_df.rename(columns={var: axis})
-                    cols = [col for col in out_df if re.match(rf"{axis}\d+", col)]
+                    cols = [col for col in out_df if re.match(rf"{axis}\d+", str(col))]
                     out_df = out_df.drop(cols, axis=1)
 
             yield subplots, out_df, scales
