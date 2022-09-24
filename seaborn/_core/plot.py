@@ -1355,28 +1355,6 @@ class Plotter:
         if layer["legend"]:
             self._update_legend_contents(p, mark, data, scales)
 
-    def _scale_coords(self, subplots: list[dict], df: DataFrame) -> DataFrame:
-        # TODO stricter type on subplots
-
-        coord_cols = [c for c in df if re.match(r"^[xy]\D*$", str(c))]
-        out_df = (
-            df
-            .copy(deep=False)
-            .drop(coord_cols, axis=1)
-            .reindex(df.columns, axis=1)  # So unscaled columns retain their place
-        )
-
-        for view in subplots:
-            view_df = self._filter_subplot_data(df, view)
-            axes_df = view_df[coord_cols]
-            with pd.option_context("mode.use_inf_as_null", True):
-                axes_df = axes_df.dropna()
-            for var, values in axes_df.items():
-                scale = view[f"{str(var)[0]}scale"]
-                out_df.loc[values.index, str(var)] = scale(values)
-
-        return out_df
-
     def _unscale_coords(
         self, subplots: list[dict], df: DataFrame, orient: str,
     ) -> DataFrame:
