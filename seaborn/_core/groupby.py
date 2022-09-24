@@ -1,6 +1,8 @@
 """Simplified split-apply-combine paradigm on dataframes for internal use."""
 from __future__ import annotations
 
+from typing import cast, Iterable
+
 import pandas as pd
 
 from seaborn._core.rules import categorical_order
@@ -44,7 +46,9 @@ class GroupBy:
             order = {k: None for k in order}
         self.order = order
 
-    def _get_groups(self, data: DataFrame) -> MultiIndex:
+    def _get_groups(
+        self, data: DataFrame
+    ) -> tuple[str | list[str], Index | MultiIndex]:
         """Return index with Cartesian product of ordered grouping variable levels."""
         levels = {}
         for var, order in self.order.items():
@@ -54,10 +58,10 @@ class GroupBy:
                 levels[var] = order
 
         grouper: str | list[str]
-        groups: Index | MultiIndex | None
+        groups: Index | MultiIndex
         if not levels:
             grouper = []
-            groups = None
+            groups = pd.Index([])
         elif len(levels) > 1:
             grouper = list(levels)
             groups = pd.MultiIndex.from_product(levels.values(), names=grouper)
@@ -115,7 +119,8 @@ class GroupBy:
         for key in groups:
             if key in parts:
                 if isinstance(grouper, list):
-                    group_ids = dict(zip(grouper, key))
+                    # Implies that we had a MultiIndex so key is iterable
+                    group_ids = dict(zip(grouper, cast(Iterable, key)))
                 else:
                     group_ids = {grouper: key}
                 stack.append(parts[key].assign(**group_ids))
