@@ -332,8 +332,11 @@ class Plot:
             + list(self._facet_spec.get("variables", []))
         )
         for layer in self._layers:
-            variables.extend(c for c in layer["vars"] if c not in variables)
-        return variables
+            variables.extend(v for v in layer["vars"] if v not in variables)
+
+        # Coerce to str in return to appease mypy; we know these will only
+        # ever be strings but I don't think we can type a DataFrame that way yet
+        return [str(v) for v in variables]
 
     def on(self, target: Axes | SubFigure | Figure) -> Plot:
         """
