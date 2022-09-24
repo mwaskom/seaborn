@@ -562,7 +562,7 @@ class Plot:
         .. include:: ../docstrings/objects.Plot.facet.rst
 
         """
-        variables = {}
+        variables: dict[str, VariableSpec] = {}
         if col is not None:
             variables["col"] = col
         if row is not None:
