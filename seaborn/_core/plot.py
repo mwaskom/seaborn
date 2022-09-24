@@ -1557,11 +1557,12 @@ class Plotter:
     ) -> None:
         """Add legend artists / labels for one layer in the plot."""
         if data.frame.empty and data.frames:
-            legend_vars = set()
+            legend_vars: list[str] = []
             for frame in data.frames.values():
-                legend_vars.update(frame.columns.intersection(scales))
+                frame_vars = frame.columns.intersection(list(scales))
+                legend_vars.extend(v for v in frame_vars if v not in legend_vars)
         else:
-            legend_vars = data.frame.columns.intersection(scales)
+            legend_vars = list(data.frame.columns.intersection(list(scales)))
 
         # First pass: Identify the values that will be shown for each variable
         schema: list[tuple[
