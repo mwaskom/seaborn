@@ -147,7 +147,7 @@ def categorical_order(vector: Series, order: list | None = None) -> list:
         order = list(vector.cat.categories)
     else:
         order = list(filter(pd.notnull, vector.unique()))
-        if variable_type(order) == "numeric":
+        if variable_type(pd.Series(order)) == "numeric":
             order.sort()
 
     return order
