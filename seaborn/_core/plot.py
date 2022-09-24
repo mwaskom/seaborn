@@ -258,7 +258,8 @@ class Plot:
                 if name in variables:
                     raise TypeError(f"`{name}` given by both name and position.")
                 # Keep coordinates at the front of the variables dict
-                variables = {name: var, **variables}
+                # Cast type because we know this isn't a DataSource at this point
+                variables = {name: cast(VariableSpec, var), **variables}
 
         return data, variables
 
