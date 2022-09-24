@@ -15,7 +15,7 @@ from typing import Any, List, Optional, cast
 
 from cycler import cycler
 import pandas as pd
-from pandas import DataFrame, Series
+from pandas import DataFrame, Series, Index
 import matplotlib as mpl
 from matplotlib.axes import Axes
 from matplotlib.artist import Artist
@@ -1451,7 +1451,7 @@ class Plotter:
 
             yield subplots, out_df, scales
 
-    def _get_subplot_index(self, df: DataFrame, subplot: dict) -> DataFrame:
+    def _get_subplot_index(self, df: DataFrame, subplot: dict) -> Index:
 
         dims = df.columns.intersection(["col", "row"])
         if dims.empty:
