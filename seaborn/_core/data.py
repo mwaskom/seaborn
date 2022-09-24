@@ -3,16 +3,14 @@ Components for parsing variable assignments and internally representing plot dat
 """
 from __future__ import annotations
 
-from collections import abc
+from collections.abc import Mapping, Sized
+from typing import cast
+
 import pandas as pd
+from pandas import DataFrame
 
-from typing import TYPE_CHECKING
-if TYPE_CHECKING:
-    from pandas import DataFrame
-    from seaborn._core.typing import DataSource, VariableSpec
+from seaborn._core.typing import DataSource, VariableSpec, ColumnName
 
-
-# TODO Repetition in the docstrings should be reduced with interpolation tools
 
 class PlotData:
     """
@@ -154,7 +152,7 @@ class PlotData:
             non-indexed vector datatypes that have a different length from `data`.
 
         """
-        source_data: dict | DataFrame
+        source_data: Mapping | DataFrame
         frame: DataFrame
         names: dict[str, str | None]
         ids: dict[str, str | int]
@@ -164,7 +162,7 @@ class PlotData:
         ids = {}
 
         given_data = data is not None
-        if given_data:
+        if data is not None:
             source_data = data
         else:
             # Data is optional; all variables can be defined as vectors
@@ -208,7 +206,7 @@ class PlotData:
             )
 
             if val_as_data_key:
-
+                val = cast(ColumnName, val)
                 if val in source_data:
                     plot_data[key] = source_data[val]
                 elif val in index:
@@ -231,12 +229,12 @@ class PlotData:
                 # Otherwise, assume the value somehow represents data
 
                 # Ignore empty data structures
-                if isinstance(val, abc.Sized) and len(val) == 0:
+                if isinstance(val, Sized) and len(val) == 0:
                     continue
 
                 # If vector has no index, it must match length of data table
                 if isinstance(data, pd.DataFrame) and not isinstance(val, pd.Series):
-                    if isinstance(val, abc.Sized) and len(data) != len(val):
+                    if isinstance(val, Sized) and len(data) != len(val):
                         val_cls = val.__class__.__name__
                         err = (
                             f"Length of {val_cls} vectors must match length of `data`"
