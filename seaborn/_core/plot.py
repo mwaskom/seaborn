@@ -1311,7 +1311,7 @@ class Plotter:
             if "width" in mark._mappable_props:
                 width = mark._resolve(df, "width", None)
             else:
-                width = df.get("width", 0.8)  # TODO what default
+                width = 0.8 if "width" not in df else df["width"]  # TODO what default?
             if orient in df:
                 df["width"] = width * scales[orient]._spacing(df[orient])
 
@@ -1325,7 +1325,7 @@ class Plotter:
                 # TODO unlike width, we might not want to add baseline to data
                 # if the mark doesn't use it. Practically, there is a concern about
                 # Mark abstraction like Area / Ribbon
-                baseline = df.get("baseline", 0)
+                baseline = 0 if "baseline" not in df else df["baseline"]
             df["baseline"] = baseline
 
             if move is not None:
