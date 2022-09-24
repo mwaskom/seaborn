@@ -1180,7 +1180,7 @@ class Plotter:
             for layer in layers:
                 variables.extend(layer["data"].frame.columns)
                 for df in layer["data"].frames.values():
-                    variables.extend(v for v in df if v not in variables)
+                    variables.extend(str(v) for v in df if v not in variables)
             variables = [v for v in variables if v not in self._scales]
 
         for var in variables:
@@ -1358,7 +1358,7 @@ class Plotter:
     def _scale_coords(self, subplots: list[dict], df: DataFrame) -> DataFrame:
         # TODO stricter type on subplots
 
-        coord_cols = [c for c in df if re.match(r"^[xy]\D*$", c)]
+        coord_cols = [c for c in df if re.match(r"^[xy]\D*$", str(c))]
         out_df = (
             df
             .copy(deep=False)
@@ -1372,7 +1372,7 @@ class Plotter:
             with pd.option_context("mode.use_inf_as_null", True):
                 axes_df = axes_df.dropna()
             for var, values in axes_df.items():
-                scale = view[f"{var[0]}scale"]
+                scale = view[f"{str(var)[0]}scale"]
                 out_df.loc[values.index, var] = scale(values)
 
         return out_df
@@ -1381,7 +1381,7 @@ class Plotter:
         self, subplots: list[dict], df: DataFrame, orient: str,
     ) -> DataFrame:
         # TODO do we still have numbers in the variable name at this point?
-        coord_cols = [c for c in df if re.match(r"^[xy]\D*$", c)]
+        coord_cols = [c for c in df if re.match(r"^[xy]\D*$", str(c))]
         drop_cols = [*coord_cols, "width"] if "width" in df else coord_cols
         out_df = (
             df
@@ -1395,7 +1395,7 @@ class Plotter:
             axes_df = view_df[coord_cols]
             for var, values in axes_df.items():
 
-                axis = getattr(view["ax"], f"{var[0]}axis")
+                axis = getattr(view["ax"], f"{str(var)[0]}axis")
                 # TODO see https://github.com/matplotlib/matplotlib/issues/22713
                 transform = axis.get_transform().inverted().transform
                 inverted = transform(values)
