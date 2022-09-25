@@ -165,6 +165,12 @@ class TestHist:
         for _, out_part in out.groupby("a"):
             assert out_part["y"].sum() == pytest.approx(100)
 
+    def test_common_norm_warning(self, long_df, triple_args):
+
+        h = Hist(common_norm=["b"])
+        with pytest.warns(UserWarning, match="Undefined variable(s)"):
+            h(long_df, *triple_args)
+
     def test_common_bins_default(self, long_df, triple_args):
 
         h = Hist()
@@ -191,6 +197,12 @@ class TestHist:
         for _, out_part in out.groupby("a"):
             bins.append(tuple(out_part["x"]))
         assert len(set(bins)) == out["a"].nunique()
+
+    def test_common_bins_warning(self, long_df, triple_args):
+
+        h = Hist(common_bins=["b"])
+        with pytest.warns(UserWarning, match="Undefined variable(s)"):
+            h(long_df, *triple_args)
 
     def test_histogram_single(self, long_df, single_args):
 
