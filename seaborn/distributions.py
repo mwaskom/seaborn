@@ -473,12 +473,10 @@ class _DistributionPlotter(VectorPlotter):
             # Do the histogram computation
             if not (multiple_histograms and common_bins):
                 bin_kws = estimator._define_bin_params(sub_data, orient, None)
-            hist_data = estimator._eval(sub_data, orient, bin_kws)
-            hist_data = estimator._normalize(hist_data, orient)
-            height_var = {"x": "y", "y": "x"}[orient]
-            heights = hist_data[height_var].to_numpy()
-            widths = hist_data["space"].to_numpy()
-            edges = hist_data[orient].to_numpy() - widths / 2
+            res = estimator._normalize(estimator._eval(sub_data, orient, bin_kws))
+            heights = res[estimator.stat].to_numpy()
+            widths = res["space"].to_numpy()
+            edges = res[orient].to_numpy() - widths / 2
 
             # Convert edges back to original units for plotting
             if self._log_scaled(self.data_variable):

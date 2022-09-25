@@ -1,6 +1,5 @@
 from __future__ import annotations
 from dataclasses import dataclass
-from functools import partial
 
 import numpy as np
 import pandas as pd
@@ -17,6 +16,39 @@ if TYPE_CHECKING:
 class Hist(Stat):
     """
     Bin observations, count them, and optionally normalize or cumulate.
+
+    Parameters
+    ----------
+    stat :
+        Aggregate statistic to compute in each bin.
+
+        - `count`: the number of observations in each bin
+        - `density`: normalize so that the total area of the histogram equals 1
+        - `percent`: normalize so that bar heights sum to 100
+        - `probability` or `proportion`: normalize so that bar heights sum to 1
+        - `frequency`: divide the number of observations by the bin width
+
+    bins :
+        Generic parameter that can be the name of a reference rule, the number
+        of bins, or the bin breaks. Passed to :func:`numpy.histogram_bin_edges`.
+    binwidth :
+        Width of each bin; overrides `bins` but can be used with `binrange`.
+    binrange :
+        Lowest and highest value for bin edges; can be used with either
+        `bins` (when a number) or `binwidth`. Defaults to data extremes.
+    common_norm :
+        When not `False`, the normalization is applied across groups. Use
+        `True` to normalize across all groups, or pass variable name(s) that
+        define normalization groups.
+    common_bins :
+        When not `False`, the same bins are used for all groups. Use `True` to
+        share bins across all groups, or pass variable name(s) to share within.
+    cumulative :
+        If True, cumulate the bin values.
+    discrete :
+        If True, set ``binwidth`` and ``binrange`` such that bin
+        edges cover integer values in the dataset.
+
     """
     stat: str = "count"  # TODO how to do validation on this arg?
 
@@ -26,13 +58,7 @@ class Hist(Stat):
     common_norm: bool | list[str] = True
     common_bins: bool | list[str] = True
     cumulative: bool = False
-
-    # TODO Require this to be set here or have interface with scale?
-    # Q: would Discrete() scale imply binwidth=1 or bins centered on integers?
     discrete: bool = False
-
-    # TODO Note that these methods are mostly copied from _statistics.Histogram,
-    # but it only computes univariate histograms. We should reconcile the code.
 
     def _define_bin_edges(self, vals, weight, bins, binwidth, binrange, discrete):
         """Inner function that takes bin parameters as arguments."""
@@ -58,14 +84,14 @@ class Hist(Stat):
     def _define_bin_params(self, data, orient, scale_type):
         """Given data, return numpy.histogram parameters to define bins."""
         vals = data[orient]
-        weight = data.get("weight", None)
+        weights = data.get("weight", None)
 
         # TODO We'll want this for ordinal / discrete scales too
         # (Do we need discrete as a parameter or just infer from scale?)
         discrete = self.discrete or scale_type == "nominal"
 
         bin_edges = self._define_bin_edges(
-            vals, weight, self.bins, self.binwidth, self.binrange, discrete,
+            vals, weights, self.bins, self.binwidth, self.binrange, discrete,
         )
 
         if isinstance(self.bins, (str, int)):
@@ -83,25 +109,21 @@ class Hist(Stat):
         return groupby.apply(data, self._eval, orient, bin_kws)
 
     def _eval(self, data, orient, bin_kws):
+
         vals = data[orient]
-        weight = data.get("weight", None)
+        weights = data.get("weight", None)
 
         density = self.stat == "density"
-        hist, bin_edges = np.histogram(
-            vals, **bin_kws, weights=weight, density=density,
-        )
+        hist, edges = np.histogram(vals, **bin_kws, weights=weights, density=density)
 
-        width = np.diff(bin_edges)
-        pos = bin_edges[:-1] + width / 2
-        other = {"x": "y", "y": "x"}[orient]
+        width = np.diff(edges)
+        center = edges[:-1] + width / 2
 
-        return pd.DataFrame({orient: pos, other: hist, "space": width})
+        return pd.DataFrame({orient: center, "count": hist, "space": width})
 
-    def _normalize(self, data, orient):
+    def _normalize(self, data):
 
-        other = "y" if orient == "x" else "x"
-        hist = data[other]
-
+        hist = data["count"]
         if self.stat == "probability" or self.stat == "proportion":
             hist = hist.astype(float) / hist.sum()
         elif self.stat == "percent":
@@ -115,13 +137,10 @@ class Hist(Stat):
             else:
                 hist = hist.cumsum()
 
-        return data.assign(**{other: hist})
+        return data.assign(**{self.stat: hist})
 
     def __call__(self, data, groupby, orient, scales):
 
-        # TODO better to do this as an isinstance check?
-        # We are only asking about Nominal scales now,
-        # but presumably would apply to Ordinal too?
         scale_type = scales[orient].__class__.__name__.lower()
         grouping_vars = [v for v in data if v in groupby.order]
         if not grouping_vars or self.common_bins is True:
@@ -136,19 +155,14 @@ class Hist(Stat):
                 data, self._get_bins_and_eval, orient, groupby, scale_type,
             )
 
-        # TODO Make this an option?
-        # (This needs to be tested if enabled, and maybe should be in _eval)
-        # other = {"x": "y", "y": "x"}[orient]
-        # data = data[data[other] > 0]
-
         if not grouping_vars or self.common_norm is True:
-            data = self._normalize(data, orient)
+            data = self._normalize(data)
         else:
             if self.common_norm is False:
                 norm_grouper = grouping_vars
             else:
                 norm_grouper = self.common_norm
-            normalize = partial(self._normalize, orient=orient)
-            data = GroupBy(norm_grouper).apply(data, normalize)
+            data = GroupBy(norm_grouper).apply(data, self._normalize)
 
-        return data
+        other = {"x": "y", "y": "x"}[orient]
+        return data.assign(**{other: data[self.stat]})
