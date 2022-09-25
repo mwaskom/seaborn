@@ -16,12 +16,12 @@ from matplotlib.collections import LineCollection
 from ._oldcore import (
     VectorPlotter,
 )
-from ._statistics import (
-    KDE,
-    Histogram,
-    ECDF,
-)
+
+# We have moved univariate histogram computation over to the new Hist class,
+# but still use the older Histogram for bivariate computation.
+from ._statistics import ECDF, Histogram, KDE
 from ._stats.histogram import Hist
+
 from .axisgrid import (
     FacetGrid,
     _facet_docs,
@@ -462,27 +462,23 @@ class _DistributionPlotter(VectorPlotter):
 
             # Prepare the relevant data
             key = tuple(sub_vars.items())
-            observations = sub_data[self.data_variable]
+            orient = self.data_variable
 
             if "weights" in self.variables:
-                weights = sub_data["weights"]
-                part_weight = weights.sum()
+                sub_data["weight"] = sub_data.pop("weights")
+                part_weight = sub_data["weight"].sum()
             else:
-                weights = None
                 part_weight = len(sub_data)
 
             # Do the histogram computation
-            orient = self.data_variable
-            comp_data = pd.DataFrame({orient: observations})
-            if weights is not None:
-                comp_data["weight"] = weights
             if not (multiple_histograms and common_bins):
-                bin_kws = estimator._define_bin_params(comp_data, orient, None)
-            res = estimator._eval(comp_data, orient, bin_kws)
-            normed = estimator._normalize(res, orient)
-            heights = normed[{"x": "y", "y": "x"}[orient]].to_numpy()
-            widths = normed["space"].to_numpy()
-            edges = normed[orient].to_numpy() - widths / 2
+                bin_kws = estimator._define_bin_params(sub_data, orient, None)
+            hist_data = estimator._eval(sub_data, orient, bin_kws)
+            hist_data = estimator._normalize(hist_data, orient)
+            height_var = {"x": "y", "y": "x"}[orient]
+            heights = hist_data[height_var].to_numpy()
+            widths = hist_data["space"].to_numpy()
+            edges = hist_data[orient].to_numpy() - widths / 2
 
             # Convert edges back to original units for plotting
             if self._log_scaled(self.data_variable):
