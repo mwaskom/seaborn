@@ -122,6 +122,11 @@ class TestHist:
         out = h(long_df, *single_args)
         assert (out["y"] * out["space"]).sum() == len(long_df)
 
+    def test_invalid_stat(self):
+
+        with pytest.raises(ValueError, match="The `stat` parameter for `Hist`"):
+            Hist(stat="invalid")
+
     def test_cumulative_count(self, long_df, single_args):
 
         h = Hist(stat="count", cumulative=True)

@@ -71,8 +71,7 @@ class Hist(Stat):
     .. include:: ../docstrings/objects.Hist.rst
 
     """
-    stat: str = "count"  # TODO how to do validation on this arg?
-
+    stat: str = "count"
     bins: str | int | ArrayLike = "auto"
     binwidth: float | None = None
     binrange: tuple[float, float] | None = None
@@ -80,6 +79,13 @@ class Hist(Stat):
     common_bins: bool | list[str] = True
     cumulative: bool = False
     discrete: bool = False
+
+    def __post_init__(self):
+
+        stat_options = [
+            "count", "density", "percent", "probability", "proportion", "frequency"
+        ]
+        self._check_param_one_of("stat", stat_options)
 
     def _define_bin_edges(self, vals, weight, bins, binwidth, binrange, discrete):
         """Inner function that takes bin parameters as arguments."""
