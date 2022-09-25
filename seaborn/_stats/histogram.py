@@ -83,7 +83,6 @@ class Hist(Stat):
         return groupby.apply(data, self._eval, orient, bin_kws)
 
     def _eval(self, data, orient, bin_kws):
-
         vals = data[orient]
         weight = data.get("weight", None)
 

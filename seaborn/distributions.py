@@ -21,6 +21,7 @@ from ._statistics import (
     Histogram,
     ECDF,
 )
+from ._stats.histogram import Hist
 from .axisgrid import (
     FacetGrid,
     _facet_docs,
@@ -419,19 +420,20 @@ class _DistributionPlotter(VectorPlotter):
         if estimate_kws["stat"] == "count":
             common_norm = False
 
+        orient = self.data_variable
+
         # Now initialize the Histogram estimator
-        estimator = Histogram(**estimate_kws)
+        estimator = Hist(**estimate_kws)
         histograms = {}
 
         # Do pre-compute housekeeping related to multiple groups
         all_data = self.comp_data.dropna()
         all_weights = all_data.get("weights", None)
 
-        if set(self.variables) - {"x", "y"}:  # Check if we'll have multiple histograms
+        multiple_histograms = set(self.variables) - {"x", "y"}
+        if multiple_histograms:
             if common_bins:
-                estimator.define_bin_params(
-                    all_data[self.data_variable], weights=all_weights
-                )
+                bin_kws = estimator._define_bin_params(all_data, orient, None)
         else:
             common_norm = False
 
@@ -470,7 +472,22 @@ class _DistributionPlotter(VectorPlotter):
                 part_weight = len(sub_data)
 
             # Do the histogram computation
-            heights, edges = estimator(observations, weights=weights)
+            orient = self.data_variable
+            comp_data = pd.DataFrame({orient: observations})
+            if weights is not None:
+                comp_data["weight"] = weights
+            if not (multiple_histograms and common_bins):
+                bin_kws = estimator._define_bin_params(comp_data, orient, None)
+            res = estimator._eval(comp_data, orient, bin_kws)
+            normed = estimator._normalize(res, orient)
+            heights = normed[{"x": "y", "y": "x"}[orient]].to_numpy()
+            widths = normed["space"].to_numpy()
+            edges = normed[orient].to_numpy() - widths / 2
+
+            # Convert edges back to original units for plotting
+            if self._log_scaled(self.data_variable):
+                widths = np.power(10, edges + widths) - np.power(10, edges)
+                edges = np.power(10, edges)
 
             # Rescale the smoothed curve to match the histogram
             if kde and key in densities:
@@ -478,17 +495,12 @@ class _DistributionPlotter(VectorPlotter):
                 if estimator.cumulative:
                     hist_norm = heights.max()
                 else:
-                    hist_norm = (heights * np.diff(edges)).sum()
+                    hist_norm = (heights * widths).sum()
                 densities[key] *= hist_norm
 
-            # Convert edges back to original units for plotting
-            if self._log_scaled(self.data_variable):
-                edges = np.power(10, edges)
-
             # Pack the histogram data and metadata together
-            orig_widths = np.diff(edges)
-            widths = shrink * orig_widths
-            edges = edges[:-1] + (1 - shrink) / 2 * orig_widths
+            edges = edges + (1 - shrink) / 2 * widths
+            widths *= shrink
             index = pd.MultiIndex.from_arrays([
                 pd.Index(edges, name="edges"),
                 pd.Index(widths, name="widths"),

@@ -1421,8 +1421,8 @@ class TestHistPlotUnivariate(SharedAxesLevelTests):
             bars = bar_groups[i]
             start = bars[0].get_x()
             stop = bars[-1].get_x() + bars[-1].get_width()
-            assert start == wide_df[col].min()
-            assert stop == wide_df[col].max()
+            assert_array_almost_equal(start, wide_df[col].min())
+            assert_array_almost_equal(stop, wide_df[col].max())
 
     def test_weights_with_missing(self, missing_df):
 
@@ -1558,7 +1558,6 @@ class TestHistPlotUnivariate(SharedAxesLevelTests):
         assert ax.lines[0].get_linewidth() == lw
 
     def test_kde_singular_data(self):
-
 
         with warnings.catch_warnings():
             warnings.simplefilter("error")
