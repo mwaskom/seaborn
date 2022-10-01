@@ -14,6 +14,7 @@ from seaborn._marks.base import (
     MappableString,
     MappableColor,
     resolve_properties,
+    resolve_color,
     document_properties,
 )
 from seaborn._core.scales import Scale
@@ -23,11 +24,17 @@ from seaborn._core.scales import Scale
 @dataclass
 class Text(Mark):
     """
-    TODO
+    A textual mark to represent or annotate data values.
+
+    Examples
+    --------
+    .. include:: ../docstrings/objects.Text.rst
+
     """
 
     text: MappableString = Mappable("")
     color: MappableColor = Mappable("k")
+    alpha: MappableFloat = Mappable(1)
     fontsize: MappableFloat = Mappable(rc="font.size")
     halign: MappableString = Mappable("center")
     valign: MappableString = Mappable("center_baseline")
@@ -38,13 +45,13 @@ class Text(Mark):
 
         for keys, data, ax in split_gen():
             vals = resolve_properties(self, keys, scales)
-
+            color = resolve_color(self, keys, "", scales)
             for row in data.to_dict("records"):
                 artist = mpl.text.Text(
                     x=row["x"],
                     y=row["y"],
-                    text=str(row["text"]),  # TODO format
-                    color=vals["color"],
+                    text=str(row.get("text", vals["text"])),
+                    color=color,
                     fontsize=vals["fontsize"],
                     horizontalalignment=vals["halign"],
                     verticalalignment=vals["valign"],
@@ -61,4 +68,4 @@ class Text(Mark):
     ) -> Artist:
 
         # TODO
-        return mpl.line.Line2D()
+        return mpl.lines.Line2D([], [])
