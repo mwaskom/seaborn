@@ -1,11 +1,9 @@
 from __future__ import annotations
 from collections import defaultdict
 from dataclasses import dataclass
-from typing import Any
 
 import numpy as np
 import matplotlib as mpl
-from matplotlib.artist import Artist
 
 from seaborn._marks.base import (
     Mark,
@@ -17,7 +15,6 @@ from seaborn._marks.base import (
     resolve_color,
     document_properties,
 )
-from seaborn._core.scales import Scale
 
 
 @document_properties
@@ -31,7 +28,6 @@ class Text(Mark):
     .. include:: ../docstrings/objects.Text.rst
 
     """
-
     text: MappableString = Mappable("")
     color: MappableColor = Mappable("k")
     alpha: MappableFloat = Mappable(1)
@@ -62,10 +58,3 @@ class Text(Mark):
 
         for ax, ax_vals in ax_data.items():
             ax.update_datalim(np.array(ax_vals))
-
-    def _legend_artist(
-        self, variables: list[str], value: Any, scales=dict[str, Scale],
-    ) -> Artist:
-
-        # TODO
-        return mpl.lines.Line2D([], [])

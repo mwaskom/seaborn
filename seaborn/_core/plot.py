@@ -1562,12 +1562,15 @@ class Plotter:
                     schema.append(entry)
 
         # Second pass, generate an artist corresponding to each value
-        contents = []
+        contents: list[tuple[tuple[str, str | int], Any, list[str]]] = []
         for key, variables, (values, labels) in schema:
             artists = []
             for val in values:
-                artists.append(mark._legend_artist(variables, val, scales))
-            contents.append((key, artists, labels))
+                artist = mark._legend_artist(variables, val, scales)
+                if artist is not None:
+                    artists.append(artist)
+            if contents:
+                contents.append((key, artists, labels))
 
         self._legend_contents.extend(contents)
 

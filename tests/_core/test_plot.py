@@ -1981,8 +1981,17 @@ class TestLegend:
         legend, = p._figure.legends
         assert legend.get_title().get_text() == ""
 
+    def test_legendless_mark(self, xy):
 
-class TestHelpers:
+        class NoLegendMark(MockMark):
+            def _legend_artist(self, variables, value, scales):
+                return None
+
+        p = Plot(**xy, color=["a", "b", "c", "d"]).add(NoLegendMark()).plot()
+        assert not p._figure.legends
+
+
+class TestDefaultObject:
 
     def test_default_repr(self):
 
