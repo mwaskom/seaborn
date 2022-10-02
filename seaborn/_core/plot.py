@@ -1569,7 +1569,7 @@ class Plotter:
                 artist = mark._legend_artist(variables, val, scales)
                 if artist is not None:
                     artists.append(artist)
-            if contents:
+            if artists:
                 contents.append((key, artists, labels))
 
         self._legend_contents.extend(contents)
