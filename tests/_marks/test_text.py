@@ -66,6 +66,17 @@ class TestText:
             < texts[2].get_fontsize()
         )
 
+    def test_mapped_alignment(self):
+
+        x = [1, 2]
+        p = Plot(x=x, y=x, halign=x, valign=x, text=x).add(Text()).plot()
+        ax = p._figure.axes[0]
+        t1, t2 = self.get_texts(ax)
+        assert t1.get_horizontalalignment() == "left"
+        assert t2.get_horizontalalignment() == "right"
+        assert t1.get_verticalalignment() == "top"
+        assert t2.get_verticalalignment() == "bottom"
+
     def test_identity_fontsize(self):
 
         x = y = [1, 2, 3]

@@ -510,7 +510,6 @@ class TextAlignment(ObjectProperty):
 
 
 class HorizontalAlignment(TextAlignment):
-    legend = False
 
     def _default_values(self, n: int) -> list:
         vals = itertools.cycle(["left", "right"])
@@ -518,7 +517,6 @@ class HorizontalAlignment(TextAlignment):
 
 
 class VerticalAlignment(TextAlignment):
-    legend = False
 
     def _default_values(self, n: int) -> list:
         vals = itertools.cycle(["top", "bottom"])
