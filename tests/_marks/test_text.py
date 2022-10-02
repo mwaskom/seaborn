@@ -1,6 +1,9 @@
 
+import numpy as np
 from matplotlib.colors import to_rgba
 from matplotlib.text import Text as MPLText
+
+from numpy.testing import assert_array_almost_equal
 
 from seaborn._core.plot import Plot
 from seaborn._marks.text import Text
@@ -86,3 +89,41 @@ class TestText:
         ax = p._figure.axes[0]
         for i, text in enumerate(self.get_texts(ax)):
             assert text.get_fontsize() == fs[i]
+
+    def test_offset_centered(self):
+
+        x = y = [1, 2, 3]
+        s = list("abc")
+        p = Plot(x, y, text=s).add(Text()).plot()
+        ax = p._figure.axes[0]
+        ax_trans = ax.transData.get_matrix()
+        for text in self.get_texts(ax):
+            assert_array_almost_equal(text.get_transform().get_matrix(), ax_trans)
+
+    def test_offset_valign(self):
+
+        x = y = [1, 2, 3]
+        s = list("abc")
+        m = Text(valign="bottom", fontsize=5, offset=.1)
+        p = Plot(x, y, text=s).add(m).plot()
+        ax = p._figure.axes[0]
+        expected_shift_matrix = np.zeros((3, 3))
+        expected_shift_matrix[1, -1] = m.offset * m.fontsize * ax.figure.dpi / 72
+        ax_trans = ax.transData.get_matrix()
+        for text in self.get_texts(ax):
+            shift_matrix = text.get_transform().get_matrix() - ax_trans
+            assert_array_almost_equal(shift_matrix, expected_shift_matrix)
+
+    def test_offset_halign(self):
+
+        x = y = [1, 2, 3]
+        s = list("abc")
+        m = Text(halign="right", fontsize=10, offset=.5)
+        p = Plot(x, y, text=s).add(m).plot()
+        ax = p._figure.axes[0]
+        expected_shift_matrix = np.zeros((3, 3))
+        expected_shift_matrix[0, -1] = -m.offset * m.fontsize * ax.figure.dpi / 72
+        ax_trans = ax.transData.get_matrix()
+        for text in self.get_texts(ax):
+            shift_matrix = text.get_transform().get_matrix() - ax_trans
+            assert_array_almost_equal(shift_matrix, expected_shift_matrix)

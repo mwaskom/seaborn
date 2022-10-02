@@ -298,8 +298,16 @@ class Alpha(IntervalProperty):
     # TODO validate / enforce that output is in [0, 1]
 
 
+class Offset(IntervalProperty):
+    """Offset for edge-aligned text, in units of fontsize."""
+    _default_range = .1, .5
+    _legend = False
+
+
 class FontSize(IntervalProperty):
-    """Thickness of the edges on a patch mark, in points."""
+    """Font size for textual marks, in points."""
+    _legend = False
+
     @property
     def default_range(self) -> tuple[float, float]:
         """Min and max values used by default for semantic mapping."""
@@ -781,6 +789,7 @@ PROPERTY_CLASSES = {
     "text": Property,
     "halign": HorizontalAlignment,
     "valign": VerticalAlignment,
+    "offset": Offset,
     "fontsize": FontSize,
     "xmin": Coordinate,
     "xmax": Coordinate,

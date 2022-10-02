@@ -4,6 +4,7 @@ from dataclasses import dataclass
 
 import numpy as np
 import matplotlib as mpl
+from matplotlib.transforms import ScaledTranslation
 
 from seaborn._marks.base import (
     Mark,
@@ -21,7 +22,7 @@ from seaborn._marks.base import (
 @dataclass
 class Text(Mark):
     """
-    A textual mark to represent or annotate data values.
+    A textual mark to annotate or represent data values.
 
     Examples
     --------
@@ -34,23 +35,38 @@ class Text(Mark):
     fontsize: MappableFloat = Mappable(rc="font.size")
     halign: MappableString = Mappable("center")
     valign: MappableString = Mappable("center_baseline")
+    offset: MappableFloat = Mappable(0.25)
 
     def _plot(self, split_gen, scales, orient):
 
         ax_data = defaultdict(list)
 
         for keys, data, ax in split_gen():
+
             vals = resolve_properties(self, keys, scales)
             color = resolve_color(self, keys, "", scales)
+
+            halign = vals["halign"]
+            valign = vals["valign"]
+            fontsize = vals["fontsize"]
+            offset = vals["offset"] * fontsize / 72
+
+            offset_trans = ScaledTranslation(
+                {"right": -offset, "left": +offset}.get(halign, 0),
+                {"top": -offset, "bottom": +offset, "baseline": +offset}.get(valign, 0),
+                ax.figure.dpi_scale_trans,
+            )
+
             for row in data.to_dict("records"):
                 artist = mpl.text.Text(
                     x=row["x"],
                     y=row["y"],
                     text=str(row.get("text", vals["text"])),
                     color=color,
-                    fontsize=vals["fontsize"],
-                    horizontalalignment=vals["halign"],
-                    verticalalignment=vals["valign"],
+                    fontsize=fontsize,
+                    horizontalalignment=halign,
+                    verticalalignment=valign,
+                    transform=ax.transData + offset_trans,
                     **self.artist_kws,
                 )
                 ax.add_artist(artist)
