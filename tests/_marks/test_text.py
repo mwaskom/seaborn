@@ -1,11 +1,19 @@
 
 from matplotlib.colors import to_rgba
+from matplotlib.text import Text as MPLText
 
 from seaborn._core.plot import Plot
 from seaborn._marks.text import Text
 
 
 class TestText:
+
+    def get_texts(self, ax):
+        if ax.texts:
+            return list(ax.texts)
+        else:
+            # Compatibility with matplotlib < 3.5 (I think)
+            return [a for a in ax.artists if isinstance(a, MPLText)]
 
     def test_simple(self):
 
@@ -14,7 +22,7 @@ class TestText:
 
         p = Plot(x, y, text=s).add(Text()).plot()
         ax = p._figure.axes[0]
-        for i, text in enumerate(ax.texts):
+        for i, text in enumerate(self.get_texts(ax)):
             x_, y_ = text.get_position()
             assert x_ == x[i]
             assert y_ == y[i]
@@ -34,7 +42,7 @@ class TestText:
         m = Text(color=color, alpha=alpha, fontsize=fontsize, valign=valign)
         p = Plot(x, y, text=s).add(m).plot()
         ax = p._figure.axes[0]
-        for i, text in enumerate(ax.texts):
+        for i, text in enumerate(self.get_texts(ax)):
             assert text.get_text() == s[i]
             assert text.get_color() == to_rgba(m.color, m.alpha)
             assert text.get_fontsize() == m.fontsize
@@ -49,7 +57,7 @@ class TestText:
 
         p = Plot(x, y, color=color, fontsize=fontsize, text=s).add(Text()).plot()
         ax = p._figure.axes[0]
-        texts = ax.texts
+        texts = self.get_texts(ax)
         assert texts[0].get_color() == texts[1].get_color()
         assert texts[0].get_color() != texts[2].get_color()
         assert (
@@ -65,5 +73,5 @@ class TestText:
         fs = [5, 8, 12]
         p = Plot(x, y, text=s, fontsize=fs).add(Text()).scale(fontsize=None).plot()
         ax = p._figure.axes[0]
-        for i, text in enumerate(ax.texts):
+        for i, text in enumerate(self.get_texts(ax)):
             assert text.get_fontsize() == fs[i]
