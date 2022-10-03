@@ -35,7 +35,7 @@ class Text(Mark):
     fontsize: MappableFloat = Mappable(rc="font.size")
     halign: MappableString = Mappable("center")
     valign: MappableString = Mappable("center_baseline")
-    offset: MappableFloat = Mappable(0.25)
+    offset: MappableFloat = Mappable(4)
 
     def _plot(self, split_gen, scales, orient):
 
@@ -49,7 +49,7 @@ class Text(Mark):
             halign = vals["halign"]
             valign = vals["valign"]
             fontsize = vals["fontsize"]
-            offset = vals["offset"] * fontsize / 72
+            offset = vals["offset"] / 72
 
             offset_trans = ScaledTranslation(
                 {"right": -offset, "left": +offset}.get(halign, 0),

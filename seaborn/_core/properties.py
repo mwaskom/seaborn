@@ -299,8 +299,8 @@ class Alpha(IntervalProperty):
 
 
 class Offset(IntervalProperty):
-    """Offset for edge-aligned text, in units of fontsize."""
-    _default_range = .1, .5
+    """Offset for edge-aligned text, in point units."""
+    _default_range = 0, 5
     _legend = False
 
 

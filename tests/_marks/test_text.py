@@ -108,7 +108,7 @@ class TestText:
         p = Plot(x, y, text=s).add(m).plot()
         ax = p._figure.axes[0]
         expected_shift_matrix = np.zeros((3, 3))
-        expected_shift_matrix[1, -1] = m.offset * m.fontsize * ax.figure.dpi / 72
+        expected_shift_matrix[1, -1] = m.offset * ax.figure.dpi / 72
         ax_trans = ax.transData.get_matrix()
         for text in self.get_texts(ax):
             shift_matrix = text.get_transform().get_matrix() - ax_trans
@@ -122,7 +122,7 @@ class TestText:
         p = Plot(x, y, text=s).add(m).plot()
         ax = p._figure.axes[0]
         expected_shift_matrix = np.zeros((3, 3))
-        expected_shift_matrix[0, -1] = -m.offset * m.fontsize * ax.figure.dpi / 72
+        expected_shift_matrix[0, -1] = -m.offset * ax.figure.dpi / 72
         ax_trans = ax.transData.get_matrix()
         for text in self.get_texts(ax):
             shift_matrix = text.get_transform().get_matrix() - ax_trans
