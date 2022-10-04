@@ -66,6 +66,15 @@ Mark objects
     Area
     Band
 
+.. rubric:: Text marks
+
+.. autosummary::
+    :toctree: generated/
+    :template: object
+    :nosignatures:
+
+    Text
+
 Stat objects
 ~~~~~~~~~~~~
 

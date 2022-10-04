@@ -298,6 +298,23 @@ class Alpha(IntervalProperty):
     # TODO validate / enforce that output is in [0, 1]
 
 
+class Offset(IntervalProperty):
+    """Offset for edge-aligned text, in point units."""
+    _default_range = 0, 5
+    _legend = False
+
+
+class FontSize(IntervalProperty):
+    """Font size for textual marks, in points."""
+    _legend = False
+
+    @property
+    def default_range(self) -> tuple[float, float]:
+        """Min and max values used by default for semantic mapping."""
+        base = mpl.rcParams["font.size"]
+        return base * .5, base * 2
+
+
 # =================================================================================== #
 # Properties defined by arbitrary objects with inherently nominal scaling
 # =================================================================================== #
@@ -494,6 +511,24 @@ class LineStyle(ObjectProperty):
                 offset %= dsum
 
         return offset, dashes
+
+
+class TextAlignment(ObjectProperty):
+    legend = False
+
+
+class HorizontalAlignment(TextAlignment):
+
+    def _default_values(self, n: int) -> list:
+        vals = itertools.cycle(["left", "right"])
+        return [next(vals) for _ in range(n)]
+
+
+class VerticalAlignment(TextAlignment):
+
+    def _default_values(self, n: int) -> list:
+        vals = itertools.cycle(["top", "bottom"])
+        return [next(vals) for _ in range(n)]
 
 
 # =================================================================================== #
@@ -751,6 +786,11 @@ PROPERTY_CLASSES = {
     "edgestyle": LineStyle,
     "edgecolor": Color,
     "edgealpha": Alpha,
+    "text": Property,
+    "halign": HorizontalAlignment,
+    "valign": VerticalAlignment,
+    "offset": Offset,
+    "fontsize": FontSize,
     "xmin": Coordinate,
     "xmax": Coordinate,
     "ymin": Coordinate,
