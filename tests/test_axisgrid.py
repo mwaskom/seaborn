@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 
 import pytest
 import numpy.testing as npt
-from numpy.testing import assert_array_equal
+from numpy.testing import assert_array_equal, assert_array_almost_equal
 try:
     import pandas.testing as tm
 except ImportError:
@@ -1685,12 +1685,12 @@ class TestJointPlot:
         assert_array_equal(self.x, x)
         assert_array_equal(self.y, y)
 
-        assert_array_equal(
+        assert_array_almost_equal(
             [b.get_x() for b in g.ax_marg_x.patches],
             np.histogram_bin_edges(self.x, "auto")[:-1],
         )
 
-        assert_array_equal(
+        assert_array_almost_equal(
             [b.get_y() for b in g.ax_marg_y.patches],
             np.histogram_bin_edges(self.y, "auto")[:-1],
         )

@@ -194,6 +194,8 @@ class KDE:
             return self._eval_bivariate(x1, x2, weights)
 
 
+# Note: we no longer use this for univariate histograms in histplot,
+# preferring _stats.Hist. We'll deprecate this once we have a bivariate Stat class.
 class Histogram:
     """Univariate and bivariate histogram estimator."""
     def __init__(
