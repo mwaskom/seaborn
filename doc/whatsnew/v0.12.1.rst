@@ -6,4 +6,6 @@ v0.12.1 (Unreleased)
 
 - |Fix| Make :class:`objects.PolyFit` robust to missing data (:pr:`3010`).
 
+- |Fix| Fixed a bug that caused an exception when more than two layers with the same mappings were added (:pr:`3055`).
+
 - |Build| Seaborn no longer contains doctest-style examples, simplifying the testing infrastructure (:pr:`3034`).
