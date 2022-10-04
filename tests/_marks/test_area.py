@@ -17,6 +17,7 @@ class TestAreaMarks:
         ax = p._figure.axes[0]
         poly = ax.patches[0]
         verts = poly.get_path().vertices.T
+        colors = p._theme["axes.prop_cycle"].by_key()["color"]
 
         expected_x = [1, 2, 3, 3, 2, 1, 1]
         assert_array_equal(verts[0], expected_x)
@@ -25,21 +26,21 @@ class TestAreaMarks:
         assert_array_equal(verts[1], expected_y)
 
         fc = poly.get_facecolor()
-        assert_array_equal(fc, to_rgba("C0", .2))
+        assert_array_equal(fc, to_rgba(colors[0], .2))
 
         ec = poly.get_edgecolor()
-        assert_array_equal(ec, to_rgba("C0", 1))
+        assert_array_equal(ec, to_rgba(colors[0], 1))
 
         lw = poly.get_linewidth()
         assert_array_equal(lw, mpl.rcParams["patch.linewidth"] * 2)
 
-    def test_set_parameters(self):
+    def test_set_properties(self):
 
         x, y = [1, 2, 3], [1, 2, 1]
         mark = Area(
-            color="C2",
+            color=".33",
             alpha=.3,
-            edgecolor=".3",
+            edgecolor=".88",
             edgealpha=.8,
             edgewidth=2,
             edgestyle=(0, (2, 1)),
@@ -62,11 +63,12 @@ class TestAreaMarks:
         expected = (0, (mark.edgewidth * dash_on / 4, mark.edgewidth * dash_off / 4))
         assert ls == expected
 
-    def test_mapped(self):
+    def test_mapped_properties(self):
 
         x, y = [1, 2, 3, 2, 3, 4], [1, 2, 1, 1, 3, 2]
         g = ["a", "a", "a", "b", "b", "b"]
-        p = Plot(x=x, y=y, color=g, edgewidth=g).add(Area()).plot()
+        cs = [".2", ".8"]
+        p = Plot(x=x, y=y, color=g, edgewidth=g).scale(color=cs).add(Area()).plot()
         ax = p._figure.axes[0]
 
         expected_x = [1, 2, 3, 3, 2, 1, 1], [2, 3, 4, 4, 3, 2, 2]
@@ -78,10 +80,10 @@ class TestAreaMarks:
             assert_array_equal(verts[1], expected_y[i])
 
         fcs = [p.get_facecolor() for p in ax.patches]
-        assert_array_equal(fcs, to_rgba_array(["C0", "C1"], .2))
+        assert_array_equal(fcs, to_rgba_array(cs, .2))
 
         ecs = [p.get_edgecolor() for p in ax.patches]
-        assert_array_equal(ecs, to_rgba_array(["C0", "C1"], 1))
+        assert_array_equal(ecs, to_rgba_array(cs, 1))
 
         lws = [p.get_linewidth() for p in ax.patches]
         assert lws[0] > lws[1]
@@ -89,10 +91,11 @@ class TestAreaMarks:
     def test_unfilled(self):
 
         x, y = [1, 2, 3], [1, 2, 1]
-        p = Plot(x=x, y=y).add(Area(fill=False)).plot()
+        c = ".5"
+        p = Plot(x=x, y=y).add(Area(fill=False, color=c)).plot()
         ax = p._figure.axes[0]
         poly = ax.patches[0]
-        assert poly.get_facecolor() == to_rgba("C0", 0)
+        assert poly.get_facecolor() == to_rgba(c, 0)
 
     def test_band(self):
 

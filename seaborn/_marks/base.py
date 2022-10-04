@@ -217,8 +217,8 @@ class Mark:
     def _legend_artist(
         self, variables: list[str], value: Any, scales: dict[str, Scale],
     ) -> Artist:
-        # TODO return some sensible default?
-        raise NotImplementedError
+
+        return None
 
 
 def resolve_properties(

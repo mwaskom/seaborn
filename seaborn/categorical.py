@@ -289,7 +289,7 @@ class _CategoricalPlotterNew(_RelationalPlotter):
             jitter_move = jitterer(size=len(sub_data)) if len(sub_data) > 1 else 0
 
             adjusted_data = sub_data[self.cat_axis] + dodge_move + jitter_move
-            sub_data.loc[:, self.cat_axis] = adjusted_data
+            sub_data[self.cat_axis] = adjusted_data
 
             for var in "xy":
                 if self._log_scaled(var):
@@ -346,7 +346,7 @@ class _CategoricalPlotterNew(_RelationalPlotter):
                 dodge_move = offsets[sub_data["hue"].map(self._hue_map.levels.index)]
 
             if not sub_data.empty:
-                sub_data.loc[:, self.cat_axis] = sub_data[self.cat_axis] + dodge_move
+                sub_data[self.cat_axis] = sub_data[self.cat_axis] + dodge_move
 
             for var in "xy":
                 if self._log_scaled(var):
@@ -466,7 +466,7 @@ class _CategoricalPlotter:
                 group_label = data.columns.name
 
                 # Convert to a list of arrays, the common representation
-                iter_data = plot_data.iteritems()
+                iter_data = plot_data.items()
                 plot_data = [np.asarray(s, float) for k, s in iter_data]
 
             # Option 1b:
@@ -2095,10 +2095,10 @@ _categorical_docs = dict(
     stat_api_params=dedent("""\
     estimator : string or callable that maps vector -> scalar, optional
         Statistical function to estimate within each categorical bin.
-    errorbar : string, (string, number) tuple, or callable
+    errorbar : string, (string, number) tuple, callable or None
         Name of errorbar method (either "ci", "pi", "se", or "sd"), or a tuple
         with a method name and a level parameter, or a function that maps from a
-        vector to a (min, max) interval.
+        vector to a (min, max) interval, or None to hide errorbar.
     n_boot : int, optional
         Number of bootstrap samples used to compute confidence intervals.
     units : name of variable in ``data`` or vector data, optional

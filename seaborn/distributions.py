@@ -16,11 +16,12 @@ from matplotlib.collections import LineCollection
 from ._oldcore import (
     VectorPlotter,
 )
-from ._statistics import (
-    KDE,
-    Histogram,
-    ECDF,
-)
+
+# We have moved univariate histogram computation over to the new Hist class,
+# but still use the older Histogram for bivariate computation.
+from ._statistics import ECDF, Histogram, KDE
+from ._stats.histogram import Hist
+
 from .axisgrid import (
     FacetGrid,
     _facet_docs,
@@ -246,30 +247,26 @@ class _DistributionPlotter(VectorPlotter):
 
             # Find column groups that are nested within col/row variables
             column_groups = {}
-            for i, keyd in enumerate(map(dict, curves.columns.tolist())):
+            for i, keyd in enumerate(map(dict, curves.columns)):
                 facet_key = keyd.get("col", None), keyd.get("row", None)
                 column_groups.setdefault(facet_key, [])
                 column_groups[facet_key].append(i)
 
             baselines = curves.copy()
-            for cols in column_groups.values():
+            for col_idxs in column_groups.values():
+                cols = curves.columns[col_idxs]
 
-                norm_constant = curves.iloc[:, cols].sum(axis="columns")
+                norm_constant = curves[cols].sum(axis="columns")
 
                 # Take the cumulative sum to stack
-                curves.iloc[:, cols] = curves.iloc[:, cols].cumsum(axis="columns")
+                curves[cols] = curves[cols].cumsum(axis="columns")
 
                 # Normalize by row sum to fill
                 if multiple == "fill":
-                    curves.iloc[:, cols] = (curves
-                                            .iloc[:, cols]
-                                            .div(norm_constant, axis="index"))
+                    curves[cols] = curves[cols].div(norm_constant, axis="index")
 
                 # Define where each segment starts
-                baselines.iloc[:, cols] = (curves
-                                           .iloc[:, cols]
-                                           .shift(1, axis=1)
-                                           .fillna(0))
+                baselines[cols] = curves[cols].shift(1, axis=1).fillna(0)
 
         if multiple == "dodge":
 
@@ -423,19 +420,20 @@ class _DistributionPlotter(VectorPlotter):
         if estimate_kws["stat"] == "count":
             common_norm = False
 
+        orient = self.data_variable
+
         # Now initialize the Histogram estimator
-        estimator = Histogram(**estimate_kws)
+        estimator = Hist(**estimate_kws)
         histograms = {}
 
         # Do pre-compute housekeeping related to multiple groups
         all_data = self.comp_data.dropna()
         all_weights = all_data.get("weights", None)
 
-        if set(self.variables) - {"x", "y"}:  # Check if we'll have multiple histograms
+        multiple_histograms = set(self.variables) - {"x", "y"}
+        if multiple_histograms:
             if common_bins:
-                estimator.define_bin_params(
-                    all_data[self.data_variable], weights=all_weights
-                )
+                bin_kws = estimator._define_bin_params(all_data, orient, None)
         else:
             common_norm = False
 
@@ -464,17 +462,26 @@ class _DistributionPlotter(VectorPlotter):
 
             # Prepare the relevant data
             key = tuple(sub_vars.items())
-            observations = sub_data[self.data_variable]
+            orient = self.data_variable
 
             if "weights" in self.variables:
-                weights = sub_data["weights"]
-                part_weight = weights.sum()
+                sub_data["weight"] = sub_data.pop("weights")
+                part_weight = sub_data["weight"].sum()
             else:
-                weights = None
                 part_weight = len(sub_data)
 
             # Do the histogram computation
-            heights, edges = estimator(observations, weights=weights)
+            if not (multiple_histograms and common_bins):
+                bin_kws = estimator._define_bin_params(sub_data, orient, None)
+            res = estimator._normalize(estimator._eval(sub_data, orient, bin_kws))
+            heights = res[estimator.stat].to_numpy()
+            widths = res["space"].to_numpy()
+            edges = res[orient].to_numpy() - widths / 2
+
+            # Convert edges back to original units for plotting
+            if self._log_scaled(self.data_variable):
+                widths = np.power(10, edges + widths) - np.power(10, edges)
+                edges = np.power(10, edges)
 
             # Rescale the smoothed curve to match the histogram
             if kde and key in densities:
@@ -482,17 +489,12 @@ class _DistributionPlotter(VectorPlotter):
                 if estimator.cumulative:
                     hist_norm = heights.max()
                 else:
-                    hist_norm = (heights * np.diff(edges)).sum()
+                    hist_norm = (heights * widths).sum()
                 densities[key] *= hist_norm
 
-            # Convert edges back to original units for plotting
-            if self._log_scaled(self.data_variable):
-                edges = np.power(10, edges)
-
             # Pack the histogram data and metadata together
-            orig_widths = np.diff(edges)
-            widths = shrink * orig_widths
-            edges = edges[:-1] + (1 - shrink) / 2 * orig_widths
+            edges = edges + (1 - shrink) / 2 * widths
+            widths *= shrink
             index = pd.MultiIndex.from_arrays([
                 pd.Index(edges, name="edges"),
                 pd.Index(widths, name="widths"),

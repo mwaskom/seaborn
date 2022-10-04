@@ -742,7 +742,7 @@ class FacetGrid(Grid):
             plot_data = data_ijk[list(args)]
             if self._dropna:
                 plot_data = plot_data.dropna()
-            plot_args = [v for k, v in plot_data.iteritems()]
+            plot_args = [v for k, v in plot_data.items()]
 
             # Some matplotlib functions don't handle pandas objects correctly
             if func_module.startswith("matplotlib"):

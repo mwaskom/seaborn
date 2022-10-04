@@ -40,6 +40,7 @@ dev = [
     "pytest-xdist",
     "flake8",
     "mypy",
+    "pandas-stubs",
     "pre-commit",
 ]
 docs = [

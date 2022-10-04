@@ -12,6 +12,7 @@ on:
 env:
   NB_KERNEL: python
   MPLBACKEND: Agg
+  SEABORN_DATA: ~/seaborn-data
 
 jobs:
   build-docs:
@@ -34,9 +35,12 @@ jobs:
           sudo apt-get install pandoc
 
       - name: Cache datasets
-        run: python ci/cache_datasets.py
+        run: |
+          git clone https://github.com/mwaskom/seaborn-data.git
 
       - name: Build docs
+        env:
+          SPHINXOPTS: -j `nproc`
         run: |
           cd doc
           make -j `nproc` notebooks
@@ -49,17 +53,14 @@ jobs:
     strategy:
       matrix:
         python: ["3.7", "3.8", "3.9", "3.10"]
-        target: [test]
         install: [full]
         deps: [latest]
 
         include:
           - python: "3.7"
-            target: unittests
             install: full
             deps: pinned
           - python: "3.10"
-            target: unittests
             install: light
             deps: latest
 
@@ -78,11 +79,8 @@ jobs:
           if [[ ${{matrix.deps }} == 'pinned' ]]; then DEPS='-r ci/deps_pinned.txt'; fi
           pip install .[dev$EXTRAS] $DEPS
 
-      - name: Cache datasets
-        run: python ci/cache_datasets.py
-
       - name: Run tests
-        run: make ${{ matrix.target }}
+        run: make test
 
       - name: Upload coverage
         uses: codecov/codecov-action@v2

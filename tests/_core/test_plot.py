@@ -880,7 +880,7 @@ class TestPlotting:
 
     def test_theme_params(self):
 
-        color = "r"
+        color = ".888"
         p = Plot().theme({"axes.facecolor": color}).plot()
         assert mpl.colors.same_color(p._figure.axes[0].get_facecolor(), color)
 
@@ -1981,8 +1981,17 @@ class TestLegend:
         legend, = p._figure.legends
         assert legend.get_title().get_text() == ""
 
+    def test_legendless_mark(self, xy):
 
-class TestHelpers:
+        class NoLegendMark(MockMark):
+            def _legend_artist(self, variables, value, scales):
+                return None
+
+        p = Plot(**xy, color=["a", "b", "c", "d"]).add(NoLegendMark()).plot()
+        assert not p._figure.legends
+
+
+class TestDefaultObject:
 
     def test_default_repr(self):
 
