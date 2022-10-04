@@ -1582,7 +1582,7 @@ class Plotter:
         merged_contents: dict[
             tuple[str, str | int], tuple[list[Artist], list[str]],
         ] = {}
-        for key, artists, labels in self._legend_contents:
+        for key, new_artists, labels in self._legend_contents:
             # Key is (name, id); we need the id to resolve variable uniqueness,
             # but will need the name in the next step to title the legend
             if key in merged_contents:
@@ -1591,11 +1591,11 @@ class Plotter:
                 for i, artist in enumerate(existing_artists):
                     # Matplotlib accepts a tuple of artists and will overlay them
                     if isinstance(artist, tuple):
-                        artist += artist[i],
+                        artist += new_artists[i],
                     else:
-                        existing_artists[i] = artist, artists[i]
+                        existing_artists[i] = artist, new_artists[i]
             else:
-                merged_contents[key] = artists.copy(), labels
+                merged_contents[key] = new_artists.copy(), labels
 
         # TODO explain
         loc = "center right" if self._pyplot else "center left"
