@@ -1963,6 +1963,20 @@ class TestLegend:
             assert len(contents.findobj(mpl.lines.Line2D)) == len(names)
             assert len(contents.findobj(mpl.patches.Patch)) == len(names)
 
+    def test_three_layers(self, xy):
+
+        class MockMarkLine(MockMark):
+            def _legend_artist(self, variables, value, scales):
+                return mpl.lines.Line2D([], [])
+
+        s = pd.Series(["a", "b", "a", "c"], name="s")
+        p = Plot(**xy, color=s)
+        for _ in range(3):
+            p = p.add(MockMarkLine())
+        p = p.plot()
+        texts = p._figure.legends[0].get_texts()
+        assert len(texts) == len(s.unique())
+
     def test_identity_scale_ignored(self, xy):
 
         s = pd.Series(["r", "g", "b", "g"])
