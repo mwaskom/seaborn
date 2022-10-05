@@ -204,8 +204,9 @@ class Paths(Mark):
             # Handle datalim update manually
             # https://github.com/matplotlib/matplotlib/issues/23129
             ax.add_collection(lines, autolim=False)
-            xy = np.concatenate(ax_data["segments"])
-            ax.update_datalim(xy)
+            if ax_data["segments"]:
+                xy = np.concatenate(ax_data["segments"])
+                ax.update_datalim(xy)
 
     def _legend_artist(self, variables, value, scales):
 
@@ -270,8 +271,15 @@ class Range(Paths):
                     "linestyles": [],
                 }
 
+            # TODO better checks on what variables we have
+
             vals = resolve_properties(self, keys, scales)
             vals["color"] = resolve_color(self, keys, scales=scales)
+
+            # TODO what if only one exist?
+            if not set(data.columns) & {f"{other}min", f"{other}max"}:
+                agg = {f"{other}min": (other, "min"), f"{other}max": (other, "max")}
+                data = data.groupby(orient, as_index=False).agg(**agg)
 
             cols = [orient, f"{other}min", f"{other}max"]
             data = data[cols].melt(orient, value_name=other)[["x", "y"]]

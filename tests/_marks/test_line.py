@@ -246,6 +246,15 @@ class TestLines:
         assert_array_equal(verts[0], [2, 5])
         assert_array_equal(verts[1], [3, 4])
 
+    def test_single_orient_value(self):
+
+        x = [1, 1, 1]
+        y = [1, 2, 3]
+        p = Plot(x, y).add(Lines()).plot()
+        lines, = p._figure.axes[0].collections
+        paths, = lines.get_paths()
+        assert paths.vertices.shape == (0, 2)
+
 
 class TestRange:
 
@@ -262,6 +271,17 @@ class TestRange:
             verts = path.vertices.T
             assert_array_equal(verts[0], [x[i], x[i]])
             assert_array_equal(verts[1], [ymin[i], ymax[i]])
+
+    def test_auto_range(self):
+
+        x = [1, 1, 2, 2, 2]
+        y = [1, 2, 3, 4, 5]
+
+        p = Plot(x=x, y=y).add(Range()).plot()
+        lines, = p._figure.axes[0].collections
+        paths = lines.get_paths()
+        assert_array_equal(paths[0].vertices, [(1, 1), (1, 2)])
+        assert_array_equal(paths[1].vertices, [(2, 3), (2, 5)])
 
     def test_mapped_color(self):
 
