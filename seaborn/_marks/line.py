@@ -279,7 +279,7 @@ class Range(Paths):
             # TODO what if only one exist?
             if not set(data.columns) & {f"{other}min", f"{other}max"}:
                 agg = {f"{other}min": (other, "min"), f"{other}max": (other, "max")}
-                data = data.groupby(orient, as_index=False).agg(**agg)
+                data = data.groupby(orient).agg(**agg).reset_index()
 
             cols = [orient, f"{other}min", f"{other}max"]
             data = data[cols].melt(orient, value_name=other)[["x", "y"]]

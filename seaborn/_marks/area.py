@@ -166,5 +166,5 @@ class Band(AreaBase, Mark):
         other = {"x": "y", "y": "x"}[orient]
         if not set(data.columns) & {f"{other}min", f"{other}max"}:
             agg = {f"{other}min": (other, "min"), f"{other}max": (other, "max")}
-            data = data.groupby(orient, as_index=False).agg(**agg)
+            data = data.groupby(orient).agg(**agg).reset_index()
         return data
