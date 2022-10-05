@@ -162,4 +162,9 @@ class Band(AreaBase, Mark):
     def _standardize_coordinate_parameters(self, data, orient):
         # dv = {"x": "y", "y": "x"}[orient]
         # TODO assert that all(ymax >= ymin)?
+        # TODO what if only one exist?
+        other = {"x": "y", "y": "x"}[orient]
+        if not set(data.columns) & {f"{other}min", f"{other}max"}:
+            agg = {f"{other}min": (other, "min"), f"{other}max": (other, "max")}
+            data = data.groupby(orient, as_index=False).agg(**agg)
         return data

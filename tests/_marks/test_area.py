@@ -8,7 +8,7 @@ from seaborn._core.plot import Plot
 from seaborn._marks.area import Area, Band
 
 
-class TestAreaMarks:
+class TestArea:
 
     def test_single_defaults(self):
 
@@ -97,7 +97,10 @@ class TestAreaMarks:
         poly = ax.patches[0]
         assert poly.get_facecolor() == to_rgba(c, 0)
 
-    def test_band(self):
+
+class TestBand:
+
+    def test_range(self):
 
         x, ymin, ymax = [1, 2, 4], [2, 1, 4], [3, 3, 5]
         p = Plot(x=x, ymin=ymin, ymax=ymax).add(Band()).plot()
@@ -108,4 +111,18 @@ class TestAreaMarks:
         assert_array_equal(verts[0], expected_x)
 
         expected_y = [2, 1, 4, 5, 3, 3, 2]
+        assert_array_equal(verts[1], expected_y)
+
+    def test_auto_range(self):
+
+        x = [1, 1, 2, 2, 2]
+        y = [1, 2, 3, 4, 5]
+        p = Plot(x=x, y=y).add(Band()).plot()
+        ax = p._figure.axes[0]
+        verts = ax.patches[0].get_path().vertices.T
+
+        expected_x = [1, 2, 2, 1, 1]
+        assert_array_equal(verts[0], expected_x)
+
+        expected_y = [1, 3, 5, 2, 1]
         assert_array_equal(verts[1], expected_y)
