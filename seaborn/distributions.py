@@ -1130,14 +1130,6 @@ class _DistributionPlotter(VectorPlotter):
                 for k, d in densities.items()
             }
 
-        # Get a default single color from the attribute cycle
-        if self.ax is None:
-            default_color = "C0" if color is None else color
-        else:
-            scout, = self.ax.plot([], color=color)
-            default_color = scout.get_color()
-            scout.remove()
-
         # Define the coloring of the contours
         if "hue" in self.variables:
             for param in ["cmap", "colors"]:
@@ -1150,10 +1142,10 @@ class _DistributionPlotter(VectorPlotter):
             # Work out a default coloring of the contours
             coloring_given = set(contour_kws) & {"cmap", "colors"}
             if fill and not coloring_given:
-                cmap = self._cmap_from_color(default_color)
+                cmap = self._cmap_from_color(color)
                 contour_kws["cmap"] = cmap
             if not fill and not coloring_given:
-                contour_kws["colors"] = [default_color]
+                contour_kws["colors"] = [color]
 
             # Use our internal colormap lookup
             cmap = contour_kws.pop("cmap", None)
