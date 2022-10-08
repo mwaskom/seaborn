@@ -9,7 +9,6 @@ from seaborn._core.scales import Scale
 from seaborn._core.groupby import GroupBy
 from seaborn._stats.base import Stat
 from seaborn._statistics import EstimateAggregator
-
 from seaborn._core.typing import Vector
 
 
