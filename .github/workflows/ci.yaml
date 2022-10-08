@@ -12,7 +12,7 @@ on:
 env:
   NB_KERNEL: python
   MPLBACKEND: Agg
-  SEABORN_DATA: $GITHUB_WORKSPACE/seaborn-data
+  SEABORN_DATA: ${{ github.workspace }}/seaborn-data
 
 jobs:
   build-docs:
