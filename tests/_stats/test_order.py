@@ -71,3 +71,13 @@ class TestPerc(Fixtures):
             assert_array_equal(res_x["percentile"], k)
             expected = np.percentile(df.loc[df["x"] == x, "y"], k)
             assert_array_equal(res_x["y"], expected)
+
+    def test_with_na(self, df):
+
+        ori = "x"
+        df.loc[:5, "y"] = np.nan
+        gb = self.get_groupby(df, ori)
+        k = [10, 90]
+        res = Perc(k)(df, gb, ori, {})
+        expected = np.percentile(df["y"].dropna(), k)
+        assert_array_equal(res["y"], expected)

@@ -62,7 +62,7 @@ class Perc(Stat):
 
         k = list(np.linspace(0, 100, self.k)) if isinstance(self.k, int) else self.k
         method = cast(_MethodKind, self.method)
-        values = np.percentile(data[var], k, method=method)
+        values = np.percentile(data[var].dropna(), k, method=method)
         return DataFrame({var: values, "percentile": k})
 
     def __call__(
