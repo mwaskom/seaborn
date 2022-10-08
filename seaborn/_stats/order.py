@@ -1,7 +1,11 @@
 
 from __future__ import annotations
 from dataclasses import dataclass
-from typing import ClassVar, Literal, cast
+from typing import ClassVar, cast
+try:
+    from typing import Literal
+except ImportError:
+    from typing_extensions import Literal  # type: ignore
 
 import numpy as np
 from pandas import DataFrame
