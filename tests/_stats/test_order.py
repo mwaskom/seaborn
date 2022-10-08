@@ -35,12 +35,20 @@ class TestPerc(Fixtures):
 
     def test_list_k(self, df):
 
-        ori = "y"
+        ori = "x"
         gb = self.get_groupby(df, ori)
         percentiles = [0, 20, 100]
         res = Perc(k=percentiles)(df, gb, ori, {})
         assert_array_equal(res["percentile"], percentiles)
-        assert_array_equal(res["x"], np.percentile(df["x"], percentiles))
+        assert_array_equal(res["x"], np.percentile(df["y"], percentiles))
+
+    def test_orientation(self, df):
+
+        df = df.rename(columns={"x": "y", "y": "x"})
+        ori = "y"
+        gb = self.get_groupby(df, ori)
+        res = Perc(k=3)(df, gb, ori, {})
+        assert_array_equal(res["x"], np.percentile(df["x"], [0, 50, 100]))
 
     def test_method(self, df):
 
