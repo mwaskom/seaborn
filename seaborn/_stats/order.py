@@ -13,6 +13,7 @@ from pandas import DataFrame
 from seaborn._core.scales import Scale
 from seaborn._core.groupby import GroupBy
 from seaborn._stats.base import Stat
+from seaborn.external.version import Version
 
 
 # From https://github.com/numpy/numpy/blob/main/numpy/lib/function_base.pyi
@@ -46,7 +47,7 @@ class Perc(Stat):
         For example, `k=5` computes the 0, 25, 50, 75, and 100th percentiles.
     method : str
         Method for interpolating percentiles between observed datapoints.
-        See :func:`numpy.percentile` for valid options and more details.
+        See :func:`numpy.percentile` for valid options and more information.
 
     Examples
     --------
@@ -62,8 +63,12 @@ class Perc(Stat):
 
         k = list(np.linspace(0, 100, self.k)) if isinstance(self.k, int) else self.k
         method = cast(_MethodKind, self.method)
-        values = np.percentile(data[var].dropna(), k, method=method)
-        return DataFrame({var: values, "percentile": k})
+        values = data[var].dropna()
+        if Version(np.__version__) < Version("1.22.0"):
+            res = np.percentile(values, k, interpolation=method)  # type: ignore
+        else:
+            res = np.percentile(data[var].dropna(), k, method=method)
+        return DataFrame({var: res, "percentile": k})
 
     def __call__(
         self, data: DataFrame, groupby: GroupBy, orient: str, scales: dict[str, Scale],
