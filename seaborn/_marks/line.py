@@ -60,7 +60,7 @@ class Path(Mark):
                 vals["marker"] = vals["marker"]._marker
 
             if self._sort:
-                data = data.sort_values(orient)
+                data = data.sort_values(orient, kind="mergesort")
 
             artist_kws = self.artist_kws.copy()
             self._handle_capstyle(artist_kws, vals)
@@ -184,7 +184,7 @@ class Paths(Mark):
             vals["color"] = resolve_color(self, keys, scales=scales)
 
             if self._sort:
-                data = data.sort_values(orient)
+                data = data.sort_values(orient, kind="mergesort")
 
             # Column stack to avoid block consolidation
             xy = np.column_stack([data["x"], data["y"]])

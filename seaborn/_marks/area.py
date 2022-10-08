@@ -59,7 +59,7 @@ class AreaBase:
     def _get_verts(self, data, orient):
 
         dv = {"x": "y", "y": "x"}[orient]
-        data = data.sort_values(orient)
+        data = data.sort_values(orient, kind="mergesort")
         verts = np.concatenate([
             data[[orient, f"{dv}min"]].to_numpy(),
             data[[orient, f"{dv}max"]].to_numpy()[::-1],
