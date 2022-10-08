@@ -86,6 +86,7 @@ Stat objects
     Agg
     Est
     Hist
+    Perc
     PolyFit
 
 Move objects
