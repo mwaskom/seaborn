@@ -6,6 +6,8 @@ v0.12.1 (Unreleased)
 
 - |Feature| The :class:`Band` and :class:`Range` marks will now cover the full extent of the data if `min` / `max` variables are not explicitly assigned or added in a transform (:pr:`3056`).
 
+- |Enhancement| Marks that sort along the orient axis (e.g. :class:`Line`) now use a stable algorithm (:pr:`3064`).
+
 - |Fix| Make :class:`objects.PolyFit` robust to missing data (:pr:`3010`).
 
 - |Fix| Fixed a bug that caused an exception when more than two layers with the same mappings were added (:pr:`3055`).
