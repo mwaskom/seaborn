@@ -37,6 +37,7 @@ jobs:
       - name: Cache datasets
         run: |
           git clone https://github.com/mwaskom/seaborn-data.git
+          ls $SEABORN_DATA
 
       - name: Build docs
         env:
