@@ -7,6 +7,7 @@ from numpy.testing import assert_array_equal
 
 from seaborn._core.groupby import GroupBy
 from seaborn._stats.order import Perc
+from seaborn.external.version import Version
 
 
 class Fixtures:
@@ -40,7 +41,7 @@ class TestPerc(Fixtures):
         percentiles = [0, 20, 100]
         res = Perc(k=percentiles)(df, gb, ori, {})
         assert_array_equal(res["percentile"], percentiles)
-        assert_array_equal(res["x"], np.percentile(df["y"], percentiles))
+        assert_array_equal(res["y"], np.percentile(df["y"], percentiles))
 
     def test_orientation(self, df):
 
@@ -57,7 +58,10 @@ class TestPerc(Fixtures):
         method = "nearest"
         res = Perc(k=5, method=method)(df, gb, ori, {})
         percentiles = [0, 25, 50, 75, 100]
-        expected = np.percentile(df["y"], percentiles, method=method)
+        if Version(np.__version__) < Version("1.22.0"):
+            expected = np.percentile(df["y"], percentiles, interpolation=method)
+        else:
+            expected = np.percentile(df["y"], percentiles, method=method)
         assert_array_equal(res["y"], expected)
 
     def test_grouped(self, df, rng):
