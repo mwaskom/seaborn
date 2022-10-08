@@ -10,4 +10,6 @@ v0.12.1 (Unreleased)
 
 - |Fix| Fixed a bug that caused an exception when more than two layers with the same mappings were added (:pr:`3055`).
 
+- |Fix| Fixed a regression in :func:`kdeplot` where passing `cmap` for an unfilled bivariate plot would raise an exception (:pr:`3065`).
+
 - |Build| Seaborn no longer contains doctest-style examples, simplifying the testing infrastructure (:pr:`3034`).
