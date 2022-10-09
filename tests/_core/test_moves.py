@@ -78,6 +78,15 @@ class TestJitter(MoveFixtures):
         assert (res[var] < df[var] + limit / 2).all()
         assert (res[var] > df[var] - limit / 2).all()
 
+    def test_default(self, df):
+
+        orient = "x"
+        groupby = self.get_groupby(df, orient)
+        res = Jitter()(df, groupby, orient, {})
+        self.check_same(res, df, "y", "grp2", "width")
+        self.check_pos(res, df, "x", 0.2 * df["width"])
+        assert (res["x"] - df["x"]).abs().min() > 0
+
     def test_width(self, df):
 
         width = .4
