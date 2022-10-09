@@ -27,7 +27,7 @@ class Move:
 @dataclass
 class Jitter(Move):
     """
-    Random displacement along either or both axes to reduce overplotting.
+    Random displacement along one or both axes to reduce overplotting.
 
     Parameters
     ----------
@@ -37,7 +37,7 @@ class Jitter(Move):
         there will be a small amount of jitter applied by default.
     x : float
         Magnitude of jitter, in data units, along the x axis.
-    x : float
+    y : float
         Magnitude of jitter, in data units, along the y axis.
 
     Examples
