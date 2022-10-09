@@ -29,3 +29,11 @@ DiscreteValueSpec = Union[dict, list, None]
 ContinuousValueSpec = Union[
     Tuple[float, float], List[float], Dict[Any, float], None,
 ]
+
+
+class Default:
+    def __repr__(self):
+        return "<default>"
+
+
+default = Default()

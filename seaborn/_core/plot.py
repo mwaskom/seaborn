@@ -29,7 +29,13 @@ from seaborn._core.scales import Scale
 from seaborn._core.subplots import Subplots
 from seaborn._core.groupby import GroupBy
 from seaborn._core.properties import PROPERTIES, Property
-from seaborn._core.typing import DataSource, VariableSpec, VariableSpecList, OrderSpec
+from seaborn._core.typing import (
+    DataSource,
+    VariableSpec,
+    VariableSpecList,
+    OrderSpec,
+    Default,
+)
 from seaborn._core.rules import categorical_order
 from seaborn._compat import set_scale_obj, set_layout_engine
 from seaborn.rcmod import axes_style, plotting_context
@@ -45,6 +51,9 @@ if sys.version_info >= (3, 8):
     from typing import TypedDict
 else:
     from typing_extensions import TypedDict
+
+
+default = Default()
 
 
 # ---- Definitions for internal specs --------------------------------- #
@@ -78,13 +87,6 @@ class PairSpec(TypedDict, total=False):
 
 
 # --- Local helpers ----------------------------------------------------------------
-
-class Default:
-    def __repr__(self):
-        return "<default>"
-
-
-default = Default()
 
 
 @contextmanager
