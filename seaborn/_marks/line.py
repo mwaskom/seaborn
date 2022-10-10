@@ -261,7 +261,7 @@ class Range(Paths):
 
         other = {"x": "y", "y": "x"}[orient]
 
-        for keys, data, ax in split_gen(keep_na=not self._sort):
+        for keys, data, ax in split_gen():
 
             if ax not in line_data:
                 line_data[ax] = {
@@ -285,6 +285,46 @@ class Range(Paths):
             data = data[cols].melt(orient, value_name=other)[["x", "y"]]
             segments = [d.to_numpy() for _, d in data.groupby(orient)]
 
+            line_data[ax]["segments"].extend(segments)
+
+            n = len(segments)
+            line_data[ax]["colors"].extend([vals["color"]] * n)
+            line_data[ax]["linewidths"].extend([vals["linewidth"]] * n)
+            line_data[ax]["linestyles"].extend([vals["linestyle"]] * n)
+
+        return line_data
+
+
+@document_properties
+@dataclass
+class Dash(Paths):
+    """
+    TODO
+    """
+    width: MappableFloat = Mappable(.8, grouping=False)
+
+    def _setup_lines(self, split_gen, scales, orient):
+
+        line_data = {}
+        ori = ["x", "y"].index(orient)
+
+        for keys, data, ax in split_gen():
+
+            if ax not in line_data:
+                line_data[ax] = {
+                    "segments": [],
+                    "colors": [],
+                    "linewidths": [],
+                    "linestyles": [],
+                }
+
+            vals = resolve_properties(self, keys, scales)
+            vals["color"] = resolve_color(self, keys, scales=scales)
+
+            xys = data[["x", "y"]].to_numpy()
+            segments = np.stack([xys, xys], axis=1)
+            segments[:, 0, ori] -= data["width"] / 2
+            segments[:, 1, ori] += data["width"] / 2
             line_data[ax]["segments"].extend(segments)
 
             n = len(segments)

@@ -40,6 +40,7 @@ Mark objects
     :template: object
     :nosignatures:
 
+    Dash
     Line
     Lines
     Path

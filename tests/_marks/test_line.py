@@ -3,10 +3,11 @@ import numpy as np
 import matplotlib as mpl
 from matplotlib.colors import same_color, to_rgba
 
-from numpy.testing import assert_array_equal
+from numpy.testing import assert_array_equal, assert_array_almost_equal
 
 from seaborn._core.plot import Plot
-from seaborn._marks.line import Line, Path, Lines, Paths, Range
+from seaborn._core.moves import Dodge
+from seaborn._marks.line import Dash, Line, Path, Lines, Paths, Range
 
 
 class TestPath:
@@ -313,3 +314,97 @@ class TestRange:
         for i, path in enumerate(lines.get_paths()):
             assert same_color(lines.get_colors()[i], m.color)
             assert lines.get_linewidths()[i] == m.linewidth
+
+
+class TestDash:
+
+    def test_xy_data(self):
+
+        x = [0, 0, 1, 2]
+        y = [1, 2, 3, 4]
+
+        p = Plot(x=x, y=y).add(Dash()).plot()
+        lines, = p._figure.axes[0].collections
+
+        for i, path in enumerate(lines.get_paths()):
+            verts = path.vertices.T
+            assert_array_almost_equal(verts[0], [x[i] - .4, x[i] + .4])
+            assert_array_equal(verts[1], [y[i], y[i]])
+
+    def test_xy_data_grouped(self):
+
+        x = [0, 0, 1, 2]
+        y = [1, 2, 3, 4]
+        color = ["a", "b", "a", "b"]
+
+        p = Plot(x=x, y=y, color=color).add(Dash()).plot()
+        lines, = p._figure.axes[0].collections
+
+        idx = [0, 2, 1, 3]
+        for i, path in zip(idx, lines.get_paths()):
+            verts = path.vertices.T
+            assert_array_almost_equal(verts[0], [x[i] - .4, x[i] + .4])
+            assert_array_equal(verts[1], [y[i], y[i]])
+
+    def test_set_properties(self):
+
+        x = [0, 0, 1, 2]
+        y = [1, 2, 3, 4]
+
+        m = Dash(color=".8", linewidth=4)
+        p = Plot(x=x, y=y).add(m).plot()
+        lines, = p._figure.axes[0].collections
+
+        for color in lines.get_color():
+            assert same_color(color, m.color)
+        for linewidth in lines.get_linewidth():
+            assert linewidth == m.linewidth
+
+    def test_mapped_properties(self):
+
+        x = [0, 1]
+        y = [1, 2]
+        color = ["a", "b"]
+        linewidth = [1, 2]
+
+        p = Plot(x=x, y=y, color=color, linewidth=linewidth).add(Dash()).plot()
+        lines, = p._figure.axes[0].collections
+        palette = p._theme["axes.prop_cycle"].by_key()["color"]
+
+        for color, line_color in zip(palette, lines.get_color()):
+            assert same_color(color, line_color)
+
+        linewidths = lines.get_linewidths()
+        assert linewidths[1] > linewidths[0]
+
+    def test_width(self):
+
+        x = [0, 0, 1, 2]
+        y = [1, 2, 3, 4]
+
+        p = Plot(x=x, y=y).add(Dash(width=.4)).plot()
+        lines, = p._figure.axes[0].collections
+
+        for i, path in enumerate(lines.get_paths()):
+            verts = path.vertices.T
+            assert_array_almost_equal(verts[0], [x[i] - .2, x[i] + .2])
+            assert_array_equal(verts[1], [y[i], y[i]])
+
+    def test_dodge(self):
+
+        x = [0, 1]
+        y = [1, 2]
+        group = ["a", "b"]
+
+        p = Plot(x=x, y=y, group=group).add(Dash(), Dodge()).plot()
+        lines, = p._figure.axes[0].collections
+
+        paths = lines.get_paths()
+
+        v0 = paths[0].vertices.T
+        assert_array_almost_equal(v0[0], [-.4, 0])
+        assert_array_equal(v0[1], [y[0], y[0]])
+
+        v1 = paths[1].vertices.T
+        assert_array_almost_equal(v1[0], [1, 1.4])
+        assert_array_equal(v1[1], [y[1], y[1]])
