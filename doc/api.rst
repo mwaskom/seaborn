@@ -40,11 +40,11 @@ Mark objects
     :template: object
     :nosignatures:
 
-    Dash
     Line
     Lines
     Path
     Paths
+    Dash
     Range
 
 .. rubric:: Bar marks
