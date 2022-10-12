@@ -12,9 +12,11 @@ v0.12.1 (Unreleased)
 
 - |Enhancement| Marks that sort along the orient axis (e.g. :class:`Line`) now use a stable algorithm (:pr:`3064`).
 
-- |Fix| Make :class:`objects.PolyFit` robust to missing data (:pr:`3010`).
+- |Enhancement| |Fix| Add a `label` parameter to :func:`pointplot`, which addresses a regression in 0.12.0 when :func:`pointplot` is passed to :class:`FacetGrid` (:pr:`3016`).
 
 - |Fix| Fixed a bug that caused an exception when more than two layers with the same mappings were added (:pr:`3055`).
+
+- |Fix| Make :class:`objects.PolyFit` robust to missing data (:pr:`3010`).
 
 - |Fix| Fixed a regression in :func:`kdeplot` where passing `cmap` for an unfilled bivariate plot would raise an exception (:pr:`3065`).
 

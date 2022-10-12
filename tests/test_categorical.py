@@ -21,10 +21,12 @@ from seaborn import palettes
 
 from seaborn.external.version import Version
 from seaborn._oldcore import categorical_order
+from seaborn.axisgrid import FacetGrid
 from seaborn.categorical import (
     _CategoricalPlotterNew,
     Beeswarm,
     catplot,
+    pointplot,
     stripplot,
     swarmplot,
 )
@@ -2474,8 +2476,10 @@ class TestPointPlotter(CategoricalFixture):
         n_boot=100, units=None, seed=None,
         order=None, hue_order=None,
         markers="o", linestyles="-", dodge=0,
-        join=True, scale=1,
-        orient=None, color=None, palette=None,
+        join=True, scale=1, orient=None,
+        color=None, palette=None,
+        errwidth=None, capsize=None, label=None,
+
     )
 
     def test_different_defualt_colors(self):
@@ -2744,6 +2748,16 @@ class TestPointPlotter(CategoricalFixture):
             sd = sub_df.std()
             expected = mean - 2 * sd, mean + 2 * sd
             assert_array_equal(line.get_ydata(), expected)
+
+    def test_on_facetgrid(self, long_df):
+
+        g = FacetGrid(long_df, hue="a")
+        g.map(pointplot, "a", "y")
+        g.add_legend()
+
+        order = categorical_order(long_df["a"])
+        legend_texts = [t.get_text() for t in g.legend.texts]
+        assert legend_texts == order
 
 
 class TestCountPlot(CategoricalFixture):
