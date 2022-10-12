@@ -6,11 +6,13 @@ v0.12.1 (Unreleased)
 
 - |Feature| Added the :class:`objects.Perc` stat (:pr:`3063`).
 
-- |Feature| The :class:`Band` and :class:`Range` marks will now cover the full extent of the data if `min` / `max` variables are not explicitly assigned or added in a transform (:pr:`3056`).
+- |Feature| The :class:`objects.Band` and :class:`objects.Range` marks will now cover the full extent of the data if `min` / `max` variables are not explicitly assigned or added in a transform (:pr:`3056`).
 
-- |Enhancement| The :class:`Jitter` move now applies a small amount of jitter by default (:pr:`3066`).
+- |Enhancement| |Defaults| The :class:`objects.Jitter` move now applies a small amount of jitter by default (:pr:`3066`).
 
-- |Enhancement| Marks that sort along the orient axis (e.g. :class:`Line`) now use a stable algorithm (:pr:`3064`).
+- |Enhancement| |Defaults| Axes with a :class:`objects.Nominal` scale now appear like categorical axes in class seaborn, with fixed margins, no grid, and an inverted y axis (:pr:`3069`).
+
+- |Enhancement| Marks that sort along the orient axis (e.g. :class:`objects.Line`) now use a stable algorithm (:pr:`3064`).
 
 - |Enhancement| |Fix| Add a `label` parameter to :func:`pointplot`, which addresses a regression in 0.12.0 when :func:`pointplot` is passed to :class:`FacetGrid` (:pr:`3016`).
 
