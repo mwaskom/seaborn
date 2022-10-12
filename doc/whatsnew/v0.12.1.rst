@@ -4,6 +4,8 @@ v0.12.1 (Unreleased)
 
 - |Feature| Added the :class:`objects.Text` mark (:pr:`3051`).
 
+- |Feature| Added the :class:`objects.Dash` mark (:pr:`3074`).
+
 - |Feature| Added the :class:`objects.Perc` stat (:pr:`3063`).
 
 - |Feature| The :class:`objects.Band` and :class:`objects.Range` marks will now cover the full extent of the data if `min` / `max` variables are not explicitly assigned or added in a transform (:pr:`3056`).

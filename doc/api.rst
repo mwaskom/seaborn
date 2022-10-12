@@ -44,6 +44,7 @@ Mark objects
     Lines
     Path
     Paths
+    Dash
     Range
 
 .. rubric:: Bar marks
