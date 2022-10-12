@@ -60,7 +60,7 @@ class Path(Mark):
                 vals["marker"] = vals["marker"]._marker
 
             if self._sort:
-                data = data.sort_values(orient)
+                data = data.sort_values(orient, kind="mergesort")
 
             artist_kws = self.artist_kws.copy()
             self._handle_capstyle(artist_kws, vals)
@@ -166,10 +166,9 @@ class Paths(Mark):
         # even when they are dashed. It's a slight inconsistency, but looks fine IMO.
         self.artist_kws.setdefault("capstyle", mpl.rcParams["lines.solid_capstyle"])
 
-    def _setup_lines(self, split_gen, scales, orient):
+    def _plot(self, split_gen, scales, orient):
 
         line_data = {}
-
         for keys, data, ax in split_gen(keep_na=not self._sort):
 
             if ax not in line_data:
@@ -180,32 +179,25 @@ class Paths(Mark):
                     "linestyles": [],
                 }
 
+            segments = self._setup_segments(data, orient)
+            line_data[ax]["segments"].extend(segments)
+            n = len(segments)
+
             vals = resolve_properties(self, keys, scales)
             vals["color"] = resolve_color(self, keys, scales=scales)
 
-            if self._sort:
-                data = data.sort_values(orient)
-
-            # Column stack to avoid block consolidation
-            xy = np.column_stack([data["x"], data["y"]])
-            line_data[ax]["segments"].append(xy)
-            line_data[ax]["colors"].append(vals["color"])
-            line_data[ax]["linewidths"].append(vals["linewidth"])
-            line_data[ax]["linestyles"].append(vals["linestyle"])
-
-        return line_data
-
-    def _plot(self, split_gen, scales, orient):
-
-        line_data = self._setup_lines(split_gen, scales, orient)
+            line_data[ax]["colors"].extend([vals["color"]] * n)
+            line_data[ax]["linewidths"].extend([vals["linewidth"]] * n)
+            line_data[ax]["linestyles"].extend([vals["linestyle"]] * n)
 
         for ax, ax_data in line_data.items():
             lines = mpl.collections.LineCollection(**ax_data, **self.artist_kws)
             # Handle datalim update manually
             # https://github.com/matplotlib/matplotlib/issues/23129
             ax.add_collection(lines, autolim=False)
-            xy = np.concatenate(ax_data["segments"])
-            ax.update_datalim(xy)
+            if ax_data["segments"]:
+                xy = np.concatenate(ax_data["segments"])
+                ax.update_datalim(xy)
 
     def _legend_artist(self, variables, value, scales):
 
@@ -223,6 +215,16 @@ class Paths(Mark):
             linestyle=key["linestyle"],
             **artist_kws,
         )
+
+    def _setup_segments(self, data, orient):
+
+        if self._sort:
+            data = data.sort_values(orient, kind="mergesort")
+
+        # Column stack to avoid block consolidation
+        xy = np.column_stack([data["x"], data["y"]])
+
+        return [xy]
 
 
 @document_properties
@@ -254,34 +256,39 @@ class Range(Paths):
     .. include:: ../docstrings/objects.Range.rst
 
     """
-    def _setup_lines(self, split_gen, scales, orient):
+    def _setup_segments(self, data, orient):
 
-        line_data = {}
+        # TODO better checks on what variables we have
+        # TODO what if only one exist?
+        val = {"x": "y", "y": "x"}[orient]
+        if not set(data.columns) & {f"{val}min", f"{val}max"}:
+            agg = {f"{val}min": (val, "min"), f"{val}max": (val, "max")}
+            data = data.groupby(orient).agg(**agg).reset_index()
 
-        other = {"x": "y", "y": "x"}[orient]
+        cols = [orient, f"{val}min", f"{val}max"]
+        data = data[cols].melt(orient, value_name=val)[["x", "y"]]
+        segments = [d.to_numpy() for _, d in data.groupby(orient)]
+        return segments
 
-        for keys, data, ax in split_gen(keep_na=not self._sort):
 
-            if ax not in line_data:
-                line_data[ax] = {
-                    "segments": [],
-                    "colors": [],
-                    "linewidths": [],
-                    "linestyles": [],
-                }
+@document_properties
+@dataclass
+class Dash(Paths):
+    """
+    A line mark drawn as an oriented segment for each datapoint.
 
-            vals = resolve_properties(self, keys, scales)
-            vals["color"] = resolve_color(self, keys, scales=scales)
+    Examples
+    --------
+    .. include:: ../docstrings/objects.Dash.rst
 
-            cols = [orient, f"{other}min", f"{other}max"]
-            data = data[cols].melt(orient, value_name=other)[["x", "y"]]
-            segments = [d.to_numpy() for _, d in data.groupby(orient)]
+    """
+    width: MappableFloat = Mappable(.8, grouping=False)
 
-            line_data[ax]["segments"].extend(segments)
+    def _setup_segments(self, data, orient):
 
-            n = len(segments)
-            line_data[ax]["colors"].extend([vals["color"]] * n)
-            line_data[ax]["linewidths"].extend([vals["linewidth"]] * n)
-            line_data[ax]["linestyles"].extend([vals["linestyle"]] * n)
-
-        return line_data
+        ori = ["x", "y"].index(orient)
+        xys = data[["x", "y"]].to_numpy().astype(float)
+        segments = np.stack([xys, xys], axis=1)
+        segments[:, 0, ori] -= data["width"] / 2
+        segments[:, 1, ori] += data["width"] / 2
+        return segments

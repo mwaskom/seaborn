@@ -1,12 +1,15 @@
 from __future__ import annotations
 from dataclasses import dataclass
-from typing import ClassVar, Callable, Optional, Union
+from typing import ClassVar, Callable, Optional, Union, cast
 
 import numpy as np
 from pandas import DataFrame
 
 from seaborn._core.groupby import GroupBy
 from seaborn._core.scales import Scale
+from seaborn._core.typing import Default
+
+default = Default()
 
 
 @dataclass
@@ -24,26 +27,34 @@ class Move:
 @dataclass
 class Jitter(Move):
     """
-    Random displacement of marks along either or both axes to reduce overplotting.
+    Random displacement along one or both axes to reduce overplotting.
+
+    Parameters
+    ----------
+    width : float
+        Magnitude of jitter, relative to mark width, along the orientation axis.
+        If not provided, the default value will be 0 when `x` or `y` are set, otherwise
+        there will be a small amount of jitter applied by default.
+    x : float
+        Magnitude of jitter, in data units, along the x axis.
+    y : float
+        Magnitude of jitter, in data units, along the y axis.
+
+    Examples
+    --------
+    .. include:: ../docstrings/objects.Jitter.rst
+
     """
-    width: float = 0
+    width: float | Default = default
     x: float = 0
     y: float = 0
-
-    seed: Optional[int] = None
-
-    # TODO what is the best way to have a reasonable default?
-    # The problem is that "reasonable" seems dependent on the mark
+    seed: int | None = None
 
     def __call__(
         self, data: DataFrame, groupby: GroupBy, orient: str, scales: dict[str, Scale],
     ) -> DataFrame:
 
-        # TODO is it a problem that GroupBy is not used for anything here?
-        # Should we type it as optional?
-
         data = data.copy()
-
         rng = np.random.default_rng(self.seed)
 
         def jitter(data, col, scale):
@@ -51,8 +62,13 @@ class Jitter(Move):
             offsets = noise * scale
             return data[col] + offsets
 
+        if self.width is default:
+            width = 0.0 if self.x or self.y else 0.2
+        else:
+            width = cast(float, self.width)
+
         if self.width:
-            data[orient] = jitter(data, orient, self.width * data["width"])
+            data[orient] = jitter(data, orient, width * data["width"])
         if self.x:
             data["x"] = jitter(data, "x", self.x)
         if self.y:

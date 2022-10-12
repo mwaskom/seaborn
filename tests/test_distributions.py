@@ -1060,6 +1060,15 @@ class TestKDEPlotBivariate:
         for c in ax.collections:
             assert_colors_equal(get_contour_color(c), color)
 
+    def test_contour_line_cmap(self, long_df):
+
+        color_list = color_palette("Blues", 12)
+        cmap = mpl.colors.ListedColormap(color_list)
+        ax = kdeplot(data=long_df, x="x", y="y", cmap=cmap)
+        for c in ax.collections:
+            color = to_rgb(get_contour_color(c).squeeze())
+            assert color in color_list
+
     def test_contour_fill_colors(self, long_df):
 
         n = 6

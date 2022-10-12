@@ -32,13 +32,14 @@ from seaborn._marks.base import Mark  # noqa: F401
 from seaborn._marks.area import Area, Band  # noqa: F401
 from seaborn._marks.bar import Bar, Bars  # noqa: F401
 from seaborn._marks.dot import Dot, Dots  # noqa: F401
-from seaborn._marks.line import Line, Lines, Path, Paths, Range  # noqa: F401
+from seaborn._marks.line import Dash, Line, Lines, Path, Paths, Range  # noqa: F401
 from seaborn._marks.text import Text  # noqa: F401
 
 from seaborn._stats.base import Stat  # noqa: F401
 from seaborn._stats.aggregation import Agg, Est  # noqa: F401
-from seaborn._stats.regression import PolyFit  # noqa: F401
 from seaborn._stats.histogram import Hist  # noqa: F401
+from seaborn._stats.order import Perc  # noqa: F401
+from seaborn._stats.regression import PolyFit  # noqa: F401
 
 from seaborn._core.moves import Dodge, Jitter, Norm, Shift, Stack, Move  # noqa: F401
 

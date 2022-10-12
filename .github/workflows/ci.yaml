@@ -12,7 +12,7 @@ on:
 env:
   NB_KERNEL: python
   MPLBACKEND: Agg
-  SEABORN_DATA: ~/seaborn-data
+  SEABORN_DATA: ${{ github.workspace }}/seaborn-data
 
 jobs:
   build-docs:
@@ -37,6 +37,7 @@ jobs:
       - name: Cache datasets
         run: |
           git clone https://github.com/mwaskom/seaborn-data.git
+          ls $SEABORN_DATA
 
       - name: Build docs
         env:

@@ -44,6 +44,7 @@ Mark objects
     Lines
     Path
     Paths
+    Dash
     Range
 
 .. rubric:: Bar marks
@@ -86,6 +87,7 @@ Stat objects
     Agg
     Est
     Hist
+    Perc
     PolyFit
 
 Move objects

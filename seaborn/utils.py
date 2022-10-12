@@ -100,7 +100,8 @@ def _default_color(method, hue, color, kws):
 
     elif method.__name__ == "plot":
 
-        scout, = method([], [], scalex=False, scaley=False, **kws)
+        color = _normalize_kwargs(kws, mpl.lines.Line2D).get("color")
+        scout, = method([], [], scalex=False, scaley=False, color=color)
         color = scout.get_color()
         scout.remove()
 
