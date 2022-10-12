@@ -27,18 +27,19 @@ class TestPath:
     def test_shared_colors_direct(self):
 
         x = y = [1, 2, 3]
-        m = Path(color="r")
+        color = ".44"
+        m = Path(color=color)
         p = Plot(x=x, y=y).add(m).plot()
         line, = p._figure.axes[0].get_lines()
-        assert same_color(line.get_color(), "r")
-        assert same_color(line.get_markeredgecolor(), "r")
-        assert same_color(line.get_markerfacecolor(), "r")
+        assert same_color(line.get_color(), color)
+        assert same_color(line.get_markeredgecolor(), color)
+        assert same_color(line.get_markerfacecolor(), color)
 
     def test_separate_colors_direct(self):
 
         x = y = [1, 2, 3]
         y = [1, 2, 3]
-        m = Path(color="r", edgecolor="g", fillcolor="b")
+        m = Path(color=".22", edgecolor=".55", fillcolor=".77")
         p = Plot(x=x, y=y).add(m).plot()
         line, = p._figure.axes[0].get_lines()
         assert same_color(line.get_color(), m.color)
@@ -52,10 +53,11 @@ class TestPath:
         m = Path()
         p = Plot(x=x, y=y, color=c).add(m).plot()
         ax = p._figure.axes[0]
+        colors = p._theme["axes.prop_cycle"].by_key()["color"]
         for i, line in enumerate(ax.get_lines()):
-            assert same_color(line.get_color(), f"C{i}")
-            assert same_color(line.get_markeredgecolor(), f"C{i}")
-            assert same_color(line.get_markerfacecolor(), f"C{i}")
+            assert same_color(line.get_color(), colors[i])
+            assert same_color(line.get_markeredgecolor(), colors[i])
+            assert same_color(line.get_markerfacecolor(), colors[i])
 
     def test_separate_colors_mapped(self):
 
@@ -65,10 +67,11 @@ class TestPath:
         m = Path()
         p = Plot(x=x, y=y, color=c, fillcolor=d).add(m).plot()
         ax = p._figure.axes[0]
+        colors = p._theme["axes.prop_cycle"].by_key()["color"]
         for i, line in enumerate(ax.get_lines()):
-            assert same_color(line.get_color(), f"C{i // 2}")
-            assert same_color(line.get_markeredgecolor(), f"C{i // 2}")
-            assert same_color(line.get_markerfacecolor(), f"C{i % 2}")
+            assert same_color(line.get_color(), colors[i // 2])
+            assert same_color(line.get_markeredgecolor(), colors[i // 2])
+            assert same_color(line.get_markerfacecolor(), colors[i % 2])
 
     def test_color_with_alpha(self):
 
@@ -168,10 +171,10 @@ class TestPaths:
         assert_array_equal(verts[0], [5, 2])
         assert_array_equal(verts[1], [4, 3])
 
-    def test_props_direct(self):
+    def test_set_properties(self):
 
         x = y = [1, 2, 3]
-        m = Paths(color="r", linewidth=1, linestyle=(3, 1))
+        m = Paths(color=".737", linewidth=1, linestyle=(3, 1))
         p = Plot(x=x, y=y).add(m).plot()
         lines, = p._figure.axes[0].collections
 
@@ -179,7 +182,7 @@ class TestPaths:
         assert lines.get_linewidth().item() == m.linewidth
         assert lines.get_linestyle()[0] == (0, list(m.linestyle))
 
-    def test_props_mapped(self):
+    def test_mapped_properties(self):
 
         x = y = [1, 2, 3, 4]
         g = ["a", "a", "b", "b"]
@@ -243,6 +246,15 @@ class TestLines:
         assert_array_equal(verts[0], [2, 5])
         assert_array_equal(verts[1], [3, 4])
 
+    def test_single_orient_value(self):
+
+        x = [1, 1, 1]
+        y = [1, 2, 3]
+        p = Plot(x, y).add(Lines()).plot()
+        lines, = p._figure.axes[0].collections
+        paths, = lines.get_paths()
+        assert paths.vertices.shape == (0, 2)
+
 
 class TestRange:
 
@@ -260,6 +272,17 @@ class TestRange:
             assert_array_equal(verts[0], [x[i], x[i]])
             assert_array_equal(verts[1], [ymin[i], ymax[i]])
 
+    def test_auto_range(self):
+
+        x = [1, 1, 2, 2, 2]
+        y = [1, 2, 3, 4, 5]
+
+        p = Plot(x=x, y=y).add(Range()).plot()
+        lines, = p._figure.axes[0].collections
+        paths = lines.get_paths()
+        assert_array_equal(paths[0].vertices, [(1, 1), (1, 2)])
+        assert_array_equal(paths[1].vertices, [(2, 3), (2, 5)])
+
     def test_mapped_color(self):
 
         x = [1, 2, 1, 2]
@@ -269,12 +292,13 @@ class TestRange:
 
         p = Plot(x=x, ymin=ymin, ymax=ymax, color=group).add(Range()).plot()
         lines, = p._figure.axes[0].collections
+        colors = p._theme["axes.prop_cycle"].by_key()["color"]
 
         for i, path in enumerate(lines.get_paths()):
             verts = path.vertices.T
             assert_array_equal(verts[0], [x[i], x[i]])
             assert_array_equal(verts[1], [ymin[i], ymax[i]])
-            assert same_color(lines.get_colors()[i], f"C{i // 2}")
+            assert same_color(lines.get_colors()[i], colors[i // 2])
 
     def test_direct_properties(self):
 
@@ -282,7 +306,7 @@ class TestRange:
         ymin = [1, 4]
         ymax = [2, 3]
 
-        m = Range(color="r", linewidth=4)
+        m = Range(color=".654", linewidth=4)
         p = Plot(x=x, ymin=ymin, ymax=ymax).add(m).plot()
         lines, = p._figure.axes[0].collections
 

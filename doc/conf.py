@@ -140,6 +140,12 @@ html_theme_options = {
             "type": "fontawesome",
         },
         {
+            "name": "StackOverflow",
+            "url": "https://stackoverflow.com/tags/seaborn",
+            "icon": "fab fa-stack-overflow",
+            "type": "fontawesome",
+        },
+        {
             "name": "Twitter",
             "url": "https://twitter.com/michaelwaskom",
             "icon": "fab fa-twitter",

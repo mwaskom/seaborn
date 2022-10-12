@@ -880,7 +880,7 @@ class TestPlotting:
 
     def test_theme_params(self):
 
-        color = "r"
+        color = ".888"
         p = Plot().theme({"axes.facecolor": color}).plot()
         assert mpl.colors.same_color(p._figure.axes[0].get_facecolor(), color)
 
@@ -1963,6 +1963,20 @@ class TestLegend:
             assert len(contents.findobj(mpl.lines.Line2D)) == len(names)
             assert len(contents.findobj(mpl.patches.Patch)) == len(names)
 
+    def test_three_layers(self, xy):
+
+        class MockMarkLine(MockMark):
+            def _legend_artist(self, variables, value, scales):
+                return mpl.lines.Line2D([], [])
+
+        s = pd.Series(["a", "b", "a", "c"], name="s")
+        p = Plot(**xy, color=s)
+        for _ in range(3):
+            p = p.add(MockMarkLine())
+        p = p.plot()
+        texts = p._figure.legends[0].get_texts()
+        assert len(texts) == len(s.unique())
+
     def test_identity_scale_ignored(self, xy):
 
         s = pd.Series(["r", "g", "b", "g"])
@@ -1981,8 +1995,17 @@ class TestLegend:
         legend, = p._figure.legends
         assert legend.get_title().get_text() == ""
 
+    def test_legendless_mark(self, xy):
 
-class TestHelpers:
+        class NoLegendMark(MockMark):
+            def _legend_artist(self, variables, value, scales):
+                return None
+
+        p = Plot(**xy, color=["a", "b", "c", "d"]).add(NoLegendMark()).plot()
+        assert not p._figure.legends
+
+
+class TestDefaultObject:
 
     def test_default_repr(self):
 

@@ -60,11 +60,9 @@ Testing
 
 Testing seaborn requires installing additional dependencies; they can be installed with the `dev` extra (e.g., `pip install .[dev]`).
 
-To test the code, run `make test` in the source directory. This will exercise both the unit tests and docstring examples (using [pytest](https://docs.pytest.org/)) and generate a coverage report.
+To test the code, run `make test` in the source directory. This will exercise the unit tests (using [pytest](https://docs.pytest.org/)) and generate a coverage report.
 
-The doctests require a network connection (unless all example datasets are cached), but the unit tests can be run offline with `make unittests`.
-
-Code style is enforced with `flake8` using the settings in the [`setup.cfg`](./setup.cfg) file. Run `make lint` to check. Alternately, you can use `pre-commit` to automatically run lint checks on any files you are committing &ndash; just run `pre-commit install` to set it up, and then commit as usual going forward.
+Code style is enforced with `flake8` using the settings in the [`setup.cfg`](./setup.cfg) file. Run `make lint` to check. Alternately, you can use `pre-commit` to automatically run lint checks on any files you are committing: just run `pre-commit install` to set it up, and then commit as usual going forward.
 
 Development
 -----------

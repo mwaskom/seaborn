@@ -15,7 +15,7 @@ from typing import Any, List, Optional, cast
 
 from cycler import cycler
 import pandas as pd
-from pandas import DataFrame, Series
+from pandas import DataFrame, Series, Index
 import matplotlib as mpl
 from matplotlib.axes import Axes
 from matplotlib.artist import Artist
@@ -29,7 +29,13 @@ from seaborn._core.scales import Scale
 from seaborn._core.subplots import Subplots
 from seaborn._core.groupby import GroupBy
 from seaborn._core.properties import PROPERTIES, Property
-from seaborn._core.typing import DataSource, VariableSpec, VariableSpecList, OrderSpec
+from seaborn._core.typing import (
+    DataSource,
+    VariableSpec,
+    VariableSpecList,
+    OrderSpec,
+    Default,
+)
 from seaborn._core.rules import categorical_order
 from seaborn._compat import set_scale_obj, set_layout_engine
 from seaborn.rcmod import axes_style, plotting_context
@@ -45,6 +51,9 @@ if sys.version_info >= (3, 8):
     from typing import TypedDict
 else:
     from typing_extensions import TypedDict
+
+
+default = Default()
 
 
 # ---- Definitions for internal specs --------------------------------- #
@@ -78,13 +87,6 @@ class PairSpec(TypedDict, total=False):
 
 
 # --- Local helpers ----------------------------------------------------------------
-
-class Default:
-    def __repr__(self):
-        return "<default>"
-
-
-default = Default()
 
 
 @contextmanager
@@ -258,7 +260,8 @@ class Plot:
                 if name in variables:
                     raise TypeError(f"`{name}` given by both name and position.")
                 # Keep coordinates at the front of the variables dict
-                variables = {name: var, **variables}
+                # Cast type because we know this isn't a DataSource at this point
+                variables = {name: cast(VariableSpec, var), **variables}
 
         return data, variables
 
@@ -331,8 +334,11 @@ class Plot:
             + list(self._facet_spec.get("variables", []))
         )
         for layer in self._layers:
-            variables.extend(c for c in layer["vars"] if c not in variables)
-        return variables
+            variables.extend(v for v in layer["vars"] if v not in variables)
+
+        # Coerce to str in return to appease mypy; we know these will only
+        # ever be strings but I don't think we can type a DataFrame that way yet
+        return [str(v) for v in variables]
 
     def on(self, target: Axes | SubFigure | Figure) -> Plot:
         """
@@ -558,7 +564,7 @@ class Plot:
         .. include:: ../docstrings/objects.Plot.facet.rst
 
         """
-        variables = {}
+        variables: dict[str, VariableSpec] = {}
         if col is not None:
             variables["col"] = col
         if row is not None:
@@ -1106,7 +1112,7 @@ class Plotter:
                 for axis, var in zip(*pairings):
                     if axis != var:
                         df = df.rename(columns={var: axis})
-                        drop_cols = [x for x in df if re.match(rf"{axis}\d+", x)]
+                        drop_cols = [x for x in df if re.match(rf"{axis}\d+", str(x))]
                         df = df.drop(drop_cols, axis=1)
                         scales[axis] = scales[var]
 
@@ -1176,7 +1182,7 @@ class Plotter:
             for layer in layers:
                 variables.extend(layer["data"].frame.columns)
                 for df in layer["data"].frames.values():
-                    variables.extend(v for v in df if v not in variables)
+                    variables.extend(str(v) for v in df if v not in variables)
             variables = [v for v in variables if v not in self._scales]
 
         for var in variables:
@@ -1307,7 +1313,7 @@ class Plotter:
             if "width" in mark._mappable_props:
                 width = mark._resolve(df, "width", None)
             else:
-                width = df.get("width", 0.8)  # TODO what default
+                width = 0.8 if "width" not in df else df["width"]  # TODO what default?
             if orient in df:
                 df["width"] = width * scales[orient]._spacing(df[orient])
 
@@ -1321,7 +1327,7 @@ class Plotter:
                 # TODO unlike width, we might not want to add baseline to data
                 # if the mark doesn't use it. Practically, there is a concern about
                 # Mark abstraction like Area / Ribbon
-                baseline = df.get("baseline", 0)
+                baseline = 0 if "baseline" not in df else df["baseline"]
             df["baseline"] = baseline
 
             if move is not None:
@@ -1351,33 +1357,11 @@ class Plotter:
         if layer["legend"]:
             self._update_legend_contents(p, mark, data, scales)
 
-    def _scale_coords(self, subplots: list[dict], df: DataFrame) -> DataFrame:
-        # TODO stricter type on subplots
-
-        coord_cols = [c for c in df if re.match(r"^[xy]\D*$", c)]
-        out_df = (
-            df
-            .copy(deep=False)
-            .drop(coord_cols, axis=1)
-            .reindex(df.columns, axis=1)  # So unscaled columns retain their place
-        )
-
-        for view in subplots:
-            view_df = self._filter_subplot_data(df, view)
-            axes_df = view_df[coord_cols]
-            with pd.option_context("mode.use_inf_as_null", True):
-                axes_df = axes_df.dropna()
-            for var, values in axes_df.items():
-                scale = view[f"{var[0]}scale"]
-                out_df.loc[values.index, var] = scale(values)
-
-        return out_df
-
     def _unscale_coords(
         self, subplots: list[dict], df: DataFrame, orient: str,
     ) -> DataFrame:
         # TODO do we still have numbers in the variable name at this point?
-        coord_cols = [c for c in df if re.match(r"^[xy]\D*$", c)]
+        coord_cols = [c for c in df if re.match(r"^[xy]\D*$", str(c))]
         drop_cols = [*coord_cols, "width"] if "width" in df else coord_cols
         out_df = (
             df
@@ -1391,11 +1375,11 @@ class Plotter:
             axes_df = view_df[coord_cols]
             for var, values in axes_df.items():
 
-                axis = getattr(view["ax"], f"{var[0]}axis")
+                axis = getattr(view["ax"], f"{str(var)[0]}axis")
                 # TODO see https://github.com/matplotlib/matplotlib/issues/22713
                 transform = axis.get_transform().inverted().transform
                 inverted = transform(values)
-                out_df.loc[values.index, var] = inverted
+                out_df.loc[values.index, str(var)] = inverted
 
                 if var == orient and "width" in view_df:
                     width = view_df["width"]
@@ -1442,12 +1426,12 @@ class Plotter:
             for axis, var in zip("xy", (x, y)):
                 if axis != var:
                     out_df = out_df.rename(columns={var: axis})
-                    cols = [col for col in out_df if re.match(rf"{axis}\d+", col)]
+                    cols = [col for col in out_df if re.match(rf"{axis}\d+", str(col))]
                     out_df = out_df.drop(cols, axis=1)
 
             yield subplots, out_df, scales
 
-    def _get_subplot_index(self, df: DataFrame, subplot: dict) -> DataFrame:
+    def _get_subplot_index(self, df: DataFrame, subplot: dict) -> Index:
 
         dims = df.columns.intersection(["col", "row"])
         if dims.empty:
@@ -1553,11 +1537,12 @@ class Plotter:
     ) -> None:
         """Add legend artists / labels for one layer in the plot."""
         if data.frame.empty and data.frames:
-            legend_vars = set()
+            legend_vars: list[str] = []
             for frame in data.frames.values():
-                legend_vars.update(frame.columns.intersection(scales))
+                frame_vars = frame.columns.intersection(list(scales))
+                legend_vars.extend(v for v in frame_vars if v not in legend_vars)
         else:
-            legend_vars = data.frame.columns.intersection(scales)
+            legend_vars = list(data.frame.columns.intersection(list(scales)))
 
         # First pass: Identify the values that will be shown for each variable
         schema: list[tuple[
@@ -1579,12 +1564,15 @@ class Plotter:
                     schema.append(entry)
 
         # Second pass, generate an artist corresponding to each value
-        contents = []
+        contents: list[tuple[tuple[str, str | int], Any, list[str]]] = []
         for key, variables, (values, labels) in schema:
             artists = []
             for val in values:
-                artists.append(mark._legend_artist(variables, val, scales))
-            contents.append((key, artists, labels))
+                artist = mark._legend_artist(variables, val, scales)
+                if artist is not None:
+                    artists.append(artist)
+            if artists:
+                contents.append((key, artists, labels))
 
         self._legend_contents.extend(contents)
 
@@ -1596,7 +1584,7 @@ class Plotter:
         merged_contents: dict[
             tuple[str, str | int], tuple[list[Artist], list[str]],
         ] = {}
-        for key, artists, labels in self._legend_contents:
+        for key, new_artists, labels in self._legend_contents:
             # Key is (name, id); we need the id to resolve variable uniqueness,
             # but will need the name in the next step to title the legend
             if key in merged_contents:
@@ -1605,11 +1593,11 @@ class Plotter:
                 for i, artist in enumerate(existing_artists):
                     # Matplotlib accepts a tuple of artists and will overlay them
                     if isinstance(artist, tuple):
-                        artist += artist[i],
+                        artist += new_artists[i],
                     else:
-                        existing_artists[i] = artist, artists[i]
+                        existing_artists[i] = artist, new_artists[i]
             else:
-                merged_contents[key] = artists.copy(), labels
+                merged_contents[key] = new_artists.copy(), labels
 
         # TODO explain
         loc = "center right" if self._pyplot else "center left"

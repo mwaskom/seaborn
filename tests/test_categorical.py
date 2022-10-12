@@ -342,7 +342,7 @@ class TestCategoricalPlotter(CategoricalFixture):
         p1 = cat._CategoricalPlotter()
         p1.establish_variables(self.g, self.y, hue=self.h)
         p2 = cat._CategoricalPlotter()
-        p2.establish_variables(self.g, self.y[::-1], self.h)
+        p2.establish_variables(self.g, self.y.iloc[::-1], self.h)
         for i, (d1, d2) in enumerate(zip(p1.plot_data, p2.plot_data)):
             assert np.array_equal(d1.sort_index(), d2.sort_index())
 
@@ -616,7 +616,7 @@ class TestCategoricalStatPlotter(CategoricalFixture):
                                       y.groupby([g, h]).mean().unstack())
 
         for ci_g, (_, grp_y) in zip(p.confint, y.groupby(g)):
-            for ci, hue_y in zip(ci_g, [grp_y[::2], grp_y[1::2]]):
+            for ci, hue_y in zip(ci_g, [grp_y.iloc[::2], grp_y.iloc[1::2]]):
                 sem = hue_y.std() / np.sqrt(len(hue_y))
                 mean = hue_y.mean()
                 half_ci = _normal_quantile_func(.975) * sem
@@ -734,7 +734,7 @@ class TestCategoricalStatPlotter(CategoricalFixture):
                                       y.groupby([g, h]).mean().unstack())
 
         for ci_g, (_, grp_y) in zip(p.confint, y.groupby(g)):
-            for ci, hue_y in zip(ci_g, [grp_y[::2], grp_y[1::2]]):
+            for ci, hue_y in zip(ci_g, [grp_y.iloc[::2], grp_y.iloc[1::2]]):
                 mean = hue_y.mean()
                 half_ci = np.std(hue_y)
                 ci_want = mean - half_ci, mean + half_ci

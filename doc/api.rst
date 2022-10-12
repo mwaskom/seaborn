@@ -66,6 +66,15 @@ Mark objects
     Area
     Band
 
+.. rubric:: Text marks
+
+.. autosummary::
+    :toctree: generated/
+    :template: object
+    :nosignatures:
+
+    Text
+
 Stat objects
 ~~~~~~~~~~~~
 
@@ -77,6 +86,7 @@ Stat objects
     Agg
     Est
     Hist
+    Perc
     PolyFit
 
 Move objects
