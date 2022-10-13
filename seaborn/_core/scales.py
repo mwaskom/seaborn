@@ -94,7 +94,12 @@ class Scale:
         return InternalScale(name, (forward, inverse))
 
     def _spacing(self, x: Series) -> float:
-        return self._spacer(x)
+        space = self._spacer(x)
+        if np.isnan(space):
+            # This happens when there is no variance in the orient coordinate data
+            # Not exactly clear what the right default is, but 1 seems reasonable?
+            return 1
+        return space
 
     def _setup(
         self, data: Series, prop: Property, axis: Axis | None = None,

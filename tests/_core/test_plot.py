@@ -683,6 +683,14 @@ class TestPlotting:
         Plot().plot()
         assert m.n_splits == 0
 
+    def test_no_orient_variance(self):
+
+        x, y = [0, 0], [1, 2]
+        m = MockMark()
+        Plot(x, y).add(m).plot()
+        assert_array_equal(m.passed_data[0]["x"], x)
+        assert_array_equal(m.passed_data[0]["y"], y)
+
     def test_single_split_single_layer(self, long_df):
 
         m = MockMark()
