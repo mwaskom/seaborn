@@ -253,8 +253,9 @@ class TestLines:
         y = [1, 2, 3]
         p = Plot(x, y).add(Lines()).plot()
         lines, = p._figure.axes[0].collections
-        paths, = lines.get_paths()
-        assert paths.vertices.shape == (0, 2)
+        verts = lines.get_paths()[0].vertices.T
+        assert_array_equal(verts[0], x)
+        assert_array_equal(verts[1], y)
 
 
 class TestRange:
