@@ -24,4 +24,6 @@ v0.12.1 (Unreleased)
 
 - |Fix| Fixed a regression in :func:`kdeplot` where passing `cmap` for an unfilled bivariate plot would raise an exception (:pr:`3065`).
 
+- |Fix| Addressed a performance regression in :func:`lineplot` with a large number of unique x values (:pr:`3081`).
+
 - |Build| Seaborn no longer contains doctest-style examples, simplifying the testing infrastructure (:pr:`3034`).
