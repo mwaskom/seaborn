@@ -22,6 +22,8 @@ v0.12.1 (Unreleased)
 
 - |Fix| Made :class:`objects.PolyFit` robust to missing data (:pr:`3010`).
 
+- |Fix| Fixed a bug in :class:`objects.Plot` that occurred when the orient coordinate data had zero variance (:pr:`3084`).
+
 - |Fix| Fixed a regression in :func:`kdeplot` where passing `cmap` for an unfilled bivariate plot would raise an exception (:pr:`3065`).
 
 - |Fix| Addressed a performance regression in :func:`lineplot` with a large number of unique x values (:pr:`3081`).
