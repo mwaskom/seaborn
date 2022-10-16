@@ -81,6 +81,19 @@ class Jitter(Move):
 class Dodge(Move):
     """
     Displacement and narrowing of overlapping marks along orientation axis.
+
+    Parameters
+    ----------
+    empty : {'keep', 'drop', 'fill'}
+    gap : float
+        Size of gap between dodged marks.
+    by : list of variable names
+        Variables to apply the movement to, otherwise use all.
+
+    Examples
+    --------
+    .. include:: ../docstrings/objects.Dodge.rst
+
     """
     empty: str = "keep"  # Options: keep, drop, fill
     gap: float = 0
