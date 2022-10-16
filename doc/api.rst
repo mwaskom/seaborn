@@ -86,6 +86,7 @@ Stat objects
 
     Agg
     Est
+    Count
     Hist
     Perc
     PolyFit

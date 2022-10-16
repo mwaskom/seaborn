@@ -6,7 +6,45 @@ import pytest
 from numpy.testing import assert_array_equal
 
 from seaborn._core.groupby import GroupBy
-from seaborn._stats.histogram import Hist
+from seaborn._stats.counting import Hist, Count
+
+
+class TestCount:
+
+    @pytest.fixture
+    def df(self, rng):
+
+        n = 30
+        return pd.DataFrame(dict(
+            x=rng.uniform(0, 7, n).round(),
+            y=rng.normal(size=n),
+            color=rng.choice(["a", "b", "c"], n),
+            group=rng.choice(["x", "y"], n),
+        ))
+
+    def get_groupby(self, df, orient):
+
+        other = {"x": "y", "y": "x"}[orient]
+        cols = [c for c in df if c != other]
+        return GroupBy(cols)
+
+    def test_single_grouper(self, df):
+
+        ori = "x"
+        df = df[["x"]]
+        gb = self.get_groupby(df, ori)
+        res = Count()(df, gb, ori, {})
+        expected = df.groupby("x").size()
+        assert_array_equal(res.sort_values("x")["y"], expected)
+
+    def test_multiple_groupers(self, df):
+
+        ori = "x"
+        df = df[["x", "group"]].sort_values("group")
+        gb = self.get_groupby(df, ori)
+        res = Count()(df, gb, ori, {})
+        expected = df.groupby(["x", "group"]).size()
+        assert_array_equal(res.sort_values(["x", "group"])["y"], expected)
 
 
 class TestHist:

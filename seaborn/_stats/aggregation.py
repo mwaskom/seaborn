@@ -35,7 +35,7 @@ class Agg(Stat):
         res = (
             groupby
             .agg(data, {var: self.func})
-            .dropna()
+            .dropna(subset=[var])
             .reset_index(drop=True)
         )
         return res
@@ -86,7 +86,7 @@ class Est(Stat):
         res = (
             groupby
             .apply(data, self._process, var, engine)
-            .dropna(subset=["x", "y"])
+            .dropna(subset=[var])
             .reset_index(drop=True)
         )
 
