@@ -154,6 +154,11 @@ class Dodge(Move):
 class Stack(Move):
     """
     Displacement of overlapping bar or area marks along the value axis.
+
+    Examples
+    --------
+    .. include:: ../docstrings/objects.Stack.rst
+
     """
     # TODO center? (or should this be a different move, eg. Stream())
 
@@ -189,6 +194,16 @@ class Stack(Move):
 class Shift(Move):
     """
     Displacement of all marks with the same magnitude / direction.
+
+    Parameters
+    ----------
+    x, y : float
+        Magnitude of shift, in data units, along each axis.
+
+    Examples
+    --------
+    .. include:: ../docstrings/objects.Shift.rst
+
     """
     x: float = 0
     y: float = 0
