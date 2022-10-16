@@ -222,6 +222,22 @@ class Shift(Move):
 class Norm(Move):
     """
     Divisive scaling on the value axis after aggregating within groups.
+
+    Parameters
+    ----------
+    func : str or callable
+        Function called on each group to define the comparison value.
+    where : str
+        Query string defining the subset used to define the comparison values.
+    by : list of variables
+        Variables used to define aggregation groups.
+    percent : bool
+        If True, multiply the result by 100.
+
+    Examples
+    --------
+    .. include:: ../docstrings/objects.Norm.rst
+
     """
 
     func: Union[Callable, str] = "max"
