@@ -4,7 +4,6 @@ import pandas as pd
 
 import pytest
 from numpy.testing import assert_array_equal
-from pandas.testing import assert_frame_equal
 
 from seaborn._core.groupby import GroupBy
 from seaborn._stats.counting import Hist, Count
@@ -35,16 +34,8 @@ class TestCount:
         df = df[["x"]]
         gb = self.get_groupby(df, ori)
         res = Count()(df, gb, ori, {})
-
-        expected = (
-            df["x"]
-            .value_counts(sort=False)
-            .rename("y")
-            .rename_axis("x")
-            .sort_index()
-            .reset_index()
-        )
-        assert_frame_equal(res, expected)
+        expected = df.groupby("x").size()
+        assert_array_equal(res.sort_values("x")["y"], expected)
 
     def test_multiple_groupers(self, df):
 
@@ -52,17 +43,8 @@ class TestCount:
         df = df[["x", "group"]].sort_values("group")
         gb = self.get_groupby(df, ori)
         res = Count()(df, gb, ori, {})
-
-        expected = (
-            df[["x", "group"]]
-            .value_counts(sort=False)
-            .astype(float)
-            .rename("y")
-            .rename_axis(["x", "group"])
-            .sort_index()
-            .reset_index()
-        )
-        assert_frame_equal(res, expected)
+        expected = df.groupby(["x", "group"]).size()
+        assert_array_equal(res.sort_values(["x", "group"])["y"], expected)
 
 
 class TestHist:

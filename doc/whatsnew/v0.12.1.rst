@@ -8,6 +8,8 @@ v0.12.1 (Unreleased)
 
 - |Feature| Added the :class:`objects.Perc` stat (:pr:`3063`).
 
+- |Feature| Added the :class:`objects.Count` stat (:pr:`3086`).
+
 - |Feature| The :class:`objects.Band` and :class:`objects.Range` marks will now cover the full extent of the data if `min` / `max` variables are not explicitly assigned or added in a transform (:pr:`3056`).
 
 - |Enhancement| |Defaults| The :class:`objects.Jitter` move now applies a small amount of jitter by default (:pr:`3066`).
