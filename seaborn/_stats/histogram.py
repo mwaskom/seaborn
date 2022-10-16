@@ -1,16 +1,50 @@
 from __future__ import annotations
 from dataclasses import dataclass
 from warnings import warn
+from typing import ClassVar
 
 import numpy as np
 import pandas as pd
+from pandas import DataFrame
 
 from seaborn._core.groupby import GroupBy
+from seaborn._core.scales import Scale
 from seaborn._stats.base import Stat
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from numpy.typing import ArrayLike
+
+
+@dataclass
+class Count(Stat):
+    """
+    Count distinct observations within groups.
+
+    See Also
+    --------
+    Hist : A more fully-featured transform including binning and/or normalization.
+
+    Examples
+    --------
+    .. include:: ../docstrings/objects.Count.rst
+
+    """
+    group_by_orient: ClassVar[bool] = True
+
+    def __call__(
+        self, data: DataFrame, groupby: GroupBy, orient: str, scales: dict[str, Scale],
+    ) -> DataFrame:
+
+        var = {"x": "y", "y": "x"}.get(orient)
+        data[var] = data[orient]
+        res = (
+            groupby
+            .agg(data, {var: len})
+            .dropna(subset=["x", "y"])
+            .reset_index(drop=True)
+        )
+        return res
 
 
 @dataclass
@@ -167,10 +201,12 @@ class Hist(Stat):
 
         return data.assign(**{self.stat: hist})
 
-    def __call__(self, data, groupby, orient, scales):
+    def __call__(
+        self, data: DataFrame, groupby: GroupBy, orient: str, scales: dict[str, Scale],
+    ) -> DataFrame:
 
         scale_type = scales[orient].__class__.__name__.lower()
-        grouping_vars = [v for v in data if v in groupby.order]
+        grouping_vars = [str(v) for v in data if v in groupby.order]
         if not grouping_vars or self.common_bins is True:
             bin_kws = self._define_bin_params(data, orient, scale_type)
             data = groupby.apply(data, self._eval, orient, bin_kws)

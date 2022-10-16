@@ -4,9 +4,65 @@ import pandas as pd
 
 import pytest
 from numpy.testing import assert_array_equal
+from pandas.testing import assert_frame_equal
 
 from seaborn._core.groupby import GroupBy
-from seaborn._stats.histogram import Hist
+from seaborn._stats.histogram import Hist, Count
+
+
+class TestCount:
+
+    @pytest.fixture
+    def df(self, rng):
+
+        n = 30
+        return pd.DataFrame(dict(
+            x=rng.uniform(0, 7, n).round(),
+            y=rng.normal(size=n),
+            color=rng.choice(["a", "b", "c"], n),
+            group=rng.choice(["x", "y"], n),
+        ))
+
+    def get_groupby(self, df, orient):
+
+        other = {"x": "y", "y": "x"}[orient]
+        cols = [c for c in df if c != other]
+        return GroupBy(cols)
+
+    def test_single_grouper(self, df):
+
+        ori = "x"
+        df = df[["x"]]
+        gb = self.get_groupby(df, ori)
+        res = Count()(df, gb, ori, {})
+
+        expected = (
+            df["x"]
+            .value_counts(sort=False)
+            .rename("y")
+            .rename_axis("x")
+            .sort_index()
+            .reset_index()
+        )
+        assert_frame_equal(res, expected)
+
+    def test_multiple_groupers(self, df):
+
+        ori = "x"
+        df = df[["x", "group"]].sort_values("group")
+        gb = self.get_groupby(df, ori)
+        res = Count()(df, gb, ori, {})
+
+        expected = (
+            df[["x", "group"]]
+            .value_counts(sort=False)
+            .astype(float)
+            .rename("y")
+            .rename_axis(["x", "group"])
+            .sort_index()
+            .reset_index()
+        )
+        assert_frame_equal(res, expected)
 
 
 class TestHist:
