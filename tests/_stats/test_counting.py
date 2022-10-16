@@ -7,7 +7,7 @@ from numpy.testing import assert_array_equal
 from pandas.testing import assert_frame_equal
 
 from seaborn._core.groupby import GroupBy
-from seaborn._stats.histogram import Hist, Count
+from seaborn._stats.counting import Hist, Count
 
 
 class TestCount:
