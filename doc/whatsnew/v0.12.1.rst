@@ -14,7 +14,9 @@ v0.12.1 (Unreleased)
 
 - |Enhancement| |Defaults| Axes with a :class:`objects.Nominal` scale now appear like categorical axes in class seaborn, with fixed margins, no grid, and an inverted y axis (:pr:`3069`).
 
-- |Enhancement| Marks that sort along the orient axis (e.g. :class:`objects.Line`) now use a stable algorithm (:pr:`3064`).
+- |Enhancement| |API| The :meth:`objects.Continuous.label` method now accepts `base=None` to override the default formatter with a log transform (:pr:`3087`).
+
+- |Enhancement| |Fix| Marks that sort along the orient axis (e.g. :class:`objects.Line`) now use a stable algorithm (:pr:`3064`).
 
 - |Enhancement| |Fix| Added a `label` parameter to :func:`pointplot`, which addresses a regression in 0.12.0 when :func:`pointplot` is passed to :class:`FacetGrid` (:pr:`3016`).
 
