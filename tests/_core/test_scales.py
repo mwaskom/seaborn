@@ -213,6 +213,15 @@ class TestContinuous:
         a.set_view_interval(.5, 1050)
         assert_array_equal(a.major.locator(), [1, 10, 100, 1000])
 
+    def test_log_tick_format_disabled(self, x):
+
+        s = Continuous(trans="log").label(base=None)._setup(x, Coordinate())
+        a = PseudoAxis(s._matplotlib_scale)
+        a.set_view_interval(20, 20000)
+        labels = a.major.formatter.format_ticks(a.major.locator())
+        for text in labels:
+            assert re.match(r"^\d+$", text)
+
     def test_log_tick_every(self, x):
 
         with pytest.raises(RuntimeError, match="`every` not supported"):
