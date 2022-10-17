@@ -81,6 +81,19 @@ class Jitter(Move):
 class Dodge(Move):
     """
     Displacement and narrowing of overlapping marks along orientation axis.
+
+    Parameters
+    ----------
+    empty : {'keep', 'drop', 'fill'}
+    gap : float
+        Size of gap between dodged marks.
+    by : list of variable names
+        Variables to apply the movement to, otherwise use all.
+
+    Examples
+    --------
+    .. include:: ../docstrings/objects.Dodge.rst
+
     """
     empty: str = "keep"  # Options: keep, drop, fill
     gap: float = 0
@@ -141,6 +154,11 @@ class Dodge(Move):
 class Stack(Move):
     """
     Displacement of overlapping bar or area marks along the value axis.
+
+    Examples
+    --------
+    .. include:: ../docstrings/objects.Stack.rst
+
     """
     # TODO center? (or should this be a different move, eg. Stream())
 
@@ -176,6 +194,16 @@ class Stack(Move):
 class Shift(Move):
     """
     Displacement of all marks with the same magnitude / direction.
+
+    Parameters
+    ----------
+    x, y : float
+        Magnitude of shift, in data units, along each axis.
+
+    Examples
+    --------
+    .. include:: ../docstrings/objects.Shift.rst
+
     """
     x: float = 0
     y: float = 0
@@ -194,6 +222,22 @@ class Shift(Move):
 class Norm(Move):
     """
     Divisive scaling on the value axis after aggregating within groups.
+
+    Parameters
+    ----------
+    func : str or callable
+        Function called on each group to define the comparison value.
+    where : str
+        Query string defining the subset used to define the comparison values.
+    by : list of variables
+        Variables used to define aggregation groups.
+    percent : bool
+        If True, multiply the result by 100.
+
+    Examples
+    --------
+    .. include:: ../docstrings/objects.Norm.rst
+
     """
 
     func: Union[Callable, str] = "max"
