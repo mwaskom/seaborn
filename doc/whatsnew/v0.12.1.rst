@@ -1,6 +1,8 @@
 
-v0.12.1 (Unreleased)
---------------------
+v0.12.1 (October 2022)
+----------------------
+
+This is an incremental release that is a recommended upgrade for all users. It addresses a handful of bugs / regressions in v0.12.0 and adds several features and enhancements to the new :doc:`objects interface </tutorial/objects_interface>`.
 
 - |Feature| Added the :class:`objects.Text` mark (:pr:`3051`).
 
