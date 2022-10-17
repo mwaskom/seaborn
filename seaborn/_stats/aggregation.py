@@ -22,6 +22,14 @@ class Agg(Stat):
     func : str or callable
         Name of a :class:`pandas.Series` method or a vector -> scalar function.
 
+    See Also
+    --------
+    objects.Est : Aggregation with error bars.
+
+    Examples
+    --------
+    .. include:: ../docstrings/objects.Agg.rst
+
     """
     func: str | Callable[[Vector], float] = "mean"
 
@@ -35,7 +43,7 @@ class Agg(Stat):
         res = (
             groupby
             .agg(data, {var: self.func})
-            .dropna()
+            .dropna(subset=[var])
             .reset_index(drop=True)
         )
         return res
@@ -45,6 +53,9 @@ class Agg(Stat):
 class Est(Stat):
     """
     Calculate a point estimate and error bar interval.
+
+    For additional information about the various `errorbar` choices, see
+    the :doc:`errorbar tutorial </tutorial/error_bars>`.
 
     Parameters
     ----------
@@ -58,6 +69,10 @@ class Est(Stat):
        Number of bootstrap samples to draw for "ci" errorbars.
     seed : int
         Seed for the PRNG used to draw bootstrap samples.
+
+    Examples
+    --------
+    .. include:: ../docstrings/objects.Est.rst
 
     """
     func: str | Callable[[Vector], float] = "mean"
@@ -86,7 +101,7 @@ class Est(Stat):
         res = (
             groupby
             .apply(data, self._process, var, engine)
-            .dropna(subset=["x", "y"])
+            .dropna(subset=[var])
             .reset_index(drop=True)
         )
 

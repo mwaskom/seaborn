@@ -1070,6 +1070,15 @@ class TestLinePlotter(SharedAxesLevelTests, Helpers):
         ax.clear()
         p.plot(ax, {})
 
+    def test_non_aggregated_data(self):
+
+        x = [1, 2, 3, 4]
+        y = [2, 4, 6, 8]
+        ax = lineplot(x=x, y=y)
+        line, = ax.lines
+        assert_array_equal(line.get_xdata(), x)
+        assert_array_equal(line.get_ydata(), y)
+
     def test_orient(self, long_df):
 
         long_df = long_df.drop("x", axis=1).rename(columns={"s": "y", "y": "x"})

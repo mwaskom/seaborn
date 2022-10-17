@@ -20,7 +20,7 @@ from ._oldcore import (
 # We have moved univariate histogram computation over to the new Hist class,
 # but still use the older Histogram for bivariate computation.
 from ._statistics import ECDF, Histogram, KDE
-from ._stats.histogram import Hist
+from ._stats.counting import Hist
 
 from .axisgrid import (
     FacetGrid,

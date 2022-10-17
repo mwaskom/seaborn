@@ -427,7 +427,10 @@ class _LinePlotter(_RelationalPlotter):
                 sort_cols = [var for var in sort_vars if var in self.variables]
                 sub_data = sub_data.sort_values(sort_cols)
 
-            if self.estimator is not None:
+            if (
+                self.estimator is not None
+                and sub_data[orient].value_counts().max() > 1
+            ):
                 if "units" in self.variables:
                     # TODO eventually relax this constraint
                     err = "estimator must be None when specifying units"
@@ -436,6 +439,9 @@ class _LinePlotter(_RelationalPlotter):
                 # Could pass as_index=False instead of reset_index,
                 # but that fails on a corner case with older pandas.
                 sub_data = grouped.apply(agg, other).reset_index()
+            else:
+                sub_data[f"{other}min"] = np.nan
+                sub_data[f"{other}max"] = np.nan
 
             # TODO this is pretty ad hoc ; see GH2409
             for var in "xy":

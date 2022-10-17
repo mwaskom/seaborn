@@ -35,6 +35,7 @@ from matplotlib.scale import ScaleBase
 from pandas import Series
 
 from seaborn._core.rules import categorical_order
+from seaborn._core.typing import Default, default
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
@@ -94,7 +95,12 @@ class Scale:
         return InternalScale(name, (forward, inverse))
 
     def _spacing(self, x: Series) -> float:
-        return self._spacer(x)
+        space = self._spacer(x)
+        if np.isnan(space):
+            # This happens when there is no variance in the orient coordinate data
+            # Not exactly clear what the right default is, but 1 seems reasonable?
+            return 1
+        return space
 
     def _setup(
         self, data: Series, prop: Property, axis: Axis | None = None,
@@ -489,7 +495,7 @@ class Continuous(ContinuousBase):
         self,
         formatter: Formatter | None = None, *,
         like: str | Callable | None = None,
-        base: int | None = None,
+        base: int | None | Default = default,
         unit: str | None = None,
     ) -> Continuous:
         """
@@ -505,6 +511,7 @@ class Continuous(ContinuousBase):
             and returns a string.
         base : number
             Use log formatter (with scientific notation) having this value as the base.
+            Set to `None` to override the default formatter with a log transform.
         unit : str or (str, str) tuple
             Use  SI prefixes with these units (e.g., with `unit="g"`, a tick value
             of 5000 will appear as `5 kg`). When a tuple, the first element gives the
@@ -608,7 +615,7 @@ class Continuous(ContinuousBase):
     def _get_formatter(self, locator, formatter, like, base, unit):
 
         log_base, symlog_thresh = self._parse_for_log_params(self.trans)
-        if base is None:
+        if base is default:
             if symlog_thresh:
                 log_base = 10
             base = log_base

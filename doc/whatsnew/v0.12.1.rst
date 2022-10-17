@@ -8,13 +8,17 @@ v0.12.1 (Unreleased)
 
 - |Feature| Added the :class:`objects.Perc` stat (:pr:`3063`).
 
+- |Feature| Added the :class:`objects.Count` stat (:pr:`3086`).
+
 - |Feature| The :class:`objects.Band` and :class:`objects.Range` marks will now cover the full extent of the data if `min` / `max` variables are not explicitly assigned or added in a transform (:pr:`3056`).
 
 - |Enhancement| |Defaults| The :class:`objects.Jitter` move now applies a small amount of jitter by default (:pr:`3066`).
 
 - |Enhancement| |Defaults| Axes with a :class:`objects.Nominal` scale now appear like categorical axes in class seaborn, with fixed margins, no grid, and an inverted y axis (:pr:`3069`).
 
-- |Enhancement| Marks that sort along the orient axis (e.g. :class:`objects.Line`) now use a stable algorithm (:pr:`3064`).
+- |Enhancement| |API| The :meth:`objects.Continuous.label` method now accepts `base=None` to override the default formatter with a log transform (:pr:`3087`).
+
+- |Enhancement| |Fix| Marks that sort along the orient axis (e.g. :class:`objects.Line`) now use a stable algorithm (:pr:`3064`).
 
 - |Enhancement| |Fix| Added a `label` parameter to :func:`pointplot`, which addresses a regression in 0.12.0 when :func:`pointplot` is passed to :class:`FacetGrid` (:pr:`3016`).
 
@@ -22,6 +26,10 @@ v0.12.1 (Unreleased)
 
 - |Fix| Made :class:`objects.PolyFit` robust to missing data (:pr:`3010`).
 
+- |Fix| Fixed a bug in :class:`objects.Plot` that occurred when the orient coordinate data had zero variance (:pr:`3084`).
+
 - |Fix| Fixed a regression in :func:`kdeplot` where passing `cmap` for an unfilled bivariate plot would raise an exception (:pr:`3065`).
+
+- |Fix| Addressed a performance regression in :func:`lineplot` with a large number of unique x values (:pr:`3081`).
 
 - |Build| Seaborn no longer contains doctest-style examples, simplifying the testing infrastructure (:pr:`3034`).
