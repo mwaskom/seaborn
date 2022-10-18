@@ -2137,7 +2137,7 @@ _categorical_docs = dict(
     """),
     capsize=dedent("""\
     capsize : float, optional
-        Width of the "caps" on error bars./
+        Width of the "caps" on error bars.\
     """),
     errwidth=dedent("""\
     errwidth : float, optional
