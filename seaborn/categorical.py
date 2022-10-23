@@ -2584,7 +2584,8 @@ stripplot.__doc__ = dedent("""\
     edgecolor : matplotlib color, "gray" is special-cased, optional
         Color of the lines around each point. If you pass ``"gray"``, the
         brightness is determined by the color palette used for the body
-        of the points.
+        of the points. Note that `stripplot` has `linewidth=0` by default,
+        so edge colors are only visible with nonzero line width.
     {linewidth}
     {native_scale}
     {formatter}
