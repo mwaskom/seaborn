@@ -1,6 +1,5 @@
 from __future__ import annotations
 from dataclasses import dataclass
-from warnings import warn
 from typing import ClassVar
 
 import numpy as np
@@ -86,7 +85,6 @@ class Hist(Stat):
 
     Notes
     -----
-
     The choice of bins for computing and plotting a histogram can exert
     substantial influence on the insights that one is able to draw from the
     visualization. If the bins are too large, they may erase important features.
@@ -99,7 +97,6 @@ class Hist(Stat):
     This function allows you to specify bins in several different ways, such as
     by setting the total number of bins to use, the width of each bin, or the
     specific locations where the bins should break.
-
 
     Examples
     --------
@@ -215,12 +212,8 @@ class Hist(Stat):
                 bin_groupby = GroupBy(grouping_vars)
             else:
                 bin_groupby = GroupBy(self.common_bins)
-                undefined = set(self.common_bins) - set(grouping_vars)
-                if undefined:
-                    param = f"{self.__class__.__name__}.common_bins"
-                    names = ", ".join(f"{x!r}" for x in undefined)
-                    msg = f"Undefined variables(s) passed to `{param}`: {names}."
-                    warn(msg)
+                self._check_grouping_vars("common_bins", grouping_vars)
+
             data = bin_groupby.apply(
                 data, self._get_bins_and_eval, orient, groupby, scale_type,
             )
@@ -229,16 +222,11 @@ class Hist(Stat):
             data = self._normalize(data)
         else:
             if self.common_norm is False:
-                norm_grouper = grouping_vars
+                norm_groupby = GroupBy(grouping_vars)
             else:
-                norm_grouper = self.common_norm
-                undefined = set(self.common_norm) - set(grouping_vars)
-                if undefined:
-                    param = f"{self.__class__.__name__}.common_norm"
-                    names = ", ".join(f"{x!r}" for x in undefined)
-                    msg = f"Undefined variables(s) passed to `{param}`: {names}."
-                    warn(msg)
-            data = GroupBy(norm_grouper).apply(data, self._normalize)
+                norm_groupby = GroupBy(self.common_norm)
+                self._check_grouping_vars("common_norm", grouping_vars)
+            data = norm_groupby.apply(data, self._normalize)
 
         other = {"x": "y", "y": "x"}[orient]
         return data.assign(**{other: data[self.stat]})

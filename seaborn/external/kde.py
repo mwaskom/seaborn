@@ -71,8 +71,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import numpy as np
 from numpy import (asarray, atleast_2d, reshape, zeros, newaxis, dot, exp, pi,
-                   sqrt, ravel, power, atleast_1d, squeeze, sum, transpose,
-                   ones, cov)
+                   sqrt, power, atleast_1d, sum, ones, cov)
 from numpy import linalg
 
 
