@@ -39,13 +39,13 @@ class KDE(Stat):
         If `True`, all curves will share the same evaluation grid.
         If `False`, each evaluation grid is independent. If a list, defines
         variable(s) to group by and share a grid within.
+    gridsize : int or None
+        Number of points in the evaluation grid. If None, the
+        density is evaluated at the original datapoints.
     cut : float
         Factor, multiplied by the smoothing bandwidth, that determines how far
         the evaluation grid extends past the extreme datapoints. When set to 0,
         the curve is trunacted at the data limits.
-    gridsize : int or None
-        Number of points in the evaluation grid. If None, the
-        density is evaluated at the original datapoints.
     cumulative : bool
         If True, estimate a cumulative distribution function. Requires scipy.
 
@@ -88,8 +88,8 @@ class KDE(Stat):
     bw_method: str | float | Callable[[gaussian_kde], float] = "scott"
     common_norm: bool | list[str] = True
     common_grid: bool | list[str] = True
-    cut: float = 3
     gridsize: int | None = 200
+    cut: float = 3
     cumulative: bool = False
 
     def __post_init__(self):
@@ -135,20 +135,22 @@ class KDE(Stat):
         self, data: DataFrame, orient: str, support: ndarray
     ) -> DataFrame:
         """Transform single group by fitting a KDE and evaluating on a support grid."""
-        empty = pd.DataFrame(columns=[orient, "density", "weight"], dtype=float)
+        empty = pd.DataFrame(columns=[orient, "weight", "density"], dtype=float)
         if len(data) < 2:
             return empty
         try:
             kde = self._fit(data, orient)
         except np.linalg.LinAlgError:
             return empty
+
         if self.cumulative:
             s_0 = support[0]
             density = np.array([kde.integrate_box_1d(s_0, s_i) for s_i in support])
         else:
             density = kde(support)
+
         weight = data["weight"].sum()
-        return pd.DataFrame({orient: support, "density": density, "weight": weight})
+        return pd.DataFrame({orient: support, "weight": weight, "density": density})
 
     def _transform(
         self, data: DataFrame, orient: str, grouping_vars: list[str]
@@ -161,6 +163,7 @@ class KDE(Stat):
             support = self._get_support(data, orient)
         except np.linalg.LinAlgError:
             return empty
+
         grouping_vars = [x for x in grouping_vars if data[x].nunique() > 1]
         if not grouping_vars:
             return self._fit_and_evaluate(data, orient, support)
