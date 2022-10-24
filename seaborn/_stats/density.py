@@ -29,8 +29,8 @@ class KDE(Stat):
         Factor that multiplicatively scales the value chosen using
         ``bw_method``. Increasing will make the curve smoother. See Notes.
     bw_method : string, scalar, or callable
-        Method for determining the smoothing bandwidth to use; passed to
-        :class:`scipy.stats.gaussian_kde`.
+        Method for determining the smoothing bandwidth to use. Passed directly
+        to :class:`scipy.stats.gaussian_kde`; see there for options.
     common_norm : bool or list of variables
         If `True`, normalize so that the sum of all curves sums to 1.
         If `False`, normalize each curve independently. If a list, defines
@@ -40,37 +40,34 @@ class KDE(Stat):
         If `False`, each evaluation grid is independent. If a list, defines
         variable(s) to group by and share a grid within.
     gridsize : int or None
-        Number of points in the evaluation grid. If None, the
-        density is evaluated at the original datapoints.
+        Number of points in the evaluation grid. If None, the density is
+        evaluated at the original datapoints.
     cut : float
-        Factor, multiplied by the smoothing bandwidth, that determines how far
+        Factor, multiplied by the kernel bandwidth, that determines how far
         the evaluation grid extends past the extreme datapoints. When set to 0,
-        the curve is trunacted at the data limits.
+        the curve is truncated at the data limits.
     cumulative : bool
         If True, estimate a cumulative distribution function. Requires scipy.
 
     Notes
     -----
     The *bandwidth*, or standard deviation of the smoothing kernel, is an
-    important parameter. Misspecification of the bandwidth can produce a
-    distorted representation of the data. Much like the choice of bin width in a
-    histogram, an over-smoothed curve can erase true features of a distribution,
-    while an under-smoothed curve can create false features out of random
-    variability. The rule-of-thumb that sets the default bandwidth works best
-    when the true distribution is smooth, unimodal, and roughly bell-shaped.  It
-    is always a good idea to check the default behavior by using `bw_adjust` to
-    increase or decrease the amount of smoothing.
+    important parameter. Much like histogram bin width, using the wrong
+    bandwidth can produce a distorted representation. Over-smoothing can erase
+    true features, while under-smoothing can create false ones. The default
+    uses a rule-of-thumb that works best for distributions that are roughly
+    bell-shaped. It is a good idea to check the default by varying `bw_adjust`.
 
     Because the smoothing is performed with a Gaussian kernel, the estimated
-    density curve can extend to values that do not make sense for a particular
-    dataset. For example, the curve may be drawn over negative values when
-    smoothing data that are naturally positive. The `cut` parameter can be used
-    to control the extent of the curve, but datasets that have many observations
-    close to a natural boundary may be better served by a different transform.
+    density curve can extend to values that may not make sense. For example, the
+    curve may be drawn over negative values when data that are naturally
+    positive. The `cut` parameter can be used to control the evaluation range,
+    but datasets that have many observations close to a natural boundary may be
+    better served by a different method.
 
-    Similar considerations apply when a dataset is naturally discrete or "spiky"
+    Similar distortions may arise when a dataset is naturally discrete or "spiky"
     (containing many repeated observations of the same value). KDEs will always
-    produce a smooth curve, which would be misleading in these situations.
+    produce a smooth curve, which could be misleading.
 
     The units on the density axis are a common source of confusion. While kernel
     density estimation produces a probability distribution, the height of the curve
@@ -78,6 +75,8 @@ class KDE(Stat):
     only by integrating the density across a range. The curve is normalized so
     that the integral over all possible values is 1, meaning that the scale of
     the density axis depends on the data values.
+
+    If scipy is installed, its cython-accelerated implementation will be used.
 
     Examples
     --------
@@ -106,7 +105,7 @@ class KDE(Stat):
         ):
             param_name = f"{self.__class__.__name__}.{param}"
             raise TypeError(f"{param_name} must be a boolean or list of strings.")
-        self._check_grouping_vars(param, grouping_vars)
+        self._check_grouping_vars(param, grouping_vars, stacklevel=3)
 
     def _fit(self, data: DataFrame, orient: str) -> gaussian_kde:
         """Fit and return a KDE object."""
@@ -176,6 +175,7 @@ class KDE(Stat):
 
         if "weight" not in data:
             data = data.assign(weight=1)
+        data = data.dropna(subset=[orient, "weight"])
 
         # Transform each group separately
         grouping_vars = [str(v) for v in data if v in groupby.order]
@@ -208,8 +208,7 @@ class KDE(Stat):
                 on=norm_vars,
             )
 
-        value_var = {"x": "y", "y": "x"}[orient]
         res["density"] *= res.eval("weight / group_weight")
-        res[value_var] = res["density"]
-
-        return res
+        value = {"x": "y", "y": "x"}[orient]
+        res[value] = res["density"]
+        return res.drop(["weight", "group_weight"], axis=1)

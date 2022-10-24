@@ -42,15 +42,17 @@ class Stat:
             ])
             raise ValueError(err)
 
-    def _check_grouping_vars(self, param: str, data_vars: list[str]) -> None:
+    def _check_grouping_vars(
+        self, param: str, data_vars: list[str], stacklevel: int = 2,
+    ) -> None:
         """Warn if vars are named in parameter without being present in the data."""
         param_vars = getattr(self, param)
         undefined = set(param_vars) - set(data_vars)
         if undefined:
             param = f"{self.__class__.__name__}.{param}"
             names = ", ".join(f"{x!r}" for x in undefined)
-            msg = f"Undefined variables(s) passed for {param}: {names}."
-            warnings.warn(msg, stacklevel=2)
+            msg = f"Undefined variable(s) passed for {param}: {names}."
+            warnings.warn(msg, stacklevel=stacklevel)
 
     def __call__(
         self,

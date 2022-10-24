@@ -206,7 +206,7 @@ class TestHist:
     def test_common_norm_warning(self, long_df, triple_args):
 
         h = Hist(common_norm=["b"])
-        with pytest.warns(UserWarning, match="Undefined variable(s)"):
+        with pytest.warns(UserWarning, match=r"Undefined variable\(s\)"):
             h(long_df, *triple_args)
 
     def test_common_bins_default(self, long_df, triple_args):
@@ -239,7 +239,7 @@ class TestHist:
     def test_common_bins_warning(self, long_df, triple_args):
 
         h = Hist(common_bins=["b"])
-        with pytest.warns(UserWarning, match="Undefined variable(s)"):
+        with pytest.warns(UserWarning, match=r"Undefined variable\(s\)"):
             h(long_df, *triple_args)
 
     def test_histogram_single(self, long_df, single_args):

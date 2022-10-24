@@ -39,7 +39,7 @@ class TestKDE:
         gb = self.get_groupby(df, ori)
         res = KDE()(df, gb, ori, {})
         other = {"x": "y", "y": "x"}[ori]
-        expected = [ori, "alpha", "weight", "density", "group_weight", other]
+        expected = [ori, "alpha", "density", other]
         assert list(res.columns) == expected
 
     @pytest.mark.parametrize("gridsize", [20, 30, None])
@@ -101,6 +101,37 @@ class TestKDE:
         else:
             assert_array_almost_equal(areas, [1, 1], decimal=3)
 
+    def test_common_norm_variables(self, df):
+
+        ori = "y"
+        df = df[[ori, "alpha", "color"]]
+        gb = self.get_groupby(df, ori)
+        res = KDE(common_norm=["alpha"])(df, gb, ori, {})
+
+        def integrate_by_color_and_sum(x):
+            return (
+                x.groupby("color")
+                .apply(lambda y: self.integrate(y["density"], y[ori]))
+                .sum()
+            )
+
+        areas = res.groupby("alpha").apply(integrate_by_color_and_sum)
+        assert_array_almost_equal(areas, [1, 1], decimal=3)
+
+    @pytest.mark.parametrize("param", ["norm", "grid"])
+    def test_common_input_checks(self, df, param):
+
+        ori = "y"
+        df = df[[ori, "alpha"]]
+        gb = self.get_groupby(df, ori)
+        msg = rf"Undefined variable\(s\) passed for KDE.common_{param}"
+        with pytest.warns(UserWarning, match=msg):
+            KDE(**{f"common_{param}": ["color", "alpha"]})(df, gb, ori, {})
+
+        msg = f"KDE.common_{param} must be a boolean or list of strings"
+        with pytest.raises(TypeError, match=msg):
+            KDE(**{f"common_{param}": "alpha"})(df, gb, ori, {})
+
     def test_bw_adjust(self, df):
 
         ori = "y"
@@ -132,7 +163,6 @@ class TestKDE:
         ori = "y"
         df = df[[ori, "alpha"]]
         gb = self.get_groupby(df, ori)
-
         res = KDE(cumulative=True, common_norm=common_norm)(df, gb, ori, {})
 
         for _, group_res in res.groupby("alpha"):
@@ -146,3 +176,27 @@ class TestKDE:
             err = "Cumulative KDE evaluation requires scipy"
             with pytest.raises(RuntimeError, match=err):
                 KDE(cumulative=True)
+
+    @pytest.mark.parametrize("vals", [[], [1], [1] * 5, [1929245168.06679] * 18])
+    def test_singular(self, df, vals):
+
+        df1 = pd.DataFrame({"y": vals, "alpha": ["z"] * len(vals)})
+        gb = self.get_groupby(df1, "y")
+        res = KDE()(df1, gb, "y", {})
+        assert res.empty
+
+        df2 = pd.concat([df[["y", "alpha"]], df1], ignore_index=True)
+        gb = self.get_groupby(df2, "y")
+        res = KDE()(df2, gb, "y", {})
+        assert set(res["alpha"]) == set(df["alpha"])
+
+    @pytest.mark.parametrize("col", ["y", "weight"])
+    def test_missing(self, df, col):
+
+        val, ori = "xy"
+        df["weight"] = 1
+        df = df[[ori, "weight"]]
+        df.loc[:4, col] = np.nan
+        gb = self.get_groupby(df, ori)
+        res = KDE()(df, gb, ori, {})
+        assert self.integrate(res[val], res[ori]) == pytest.approx(1, abs=1e-3)
