@@ -10,7 +10,7 @@ try:
     from scipy.stats import gaussian_kde
     _no_scipy = False
 except ImportError:
-    from .external.kde import gaussian_kde
+    from seaborn.external.kde import gaussian_kde
     _no_scipy = True
 
 from seaborn._core.groupby import GroupBy
