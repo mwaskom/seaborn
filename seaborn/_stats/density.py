@@ -27,12 +27,12 @@ class KDE(Stat):
     ----------
     bw_adjust : float
         Factor that multiplicatively scales the value chosen using
-        ``bw_method``. Increasing will make the curve smoother. See Notes.
+        `bw_method`. Increasing will make the curve smoother. See Notes.
     bw_method : string, scalar, or callable
         Method for determining the smoothing bandwidth to use. Passed directly
         to :class:`scipy.stats.gaussian_kde`; see there for options.
     common_norm : bool or list of variables
-        If `True`, normalize so that the sum of all curves sums to 1.
+        If `True`, normalize so that the areas of all curves sums to 1.
         If `False`, normalize each curve independently. If a list, defines
         variable(s) to group by and normalize within.
     common_grid : bool or list of variables
