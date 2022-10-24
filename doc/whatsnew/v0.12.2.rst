@@ -1,0 +1,5 @@
+
+v0.12.2 (Unreleased)
+--------------------
+
+- Added the :class:`objects.KDE` stat (:pr:`3111`).
