@@ -101,13 +101,13 @@ class Area(AreaBase, Mark):
     .. include:: ../docstrings/objects.Area.rst
 
     """
-    color: MappableColor = Mappable("C0", )
-    alpha: MappableFloat = Mappable(.2, )
-    fill: MappableBool = Mappable(True, )
+    color: MappableColor = Mappable("C0")
+    alpha: MappableFloat = Mappable(.2)
+    fill: MappableBool = Mappable(True)
     edgecolor: MappableColor = Mappable(depend="color")
-    edgealpha: MappableFloat = Mappable(1, )
-    edgewidth: MappableFloat = Mappable(rc="patch.linewidth", )
-    edgestyle: MappableStyle = Mappable("-", )
+    edgealpha: MappableFloat = Mappable(1)
+    edgewidth: MappableFloat = Mappable(rc="patch.linewidth")
+    edgestyle: MappableStyle = Mappable("-")
 
     # TODO should this be settable / mappable?
     baseline: MappableFloat = Mappable(0, grouping=False)
@@ -151,13 +151,13 @@ class Band(AreaBase, Mark):
     .. include:: ../docstrings/objects.Band.rst
 
     """
-    color: MappableColor = Mappable("C0", )
-    alpha: MappableFloat = Mappable(.2, )
-    fill: MappableBool = Mappable(True, )
-    edgecolor: MappableColor = Mappable(depend="color", )
-    edgealpha: MappableFloat = Mappable(1, )
-    edgewidth: MappableFloat = Mappable(0, )
-    edgestyle: MappableFloat = Mappable("-", )
+    color: MappableColor = Mappable("C0")
+    alpha: MappableFloat = Mappable(.2)
+    fill: MappableBool = Mappable(True)
+    edgecolor: MappableColor = Mappable(depend="color")
+    edgealpha: MappableFloat = Mappable(1)
+    edgewidth: MappableFloat = Mappable(0)
+    edgestyle: MappableFloat = Mappable("-")
 
     def _standardize_coordinate_parameters(self, data, orient):
         # dv = {"x": "y", "y": "x"}[orient]

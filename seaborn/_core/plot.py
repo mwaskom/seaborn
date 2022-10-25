@@ -1456,8 +1456,6 @@ class Plotter:
         self, grouping_vars: list[str], df: DataFrame, subplots: list[dict[str, Any]],
     ) -> Callable[[], Generator]:
 
-        allow_empty = False  # TODO will need to recreate previous categorical plots
-
         grouping_keys = []
         grouping_vars = [
             v for v in grouping_vars if v in df and v not in ["col", "row"]
@@ -1468,7 +1466,7 @@ class Plotter:
                 order = categorical_order(df[var])
             grouping_keys.append(order)
 
-        def split_generator(keep_na=False) -> Generator:
+        def split_generator(keep_na=False, allow_empty=False) -> Generator:
 
             for view in subplots:
 
