@@ -102,7 +102,6 @@ MappableStyle = Union[str, DashPattern, DashPatternWithOffset, Mappable]
 @dataclass
 class Mark:
     """Base class for objects that visually represent data."""
-
     artist_kws: dict = field(default_factory=dict)
 
     @property
@@ -121,7 +120,14 @@ class Mark:
             if isinstance(f.default, Mappable) and f.default.grouping
         ]
 
-    # TODO make this method private? Would extender every need to call directly?
+    def __add__(self, other: Mark) -> MultiMark:
+
+        # TODO commenting out as this makes iterating difficult with
+        # IPython's buggy dataclass autoreload
+        # if not isinstance(other, Mark):
+        #     raise TypeError()  # TODO
+        return MultiMark._from_marks(self, other)
+
     def _resolve(
         self,
         data: DataFrame | dict[str, Any],
@@ -219,6 +225,35 @@ class Mark:
     ) -> Artist:
 
         return None
+
+
+@dataclass
+class MultiMark(Mark):
+
+    @classmethod
+    def _from_marks(cls, mark1: Mark, mark2: Mark) -> MultiMark:
+
+        for prop, val in vars(mark1).items():
+            if isinstance(getattr(mark2, prop, None), Mappable):
+                setattr(mark2, prop, val)
+
+        multimark = cls()
+        multimark._marks = [mark1, mark2]  # type: ignore  # TODO
+        return multimark
+
+    def _plot(
+        self,
+        split_generator: Callable[[], Generator],
+        scales: dict[str, Scale],
+        orient: str,
+    ) -> None:
+
+        for mark in self._marks:  # type: ignore  # TODO
+            mark._plot(split_generator, scales, orient)
+
+    def __repr__(self):
+
+        return "\n".join(repr(m) for m in self._marks)
 
 
 def resolve_properties(
