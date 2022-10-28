@@ -1816,6 +1816,13 @@ class TestHistPlotUnivariate(SharedAxesLevelTests):
         assert line.get_linewidth() == lw
         assert line.get_linestyle() == ls
 
+    def test_label(self, flat_series):
+
+        ax = histplot(flat_series, label="a label")
+        handles, labels = ax.get_legend_handles_labels()
+        assert len(handles) == 1
+        assert labels == ["a label"]
+
 
 class TestHistPlotBivariate:
 

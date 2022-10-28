@@ -95,6 +95,9 @@ def _default_color(method, hue, color, kws):
         #      warnings.warn(msg)
         return None
 
+    kws = kws.copy()
+    kws.pop("label", None)
+
     if color is not None:
         return color
 
