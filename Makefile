@@ -1,7 +1,7 @@
 export SHELL := /bin/bash
 
 test:
-	pytest -n auto --cov=seaborn --cov=tests --cov-config=.coveragerc tests
+	pytest -n auto --cov=seaborn --cov=tests --cov-config=setup.cfg tests
 
 lint:
 	flake8 seaborn

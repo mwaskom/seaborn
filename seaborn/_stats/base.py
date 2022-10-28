@@ -3,6 +3,7 @@ from __future__ import annotations
 from collections.abc import Iterable
 from dataclasses import dataclass
 from typing import ClassVar, Any
+import warnings
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
@@ -29,7 +30,7 @@ class Stat:
     # value on the orient axis, but we would not in the latter case.
     group_by_orient: ClassVar[bool] = False
 
-    def _check_param_one_of(self, param: Any, options: Iterable[Any]) -> None:
+    def _check_param_one_of(self, param: str, options: Iterable[Any]) -> None:
         """Raise when parameter value is not one of a specified set."""
         value = getattr(self, param)
         if value not in options:
@@ -40,6 +41,18 @@ class Stat:
                 f"one of {option_str}; not {value!r}.",
             ])
             raise ValueError(err)
+
+    def _check_grouping_vars(
+        self, param: str, data_vars: list[str], stacklevel: int = 2,
+    ) -> None:
+        """Warn if vars are named in parameter without being present in the data."""
+        param_vars = getattr(self, param)
+        undefined = set(param_vars) - set(data_vars)
+        if undefined:
+            param = f"{self.__class__.__name__}.{param}"
+            names = ", ".join(f"{x!r}" for x in undefined)
+            msg = f"Undefined variable(s) passed for {param}: {names}."
+            warnings.warn(msg, stacklevel=stacklevel)
 
     def __call__(
         self,
