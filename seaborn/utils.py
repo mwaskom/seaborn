@@ -87,6 +87,7 @@ def _draw_figure(fig):
 
 def _default_color(method, hue, color, kws):
     """If needed, get a default color by using the matplotlib property cycle."""
+
     if hue is not None:
         # This warning is probably user-friendly, but it's currently triggered
         # in a FacetGrid context and I don't want to mess with that logic right now
