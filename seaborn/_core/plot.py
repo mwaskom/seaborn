@@ -616,8 +616,8 @@ class Plot:
             - A list of values, implying a :class:`Nominal` scale (e.g. `["b", "r"]`)
 
         For more explicit control, pass a scale spec object such as :class:`Continuous`
-        or :class:`Nominal`. Or use `None` to use an "identity" scale, which treats data
-        values as literally encoding visual properties.
+        or :class:`Nominal`. Or pass `None` to use an "identity" scale, which treats
+        data values as literally encoding visual properties.
 
         Examples
         --------
@@ -1309,12 +1309,22 @@ class Plotter:
                 if var not in "xy" and var in scales:
                     return getattr(scales[var], "order", None)
 
-            if "width" in mark._mappable_props:
-                width = mark._resolve(df, "width", None)
-            else:
-                width = 0.8 if "width" not in df else df["width"]  # TODO what default?
             if orient in df:
-                df["width"] = width * scales[orient]._spacing(df[orient])
+                width = pd.Series(index=df.index, dtype=float)
+                for view in subplots:
+                    view_idx = self._get_subplot_data(
+                        df, orient, view, p._shares.get(orient)
+                    ).index
+                    view_df = df.loc[view_idx]
+                    if "width" in mark._mappable_props:
+                        view_width = mark._resolve(view_df, "width", None)
+                    elif "width" in df:
+                        view_width = view_df["width"]
+                    else:
+                        view_width = 0.8  # TODO what default?
+                    spacing = scales[orient]._spacing(view_df.loc[view_idx, orient])
+                    width.loc[view_idx] = view_width * spacing
+                df["width"] = width
 
             if "baseline" in mark._mappable_props:
                 # TODO what marks should have this?
