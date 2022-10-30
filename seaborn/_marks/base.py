@@ -130,10 +130,8 @@ class Mark:
 
     def __add__(self, other: Mark) -> CompoundMark:
 
-        # TODO commenting out as this makes iterating difficult with
-        # IPython's buggy dataclass autoreload
-        # if not isinstance(other, Mark):
-        #     raise TypeError()  # TODO
+        if not isinstance(other, Mark):
+            raise TypeError()  # TODO
 
         for prop, val in self._mappable_props.items():
             if (
@@ -267,6 +265,16 @@ class CompoundMark(Mark):
             res.extend(x for x in mark._grouping_props if x not in res)
         return res
 
+    def __repr__(self):
+
+        res = f"{self.__class__.__name__}([\n"
+        for mark in self._marks:
+            for line in repr(mark).split("\n"):
+                if line.endswith(")"):
+                    line += ","
+                res += f"  {line}\n"
+        return res + "])"
+
     def _plot(
         self,
         split_generator: Callable[[], Generator],
@@ -277,15 +285,13 @@ class CompoundMark(Mark):
         for mark in self._marks:
             mark._plot(split_generator, scales, orient)
 
-    def __repr__(self):
+    def _legend_artist(
+        self, variables: list[str], value: Any, scales: dict[str, Scale],
+    ) -> Artist:
 
-        res = "CompoundMark([\n"
-        for mark in self._marks:
-            for line in repr(mark).split("\n"):
-                if line.endswith(")"):
-                    line += ","
-                res += f"  {line}\n"
-        return res + "])"
+        return tuple(
+            mark._legend_artist(variables, value, scales) for mark in self._marks
+        )
 
 
 def resolve_properties(
