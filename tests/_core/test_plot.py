@@ -12,7 +12,7 @@ from PIL import Image
 
 import pytest
 from pandas.testing import assert_frame_equal, assert_series_equal
-from numpy.testing import assert_array_equal
+from numpy.testing import assert_array_equal, assert_array_almost_equal
 
 from seaborn._core.plot import Plot, Default
 from seaborn._core.scales import Nominal, Continuous
@@ -1383,6 +1383,17 @@ class TestFacetInterface:
                 }
                 assert all(shareset[shared].joined(root, ax) for ax in other)
                 assert not any(shareset[unshared].joined(root, ax) for ax in other)
+
+    def test_unshared_spacing(self):
+
+        x = [1, 2, 10, 20]
+        y = [1, 2, 3, 4]
+        col = [1, 1, 2, 2]
+
+        m = MockMark()
+        Plot(x, y).facet(col).add(m).share(x=False).plot()
+        assert_array_almost_equal(m.passed_data[0]["width"], [0.8, 0.8])
+        assert_array_equal(m.passed_data[1]["width"], [8, 8])
 
     def test_col_wrapping(self):
 
