@@ -120,13 +120,21 @@ class Mark:
             if isinstance(f.default, Mappable) and f.default.grouping
         ]
 
-    def __add__(self, other: Mark) -> MultiMark:
+    def __add__(self, other: Mark) -> CompoundMark:
 
         # TODO commenting out as this makes iterating difficult with
         # IPython's buggy dataclass autoreload
         # if not isinstance(other, Mark):
         #     raise TypeError()  # TODO
-        return MultiMark._from_marks(self, other)
+
+        for prop, val in self._mappable_props.items():
+            if (
+                isinstance(getattr(other, prop, None), Mappable)
+                and not isinstance(getattr(self, prop, None), Mappable)
+            ):
+                setattr(other, prop, val)
+
+        return CompoundMark(_marks=[self, other])
 
     def _resolve(
         self,
@@ -228,18 +236,25 @@ class Mark:
 
 
 @dataclass
-class MultiMark(Mark):
+class CompoundMark(Mark):
 
-    @classmethod
-    def _from_marks(cls, mark1: Mark, mark2: Mark) -> MultiMark:
+    _marks: list[Mark] = field(default_factory=list)
 
-        for prop, val in vars(mark1).items():
-            if isinstance(getattr(mark2, prop, None), Mappable):
-                setattr(mark2, prop, val)
+    @property
+    def _mappable_props(self):
 
-        multimark = cls()
-        multimark._marks = [mark1, mark2]  # type: ignore  # TODO
-        return multimark
+        res = {}
+        for mark in self._marks:
+            res.update({k: v for k, v in mark._mappable_props.items() if k not in res})
+        return res
+
+    @property
+    def _grouping_props(self):
+
+        res = []
+        for mark in self._marks:
+            res.extend(x for x in mark._grouping_props if x not in res)
+        return res
 
     def _plot(
         self,
@@ -248,7 +263,7 @@ class MultiMark(Mark):
         orient: str,
     ) -> None:
 
-        for mark in self._marks:  # type: ignore  # TODO
+        for mark in self._marks:
             mark._plot(split_generator, scales, orient)
 
     def __repr__(self):
