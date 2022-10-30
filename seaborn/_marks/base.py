@@ -99,7 +99,7 @@ MappableColor = Union[str, tuple, Mappable]
 MappableStyle = Union[str, DashPattern, DashPatternWithOffset, Mappable]
 
 
-@dataclass
+@dataclass(repr=False)
 class Mark:
     """Base class for objects that visually represent data."""
     artist_kws: dict = field(default_factory=dict)
@@ -119,6 +119,14 @@ class Mark:
             f.name for f in fields(self)
             if isinstance(f.default, Mappable) and f.default.grouping
         ]
+
+    def __repr__(self):
+
+        res = f"{self.__class__.__name__}(\n"
+        for prop in fields(self):
+            name = prop.name
+            res += f"  {name}={getattr(self, name)!r},\n"
+        return res + ")"
 
     def __add__(self, other: Mark) -> CompoundMark:
 
@@ -235,7 +243,10 @@ class Mark:
         return None
 
 
-@dataclass
+# TODO maybe have an intermediate ArtistMark with the artist_kws attribute and have
+# other marks inherit that class, so this one would only have _mark
+
+@dataclass(repr=False)
 class CompoundMark(Mark):
 
     _marks: list[Mark] = field(default_factory=list)
@@ -268,7 +279,13 @@ class CompoundMark(Mark):
 
     def __repr__(self):
 
-        return "\n".join(repr(m) for m in self._marks)
+        res = "CompoundMark([\n"
+        for mark in self._marks:
+            for line in repr(mark).split("\n"):
+                if line.endswith(")"):
+                    line += ","
+                res += f"  {line}\n"
+        return res + "])"
 
 
 def resolve_properties(

@@ -19,7 +19,7 @@ from seaborn._marks.base import (
 
 
 @document_properties
-@dataclass
+@dataclass(repr=False)
 class Text(Mark):
     """
     A textual mark to annotate or represent data values.

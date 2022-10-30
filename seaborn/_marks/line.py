@@ -19,7 +19,7 @@ from seaborn.external.version import Version
 
 
 @document_properties
-@dataclass
+@dataclass(repr=False)
 class Path(Mark):
     """
     A mark connecting data points in the order they appear.
@@ -118,7 +118,7 @@ class Path(Mark):
 
 
 @document_properties
-@dataclass
+@dataclass(repr=False)
 class Line(Path):
     """
     A mark connecting data points with sorting along the orientation axis.
@@ -137,7 +137,7 @@ class Line(Path):
 
 
 @document_properties
-@dataclass
+@dataclass(repr=False)
 class Paths(Mark):
     """
     A faster but less-flexible mark for drawing many paths.
@@ -228,7 +228,7 @@ class Paths(Mark):
 
 
 @document_properties
-@dataclass
+@dataclass(repr=False)
 class Lines(Paths):
     """
     A faster but less-flexible mark for drawing many lines.
@@ -246,7 +246,7 @@ class Lines(Paths):
 
 
 @document_properties
-@dataclass
+@dataclass(repr=False)
 class Range(Paths):
     """
     An oriented line mark drawn between min/max values.
@@ -272,7 +272,7 @@ class Range(Paths):
 
 
 @document_properties
-@dataclass
+@dataclass(repr=False)
 class Dash(Paths):
     """
     A line mark drawn as an oriented segment for each datapoint.

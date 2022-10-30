@@ -87,7 +87,7 @@ class AreaBase:
 
 
 @document_properties
-@dataclass
+@dataclass(repr=False)
 class Area(AreaBase, Mark):
     """
     A fill mark drawn from a baseline to data values.
@@ -137,7 +137,7 @@ class Area(AreaBase, Mark):
 
 
 @document_properties
-@dataclass
+@dataclass(repr=False)
 class Band(AreaBase, Mark):
     """
     A fill mark representing an interval between values.
