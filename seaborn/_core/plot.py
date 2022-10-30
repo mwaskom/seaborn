@@ -616,8 +616,8 @@ class Plot:
             - A list of values, implying a :class:`Nominal` scale (e.g. `["b", "r"]`)
 
         For more explicit control, pass a scale spec object such as :class:`Continuous`
-        or :class:`Nominal`. Or use `None` to use an "identity" scale, which treats data
-        values as literally encoding visual properties.
+        or :class:`Nominal`. Or pass `None` to use an "identity" scale, which treats
+        data values as literally encoding visual properties.
 
         Examples
         --------

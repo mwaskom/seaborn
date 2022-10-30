@@ -788,6 +788,12 @@ class TestPlotting:
             long_df, m, data_vars, split_vars, split_cols, split_keys
         )
 
+    def test_specified_width(self, long_df):
+
+        m = MockMark()
+        Plot(long_df, x="x", y="y").add(m, width="z").plot()
+        assert_array_almost_equal(m.passed_data[0]["width"], long_df["z"])
+
     def test_facets_no_subgroups(self, long_df):
 
         split_var = "col"
