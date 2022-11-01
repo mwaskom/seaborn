@@ -19,11 +19,9 @@ Documentation
 
 Online documentation is available at [seaborn.pydata.org](https://seaborn.pydata.org).
 
-The docs include a [tutorial](https://seaborn.pydata.org/tutorial.html), [example gallery](https://seaborn.pydata.org/examples/index.html), [API reference](https://seaborn.pydata.org/api.html), and other useful information.
+The docs include a [tutorial](https://seaborn.pydata.org/tutorial.html), [example gallery](https://seaborn.pydata.org/examples/index.html), [API reference](https://seaborn.pydata.org/api.html), [FAQ](https://seaborn.pydata.org/faq), and other useful information.
 
 To build the documentation locally, please refer to [`doc/README.md`](doc/README.md).
-
-There is also a [FAQ](https://github.com/mwaskom/seaborn/wiki/Frequently-Asked-Questions-(FAQs)) page, currently hosted on GitHub.
 
 Dependencies
 ------------
