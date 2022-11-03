@@ -101,13 +101,13 @@ class Area(AreaBase, Mark):
     .. include:: ../docstrings/objects.Area.rst
 
     """
-    color: MappableColor = Mappable("C0", )
-    alpha: MappableFloat = Mappable(.2, )
-    fill: MappableBool = Mappable(True, )
+    color: MappableColor = Mappable("C0")
+    alpha: MappableFloat = Mappable(.2)
+    fill: MappableBool = Mappable(True)
     edgecolor: MappableColor = Mappable(depend="color")
-    edgealpha: MappableFloat = Mappable(1, )
-    edgewidth: MappableFloat = Mappable(rc="patch.linewidth", )
-    edgestyle: MappableStyle = Mappable("-", )
+    edgealpha: MappableFloat = Mappable(1)
+    edgewidth: MappableFloat = Mappable(rc="patch.linewidth")
+    edgestyle: MappableStyle = Mappable("-")
 
     # TODO should this be settable / mappable?
     baseline: MappableFloat = Mappable(0, grouping=False)
@@ -151,13 +151,13 @@ class Band(AreaBase, Mark):
     .. include:: ../docstrings/objects.Band.rst
 
     """
-    color: MappableColor = Mappable("C0", )
-    alpha: MappableFloat = Mappable(.2, )
-    fill: MappableBool = Mappable(True, )
-    edgecolor: MappableColor = Mappable(depend="color", )
-    edgealpha: MappableFloat = Mappable(1, )
-    edgewidth: MappableFloat = Mappable(0, )
-    edgestyle: MappableFloat = Mappable("-", )
+    color: MappableColor = Mappable("C0")
+    alpha: MappableFloat = Mappable(.2)
+    fill: MappableBool = Mappable(True)
+    edgecolor: MappableColor = Mappable(depend="color")
+    edgealpha: MappableFloat = Mappable(1)
+    edgewidth: MappableFloat = Mappable(0)
+    edgestyle: MappableFloat = Mappable("-")
 
     def _standardize_coordinate_parameters(self, data, orient):
         # dv = {"x": "y", "y": "x"}[orient]
@@ -168,3 +168,70 @@ class Band(AreaBase, Mark):
             agg = {f"{other}min": (other, "min"), f"{other}max": (other, "max")}
             data = data.groupby(orient).agg(**agg).reset_index()
         return data
+
+
+@document_properties
+@dataclass
+class Span(AreaBase, Mark):
+    """
+    TODO
+    """
+    color: MappableColor = Mappable("C0")
+    alpha: MappableFloat = Mappable(.7)
+    fill: MappableBool = Mappable(True)
+    edgecolor: MappableColor = Mappable(depend="color")
+    edgealpha: MappableFloat = Mappable(1)
+    edgewidth: MappableFloat = Mappable(rc="patch.linewidth")
+    edgestyle: MappableFloat = Mappable("-")
+    width: MappableFloat = Mappable(0.8, grouping=False)
+
+    def _plot(self, split_gen, scales, orient):
+
+        patches = defaultdict(list)
+
+        for keys, data, ax in split_gen():
+
+            kws = {}
+
+            resolved = resolve_properties(self, keys, scales)
+            fc = resolve_color(self, keys, "", scales)
+            if not resolved["fill"]:
+                fc = mpl.colors.to_rgba(fc, 0)
+
+            kws["facecolor"] = fc
+            kws["edgecolor"] = resolve_color(self, keys, "edge", scales)
+            kws["linewidth"] = resolved["edgewidth"]
+            kws["linestyle"] = resolved["edgestyle"]
+
+            other = {"x": "y", "y": "x"}[orient]
+
+            if not set(data.columns) & {f"{other}min", f"{other}max"}:
+                agg = {f"{other}min": (other, "min"), f"{other}max": (other, "max")}
+                data = data.groupby([orient, "width"]).agg(**agg).reset_index()
+
+            for row in data.itertuples():
+
+                if orient == "x":
+
+                    verts = np.array([
+                        row.x - row.width / 2, row.ymin,
+                        row.x + row.width / 2, row.ymin,
+                        row.x + row.width / 2, row.ymax,
+                        row.x - row.width / 2, row.ymax,
+                    ]).reshape((4, 2))
+                else:
+                    verts = np.array([
+                        row.xmin, row.y - row.width / 2,
+                        row.xmax, row.y - row.width / 2,
+                        row.xmax, row.y + row.width / 2,
+                        row.xmin, row.y + row.width / 2,
+                    ]).reshape((4, 2))
+
+                patches[ax].append(mpl.patches.Polygon(verts, **kws))
+                ax.update_datalim(verts)
+
+        for ax, ax_patches in patches.items():
+
+            for patch in ax_patches:
+                self._postprocess_artist(patch, ax, orient)
+                ax.add_patch(patch)
