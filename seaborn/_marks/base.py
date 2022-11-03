@@ -11,6 +11,7 @@ import matplotlib as mpl
 from numpy import ndarray
 from pandas import DataFrame
 from matplotlib.artist import Artist
+from matplotlib.axes import Axes
 
 from seaborn._core.scales import Scale
 from seaborn._core.properties import (
@@ -204,6 +205,28 @@ class Mark:
             return "y"
         else:
             return "x"
+
+    def _clip_edges(self, artist: Artist, ax: Axes):
+        """Add a clip path to patch artist so that edges do not extend past face."""
+        # This is a hack to handle the fact that the edge lines are centered on
+        # the actual extents of the patch and overlap when stacking or dodging.
+        # We may discover that this causes issues and needs to be revisited.
+
+        # Because we are clipping, the edges end up looking half as wide as they
+        # actually are. I don't love this clumsy workaround, which is going to
+        # cause surprises if you work with the artists directly.
+        artist.set_linewidth(artist.get_linewidth() * 2)
+        linestyle = artist.get_linestyle()
+        if linestyle[1]:
+            linestyle = (linestyle[0], tuple(x / 2 for x in linestyle[1]))
+        artist.set_linestyle(linestyle)
+
+        # It should be faster to clip with a bbox than a path, but I cant't work
+        # out how to get the intersection with the axes bbox.
+        artist.set_clip_path(artist.get_path(), artist.get_transform() + ax.transData)
+        if self.artist_kws.get("clip_on", True):
+            # It seems the above hack undoes the default axes clipping
+            artist.set_clip_box(ax.bbox)
 
     def _plot(
         self,
