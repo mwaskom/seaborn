@@ -8,6 +8,7 @@ import sys
 import inspect
 import itertools
 import textwrap
+import warnings
 from contextlib import contextmanager
 from collections import abc
 from collections.abc import Callable, Generator
@@ -196,6 +197,8 @@ class Plot:
     _subplot_spec: dict[str, Any]
     _layout_spec: dict[str, Any]
 
+    legend_loc__bbox_to_anchor: Tuple
+
     def __init__(
         self,
         *args: DataSource | VariableSpec,
@@ -229,6 +232,8 @@ class Plot:
         self._layout_spec = {}
 
         self._target = None
+
+        self.legend_loc__bbox_to_anchor = ()
 
     def _resolve_positionals(
         self,
@@ -302,6 +307,7 @@ class Plot:
         new._layout_spec.update(self._layout_spec)
 
         new._target = self._target
+        new.legend_loc__bbox_to_anchor = self.legend_loc__bbox_to_anchor
 
         return new
 
@@ -753,16 +759,23 @@ class Plot:
 
             It is likely that this method will be enhanced in future releases.
 
+
+            Additionally to the matplotlib rc parameters, the parameter
+            'legend_loc__bbox_to_anchor' is allowed to be in that dict.
+            Its value is used in conjunction with the 'legend.loc' entry and is taken as the
+            'bbox_to_anchor' value for the figure's legend location, like described at
+            https://matplotlib.org/stable/api/legend_api.html#matplotlib.legend.Legend
+            'bbox_to_anchor' is used with a default value of '(.98, .55)', if not given.
+
         Matplotlib rc parameters are documented on the following page:
         https://matplotlib.org/stable/tutorials/introductory/customizing.html
+
 
         Examples
         --------
         .. include:: ../docstrings/objects.Plot.theme.rst
 
         """
-        new = self._clone()
-
         # We can skip this whole block on Python 3.8+ with positional-only syntax
         nargs = len(args)
         if nargs != 1:
@@ -770,6 +783,10 @@ class Plot:
             raise TypeError(err)
 
         rc = args[0]
+        if "legend_loc__bbox_to_anchor" in rc.keys():
+            self.legend_loc__bbox_to_anchor = rc.pop("legend_loc__bbox_to_anchor")
+
+        new = self._clone()
         new._theme.update(rc)
 
         return new
@@ -1608,8 +1625,12 @@ class Plotter:
             else:
                 merged_contents[key] = new_artists.copy(), labels
 
-        # TODO explain
-        loc = "center right" if self._pyplot else "center left"
+        loc = self._theme.get("legend.loc")
+        if loc == "best":
+            loc = "center right" if self._pyplot else "center left"
+            warnings.warn(f"Automatic legend placement (loc='best') not implemented for figure legend. Switching to '{loc}'")
+
+        bbox_to_anchor = (.98, .55) if 0 == len(p.legend_loc__bbox_to_anchor) else p.legend_loc__bbox_to_anchor
 
         base_legend = None
         for (name, _), (handles, labels) in merged_contents.items():
@@ -1620,7 +1641,7 @@ class Plotter:
                 labels,
                 title=name,
                 loc=loc,
-                bbox_to_anchor=(.98, .55),
+                bbox_to_anchor=bbox_to_anchor,
             )
 
             if base_legend:
