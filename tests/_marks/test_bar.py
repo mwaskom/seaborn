@@ -1,7 +1,7 @@
 
 import numpy as np
 import pandas as pd
-from matplotlib.colors import to_rgba, to_rgba_array
+from matplotlib.colors import to_rgb, to_rgba, to_rgba_array
 
 import pytest
 from numpy.testing import assert_array_equal, assert_array_almost_equal
@@ -263,3 +263,45 @@ class TestBox:
             assert_array_almost_equal(xy[1], (max(vals), i - 0.4))
             assert_array_almost_equal(xy[2], (max(vals), i + 0.4))
             assert_array_almost_equal(xy[3], (min(vals), i + 0.4))
+
+    def test_width(self):
+
+        y = ["a", "b"]
+        xmin = [1, 2]
+        xmax = [2, 4]
+
+        p = Plot(y=y, xmin=xmin, xmax=xmax).add(Box(width=.5)).plot()
+        ax = p._figure.axes[0]
+        for i, patch in enumerate(ax.patches):
+            xy = patch.get_xy()
+            assert_array_almost_equal(xy[0, 1], i - 0.25)
+            assert_array_almost_equal(xy[1, 1], i - 0.25)
+            assert_array_almost_equal(xy[2, 1], i + 0.25)
+            assert_array_almost_equal(xy[3, 1], i + 0.25)
+
+    def test_set_properties(self):
+
+        x = ["a", "b"]
+        ymin = [1, 2]
+        ymax = [2, 4]
+
+        mark = Box(color=".8", edgecolor=".2", alpha=.5, edgealpha=1, edgewidth=2)
+        p = Plot(x, ymin=ymin, ymax=ymax).add(mark).plot()
+        ax = p._figure.axes[0]
+        for patch in ax.patches:
+            assert patch.get_facecolor() == to_rgba(mark.color, mark.alpha)
+            assert patch.get_edgecolor() == to_rgba(mark.edgecolor, mark.edgealpha)
+            assert patch.get_linewidth() == mark.edgewidth * 2
+
+    def test_mapped_properties(self):
+
+        x = color = edgewidth = ["a", "b"]
+        ymin = [1, 2]
+        ymax = [2, 4]
+
+        kws = dict(x=x, ymin=ymin, ymax=ymax, color=color, edgewidth=edgewidth)
+        p = Plot(**kws).add(Box()).plot()
+        ax = p._figure.axes[0]
+        patches = ax.patches
+        assert patches[0].get_linewidth() > patches[1].get_linewidth()
+        assert to_rgb(patches[0].get_facecolor()) != to_rgb(patches[1].get_facecolor())
