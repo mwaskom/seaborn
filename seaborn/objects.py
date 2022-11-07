@@ -30,7 +30,7 @@ from seaborn._core.plot import Plot  # noqa: F401
 
 from seaborn._marks.base import Mark  # noqa: F401
 from seaborn._marks.area import Area, Band  # noqa: F401
-from seaborn._marks.bar import Bar, Bars, Span  # noqa: F401
+from seaborn._marks.bar import Bar, Bars, Box  # noqa: F401
 from seaborn._marks.dot import Dot, Dots  # noqa: F401
 from seaborn._marks.line import Dash, Line, Lines, Path, Paths, Range  # noqa: F401
 from seaborn._marks.text import Text  # noqa: F401

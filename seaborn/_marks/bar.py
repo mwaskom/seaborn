@@ -230,7 +230,7 @@ class Bars(BarBase):
 
 @document_properties
 @dataclass
-class Span(BarBase):
+class Box(BarBase):
     """
     A bar mark drawn between min/max values.
 
