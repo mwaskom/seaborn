@@ -230,9 +230,13 @@ class Bars(BarBase):
 
 @document_properties
 @dataclass
-class Span(Mark):
+class Span(BarBase):
     """
-    TODO
+    A bar mark drawn between min/max values.
+
+    Examples
+    --------
+
     """
     color: MappableColor = Mappable("C0")
     alpha: MappableFloat = Mappable(.7)
@@ -292,5 +296,5 @@ class Span(Mark):
         for ax, ax_patches in patches.items():
 
             for patch in ax_patches:
-                self._clip_edges(patch, ax)
+                # self._clip_edges(patch, ax)
                 ax.add_patch(patch)
