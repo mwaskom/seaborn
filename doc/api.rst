@@ -56,6 +56,7 @@ Mark objects
 
     Bar
     Bars
+    Box
 
 .. rubric:: Fill marks
 

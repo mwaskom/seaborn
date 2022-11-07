@@ -232,10 +232,12 @@ class Bars(BarBase):
 @dataclass
 class Box(BarBase):
     """
-    A bar mark drawn between min/max values.
+    An oriented rectangular mark drawn between min/max values.
 
     Examples
     --------
+
+    .. include:: ../docstrings/objects.Box.rst
 
     """
     color: MappableColor = Mappable("C0")
