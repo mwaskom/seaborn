@@ -4,10 +4,10 @@ import pandas as pd
 from matplotlib.colors import to_rgba, to_rgba_array
 
 import pytest
-from numpy.testing import assert_array_equal
+from numpy.testing import assert_array_equal, assert_array_almost_equal
 
 from seaborn._core.plot import Plot
-from seaborn._marks.bar import Bar, Bars
+from seaborn._marks.bar import Bar, Bars, Box
 
 
 class TestBar:
@@ -200,3 +200,66 @@ class TestBars:
         colors = p._theme["axes.prop_cycle"].by_key()["color"]
         assert_array_equal(fcs, to_rgba_array([colors[0]] * len(x), 0))
         assert_array_equal(ecs, to_rgba_array([colors[4]] * len(x), 1))
+
+
+class TestBox:
+
+    def test_positions_vertical(self):
+
+        x = ["a", "b"]
+        ymin = [1, 2]
+        ymax = [2, 4]
+
+        p = Plot(x, ymin=ymin, ymax=ymax).add(Box()).plot()
+        ax = p._figure.axes[0]
+        for i, patch in enumerate(ax.patches):
+            xy = patch.get_xy()
+            assert_array_almost_equal(xy[0], (i - 0.4, ymin[i]))
+            assert_array_almost_equal(xy[1], (i + 0.4, ymin[i]))
+            assert_array_almost_equal(xy[2], (i + 0.4, ymax[i]))
+            assert_array_almost_equal(xy[3], (i - 0.4, ymax[i]))
+
+    def test_positions_horizontal(self):
+
+        y = ["a", "b"]
+        xmin = [1, 2]
+        xmax = [2, 4]
+
+        p = Plot(y=y, xmin=xmin, xmax=xmax).add(Box()).plot()
+        ax = p._figure.axes[0]
+        for i, patch in enumerate(ax.patches):
+            xy = patch.get_xy()
+            assert_array_almost_equal(xy[0], (xmin[i], i - 0.4))
+            assert_array_almost_equal(xy[1], (xmax[i], i - 0.4))
+            assert_array_almost_equal(xy[2], (xmax[i], i + 0.4))
+            assert_array_almost_equal(xy[3], (xmin[i], i + 0.4))
+
+    def test_auto_range_vertical(self):
+
+        x = ["a", "a", "a", "b", "b", "b"]
+        y = [1, 2, 3, 4, 5, 6]
+
+        p = Plot(x, y).add(Box()).plot()
+        ax = p._figure.axes[0]
+        for i, patch in enumerate(ax.patches):
+            xy = patch.get_xy()
+            vals = y[i * 3: i * 3 + 3]
+            assert_array_almost_equal(xy[0], (i - 0.4, min(vals)))
+            assert_array_almost_equal(xy[1], (i + 0.4, min(vals)))
+            assert_array_almost_equal(xy[2], (i + 0.4, max(vals)))
+            assert_array_almost_equal(xy[3], (i - 0.4, max(vals)))
+
+    def test_auto_range_horizontal(self):
+
+        x = [1, 2, 3, 4, 5, 6]
+        y = ["a", "a", "a", "b", "b", "b"]
+
+        p = Plot(x, y).add(Box()).plot()
+        ax = p._figure.axes[0]
+        for i, patch in enumerate(ax.patches):
+            xy = patch.get_xy()
+            vals = x[i * 3: i * 3 + 3]
+            assert_array_almost_equal(xy[0], (min(vals), i - 0.4))
+            assert_array_almost_equal(xy[1], (max(vals), i - 0.4))
+            assert_array_almost_equal(xy[2], (max(vals), i + 0.4))
+            assert_array_almost_equal(xy[3], (min(vals), i + 0.4))

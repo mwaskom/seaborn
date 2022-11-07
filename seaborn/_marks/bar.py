@@ -255,14 +255,10 @@ class Box(BarBase):
 
             kws = {}
 
-            # TODO harmonize with BarBase._resolve_properties
-            resolved = resolve_properties(self, keys, scales)
-            fc = resolve_color(self, keys, "", scales)
-            if not resolved["fill"]:
-                fc = mpl.colors.to_rgba(fc, 0)
+            resolved = self._resolve_properties(keys, scales)
 
-            kws["facecolor"] = fc
-            kws["edgecolor"] = resolve_color(self, keys, "edge", scales)
+            kws["facecolor"] = resolved["facecolor"]
+            kws["edgecolor"] = resolved["edgecolor"]
             kws["linewidth"] = resolved["edgewidth"]
             kws["linestyle"] = resolved["edgestyle"]
 
@@ -296,5 +292,5 @@ class Box(BarBase):
         for ax, ax_patches in patches.items():
 
             for patch in ax_patches:
-                # self._clip_edges(patch, ax)
+                self._clip_edges(patch, ax)
                 ax.add_patch(patch)
