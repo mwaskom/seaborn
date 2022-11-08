@@ -236,7 +236,6 @@ class Box(BarBase):
 
     Examples
     --------
-
     .. include:: ../docstrings/objects.Box.rst
 
     """
@@ -292,7 +291,6 @@ class Box(BarBase):
                 ax.update_datalim(verts)
 
         for ax, ax_patches in patches.items():
-
             for patch in ax_patches:
                 self._clip_edges(patch, ax)
                 ax.add_patch(patch)
