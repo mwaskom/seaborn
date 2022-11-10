@@ -433,7 +433,7 @@ class Continuous(ContinuousBase):
     def tick(
         self,
         locator: Locator | None = None, *,
-        at: Sequence[float] = None,
+        at: Sequence[float] | None = None,
         upto: int | None = None,
         count: int | None = None,
         every: float | None = None,
@@ -898,7 +898,7 @@ def _make_identity_transforms() -> TransFuncs:
     return identity, identity
 
 
-def _make_logit_transforms(base: float = None) -> TransFuncs:
+def _make_logit_transforms(base: float | None = None) -> TransFuncs:
 
     log, exp = _make_log_transforms(base)
 
