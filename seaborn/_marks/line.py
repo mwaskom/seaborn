@@ -270,15 +270,17 @@ class Range(Paths):
         cols = [orient, f"{val}min", f"{val}max"]
         data = data[cols].melt(orient, value_name=val)[["x", "y"]]
         segments = [d.to_numpy() for _, d in data.groupby(orient)]
-        segments_with_caps = [s for s in segments]
-        ori = ["x", "y"].index(orient)
-        for s in segments:
-            for i in range(2):
-                caps = np.stack([s[i], s[i]], axis=0)
-                caps[0, ori] -= self.capsize / 2
-                caps[1, ori] += self.capsize / 2
-                segments_with_caps.append(caps)
-        return segments_with_caps
+        if self.capsize:
+            caps_list = []
+            ori = ["x", "y"].index(orient)
+            for s in segments:
+                for i in range(2):
+                    caps = np.stack([s[i], s[i]], axis=0)
+                    caps[0, ori] -= self.capsize / 2
+                    caps[1, ori] += self.capsize / 2
+                    caps_list.append(caps)
+            segments.extend(caps_list)
+        return segments
 
 
 @document_properties
