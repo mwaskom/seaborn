@@ -256,6 +256,8 @@ class Range(Paths):
     .. include:: ../docstrings/objects.Range.rst
 
     """
+    capsize: float = 0.0
+
     def _setup_segments(self, data, orient):
 
         # TODO better checks on what variables we have
@@ -268,7 +270,15 @@ class Range(Paths):
         cols = [orient, f"{val}min", f"{val}max"]
         data = data[cols].melt(orient, value_name=val)[["x", "y"]]
         segments = [d.to_numpy() for _, d in data.groupby(orient)]
-        return segments
+        segments_with_caps = [s for s in segments]
+        ori = ["x", "y"].index(orient)
+        for s in segments:
+            for i in range(2):
+                caps = np.stack([s[i], s[i]], axis=0)
+                caps[0, ori] -= self.capsize / 2
+                caps[1, ori] += self.capsize / 2
+                segments_with_caps.append(caps)
+        return segments_with_caps
 
 
 @document_properties
