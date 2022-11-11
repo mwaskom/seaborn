@@ -31,16 +31,15 @@ class BarBase(Mark):
 
         kws = self._resolve_properties(data, scales)
         if orient == "x":
-            kws["x"] = (data["x"] - data["width"] / 2).to_numpy()
+            kws["x"] = (data["xbase"]).to_numpy()
             kws["y"] = data["baseline"].to_numpy()
             kws["w"] = data["width"].to_numpy()
             kws["h"] = (data["y"] - data["baseline"]).to_numpy()
         else:
             kws["x"] = data["baseline"].to_numpy()
-            kws["y"] = (data["y"] - data["width"] / 2).to_numpy()
+            kws["y"] = (data["ybase"]).to_numpy()
             kws["w"] = (data["x"] - data["baseline"]).to_numpy()
             kws["h"] = data["width"].to_numpy()
-
         kws.pop("width", None)
         kws.pop("baseline", None)
 
