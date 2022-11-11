@@ -40,6 +40,7 @@ class BarBase(Mark):
             kws["y"] = (data["ybase"]).to_numpy()
             kws["w"] = (data["x"] - data["baseline"]).to_numpy()
             kws["h"] = data["width"].to_numpy()
+
         kws.pop("width", None)
         kws.pop("baseline", None)
 

@@ -1356,6 +1356,7 @@ class Plotter:
 
             grouping_vars = mark._grouping_props + default_grouping_vars
             split_generator = self._setup_split_generator(grouping_vars, df, subplots)
+
             mark._plot(split_generator, scales, orient)
 
         # TODO is this the right place for this?
@@ -1397,6 +1398,7 @@ class Plotter:
                     out_df.loc[values.index, f"{orient}base"] = (
                         transform(values - width / 2)
                     )
+
         return out_df
 
     def _generate_pairings(
