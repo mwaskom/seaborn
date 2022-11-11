@@ -564,6 +564,14 @@ class Color(Property):
         else:
             return to_rgba_array(colors)[:, :3]
 
+    def default_scale(self, data: Series) -> Scale:
+        """Given data, initialize appropriate scale class."""
+        var_type = variable_type(data, boolean_type="categorical")
+        if var_type == "numeric":
+            return Continuous()
+        else:
+            return Nominal()
+
     def infer_scale(self, arg: Any, data: Series) -> Scale:
         # TODO when inferring Continuous without data, verify type
 
