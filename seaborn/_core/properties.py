@@ -64,7 +64,7 @@ class Property:
         # TODO allow variable_type to be "boolean" if that's a scale?
         # TODO how will this handle data with units that can be treated as numeric
         # if passed through a registered matplotlib converter?
-        var_type = variable_type(data, boolean_type="numeric")
+        var_type = variable_type(data, boolean_type="categorical")
         if var_type == "numeric":
             return Continuous()
         elif var_type == "datetime":
@@ -563,14 +563,6 @@ class Color(Property):
             return to_rgba_array(colors)
         else:
             return to_rgba_array(colors)[:, :3]
-
-    def default_scale(self, data: Series) -> Scale:
-        """Given data, initialize appropriate scale class."""
-        var_type = variable_type(data, boolean_type="categorical")
-        if var_type == "numeric":
-            return Continuous()
-        else:
-            return Nominal()
 
     def infer_scale(self, arg: Any, data: Series) -> Scale:
         # TODO when inferring Continuous without data, verify type
