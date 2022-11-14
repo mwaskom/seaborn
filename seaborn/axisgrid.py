@@ -949,7 +949,7 @@ class FacetGrid(Grid):
             Template for the row variable when titles are drawn on the grid
             margins. Must have {row_var} and {row_name} formatting keys.
         col_template:
-            Template for the row variable when titles are drawn on the grid
+            Template for the column variable when titles are drawn on the grid
             margins. Must have {col_var} and {col_name} formatting keys.
 
         Returns
