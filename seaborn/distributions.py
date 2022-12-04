@@ -478,11 +478,6 @@ class _DistributionPlotter(VectorPlotter):
             widths = res["space"].to_numpy()
             edges = res[orient].to_numpy() - widths / 2
 
-            # Convert edges back to original units for plotting
-            if self._log_scaled(self.data_variable):
-                widths = np.power(10, edges + widths) - np.power(10, edges)
-                edges = np.power(10, edges)
-
             # Rescale the smoothed curve to match the histogram
             if kde and key in densities:
                 density = densities[key]
@@ -491,6 +486,11 @@ class _DistributionPlotter(VectorPlotter):
                 else:
                     hist_norm = (heights * widths).sum()
                 densities[key] *= hist_norm
+
+            # Convert edges back to original units for plotting
+            if self._log_scaled(self.data_variable):
+                widths = np.power(10, edges + widths) - np.power(10, edges)
+                edges = np.power(10, edges)
 
             # Pack the histogram data and metadata together
             edges = edges + (1 - shrink) / 2 * widths
