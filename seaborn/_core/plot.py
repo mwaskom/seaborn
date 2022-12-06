@@ -1484,7 +1484,7 @@ class Plotter:
 
                 axes_df = self._filter_subplot_data(df, view)
 
-                with pd.option_context("mode.use_inf_as_null", True):
+                with pd.option_context("mode.use_inf_as_na", True):
                     if keep_na:
                         # The simpler thing to do would be x.dropna().reindex(x.index).
                         # But that doesn't work with the way that the subset iteration

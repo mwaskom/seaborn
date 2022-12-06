@@ -1116,7 +1116,7 @@ class VectorPlotter:
                 parts = []
                 grouped = self.plot_data[var].groupby(self.converters[var], sort=False)
                 for converter, orig in grouped:
-                    with pd.option_context('mode.use_inf_as_null', True):
+                    with pd.option_context('mode.use_inf_as_na', True):
                         orig = orig.dropna()
                         if var in self.var_levels:
                             # TODO this should happen in some centralized location
