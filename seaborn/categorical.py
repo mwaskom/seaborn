@@ -1791,7 +1791,7 @@ class _LVPlotter(_CategoricalPlotter):
         vals = np.asarray(vals)
         # Remove infinite values while handling a 'object' dtype
         # that can come from pd.Float64Dtype() input
-        with pd.option_context('mode.use_inf_as_null', True):
+        with pd.option_context('mode.use_inf_as_na', True):
             vals = vals[~pd.isnull(vals)]
         n = len(vals)
         p = self.outlier_prop
