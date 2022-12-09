@@ -675,6 +675,12 @@ class TestRelationalPlotter(Helpers):
         assert len(ax.collections) == 0
         assert len(g.ax.collections) > 0
 
+    def test_legend_has_no_offset(self, long_df):
+
+        g = relplot(data=long_df, x="x", y="y", hue=long_df["z"] + 1e8)
+        for text in g.legend.texts:
+            assert float(text.get_text()) > 1e7
+
 
 class TestLinePlotter(SharedAxesLevelTests, Helpers):
 

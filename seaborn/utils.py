@@ -699,6 +699,10 @@ def locator_to_legend_entries(locator, limits, dtype):
         formatter = mpl.ticker.LogFormatter()
     else:
         formatter = mpl.ticker.ScalarFormatter()
+        # Avoid having an offset/scientific notation which we don't currently
+        # have any way of representing in the legend
+        formatter.set_useOffset(False)
+        formatter.set_scientific(False)
     formatter.axis = dummy_axis()
 
     # TODO: The following two lines should be replaced
