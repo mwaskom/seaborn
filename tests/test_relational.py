@@ -624,7 +624,7 @@ class TestRelationalPlotter(Helpers):
         for line, color in zip(lines, palette):
             assert line.get_color() == color
 
-    def test_relplot_axis_labels(self, long_df):
+    def test_relplot_unshared_axis_labels(self, long_df):
 
         col, row = "a", "b"
         g = relplot(
