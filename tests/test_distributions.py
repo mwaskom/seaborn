@@ -1757,6 +1757,14 @@ class TestHistPlotUnivariate(SharedAxesLevelTests):
         x_max = np.log([b.get_x() + b.get_width() for b in ax.patches])
         assert np.unique(np.round(x_max - x_min, 10)).size == 1
 
+    def test_log_scale_kde(self, rng):
+
+        x = rng.lognormal(0, 1, 1000)
+        ax = histplot(x=x, log_scale=True, kde=True, bins=20)
+        bar_height = max(p.get_height() for p in ax.patches)
+        kde_height = max(ax.lines[0].get_ydata())
+        assert bar_height == pytest.approx(kde_height, rel=.1)
+
     @pytest.mark.parametrize(
         "fill", [True, False],
     )
@@ -1815,6 +1823,13 @@ class TestHistPlotUnivariate(SharedAxesLevelTests):
         line = ax.lines[0]
         assert line.get_linewidth() == lw
         assert line.get_linestyle() == ls
+
+    def test_label(self, flat_series):
+
+        ax = histplot(flat_series, label="a label")
+        handles, labels = ax.get_legend_handles_labels()
+        assert len(handles) == 1
+        assert labels == ["a label"]
 
 
 class TestHistPlotBivariate:

@@ -1791,7 +1791,7 @@ class _LVPlotter(_CategoricalPlotter):
         vals = np.asarray(vals)
         # Remove infinite values while handling a 'object' dtype
         # that can come from pd.Float64Dtype() input
-        with pd.option_context('mode.use_inf_as_null', True):
+        with pd.option_context('mode.use_inf_as_na', True):
             vals = vals[~pd.isnull(vals)]
         n = len(vals)
         p = self.outlier_prop
@@ -2137,7 +2137,7 @@ _categorical_docs = dict(
     """),
     capsize=dedent("""\
     capsize : float, optional
-        Width of the "caps" on error bars./
+        Width of the "caps" on error bars.\
     """),
     errwidth=dedent("""\
     errwidth : float, optional
@@ -2584,7 +2584,8 @@ stripplot.__doc__ = dedent("""\
     edgecolor : matplotlib color, "gray" is special-cased, optional
         Color of the lines around each point. If you pass ``"gray"``, the
         brightness is determined by the color palette used for the body
-        of the points.
+        of the points. Note that `stripplot` has `linewidth=0` by default,
+        so edge colors are only visible with nonzero line width.
     {linewidth}
     {native_scale}
     {formatter}

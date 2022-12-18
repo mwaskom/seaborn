@@ -624,6 +624,23 @@ class TestRelationalPlotter(Helpers):
         for line, color in zip(lines, palette):
             assert line.get_color() == color
 
+    def test_relplot_unshared_axis_labels(self, long_df):
+
+        col, row = "a", "b"
+        g = relplot(
+            data=long_df, x="x", y="y", col=col, row=row,
+            facet_kws=dict(sharex=False, sharey=False),
+        )
+
+        for ax in g.axes[-1, :].flat:
+            assert ax.get_xlabel() == "x"
+        for ax in g.axes[:-1, :].flat:
+            assert ax.get_xlabel() == ""
+        for ax in g.axes[:, 0].flat:
+            assert ax.get_ylabel() == "y"
+        for ax in g.axes[:, 1:].flat:
+            assert ax.get_ylabel() == ""
+
     def test_relplot_data(self, long_df):
 
         g = relplot(
@@ -657,6 +674,12 @@ class TestRelationalPlotter(Helpers):
             g = relplot(data=long_df, x="x", y="y", ax=ax)
         assert len(ax.collections) == 0
         assert len(g.ax.collections) > 0
+
+    def test_legend_has_no_offset(self, long_df):
+
+        g = relplot(data=long_df, x="x", y="y", hue=long_df["z"] + 1e8)
+        for text in g.legend.texts:
+            assert float(text.get_text()) > 1e7
 
 
 class TestLinePlotter(SharedAxesLevelTests, Helpers):

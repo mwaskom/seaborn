@@ -378,6 +378,14 @@ class ContinuousBase(Scale):
             axis.set_view_interval(vmin, vmax)
             locs = axis.major.locator()
             locs = locs[(vmin <= locs) & (locs <= vmax)]
+            # Avoid having an offset / scientific notation in a legend
+            # as we don't represent that anywhere so it ends up incorrect.
+            # This could become an option (e.g. Continuous.label(offset=True))
+            # in which case we would need to figure out how to show it.
+            if hasattr(axis.major.formatter, "set_useOffset"):
+                axis.major.formatter.set_useOffset(False)
+            if hasattr(axis.major.formatter, "set_scientific"):
+                axis.major.formatter.set_scientific(False)
             labels = axis.major.formatter.format_ticks(locs)
             new._legend = list(locs), list(labels)
 
@@ -433,7 +441,7 @@ class Continuous(ContinuousBase):
     def tick(
         self,
         locator: Locator | None = None, *,
-        at: Sequence[float] = None,
+        at: Sequence[float] | None = None,
         upto: int | None = None,
         count: int | None = None,
         every: float | None = None,
@@ -898,7 +906,7 @@ def _make_identity_transforms() -> TransFuncs:
     return identity, identity
 
 
-def _make_logit_transforms(base: float = None) -> TransFuncs:
+def _make_logit_transforms(base: float | None = None) -> TransFuncs:
 
     log, exp = _make_log_transforms(base)
 

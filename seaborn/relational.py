@@ -955,7 +955,8 @@ def relplot(
     g.map_dataframe(func, **plot_kws)
 
     # Label the axes, using the original variables
-    g.set(xlabel=variables.get("x"), ylabel=variables.get("y"))
+    # Pass "" when the variable name is None to overwrite internal variables
+    g.set_axis_labels(variables.get("x") or "", variables.get("y") or "")
 
     # Show the legend
     if legend:
