@@ -2051,6 +2051,15 @@ class TestLegend:
         p = Plot(**xy, color=["a", "b", "c", "d"]).add(NoLegendMark()).plot()
         assert not p._figure.legends
 
+    def test_legend_has_no_offset(self, xy):
+
+        color = np.add(xy["x"], 1e8)
+        p = Plot(**xy, color=color).add(MockMark()).plot()
+        legend = p._figure.legends[0]
+        assert legend.texts
+        for text in legend.texts:
+            assert float(text.get_text()) > 1e7
+
 
 class TestDefaultObject:
 
