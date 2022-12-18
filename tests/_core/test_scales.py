@@ -90,6 +90,12 @@ class TestContinuous:
         s = Continuous((2, 3), (10, 100), "log")._setup(x, IntervalProperty())
         assert_array_equal(s(x), [1, 2, 3])
 
+    def test_interval_with_bools(self):
+
+        x = pd.Series([True, False, False])
+        s = Continuous()._setup(x, IntervalProperty())
+        assert_array_equal(s(x), [1, 0, 0])
+
     def test_color_defaults(self, x):
 
         cmap = color_palette("ch:", as_cmap=True)
