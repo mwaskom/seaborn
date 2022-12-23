@@ -555,6 +555,12 @@ class TestNominal:
         s = Nominal((2, 4))._setup(x, MockProperty())
         assert_array_equal(s(x), [4, np.sqrt(10), 2, np.sqrt(10)])
 
+    def test_empty_data(self):
+
+        x = pd.Series([], dtype=object, name="x")
+        s = Nominal()._setup(x, Coordinate())
+        assert_array_equal(s(x), [])
+
 
 class TestTemporal:
 

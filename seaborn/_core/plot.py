@@ -1506,8 +1506,11 @@ class Plotter:
                         subplot_keys[dim] = view[dim]
 
                 if not grouping_vars or not any(grouping_keys):
-                    yield subplot_keys, axes_df.copy(), view["ax"]
-                    continue
+                    if axes_df.empty and not allow_empty:
+                        continue
+                    else:
+                        yield subplot_keys, axes_df.copy(), view["ax"]
+                        continue
 
                 grouped_df = axes_df.groupby(grouping_vars, sort=False, as_index=False)
 

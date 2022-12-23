@@ -680,8 +680,9 @@ class TestPlotting:
     def test_empty(self):
 
         m = MockMark()
-        Plot().plot()
+        Plot().add(m).plot()
         assert m.n_splits == 0
+        assert not m.passed_data
 
     def test_no_orient_variance(self):
 

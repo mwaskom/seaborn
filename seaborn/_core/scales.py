@@ -163,7 +163,7 @@ class Nominal(Scale):
             new = new.label()
 
         # TODO flexibility over format() which isn't great for numbers / dates
-        stringify = np.vectorize(format)
+        stringify = np.vectorize(format, otypes=["object"])
 
         units_seed = categorical_order(data, new.order)
 
