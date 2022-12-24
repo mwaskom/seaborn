@@ -1466,8 +1466,6 @@ class Plotter:
         self, grouping_vars: list[str], df: DataFrame, subplots: list[dict[str, Any]],
     ) -> Callable[[], Generator]:
 
-        allow_empty = False  # TODO will need to recreate previous categorical plots
-
         grouping_keys = []
         grouping_vars = [
             v for v in grouping_vars if v in df and v not in ["col", "row"]
@@ -1506,7 +1504,8 @@ class Plotter:
                         subplot_keys[dim] = view[dim]
 
                 if not grouping_vars or not any(grouping_keys):
-                    yield subplot_keys, axes_df.copy(), view["ax"]
+                    if not axes_df.empty:
+                        yield subplot_keys, axes_df.copy(), view["ax"]
                     continue
 
                 grouped_df = axes_df.groupby(grouping_vars, sort=False, as_index=False)
@@ -1526,7 +1525,7 @@ class Plotter:
                         # case this option could be removed
                         df_subset = axes_df.loc[[]]
 
-                    if df_subset.empty and not allow_empty:
+                    if df_subset.empty:
                         continue
 
                     sub_vars = dict(zip(grouping_vars, key))

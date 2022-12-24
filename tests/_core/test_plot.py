@@ -680,8 +680,9 @@ class TestPlotting:
     def test_empty(self):
 
         m = MockMark()
-        Plot().plot()
+        Plot().add(m).plot()
         assert m.n_splits == 0
+        assert not m.passed_data
 
     def test_no_orient_variance(self):
 
@@ -1086,7 +1087,7 @@ class TestPlotting:
 
         ax = mpl.figure.Figure().subplots()
         m = MockMark()
-        p = Plot().on(ax).add(m).plot()
+        p = Plot([1], [2]).on(ax).add(m).plot()
         assert m.passed_axes == [ax]
         assert p._figure is ax.figure
 
@@ -1095,7 +1096,7 @@ class TestPlotting:
 
         f = mpl.figure.Figure()
         m = MockMark()
-        p = Plot().on(f).add(m)
+        p = Plot([1, 2], [3, 4]).on(f).add(m)
         if facet:
             p = p.facet(["a", "b"])
         p = p.plot()
@@ -1112,7 +1113,7 @@ class TestPlotting:
         sf1, sf2 = mpl.figure.Figure().subfigures(2)
         sf1.subplots()
         m = MockMark()
-        p = Plot().on(sf2).add(m)
+        p = Plot([1, 2], [3, 4]).on(sf2).add(m)
         if facet:
             p = p.facet(["a", "b"])
         p = p.plot()
