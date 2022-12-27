@@ -19,9 +19,10 @@ from seaborn._core.scales import Continuous, Nominal, Temporal
 from seaborn._core.moves import Move, Shift, Dodge
 from seaborn._core.rules import categorical_order
 from seaborn._core.exceptions import PlotSpecError
-from seaborn._stats.aggregation import Agg
 from seaborn._marks.base import Mark
 from seaborn._stats.base import Stat
+from seaborn._marks.dot import Dot
+from seaborn._stats.aggregation import Agg
 from seaborn.external.version import Version
 
 assert_vector_equal = functools.partial(
@@ -1261,8 +1262,8 @@ class TestExceptions:
         msg = "Scale setup failed for the `color` variable."
         with pytest.raises(PlotSpecError, match=msg) as err:
             p.plot()
-            assert isinstance(err.__cause__, ValueError)
-            assert bad_palette in str(err.__cause__)
+        assert isinstance(err.value.__cause__, ValueError)
+        assert bad_palette in str(err.value.__cause__)
 
     def test_coordinate_scaling(self):
 
@@ -1273,24 +1274,29 @@ class TestExceptions:
         msg = "Scaling operation failed for the `x` variable."
         with pytest.raises(PlotSpecError, match=msg) as err:
             p.plot()
-            # Don't test the cause contents b/c matplotlib own them here.
-            assert hasattr(err, "__cause__")
+        # Don't test the cause contents b/c matplotlib owns them here.
+        assert hasattr(err.value, "__cause__")
 
     def test_semantic_scaling(self):
 
-        class ErrorRaisingScale(Continuous):
+        class ErrorRaising(Continuous):
 
-            def _setup(self, data, prop, axis):
+            def _setup(self, data, prop, axis=None):
+
                 def f(x):
                     raise ValueError("This is a test")
-                return f
+
+                new = super()._setup(data, prop, axis)
+                new._pipeline = [f]
+                return new
 
         x = y = color = [1, 2]
-        p = Plot(x, y, color=color).add(MockMark()).scale(color=ErrorRaisingScale())
-        with pytest.raises(PlotSpecError) as err:
+        p = Plot(x, y, color=color).add(Dot()).scale(color=ErrorRaising())
+        msg = "Scaling operation failed for the `color` variable."
+        with pytest.raises(PlotSpecError, match=msg) as err:
             p.plot()
-            assert isinstance(err.__cause__, ValueError)
-            assert str(err.__cause__) == "This is a test"
+        assert isinstance(err.value.__cause__, ValueError)
+        assert str(err.value.__cause__) == "This is a test"
 
 
 class TestFacetInterface:

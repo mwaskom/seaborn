@@ -178,7 +178,7 @@ class Mark:
                 try:
                     feature = scale(value)
                 except Exception as err:
-                    raise PlotSpecError._during("Scale operation", name) from err
+                    raise PlotSpecError._during("Scaling operation", name) from err
 
             if return_array:
                 feature = np.asarray(feature)
