@@ -20,6 +20,7 @@ from seaborn._core.properties import (
     DashPattern,
     DashPatternWithOffset,
 )
+from seaborn._core.exceptions import PlotSpecError
 
 
 class Mappable:
@@ -172,7 +173,13 @@ class Mark:
                 # TODO Might this obviate the identity scale? Just don't add a scale?
                 feature = data[name]
             else:
-                feature = scales[name](data[name])
+                scale = scales[name]
+                value = data[name]
+                try:
+                    feature = scale(value)
+                except Exception as err:
+                    raise PlotSpecError._during("Scale operation", name) from err
+
             if return_array:
                 feature = np.asarray(feature)
             return feature

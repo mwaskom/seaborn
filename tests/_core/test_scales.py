@@ -448,7 +448,7 @@ class TestNominal:
     def test_color_unknown_palette(self, x):
 
         pal = "not_a_palette"
-        err = f"{pal} is not a valid palette name"
+        err = f"'{pal}' is not a valid palette name"
         with pytest.raises(ValueError, match=err):
             Nominal(pal)._setup(x, Color())
 

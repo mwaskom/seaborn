@@ -15,9 +15,10 @@ from pandas.testing import assert_frame_equal, assert_series_equal
 from numpy.testing import assert_array_equal, assert_array_almost_equal
 
 from seaborn._core.plot import Plot, Default
-from seaborn._core.scales import Nominal, Continuous
-from seaborn._core.rules import categorical_order
+from seaborn._core.scales import Continuous, Nominal, Temporal
 from seaborn._core.moves import Move, Shift, Dodge
+from seaborn._core.rules import categorical_order
+from seaborn._core.exceptions import PlotSpecError
 from seaborn._stats.aggregation import Agg
 from seaborn._marks.base import Mark
 from seaborn._stats.base import Stat
@@ -1247,6 +1248,49 @@ class TestPlotting:
         for i, ax in enumerate(p._figure.axes):
             expected = " | ".join([cols[i % 2].upper(), rows[i // 2].upper()])
             assert ax.get_title() == expected
+
+
+class TestExceptions:
+
+    def test_scale_setup(self):
+
+        x = y = color = ["a", "b"]
+        bad_palette = "not_a_palette"
+        p = Plot(x, y, color=color).add(MockMark()).scale(color=bad_palette)
+
+        msg = "Scale setup failed for the `color` variable."
+        with pytest.raises(PlotSpecError, match=msg) as err:
+            p.plot()
+            assert isinstance(err.__cause__, ValueError)
+            assert bad_palette in str(err.__cause__)
+
+    def test_coordinate_scaling(self):
+
+        x = ["a", "b"]
+        y = [1, 2]
+        p = Plot(x, y).add(MockMark()).scale(x=Temporal())
+
+        msg = "Scaling operation failed for the `x` variable."
+        with pytest.raises(PlotSpecError, match=msg) as err:
+            p.plot()
+            # Don't test the cause contents b/c matplotlib own them here.
+            assert hasattr(err, "__cause__")
+
+    def test_semantic_scaling(self):
+
+        class ErrorRaisingScale(Continuous):
+
+            def _setup(self, data, prop, axis):
+                def f(x):
+                    raise ValueError("This is a test")
+                return f
+
+        x = y = color = [1, 2]
+        p = Plot(x, y, color=color).add(MockMark()).scale(color=ErrorRaisingScale())
+        with pytest.raises(PlotSpecError) as err:
+            p.plot()
+            assert isinstance(err.__cause__, ValueError)
+            assert str(err.__cause__) == "This is a test"
 
 
 class TestFacetInterface:

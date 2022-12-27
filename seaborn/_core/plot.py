@@ -36,6 +36,7 @@ from seaborn._core.typing import (
     OrderSpec,
     Default,
 )
+from seaborn._core.exceptions import PlotSpecError
 from seaborn._core.rules import categorical_order
 from seaborn._compat import set_scale_obj, set_layout_engine
 from seaborn.rcmod import axes_style, plotting_context
@@ -1249,7 +1250,10 @@ class Plotter:
             if scale is None:
                 self._scales[var] = Scale._identity()
             else:
-                self._scales[var] = scale._setup(var_df[var], prop)
+                try:
+                    self._scales[var] = scale._setup(var_df[var], prop)
+                except Exception as err:
+                    raise PlotSpecError._during("Scale setup", var) from err
 
             # Everything below here applies only to coordinate variables
             # We additionally skip it when we're working with a value
@@ -1278,7 +1282,11 @@ class Plotter:
                     layer_df = layer["data"].frame
                     if var in layer_df:
                         idx = self._get_subplot_index(layer_df, view)
-                        new_series.loc[idx] = view_scale(layer_df.loc[idx, var])
+                        try:
+                            new_series.loc[idx] = view_scale(layer_df.loc[idx, var])
+                        except Exception as err:
+                            spec_error = PlotSpecError._during("Scaling operation", var)
+                            raise spec_error from err
 
             # Now the transformed data series are complete, set update the layer data
             for layer, new_series in zip(layers, transformed_data):
