@@ -1255,12 +1255,8 @@ class Plotter:
                 except Exception as err:
                     raise PlotSpecError._during("Scale setup", var) from err
 
-            # Everything below here applies only to coordinate variables
-            # We additionally skip it when we're working with a value
-            # that is derived from a coordinate we've already processed.
-            # e.g., the Stat consumed y and added ymin/ymax. In that case,
-            # we've already setup the y scale and ymin/max are in scale space.
             if axis is None or (var != coord and coord in p._variables):
+                # Everything below here applies only to coordinate variables
                 continue
 
             # Set up an empty series to receive the transformed values.
@@ -1280,13 +1276,15 @@ class Plotter:
 
                 for layer, new_series in zip(layers, transformed_data):
                     layer_df = layer["data"].frame
-                    if var in layer_df:
-                        idx = self._get_subplot_index(layer_df, view)
-                        try:
-                            new_series.loc[idx] = view_scale(layer_df.loc[idx, var])
-                        except Exception as err:
-                            spec_error = PlotSpecError._during("Scaling operation", var)
-                            raise spec_error from err
+                    if var not in layer_df:
+                        continue
+
+                    idx = self._get_subplot_index(layer_df, view)
+                    try:
+                        new_series.loc[idx] = view_scale(layer_df.loc[idx, var])
+                    except Exception as err:
+                        spec_error = PlotSpecError._during("Scaling operation", var)
+                        raise spec_error from err
 
             # Now the transformed data series are complete, set update the layer data
             for layer, new_series in zip(layers, transformed_data):
