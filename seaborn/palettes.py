@@ -234,7 +234,7 @@ def color_palette(palette=None, n_colors=None, desat=None, as_cmap=False):
                 # Perhaps a named matplotlib colormap?
                 palette = mpl_palette(palette, n_colors, as_cmap=as_cmap)
             except (ValueError, KeyError):  # Error class changed in mpl36
-                raise ValueError(f"{palette} is not a valid palette name")
+                raise ValueError(f"{palette!r} is not a valid palette name")
 
     if desat is not None:
         palette = [desaturate(c, desat) for c in palette]

@@ -1934,8 +1934,8 @@ class TestHistPlotBivariate:
         edges = itertools.product(y_edges[:-1], x_edges[:-1])
         for i, (y_i, x_i) in enumerate(edges):
             path = mesh.get_paths()[i]
-            assert path.vertices[0, 0] == 10 ** x_i
-            assert path.vertices[0, 1] == 10 ** y_i
+            assert path.vertices[0, 0] == pytest.approx(10 ** x_i)
+            assert path.vertices[0, 1] == pytest.approx(10 ** y_i)
 
     def test_mesh_thresh(self, long_df):
 
