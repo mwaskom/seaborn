@@ -9,7 +9,7 @@ from numpy.testing import assert_array_equal
 
 from seaborn.external.version import Version
 from seaborn._core.rules import categorical_order
-from seaborn._core.scales import Nominal, Continuous
+from seaborn._core.scales import Nominal, Continuous, Boolean
 from seaborn._core.properties import (
     Alpha,
     Color,
@@ -234,12 +234,6 @@ class TestColor(DataFixtures):
         assert isinstance(scale, scale_class)
         assert scale.values == values
 
-    def test_inference_binary_data(self):
-
-        x = pd.Series([0, 0, 1, 0, 1], dtype=int)
-        scale = Color().infer_scale("viridis", x)
-        assert isinstance(scale, Nominal)
-
     def test_standardization(self):
 
         f = Color().standardize
@@ -420,14 +414,14 @@ class TestFill(DataFixtures):
 
         x = vectors[data_type]
         scale = Fill().default_scale(x)
-        assert isinstance(scale, Nominal)
+        assert isinstance(scale, Boolean if data_type == "bool" else Nominal)
 
     @pytest.mark.parametrize("data_type", ["cat", "num", "bool"])
     def test_inference_list(self, data_type, vectors):
 
         x = vectors[data_type]
         scale = Fill().infer_scale([True, False], x)
-        assert isinstance(scale, Nominal)
+        assert isinstance(scale, Boolean if data_type == "bool" else Nominal)
         assert scale.values == [True, False]
 
     @pytest.mark.parametrize("data_type", ["cat", "num", "bool"])
@@ -436,7 +430,7 @@ class TestFill(DataFixtures):
         x = vectors[data_type]
         values = dict(zip(x.unique(), [True, False]))
         scale = Fill().infer_scale(values, x)
-        assert isinstance(scale, Nominal)
+        assert isinstance(scale, Boolean if data_type == "bool" else Nominal)
         assert scale.values == values
 
     def test_mapping_categorical_data(self, cat_vector):
