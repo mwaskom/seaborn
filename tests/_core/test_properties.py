@@ -52,8 +52,12 @@ class DataFixtures:
         return long_df["d"]
 
     @pytest.fixture
-    def vectors(self, num_vector, cat_vector):
-        return {"num": num_vector, "cat": cat_vector}
+    def bool_vector(self, long_df):
+        return long_df["x"] > 10
+
+    @pytest.fixture
+    def vectors(self, num_vector, cat_vector, bool_vector):
+        return {"num": num_vector, "cat": cat_vector, "bool": bool_vector}
 
 
 class TestCoordinate(DataFixtures):
@@ -195,7 +199,7 @@ class TestColor(DataFixtures):
 
     @pytest.mark.parametrize(
         "data_type,scale_class",
-        [("cat", Nominal), ("num", Continuous)]
+        [("cat", Nominal), ("num", Continuous), ("bool", Boolean)]
     )
     def test_default(self, data_type, scale_class, vectors):
 
@@ -213,18 +217,18 @@ class TestColor(DataFixtures):
         scale = Color().default_scale(x)
         assert isinstance(scale, Continuous)
 
-    # TODO default scales for other types
-
     @pytest.mark.parametrize(
         "values,data_type,scale_class",
         [
             ("viridis", "cat", Nominal),  # Based on variable type
             ("viridis", "num", Continuous),  # Based on variable type
+            ("viridis", "bool", Boolean),  # Based on variable type
             ("muted", "num", Nominal),  # Based on qualitative palette
             (["r", "g", "b"], "num", Nominal),  # Based on list palette
             ({2: "r", 4: "g", 8: "b"}, "num", Nominal),  # Based on dict palette
             (("r", "b"), "num", Continuous),  # Based on tuple / variable type
             (("g", "m"), "cat", Nominal),  # Based on tuple / variable type
+            (("c", "y"), "bool", Boolean),  # Based on tuple / variable type
             (get_colormap("inferno"), "num", Continuous),  # Based on callable
         ]
     )
@@ -260,26 +264,26 @@ class ObjectPropertyBase(DataFixtures):
     def unpack(self, x):
         return x
 
-    @pytest.mark.parametrize("data_type", ["cat", "num"])
+    @pytest.mark.parametrize("data_type", ["cat", "num", "bool"])
     def test_default(self, data_type, vectors):
 
         scale = self.prop().default_scale(vectors[data_type])
-        assert isinstance(scale, Nominal)
+        assert isinstance(scale, Boolean if data_type == "bool" else Nominal)
 
-    @pytest.mark.parametrize("data_type", ["cat", "num"])
+    @pytest.mark.parametrize("data_type", ["cat", "num", "bool"])
     def test_inference_list(self, data_type, vectors):
 
         scale = self.prop().infer_scale(self.values, vectors[data_type])
-        assert isinstance(scale, Nominal)
+        assert isinstance(scale, Boolean if data_type == "bool" else Nominal)
         assert scale.values == self.values
 
-    @pytest.mark.parametrize("data_type", ["cat", "num"])
+    @pytest.mark.parametrize("data_type", ["cat", "num", "bool"])
     def test_inference_dict(self, data_type, vectors):
 
         x = vectors[data_type]
         values = dict(zip(categorical_order(x), self.values))
         scale = self.prop().infer_scale(values, x)
-        assert isinstance(scale, Nominal)
+        assert isinstance(scale, Boolean if data_type == "bool" else Nominal)
         assert scale.values == values
 
     def test_dict_missing(self, cat_vector):
@@ -480,6 +484,7 @@ class IntervalBase(DataFixtures):
     @pytest.mark.parametrize("data_type,scale_class", [
         ("cat", Nominal),
         ("num", Continuous),
+        ("bool", Boolean),
     ])
     def test_default(self, data_type, scale_class, vectors):
 
@@ -490,10 +495,13 @@ class IntervalBase(DataFixtures):
     @pytest.mark.parametrize("arg,data_type,scale_class", [
         ((1, 3), "cat", Nominal),
         ((1, 3), "num", Continuous),
+        ((1, 3), "bool", Boolean),
         ([1, 2, 3], "cat", Nominal),
         ([1, 2, 3], "num", Nominal),
+        ([1, 3], "bool", Boolean),
         ({"a": 1, "b": 3, "c": 2}, "cat", Nominal),
         ({2: 1, 4: 3, 8: 2}, "num", Nominal),
+        ({True: 4, False: 2}, "bool", Boolean),
     ])
     def test_inference(self, arg, data_type, scale_class, vectors):
 
