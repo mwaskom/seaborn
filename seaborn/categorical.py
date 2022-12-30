@@ -236,7 +236,7 @@ class _CategoricalPlotterNew(_RelationalPlotter):
     def _nested_offsets(self, width, dodge):
         """Return offsets for each hue level for dodged plots."""
         offsets = None
-        if "hue" in self.variables:
+        if "hue" in self.variables and self._hue_map.levels is not None:
             n_levels = len(self._hue_map.levels)
             if dodge:
                 each_width = width / n_levels
@@ -268,7 +268,7 @@ class _CategoricalPlotterNew(_RelationalPlotter):
             jlim = 0.1
         else:
             jlim = float(jitter)
-        if "hue" in self.variables and dodge:
+        if "hue" in self.variables and dodge and self._hue_map.levels is not None:
             jlim /= len(self._hue_map.levels)
         jlim *= self._native_width
         jitterer = partial(np.random.uniform, low=-jlim, high=+jlim)
