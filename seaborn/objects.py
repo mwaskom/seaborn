@@ -44,4 +44,6 @@ from seaborn._stats.regression import PolyFit  # noqa: F401
 
 from seaborn._core.moves import Dodge, Jitter, Norm, Shift, Stack, Move  # noqa: F401
 
-from seaborn._core.scales import Nominal, Continuous, Temporal, Scale  # noqa: F401
+from seaborn._core.scales import (  # noqa: F401
+    Boolean, Continuous, Nominal, Temporal, Scale
+)

@@ -4,6 +4,8 @@ v0.12.2 (Unreleased)
 
 - |Feature| Added the :class:`objects.KDE` stat (:pr:`3111`).
 
+- |Feature| Added the :class:`objects.Boolean` scale (:pr:`3205`).
+
 - |Enhancement| Automatic mark widths are now calculated separately for unshared facet axes (:pr:`3119`).
 
 - |Enhancement| Improved user feedback for failures during plot compilation by catching exceptions an reraising with a `PlotSpecError` that provides additional context (:pr:`3203`).

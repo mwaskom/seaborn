@@ -39,6 +39,7 @@ from seaborn._core.typing import Default, default
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
+    from seaborn._core.plot import Plot
     from seaborn._core.properties import Property
     from numpy.typing import ArrayLike, NDArray
 
@@ -60,7 +61,7 @@ class Scale:
     _pipeline: Pipeline
     _matplotlib_scale: ScaleBase
     _spacer: staticmethod
-    _legend: tuple[list[str], list[Any]] | None
+    _legend: tuple[list[Any], list[str]] | None
 
     def __post_init__(self):
 
@@ -107,6 +108,10 @@ class Scale:
     ) -> Scale:
         raise NotImplementedError()
 
+    def _finalize(self, p: Plot, axis: Axis) -> None:
+        """Perform scale-specific axis tweaks after adding artists."""
+        pass
+
     def __call__(self, data: Series) -> ArrayLike:
 
         trans_data: Series | NDArray | list
@@ -141,6 +146,99 @@ class Scale:
 
 
 @dataclass
+class Boolean(Scale):
+    """
+    A scale with a discrete domain of True and False values.
+
+    The behavior is similar to the :class:`Nominal` scale, but property
+    mappings and legends will use a [True, False] ordering rather than
+    a sort using numeric rules. Coordinate variables accomplish this by
+    inverting axis limits so as to maintain underlying numeric positioning.
+    Input data are cast to boolean values, respecting missing data.
+
+    """
+    values: tuple | list | dict | None = None
+
+    _priority: ClassVar[int] = 3
+
+    def _setup(
+        self, data: Series, prop: Property, axis: Axis | None = None,
+    ) -> Scale:
+
+        new = copy(self)
+        if new._tick_params is None:
+            new = new.tick()
+        if new._label_params is None:
+            new = new.label()
+
+        def na_safe_cast(x):
+            # TODO this doesn't actually need to be a closure
+            if np.isscalar(x):
+                return float(bool(x))
+            else:
+                if hasattr(x, "notna"):
+                    # Handle pd.NA; np<>pd interop with NA is tricky
+                    use = x.notna().to_numpy()
+                else:
+                    use = np.isfinite(x)
+                out = np.full(len(x), np.nan, dtype=float)
+                out[use] = x[use].astype(bool).astype(float)
+                return out
+
+        new._pipeline = [na_safe_cast, prop.get_mapping(new, data)]
+        new._spacer = _default_spacer
+        if prop.legend:
+            new._legend = [True, False], ["True", "False"]
+
+        forward, inverse = _make_identity_transforms()
+        mpl_scale = new._get_scale(str(data.name), forward, inverse)
+
+        axis = PseudoAxis(mpl_scale) if axis is None else axis
+        mpl_scale.set_default_locators_and_formatters(axis)
+        new._matplotlib_scale = mpl_scale
+
+        return new
+
+    def _finalize(self, p: Plot, axis: Axis) -> None:
+
+        # We want values to appear in a True, False order but also want
+        # True/False to be drawn at 1/0 positions respectively to avoid nasty
+        # surprises if additional artists are added through the matplotlib API.
+        # We accomplish this using axis inversion akin to what we do in Nominal.
+
+        ax = axis.axes
+        name = axis.axis_name
+        axis.grid(False, which="both")
+        if name not in p._limits:
+            nticks = len(axis.get_major_ticks())
+            lo, hi = -.5, nticks - .5
+            if name == "x":
+                lo, hi = hi, lo
+            set_lim = getattr(ax, f"set_{name}lim")
+            set_lim(lo, hi, auto=None)
+
+    def tick(self, locator: Locator | None = None):
+        new = copy(self)
+        new._tick_params = {"locator": locator}
+        return new
+
+    def label(self, formatter: Formatter | None = None):
+        new = copy(self)
+        new._label_params = {"formatter": formatter}
+        return new
+
+    def _get_locators(self, locator):
+        if locator is not None:
+            return locator
+        return FixedLocator([0, 1]), None
+
+    def _get_formatter(self, locator, formatter):
+        if formatter is not None:
+            return formatter
+        return FuncFormatter(lambda x, _: str(bool(x)))
+
+
+@dataclass
 class Nominal(Scale):
     """
     A categorical scale without relative importance / magnitude.
@@ -150,7 +248,7 @@ class Nominal(Scale):
     values: tuple | str | list | dict | None = None
     order: list | None = None
 
-    _priority: ClassVar[int] = 3
+    _priority: ClassVar[int] = 4
 
     def _setup(
         self, data: Series, prop: Property, axis: Axis | None = None,
@@ -217,23 +315,28 @@ class Nominal(Scale):
             out[keep] = axis.convert_units(stringify(x[keep]))
             return out
 
-        new._pipeline = [
-            convert_units,
-            prop.get_mapping(new, data),
-            # TODO how to handle color representation consistency?
-        ]
-
-        def spacer(x):
-            return 1
-
-        new._spacer = spacer
+        new._pipeline = [convert_units, prop.get_mapping(new, data)]
+        new._spacer = _default_spacer
 
         if prop.legend:
             new._legend = units_seed, list(stringify(units_seed))
 
         return new
 
-    def tick(self, locator: Locator | None = None):
+    def _finalize(self, p: Plot, axis: Axis) -> None:
+
+        ax = axis.axes
+        name = axis.axis_name
+        axis.grid(False, which="both")
+        if name not in p._limits:
+            nticks = len(axis.get_major_ticks())
+            lo, hi = -.5, nticks - .5
+            if name == "y":
+                lo, hi = hi, lo
+            set_lim = getattr(ax, f"set_{name}lim")
+            set_lim(lo, hi, auto=None)
+
+    def tick(self, locator: Locator | None = None) -> Nominal:
         """
         Configure the selection of ticks for the scale's axis or legend.
 
@@ -252,12 +355,10 @@ class Nominal(Scale):
 
         """
         new = copy(self)
-        new._tick_params = {
-            "locator": locator,
-        }
+        new._tick_params = {"locator": locator}
         return new
 
-    def label(self, formatter: Formatter | None = None):
+    def label(self, formatter: Formatter | None = None) -> Nominal:
         """
         Configure the selection of labels for the scale's axis or legend.
 
@@ -277,9 +378,7 @@ class Nominal(Scale):
 
         """
         new = copy(self)
-        new._label_params = {
-            "formatter": formatter,
-        }
+        new._label_params = {"formatter": formatter}
         return new
 
     def _get_locators(self, locator):
@@ -986,3 +1085,7 @@ def _make_power_transforms(exp: float) -> TransFuncs:
         return np.sign(x) * np.power(np.abs(x), 1 / exp)
 
     return forward, inverse
+
+
+def _default_spacer(x: Series) -> float:
+    return 1
