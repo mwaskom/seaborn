@@ -8,6 +8,7 @@ import pytest
 from numpy.testing import assert_array_equal
 from pandas.testing import assert_series_equal
 
+from seaborn._core.plot import Plot
 from seaborn._core.scales import (
     Nominal,
     Continuous,
@@ -568,6 +569,18 @@ class TestNominal:
         s = Nominal()._setup(x, Coordinate())
         assert_array_equal(s(x), [])
 
+    def test_finalize(self, x):
+
+        ax = mpl.figure.Figure().subplots()
+        s = Nominal()._setup(x, Coordinate(), ax.yaxis)
+        s._finalize(Plot(), ax.yaxis)
+
+        levels = x.unique()
+        assert ax.get_ylim() == (len(levels) - .5, -.5)
+        assert_array_equal(ax.get_yticks(), list(range(len(levels))))
+        for i, expected in enumerate(levels):
+            assert ax.yaxis.major.formatter(i) == expected
+
 
 class TestTemporal:
 
@@ -796,3 +809,13 @@ class TestBoolean:
         s = Boolean(vs)._setup(x, IntervalProperty())
         expected = [vs[int(x_i)] for x_i in x]
         assert_array_equal(s(x), expected)
+
+    def test_finalize(self, x):
+
+        ax = mpl.figure.Figure().subplots()
+        s = Boolean()._setup(x, Coordinate(), ax.xaxis)
+        s._finalize(Plot(), ax.xaxis)
+        assert ax.get_xlim() == (1.5, -.5)
+        assert_array_equal(ax.get_xticks(), [0, 1])
+        assert ax.xaxis.major.formatter(0) == "False"
+        assert ax.xaxis.major.formatter(1) == "True"
