@@ -171,13 +171,21 @@ class Boolean(Scale):
         if new._label_params is None:
             new = new.label()
 
-        def cast(x):
+        def na_safe_cast(x):
+            # TODO this doesn't actually need to be a closure
             if np.isscalar(x):
-                return bool(x)
+                return float(bool(x))
             else:
-                return np.asarray(x, dtype=bool)
+                if hasattr(x, "notna"):
+                    # Handle pd.NA; np<>pd interop with NA is tricky
+                    use = x.notna().to_numpy()
+                else:
+                    use = np.isfinite(x)
+                out = np.full(len(x), np.nan, dtype=float)
+                out[use] = x[use].astype(bool).astype(float)
+                return out
 
-        new._pipeline = [cast, prop.get_mapping(new, data)]
+        new._pipeline = [na_safe_cast, prop.get_mapping(new, data)]
         new._spacer = _default_spacer
         if prop.legend:
             new._legend = [True, False], ["True", "False"]
