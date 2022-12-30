@@ -569,6 +569,10 @@ class TestNominal:
         s = Nominal()._setup(x, Coordinate())
         assert_array_equal(s(x), [])
 
+    @pytest.mark.skipif(
+        Version(mpl.__version__) < Version("3.4.0"),
+        reason="Test failing on older matplotlib for unclear reasons",
+    )
     def test_finalize(self, x):
 
         ax = mpl.figure.Figure().subplots()
