@@ -114,6 +114,7 @@ Scale objects
     :template: scale
     :nosignatures:
 
+    Boolean
     Continuous
     Nominal
     Temporal
