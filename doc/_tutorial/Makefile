@@ -1,4 +1,5 @@
 rst_files := $(patsubst %.ipynb,../tutorial/%.rst,$(wildcard *.ipynb))
+export MPLBACKEND := module://matplotlib_inline.backend_inline
 
 tutorial: ${rst_files}
 

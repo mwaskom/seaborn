@@ -36,6 +36,7 @@ from seaborn._core.typing import (
     OrderSpec,
     Default,
 )
+from seaborn._core.exceptions import PlotSpecError
 from seaborn._core.rules import categorical_order
 from seaborn._compat import set_scale_obj, set_layout_engine
 from seaborn.rcmod import axes_style, plotting_context
@@ -1249,14 +1250,13 @@ class Plotter:
             if scale is None:
                 self._scales[var] = Scale._identity()
             else:
-                self._scales[var] = scale._setup(var_df[var], prop)
+                try:
+                    self._scales[var] = scale._setup(var_df[var], prop)
+                except Exception as err:
+                    raise PlotSpecError._during("Scale setup", var) from err
 
-            # Everything below here applies only to coordinate variables
-            # We additionally skip it when we're working with a value
-            # that is derived from a coordinate we've already processed.
-            # e.g., the Stat consumed y and added ymin/ymax. In that case,
-            # we've already setup the y scale and ymin/max are in scale space.
             if axis is None or (var != coord and coord in p._variables):
+                # Everything below here applies only to coordinate variables
                 continue
 
             # Set up an empty series to receive the transformed values.
@@ -1276,9 +1276,15 @@ class Plotter:
 
                 for layer, new_series in zip(layers, transformed_data):
                     layer_df = layer["data"].frame
-                    if var in layer_df:
-                        idx = self._get_subplot_index(layer_df, view)
+                    if var not in layer_df:
+                        continue
+
+                    idx = self._get_subplot_index(layer_df, view)
+                    try:
                         new_series.loc[idx] = view_scale(layer_df.loc[idx, var])
+                    except Exception as err:
+                        spec_error = PlotSpecError._during("Scaling operation", var)
+                        raise spec_error from err
 
             # Now the transformed data series are complete, set update the layer data
             for layer, new_series in zip(layers, transformed_data):
@@ -1466,8 +1472,6 @@ class Plotter:
         self, grouping_vars: list[str], df: DataFrame, subplots: list[dict[str, Any]],
     ) -> Callable[[], Generator]:
 
-        allow_empty = False  # TODO will need to recreate previous categorical plots
-
         grouping_keys = []
         grouping_vars = [
             v for v in grouping_vars if v in df and v not in ["col", "row"]
@@ -1506,7 +1510,8 @@ class Plotter:
                         subplot_keys[dim] = view[dim]
 
                 if not grouping_vars or not any(grouping_keys):
-                    yield subplot_keys, axes_df.copy(), view["ax"]
+                    if not axes_df.empty:
+                        yield subplot_keys, axes_df.copy(), view["ax"]
                     continue
 
                 grouped_df = axes_df.groupby(grouping_vars, sort=False, as_index=False)
@@ -1526,7 +1531,7 @@ class Plotter:
                         # case this option could be removed
                         df_subset = axes_df.loc[[]]
 
-                    if df_subset.empty and not allow_empty:
+                    if df_subset.empty:
                         continue
 
                     sub_vars = dict(zip(grouping_vars, key))
@@ -1654,16 +1659,8 @@ class Plotter:
                         hi = cast(float, hi) + 0.5
                     ax.set(**{f"{axis}lim": (lo, hi)})
 
-                # Nominal scale special-casing
-                if isinstance(self._scales.get(axis_key), Nominal):
-                    axis_obj.grid(False, which="both")
-                    if axis_key not in p._limits:
-                        nticks = len(axis_obj.get_major_ticks())
-                        lo, hi = -.5, nticks - .5
-                        if axis == "y":
-                            lo, hi = hi, lo
-                        set_lim = getattr(ax, f"set_{axis}lim")
-                        set_lim(lo, hi, auto=None)
+                if axis_key in self._scales:  # TODO when would it not be?
+                    self._scales[axis_key]._finalize(p, axis_obj)
 
         engine_default = None if p._target is not None else "tight"
         layout_engine = p._layout_spec.get("engine", engine_default)

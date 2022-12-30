@@ -8,7 +8,7 @@ import matplotlib as mpl
 from matplotlib.colors import to_rgb, to_rgba, to_rgba_array
 from matplotlib.path import Path
 
-from seaborn._core.scales import Scale, Nominal, Continuous, Temporal
+from seaborn._core.scales import Scale, Boolean, Continuous, Nominal, Temporal
 from seaborn._core.rules import categorical_order, variable_type
 from seaborn._compat import MarkerStyle
 from seaborn.palettes import QUAL_PALETTES, color_palette, blend_palette
@@ -38,6 +38,8 @@ MarkerPattern = Union[
     MarkerStyle,
 ]
 
+Mapping = Callable[[ArrayLike], ArrayLike]
+
 
 # =================================================================================== #
 # Base classes
@@ -61,17 +63,14 @@ class Property:
 
     def default_scale(self, data: Series) -> Scale:
         """Given data, initialize appropriate scale class."""
-        # TODO allow variable_type to be "boolean" if that's a scale?
-        # TODO how will this handle data with units that can be treated as numeric
-        # if passed through a registered matplotlib converter?
-        var_type = variable_type(data, boolean_type="numeric")
+
+        var_type = variable_type(data, boolean_type="boolean", strict_boolean=True)
         if var_type == "numeric":
             return Continuous()
         elif var_type == "datetime":
             return Temporal()
-        # TODO others
-        # time-based (TimeStamp, TimeDelta, Period)
-        # boolean scale?
+        elif var_type == "boolean":
+            return Boolean()
         else:
             return Nominal()
 
@@ -95,9 +94,7 @@ class Property:
             msg = f"Magic arg for {self.variable} scale must be str, not {arg_type}."
             raise TypeError(msg)
 
-    def get_mapping(
-        self, scale: Scale, data: Series
-    ) -> Callable[[ArrayLike], ArrayLike]:
+    def get_mapping(self, scale: Scale, data: Series) -> Mapping:
         """Return a function that maps from data domain to property range."""
         def identity(x):
             return x
@@ -181,22 +178,26 @@ class IntervalProperty(Property):
 
         # TODO infer continuous based on log/sqrt etc?
 
-        if isinstance(arg, (list, dict)):
+        var_type = variable_type(data, boolean_type="boolean", strict_boolean=True)
+
+        if var_type == "boolean":
+            return Boolean(arg)
+        elif isinstance(arg, (list, dict)):
             return Nominal(arg)
-        elif variable_type(data) == "categorical":
+        elif var_type == "categorical":
             return Nominal(arg)
-        elif variable_type(data) == "datetime":
+        elif var_type == "datetime":
             return Temporal(arg)
         # TODO other variable types
         else:
             return Continuous(arg)
 
-    def get_mapping(
-        self, scale: Scale, data: ArrayLike
-    ) -> Callable[[ArrayLike], ArrayLike]:
+    def get_mapping(self, scale: Scale, data: Series) -> Mapping:
         """Return a function that maps from data domain to property range."""
         if isinstance(scale, Nominal):
-            return self._get_categorical_mapping(scale, data)
+            return self._get_nominal_mapping(scale, data)
+        elif isinstance(scale, Boolean):
+            return self._get_boolean_mapping(scale, data)
 
         if scale.values is None:
             vmin, vmax = self._forward(self.default_range)
@@ -219,12 +220,34 @@ class IntervalProperty(Property):
 
         return mapping
 
-    def _get_categorical_mapping(
-        self, scale: Nominal, data: ArrayLike
-    ) -> Callable[[ArrayLike], ArrayLike]:
+    def _get_nominal_mapping(self, scale: Nominal, data: Series) -> Mapping:
         """Identify evenly-spaced values using interval or explicit mapping."""
         levels = categorical_order(data, scale.order)
+        values = self._get_values(scale, levels)
 
+        def mapping(x):
+            ixs = np.asarray(x, np.intp)
+            out = np.full(len(x), np.nan)
+            use = np.isfinite(x)
+            out[use] = np.take(values, ixs[use])
+            return out
+
+        return mapping
+
+    def _get_boolean_mapping(self, scale: Boolean, data: Series) -> Mapping:
+        """Identify evenly-spaced values using interval or explicit mapping."""
+        values = self._get_values(scale, [True, False])
+
+        def mapping(x):
+            out = np.full(len(x), np.nan)
+            use = np.isfinite(x)
+            out[use] = np.where(x[use], *values)
+            return out
+
+        return mapping
+
+    def _get_values(self, scale: Scale, levels: list) -> list:
+        """Validate scale.values and identify a value for each level."""
         if isinstance(scale.values, dict):
             self._check_dict_entries(levels, scale.values)
             values = [scale.values[x] for x in levels]
@@ -244,16 +267,9 @@ class IntervalProperty(Property):
                 raise TypeError(err)
 
             vmin, vmax = self._forward([vmin, vmax])
-            values = self._inverse(np.linspace(vmax, vmin, len(levels)))
+            values = list(self._inverse(np.linspace(vmax, vmin, len(levels))))
 
-        def mapping(x):
-            ixs = np.asarray(x, np.intp)
-            out = np.full(len(x), np.nan)
-            use = np.isfinite(x)
-            out[use] = np.take(values, ixs[use])
-            return out
-
-        return mapping
+        return values
 
 
 class PointSize(IntervalProperty):
@@ -332,20 +348,36 @@ class ObjectProperty(Property):
     def _default_values(self, n: int) -> list:
         raise NotImplementedError()
 
-    def default_scale(self, data: Series) -> Nominal:
-        return Nominal()
+    def default_scale(self, data: Series) -> Scale:
+        var_type = variable_type(data, boolean_type="boolean", strict_boolean=True)
+        return Boolean() if var_type == "boolean" else Nominal()
 
-    def infer_scale(self, arg: Any, data: Series) -> Nominal:
-        return Nominal(arg)
+    def infer_scale(self, arg: Any, data: Series) -> Scale:
+        var_type = variable_type(data, boolean_type="boolean", strict_boolean=True)
+        return Boolean(arg) if var_type == "boolean" else Nominal(arg)
 
-    def get_mapping(
-        self, scale: Scale, data: Series,
-    ) -> Callable[[ArrayLike], list]:
+    def get_mapping(self, scale: Scale, data: Series) -> Mapping:
         """Define mapping as lookup into list of object values."""
-        order = getattr(scale, "order", None)
+        boolean_scale = isinstance(scale, Boolean)
+        order = getattr(scale, "order", [True, False] if boolean_scale else None)
         levels = categorical_order(data, order)
-        n = len(levels)
+        values = self._get_values(scale, levels)
 
+        if boolean_scale:
+            values = values[::-1]
+
+        def mapping(x):
+            ixs = np.asarray(x, np.intp)
+            return [
+                values[ix] if np.isfinite(x_i) else self.null_value
+                for x_i, ix in zip(x, ixs)
+            ]
+
+        return mapping
+
+    def _get_values(self, scale: Scale, levels: list) -> list:
+        """Validate scale.values and identify a value for each level."""
+        n = len(levels)
         if isinstance(scale.values, dict):
             self._check_dict_entries(levels, scale.values)
             values = [scale.values[x] for x in levels]
@@ -361,15 +393,7 @@ class ObjectProperty(Property):
             raise TypeError(msg)
 
         values = [self.standardize(x) for x in values]
-
-        def mapping(x):
-            ixs = np.asarray(x, np.intp)
-            return [
-                values[ix] if np.isfinite(x_i) else self.null_value
-                for x_i, ix in zip(x, ixs)
-            ]
-
-        return mapping
+        return values
 
 
 class Marker(ObjectProperty):
@@ -569,7 +593,10 @@ class Color(Property):
 
         # TODO need to rethink the variable type system
         # (e.g. boolean, ordered categories as Ordinal, etc)..
-        var_type = variable_type(data, boolean_type="categorical")
+        var_type = variable_type(data, boolean_type="boolean", strict_boolean=True)
+
+        if var_type == "boolean":
+            return Boolean(arg)
 
         if isinstance(arg, (dict, list)):
             return Nominal(arg)
@@ -587,10 +614,6 @@ class Color(Property):
 
         # TODO Do we accept str like "log", "pow", etc. for semantics?
 
-        # TODO what about
-        # - Temporal? (i.e. datetime)
-        # - Boolean?
-
         if not isinstance(arg, str):
             msg = " ".join([
                 f"A single scale argument for {self.variable} variables must be",
@@ -606,56 +629,14 @@ class Color(Property):
         else:
             return Nominal(arg)
 
-    def _get_categorical_mapping(self, scale, data):
-        """Define mapping as lookup in list of discrete color values."""
-        levels = categorical_order(data, scale.order)
-        n = len(levels)
-        values = scale.values
-
-        if isinstance(values, dict):
-            self._check_dict_entries(levels, values)
-            # TODO where to ensure that dict values have consistent representation?
-            colors = [values[x] for x in levels]
-        elif isinstance(values, list):
-            colors = self._check_list_length(levels, scale.values)
-        elif isinstance(values, tuple):
-            colors = blend_palette(values, n)
-        elif isinstance(values, str):
-            colors = color_palette(values, n)
-        elif values is None:
-            if n <= len(get_color_cycle()):
-                # Use current (global) default palette
-                colors = color_palette(n_colors=n)
-            else:
-                colors = color_palette("husl", n)
-        else:
-            scale_class = scale.__class__.__name__
-            msg = " ".join([
-                f"Scale values for {self.variable} with a {scale_class} mapping",
-                f"must be string, list, tuple, or dict; not {type(scale.values)}."
-            ])
-            raise TypeError(msg)
-
-        # If color specified here has alpha channel, it will override alpha property
-        colors = self._standardize_color_sequence(colors)
-
-        def mapping(x):
-            ixs = np.asarray(x, np.intp)
-            use = np.isfinite(x)
-            out = np.full((len(ixs), colors.shape[1]), np.nan)
-            out[use] = np.take(colors, ixs[use], axis=0)
-            return out
-
-        return mapping
-
-    def get_mapping(
-        self, scale: Scale, data: Series
-    ) -> Callable[[ArrayLike], ArrayLike]:
+    def get_mapping(self, scale: Scale, data: Series) -> Mapping:
         """Return a function that maps from data domain to color values."""
         # TODO what is best way to do this conditional?
         # Should it be class-based or should classes have behavioral attributes?
         if isinstance(scale, Nominal):
-            return self._get_categorical_mapping(scale, data)
+            return self._get_nominal_mapping(scale, data)
+        elif isinstance(scale, Boolean):
+            return self._get_boolean_mapping(scale, data)
 
         if scale.values is None:
             # TODO Rethink best default continuous color gradient
@@ -689,6 +670,64 @@ class Color(Property):
 
         return _mapping
 
+    def _get_nominal_mapping(self, scale: Nominal, data: Series) -> Mapping:
+
+        levels = categorical_order(data, scale.order)
+        colors = self._get_values(scale, levels)
+
+        def mapping(x):
+            ixs = np.asarray(x, np.intp)
+            use = np.isfinite(x)
+            out = np.full((len(ixs), colors.shape[1]), np.nan)
+            out[use] = np.take(colors, ixs[use], axis=0)
+            return out
+
+        return mapping
+
+    def _get_boolean_mapping(self, scale: Boolean, data: Series) -> Mapping:
+
+        colors = self._get_values(scale, [True, False])
+
+        def mapping(x):
+
+            use = np.isfinite(x)
+            x = np.asarray(x).astype(bool)
+            out = np.full((len(x), colors.shape[1]), np.nan)
+            out[x & use] = colors[0]
+            out[~x & use] = colors[1]
+            return out
+
+        return mapping
+
+    def _get_values(self, scale: Scale, levels: list) -> ArrayLike:
+        """Validate scale.values and identify a value for each level."""
+        n = len(levels)
+        values = scale.values
+        if isinstance(values, dict):
+            self._check_dict_entries(levels, values)
+            colors = [values[x] for x in levels]
+        elif isinstance(values, list):
+            colors = self._check_list_length(levels, values)
+        elif isinstance(values, tuple):
+            colors = blend_palette(values, n)
+        elif isinstance(values, str):
+            colors = color_palette(values, n)
+        elif values is None:
+            if n <= len(get_color_cycle()):
+                # Use current (global) default palette
+                colors = color_palette(n_colors=n)
+            else:
+                colors = color_palette("husl", n)
+        else:
+            scale_class = scale.__class__.__name__
+            msg = " ".join([
+                f"Scale values for {self.variable} with a {scale_class} mapping",
+                f"must be string, list, tuple, or dict; not {type(scale.values)}."
+            ])
+            raise TypeError(msg)
+
+        return self._standardize_color_sequence(colors)
+
 
 # =================================================================================== #
 # Properties that can take only two states
@@ -700,9 +739,13 @@ class Fill(Property):
     legend = True
     normed = False
 
-    # TODO default to Nominal scale always?
-    # Actually this will just not work with Continuous (except 0/1), suggesting we need
-    # an abstraction for failing gracefully on bad Property <> Scale interactions
+    def default_scale(self, data: Series) -> Scale:
+        var_type = variable_type(data, boolean_type="boolean", strict_boolean=True)
+        return Boolean() if var_type == "boolean" else Nominal()
+
+    def infer_scale(self, arg: Any, data: Series) -> Scale:
+        var_type = variable_type(data, boolean_type="boolean", strict_boolean=True)
+        return Boolean(arg) if var_type == "boolean" else Nominal(arg)
 
     def standardize(self, val: Any) -> bool:
         return bool(val)
@@ -718,27 +761,27 @@ class Fill(Property):
             warnings.warn(msg, UserWarning)
         return [x for x, _ in zip(itertools.cycle([True, False]), range(n))]
 
-    def default_scale(self, data: Series) -> Nominal:
-        """Given data, initialize appropriate scale class."""
-        return Nominal()
-
-    def infer_scale(self, arg: Any, data: Series) -> Scale:
-        """Given data and a scaling argument, initialize appropriate scale class."""
-        # TODO infer Boolean where possible?
-        return Nominal(arg)
-
-    def get_mapping(
-        self, scale: Scale, data: Series
-    ) -> Callable[[ArrayLike], ArrayLike]:
+    def get_mapping(self, scale: Scale, data: Series) -> Mapping:
         """Return a function that maps each data value to True or False."""
-        # TODO categorical_order is going to return [False, True] for booleans,
-        # and [0, 1] for binary, but the default values order is [True, False].
-        # We should special case this to handle it properly, or change
-        # categorical_order to not "sort" booleans. Note that we need to sync with
-        # what's going to happen upstream in the scale, so we can't just do it here.
-        order = getattr(scale, "order", None)
+        boolean_scale = isinstance(scale, Boolean)
+        order = getattr(scale, "order", [True, False] if boolean_scale else None)
         levels = categorical_order(data, order)
+        values = self._get_values(scale, levels)
 
+        if boolean_scale:
+            values = values[::-1]
+
+        def mapping(x):
+            ixs = np.asarray(x, np.intp)
+            return [
+                values[ix] if np.isfinite(x_i) else False
+                for x_i, ix in zip(x, ixs)
+            ]
+
+        return mapping
+
+    def _get_values(self, scale: Scale, levels: list) -> list:
+        """Validate scale.values and identify a value for each level."""
         if isinstance(scale.values, list):
             values = [bool(x) for x in scale.values]
         elif isinstance(scale.values, dict):
@@ -752,14 +795,7 @@ class Fill(Property):
             ])
             raise TypeError(msg)
 
-        def mapping(x):
-            ixs = np.asarray(x, np.intp)
-            return [
-                values[ix] if np.isfinite(x_i) else False
-                for x_i, ix in zip(x, ixs)
-            ]
-
-        return mapping
+        return values
 
 
 # =================================================================================== #

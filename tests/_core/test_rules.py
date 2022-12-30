@@ -4,6 +4,7 @@ import pandas as pd
 
 import pytest
 
+from seaborn.external.version import Version
 from seaborn._core.rules import (
     VarType,
     variable_type,
@@ -35,8 +36,11 @@ def test_variable_type():
     assert variable_type(s) == "numeric"
 
     s = pd.Series([np.nan, np.nan])
-    # s = pd.Series([pd.NA, pd.NA])
     assert variable_type(s) == "numeric"
+
+    if Version(pd.__version__) >= Version("1.0.0"):
+        s = pd.Series([pd.NA, pd.NA])
+        assert variable_type(s) == "numeric"
 
     s = pd.Series(["1", "2", "3"])
     assert variable_type(s) == "categorical"
@@ -46,9 +50,16 @@ def test_variable_type():
     s = pd.Series([True, False, False])
     assert variable_type(s) == "numeric"
     assert variable_type(s, boolean_type="categorical") == "categorical"
+    assert variable_type(s, boolean_type="boolean") == "boolean"
+
     s_cat = s.astype("category")
     assert variable_type(s_cat, boolean_type="categorical") == "categorical"
     assert variable_type(s_cat, boolean_type="numeric") == "categorical"
+    assert variable_type(s_cat, boolean_type="boolean") == "categorical"
+
+    s = pd.Series([1, 0, 0])
+    assert variable_type(s, boolean_type="boolean") == "boolean"
+    assert variable_type(s, boolean_type="boolean", strict_boolean=True) == "numeric"
 
     s = pd.Series([pd.Timestamp(1), pd.Timestamp(2)])
     assert variable_type(s) == "datetime"

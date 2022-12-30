@@ -1,15 +1,25 @@
 
-v0.12.2 (Unreleased)
---------------------
+v0.12.2 (December 2022)
+-----------------------
+
+This is an incremental release that is a recommended upgrade for all users. It is very likely the final release of the 0.12 series and the last version to support Python 3.7.
 
 - |Feature| Added the :class:`objects.KDE` stat (:pr:`3111`).
 
-- |Enhancement| Automatic mark widths are now calculated separately for unshared facet axes (:pr:`3119`).
+- |Feature| Added the :class:`objects.Boolean` scale (:pr:`3205`).
 
-- |Fix| Fixed a bug where legends for numeric variables with large values with be incorrectly shown (i.e. with a missing offset or exponent; :pr:`3187`).
+- |Enhancement| Improved user feedback for failures during plot compilation by catching exceptions and re-raising with a `PlotSpecError` that provides additional context. (:pr:`3203`).
+
+- |Fix| Improved calculation of automatic mark widths with unshared facet axes (:pr:`3119`).
+
+- |Fix| Improved robustness to empty data in several components of the objects interface (:pr:`3202`).
+
+- |Fix| Fixed a bug where legends for numeric variables with large values would be incorrectly shown (i.e. with a missing offset or exponent; :pr:`3187`).
 
 - |Fix| Fixed a regression in v0.12.0 where manually-added labels could have duplicate legend entries (:pr:`3116`).
 
 - |Fix| Fixed a bug in :func:`histplot` with `kde=True` and `log_scale=True` where the curve was not scaled properly (:pr:`3173`).
 
 - |Fix| Fixed a bug in :func:`relplot` where inner axis labels would be shown when axis sharing was disabled (:pr:`3180`).
+
+- |Fix| Fixed a bug in :class:`objects.Continuous` to avoid an exception with boolean data (:pr:`3189`).

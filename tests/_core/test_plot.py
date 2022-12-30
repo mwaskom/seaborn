@@ -15,12 +15,14 @@ from pandas.testing import assert_frame_equal, assert_series_equal
 from numpy.testing import assert_array_equal, assert_array_almost_equal
 
 from seaborn._core.plot import Plot, Default
-from seaborn._core.scales import Nominal, Continuous
-from seaborn._core.rules import categorical_order
+from seaborn._core.scales import Continuous, Nominal, Temporal
 from seaborn._core.moves import Move, Shift, Dodge
-from seaborn._stats.aggregation import Agg
+from seaborn._core.rules import categorical_order
+from seaborn._core.exceptions import PlotSpecError
 from seaborn._marks.base import Mark
 from seaborn._stats.base import Stat
+from seaborn._marks.dot import Dot
+from seaborn._stats.aggregation import Agg
 from seaborn.external.version import Version
 
 assert_vector_equal = functools.partial(
@@ -680,8 +682,9 @@ class TestPlotting:
     def test_empty(self):
 
         m = MockMark()
-        Plot().plot()
+        Plot().add(m).plot()
         assert m.n_splits == 0
+        assert not m.passed_data
 
     def test_no_orient_variance(self):
 
@@ -1086,7 +1089,7 @@ class TestPlotting:
 
         ax = mpl.figure.Figure().subplots()
         m = MockMark()
-        p = Plot().on(ax).add(m).plot()
+        p = Plot([1], [2]).on(ax).add(m).plot()
         assert m.passed_axes == [ax]
         assert p._figure is ax.figure
 
@@ -1095,7 +1098,7 @@ class TestPlotting:
 
         f = mpl.figure.Figure()
         m = MockMark()
-        p = Plot().on(f).add(m)
+        p = Plot([1, 2], [3, 4]).on(f).add(m)
         if facet:
             p = p.facet(["a", "b"])
         p = p.plot()
@@ -1112,7 +1115,7 @@ class TestPlotting:
         sf1, sf2 = mpl.figure.Figure().subfigures(2)
         sf1.subplots()
         m = MockMark()
-        p = Plot().on(sf2).add(m)
+        p = Plot([1, 2], [3, 4]).on(sf2).add(m)
         if facet:
             p = p.facet(["a", "b"])
         p = p.plot()
@@ -1246,6 +1249,54 @@ class TestPlotting:
         for i, ax in enumerate(p._figure.axes):
             expected = " | ".join([cols[i % 2].upper(), rows[i // 2].upper()])
             assert ax.get_title() == expected
+
+
+class TestExceptions:
+
+    def test_scale_setup(self):
+
+        x = y = color = ["a", "b"]
+        bad_palette = "not_a_palette"
+        p = Plot(x, y, color=color).add(MockMark()).scale(color=bad_palette)
+
+        msg = "Scale setup failed for the `color` variable."
+        with pytest.raises(PlotSpecError, match=msg) as err:
+            p.plot()
+        assert isinstance(err.value.__cause__, ValueError)
+        assert bad_palette in str(err.value.__cause__)
+
+    def test_coordinate_scaling(self):
+
+        x = ["a", "b"]
+        y = [1, 2]
+        p = Plot(x, y).add(MockMark()).scale(x=Temporal())
+
+        msg = "Scaling operation failed for the `x` variable."
+        with pytest.raises(PlotSpecError, match=msg) as err:
+            p.plot()
+        # Don't test the cause contents b/c matplotlib owns them here.
+        assert hasattr(err.value, "__cause__")
+
+    def test_semantic_scaling(self):
+
+        class ErrorRaising(Continuous):
+
+            def _setup(self, data, prop, axis=None):
+
+                def f(x):
+                    raise ValueError("This is a test")
+
+                new = super()._setup(data, prop, axis)
+                new._pipeline = [f]
+                return new
+
+        x = y = color = [1, 2]
+        p = Plot(x, y, color=color).add(Dot()).scale(color=ErrorRaising())
+        msg = "Scaling operation failed for the `color` variable."
+        with pytest.raises(PlotSpecError, match=msg) as err:
+            p.plot()
+        assert isinstance(err.value.__cause__, ValueError)
+        assert str(err.value.__cause__) == "This is a test"
 
 
 class TestFacetInterface:

@@ -2137,6 +2137,9 @@ class SharedScatterTests(SharedAxesLevelTests):
 
         assert_plots_equal(ax, g.ax)
 
+    def test_empty_palette(self):
+        self.func(x=[], y=[], hue=[], palette=[])
+
 
 class TestStripPlot(SharedScatterTests):
 
