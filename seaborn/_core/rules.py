@@ -8,8 +8,6 @@ from datetime import datetime
 import numpy as np
 import pandas as pd
 
-from seaborn.external.version import Version
-
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from typing import Literal
@@ -90,10 +88,10 @@ def variable_type(
             category=(FutureWarning, DeprecationWarning)  # type: ignore  # mypy bug?
         )
         if strict_boolean:
-            if Version(pd.__version__) < Version("1.0.0"):
-                boolean_dtypes = ["bool"]
-            else:
+            if isinstance(vector.dtype, pd.core.dtypes.base.ExtensionDtype):
                 boolean_dtypes = ["bool", "boolean"]
+            else:
+                boolean_dtypes = ["bool"]
             boolean_vector = vector.dtype in boolean_dtypes
         else:
             boolean_vector = bool(np.isin(vector, [0, 1, np.nan]).all())

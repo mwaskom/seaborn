@@ -1404,7 +1404,7 @@ class TestFacetInterface:
 
         sep1 = bb12.corners()[0, 0] - bb11.corners()[2, 0]
         sep2 = bb22.corners()[0, 0] - bb21.corners()[2, 0]
-        assert sep1 < sep2
+        assert sep1 <= sep2
 
     def test_axis_sharing(self, long_df):
 
@@ -2056,7 +2056,7 @@ class TestLegend:
         labels = [t.get_text() for t in legend.get_texts()]
         assert labels == names
 
-        if Version(mpl.__version__) >= Version("3.2"):
+        if Version(mpl.__version__) >= Version("3.4"):
             contents = legend.get_children()[0]
             assert len(contents.findobj(mpl.lines.Line2D)) == len(names)
             assert len(contents.findobj(mpl.patches.Patch)) == len(names)

@@ -1,8 +1,5 @@
-numpy~=1.17.0
-pandas~=0.25.0
-matplotlib~=3.1.0
-scipy~=1.3.0
-statsmodels~=0.10.0
-# Pillow added in install_requires for later matplotlibs
-pillow>=6.2.0
-typing_extensions
+numpy~=1.20.0
+pandas~=1.2.0
+matplotlib~=3.3.0
+scipy~=1.7.0
+statsmodels~=0.12.0
