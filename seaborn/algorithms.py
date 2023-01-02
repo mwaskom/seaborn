@@ -1,5 +1,4 @@
 """Algorithms to support fitting routines in seaborn plotting functions."""
-import numbers
 import numpy as np
 import warnings
 
@@ -54,7 +53,10 @@ def bootstrap(*args, **kwargs):
         func_kwargs = dict(axis=axis)
 
     # Initialize the resampler
-    rng = _handle_random_seed(seed)
+    if isinstance(seed, np.random.RandomState):
+        rng = seed
+    else:
+        rng = np.random.default_rng(seed)
 
     # Coerce to arrays
     args = list(map(np.asarray, args))
@@ -116,27 +118,3 @@ def _structured_bootstrap(args, n_boot, units, func, func_kwargs, integers):
         sample = list(map(np.concatenate, sample))
         boot_dist.append(func(*sample, **func_kwargs))
     return np.array(boot_dist)
-
-
-def _handle_random_seed(seed=None):
-    """Given a seed in one of many formats, return a random number generator.
-
-    Generalizes across the numpy 1.17 changes, preferring newer functionality.
-
-    """
-    if isinstance(seed, np.random.RandomState):
-        rng = seed
-    else:
-        try:
-            # General interface for seeding on numpy >= 1.17
-            rng = np.random.default_rng(seed)
-        except AttributeError:
-            # We are on numpy < 1.17, handle options ourselves
-            if isinstance(seed, (numbers.Integral, np.integer)):
-                rng = np.random.RandomState(seed)
-            elif seed is None:
-                rng = np.random.RandomState()
-            else:
-                err = "{} cannot be used to seed the random number generator"
-                raise ValueError(err.format(seed))
-    return rng

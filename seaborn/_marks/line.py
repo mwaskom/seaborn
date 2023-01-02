@@ -15,7 +15,6 @@ from seaborn._marks.base import (
     resolve_color,
     document_properties,
 )
-from seaborn.utils import _version_predates
 
 
 @document_properties
@@ -55,10 +54,6 @@ class Path(Mark):
             vals["fillcolor"] = resolve_color(self, keys, prefix="fill", scales=scales)
             vals["edgecolor"] = resolve_color(self, keys, prefix="edge", scales=scales)
 
-            # https://github.com/matplotlib/matplotlib/pull/16692
-            if _version_predates(mpl, "3.3"):
-                vals["marker"] = vals["marker"]._marker
-
             if self._sort:
                 data = data.sort_values(orient, kind="mergesort")
 
@@ -87,10 +82,6 @@ class Path(Mark):
         vals["color"] = resolve_color(self, keys, scales=scales)
         vals["fillcolor"] = resolve_color(self, keys, prefix="fill", scales=scales)
         vals["edgecolor"] = resolve_color(self, keys, prefix="edge", scales=scales)
-
-        # https://github.com/matplotlib/matplotlib/pull/16692
-        if _version_predates(mpl, "3.3"):
-            vals["marker"] = vals["marker"]._marker
 
         artist_kws = self.artist_kws.copy()
         self._handle_capstyle(artist_kws, vals)

@@ -1,11 +1,9 @@
 import numpy as np
-import numpy.random as npr
 
 import pytest
 from numpy.testing import assert_array_equal
 
 from seaborn import algorithms as algo
-from seaborn.utils import _version_predates
 
 
 @pytest.fixture
@@ -144,62 +142,17 @@ def test_bootstrap_reproducibility(random):
     boots2 = algo.bootstrap(data, seed=100)
     assert_array_equal(boots1, boots2)
 
+    random_state1 = np.random.RandomState(200)
+    boots1 = algo.bootstrap(data, seed=random_state1)
+    random_state2 = np.random.RandomState(200)
+    boots2 = algo.bootstrap(data, seed=random_state2)
+    assert_array_equal(boots1, boots2)
+
     with pytest.warns(UserWarning):
-        # Deprecatd, remove when removing random_seed
+        # Deprecated, remove when removing random_seed
         boots1 = algo.bootstrap(data, random_seed=100)
         boots2 = algo.bootstrap(data, random_seed=100)
         assert_array_equal(boots1, boots2)
-
-
-@pytest.mark.skipif(not _version_predates(np, "1.17"),
-                    reason="Tests new numpy random functionality")
-def test_seed_new():
-
-    # Can't use pytest parametrize because tests will fail where the new
-    # Generator object and related function are not defined
-
-    test_bank = [
-        (None, None, npr.Generator, False),
-        (npr.RandomState(0), npr.RandomState(0), npr.RandomState, True),
-        (npr.RandomState(0), npr.RandomState(1), npr.RandomState, False),
-        (npr.default_rng(1), npr.default_rng(1), npr.Generator, True),
-        (npr.default_rng(1), npr.default_rng(2), npr.Generator, False),
-        (npr.SeedSequence(10), npr.SeedSequence(10), npr.Generator, True),
-        (npr.SeedSequence(10), npr.SeedSequence(20), npr.Generator, False),
-        (100, 100, npr.Generator, True),
-        (100, 200, npr.Generator, False),
-    ]
-    for seed1, seed2, rng_class, match in test_bank:
-        rng1 = algo._handle_random_seed(seed1)
-        rng2 = algo._handle_random_seed(seed2)
-        assert isinstance(rng1, rng_class)
-        assert isinstance(rng2, rng_class)
-        assert (rng1.uniform() == rng2.uniform()) == match
-
-
-@pytest.mark.skipif(not _version_predates(np, "1.17"),
-                    reason="Tests old numpy random functionality")
-@pytest.mark.parametrize("seed1, seed2, match", [
-    (None, None, False),
-    (npr.RandomState(0), npr.RandomState(0), True),
-    (npr.RandomState(0), npr.RandomState(1), False),
-    (100, 100, True),
-    (100, 200, False),
-])
-def test_seed_old(seed1, seed2, match):
-    rng1 = algo._handle_random_seed(seed1)
-    rng2 = algo._handle_random_seed(seed2)
-    assert isinstance(rng1, np.random.RandomState)
-    assert isinstance(rng2, np.random.RandomState)
-    assert (rng1.uniform() == rng2.uniform()) == match
-
-
-@pytest.mark.skipif(not _version_predates(np, "1.17"),
-                    reason="Tests old numpy random functionality")
-def test_bad_seed_old():
-
-    with pytest.raises(ValueError):
-        algo._handle_random_seed("not_a_random_seed")
 
 
 def test_nanaware_func_auto(random):

@@ -14,7 +14,6 @@ import matplotlib as mpl
 from ._decorators import (
     share_init_params_with_map,
 )
-from seaborn.utils import _version_predates
 from .palettes import (
     QUAL_PALETTES,
     color_palette,
@@ -1282,10 +1281,7 @@ class VectorPlotter:
                     if scale is True:
                         set_scale("log")
                     else:
-                        if _version_predates(mpl, "3.3"):
-                            set_scale("log", **{f"base{axis}": scale})
-                        else:
-                            set_scale("log", base=scale)
+                        set_scale("log", base=scale)
 
         # For categorical y, we want the "first" level to be at the top of the axis
         if self.var_types.get("y", None) == "categorical":

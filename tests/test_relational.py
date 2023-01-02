@@ -9,7 +9,6 @@ from matplotlib.colors import same_color, to_rgba
 import pytest
 from numpy.testing import assert_array_equal, assert_array_almost_equal
 
-from seaborn.utils import _version_predates
 from seaborn.palettes import color_palette
 from seaborn._oldcore import categorical_order
 
@@ -1347,12 +1346,9 @@ class TestScatterPlotter(SharedAxesLevelTests, Helpers):
         self.func(data=long_df, x="x", y="y", facecolors="C6", ax=ax)
         assert self.get_last_color(ax) == to_rgba("C6")
 
-        if not _version_predates(mpl, "3.1.0"):
-            # https://github.com/matplotlib/matplotlib/pull/12851
-
-            ax = plt.figure().subplots()
-            self.func(data=long_df, x="x", y="y", fc="C4", ax=ax)
-            assert self.get_last_color(ax) == to_rgba("C4")
+        ax = plt.figure().subplots()
+        self.func(data=long_df, x="x", y="y", fc="C4", ax=ax)
+        assert self.get_last_color(ax) == to_rgba("C4")
 
     def test_legend_data(self, long_df):
 
@@ -1666,11 +1662,7 @@ class TestScatterPlotter(SharedAxesLevelTests, Helpers):
         norm = mpl.colors.Normalize()
         colors = cmap(norm(long_df["y"].to_numpy()))
 
-        keys = ["c", "facecolor", "facecolors"]
-
-        if not _version_predates(mpl, "3.1.0"):
-            # https://github.com/matplotlib/matplotlib/pull/12851
-            keys.append("fc")
+        keys = ["c", "fc", "facecolor", "facecolors"]
 
         for key in keys:
 
