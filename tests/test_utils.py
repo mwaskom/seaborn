@@ -326,8 +326,7 @@ def test_locator_to_legend_entries():
     locator = mpl.ticker.LogLocator(numticks=5)
     limits = (5, 1425)
     levels, str_levels = utils.locator_to_legend_entries(locator, limits, int)
-    if not _version_predates(mpl, "3.1"):
-        assert str_levels == ['10', '100', '1000']
+    assert str_levels == ['10', '100', '1000']
 
     limits = (0.00003, 0.02)
     _, str_levels = utils.locator_to_legend_entries(locator, limits, float)

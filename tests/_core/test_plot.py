@@ -36,12 +36,8 @@ assert_vector_equal = functools.partial(
 def assert_gridspec_shape(ax, nrows=1, ncols=1):
 
     gs = ax.get_gridspec()
-    if _version_predates(mpl, "3.2"):
-        assert gs._nrows == nrows
-        assert gs._ncols == ncols
-    else:
-        assert gs.nrows == nrows
-        assert gs.ncols == ncols
+    assert gs.nrows == nrows
+    assert gs.ncols == ncols
 
 
 class MockMark(Mark):
@@ -450,9 +446,6 @@ class TestScaling:
         Plot(long_df, x=col).add(m).plot()
 
         expected = long_df[col].map(mpl.dates.date2num)
-        if _version_predates(mpl, "3.3"):
-            expected = expected + mpl.dates.date2num(np.datetime64('0000-12-31'))
-
         assert_vector_equal(m.passed_data[0]["x"], expected)
 
     def test_computed_var_ticks(self, long_df):
@@ -1386,9 +1379,6 @@ class TestFacetInterface:
 
     @pytest.mark.parametrize("algo", ["tight", "constrained"])
     def test_layout_algo(self, algo):
-
-        if algo == "constrained" and _version_predates(mpl, "3.3"):
-            pytest.skip("constrained_layout requires matplotlib>=3.3")
 
         p = Plot().facet(["a", "b"]).limit(x=(.1, .9))
 

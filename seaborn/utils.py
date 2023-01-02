@@ -148,20 +148,7 @@ def _default_color(method, hue, color, kws):
 
     elif method.__name__ == "fill_between":
 
-        # There is a bug on matplotlib < 3.3 where fill_between with
-        # datetime units and empty data will set incorrect autoscale limits
-        # To workaround it, we'll always return the first color in the cycle.
-        # https://github.com/matplotlib/matplotlib/issues/17586
-        ax = method.__self__
-        datetime_axis = any([
-            isinstance(ax.xaxis.converter, mpl.dates.DateConverter),
-            isinstance(ax.yaxis.converter, mpl.dates.DateConverter),
-        ])
-        if _version_predates(mpl, "3.3") and datetime_axis:
-            return "C0"
-
         kws = _normalize_kwargs(kws, mpl.collections.PolyCollection)
-
         scout = method([], [], **kws)
         facecolor = scout.get_facecolor()
         color = to_rgb(facecolor[0])

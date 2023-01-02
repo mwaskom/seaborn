@@ -649,10 +649,6 @@ class TestTemporal:
         assert isinstance(locator, mpl.dates.AutoDateLocator)
         assert isinstance(formatter, mpl.dates.AutoDateFormatter)
 
-    @pytest.mark.skipif(
-        _version_predates(mpl, "3.3.0"),
-        reason="Test requires new matplotlib date epoch."
-    )
     def test_tick_locator(self, t):
 
         locator = mpl.dates.YearLocator(month=3, day=15)
@@ -669,10 +665,6 @@ class TestTemporal:
         locator = ax.xaxis.get_major_locator()
         assert set(locator.maxticks.values()) == {n}
 
-    @pytest.mark.skipif(
-        _version_predates(mpl, "3.3.0"),
-        reason="Test requires new matplotlib date epoch."
-    )
     def test_label_formatter(self, t):
 
         formatter = mpl.dates.DateFormatter("%Y")
@@ -714,25 +706,13 @@ class TestBoolean:
         [
             (object, np.nan),
             (object, None),
-            # TODO add boolean when we don't need the skipif below
+            ("boolean", pd.NA),
         ]
     )
     def test_coordinate_missing(self, x, dtype, value):
 
         x = x.astype(dtype)
         x[2] = value
-        s = Boolean()._setup(x, Coordinate())
-        assert_array_equal(s(x), x.astype(float))
-
-    @pytest.mark.skipif(
-        # TODO merge into test above when removing
-        _version_predates(pd, "1.0.0"),
-        reason="Test requires nullable booleans",
-    )
-    def test_coordinate_with_pd_na(self, x):
-
-        x = x.astype("boolean")
-        x[2] = pd.NA
         s = Boolean()._setup(x, Coordinate())
         assert_array_equal(s(x), x.astype(float))
 

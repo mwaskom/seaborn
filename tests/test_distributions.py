@@ -1480,10 +1480,6 @@ class TestHistPlotUnivariate(SharedAxesLevelTests):
         ymax, ymin = ax.get_ylim()
         assert ymax > ymin
 
-    @pytest.mark.skipif(
-        _version_predates(np, "1.17"),
-        reason="Histogram over datetime64 requires numpy >= 1.17",
-    )
     def test_datetime_scale(self, long_df):
 
         f, (ax1, ax2) = plt.subplots(2)

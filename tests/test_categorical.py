@@ -1657,12 +1657,9 @@ class SharedScatterTests(SharedAxesLevelTests):
         self.func(data=long_df, x="a", y="y", facecolor="C4", ax=ax)
         assert self.get_last_color(ax) == to_rgba("C4")
 
-        if not _version_predates(mpl, "3.1.0"):
-            # https://github.com/matplotlib/matplotlib/pull/12851
-
-            ax = plt.figure().subplots()
-            self.func(data=long_df, x="a", y="y", fc="C5", ax=ax)
-            assert self.get_last_color(ax) == to_rgba("C5")
+        ax = plt.figure().subplots()
+        self.func(data=long_df, x="a", y="y", fc="C5", ax=ax)
+        assert self.get_last_color(ax) == to_rgba("C5")
 
     def test_supplied_color_array(self, long_df):
 
@@ -1670,11 +1667,7 @@ class SharedScatterTests(SharedAxesLevelTests):
         norm = mpl.colors.Normalize()
         colors = cmap(norm(long_df["y"].to_numpy()))
 
-        keys = ["c", "facecolor", "facecolors"]
-
-        if not _version_predates(mpl, "3.1.0"):
-            # https://github.com/matplotlib/matplotlib/pull/12851
-            keys.append("fc")
+        keys = ["c", "fc", "facecolor", "facecolors"]
 
         for key in keys:
 
@@ -2087,13 +2080,6 @@ class SharedScatterTests(SharedAxesLevelTests):
             assert val == pytest.approx(x[i])
 
         x = y = np.ones(100)
-
-        # Following test fails on pinned (but not latest) matplotlib.
-        # (Even though visual output is ok -- so it's not an actual bug).
-        # I'm not exactly sure why, so this version check is approximate
-        # and should be revisited on a version bump.
-        if _version_predates(mpl, "3.1"):
-            pytest.xfail()
 
         ax = plt.figure().subplots()
         ax.set_yscale("log")
