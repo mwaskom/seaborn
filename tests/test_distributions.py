@@ -31,7 +31,7 @@ from seaborn.distributions import (
     kdeplot,
     rugplot,
 )
-from seaborn.external.version import Version
+from seaborn.utils import _version_predates
 from seaborn.axisgrid import FacetGrid
 from seaborn._testing import (
     assert_plots_equal,
@@ -904,7 +904,7 @@ class TestKDEPlotUnivariate(SharedAxesLevelTests):
             assert label.get_text() == level
 
         legend_artists = ax.legend_.findobj(mpl.lines.Line2D)
-        if Version(mpl.__version__) < Version("3.5.0b0"):
+        if _version_predates(mpl, "3.5.0b0"):
             # https://github.com/matplotlib/matplotlib/pull/20699
             legend_artists = legend_artists[::2]
         palette = color_palette()
@@ -962,7 +962,7 @@ class TestKDEPlotBivariate:
             f, ax = plt.subplots()
             kdeplot(data=long_df, x="x", y="y", hue="c", fill=fill)
             for c in ax.collections:
-                if fill or Version(mpl.__version__) >= Version("3.5.0b0"):
+                if fill or not _version_predates(mpl, "3.5.0b0"):
                     assert isinstance(c, mpl.collections.PathCollection)
                 else:
                     assert isinstance(c, mpl.collections.LineCollection)
@@ -1481,7 +1481,7 @@ class TestHistPlotUnivariate(SharedAxesLevelTests):
         assert ymax > ymin
 
     @pytest.mark.skipif(
-        Version(np.__version__) < Version("1.17"),
+        _version_predates(np, "1.17"),
         reason="Histogram over datetime64 requires numpy >= 1.17",
     )
     def test_datetime_scale(self, long_df):

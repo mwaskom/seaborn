@@ -19,7 +19,7 @@ from numpy.testing import (
 from seaborn import categorical as cat
 from seaborn import palettes
 
-from seaborn.external.version import Version
+from seaborn.utils import _version_predates
 from seaborn._oldcore import categorical_order
 from seaborn.axisgrid import FacetGrid
 from seaborn.categorical import (
@@ -116,7 +116,7 @@ class CategoricalFixture:
 
     def get_box_artists(self, ax):
 
-        if Version(mpl.__version__) < Version("3.5.0b0"):
+        if _version_predates(mpl, "3.5.0b0"):
             return ax.artists
         else:
             # Exclude labeled patches, which are for the legend
@@ -1657,7 +1657,7 @@ class SharedScatterTests(SharedAxesLevelTests):
         self.func(data=long_df, x="a", y="y", facecolor="C4", ax=ax)
         assert self.get_last_color(ax) == to_rgba("C4")
 
-        if Version(mpl.__version__) >= Version("3.1.0"):
+        if not _version_predates(mpl, "3.1.0"):
             # https://github.com/matplotlib/matplotlib/pull/12851
 
             ax = plt.figure().subplots()
@@ -1672,7 +1672,7 @@ class SharedScatterTests(SharedAxesLevelTests):
 
         keys = ["c", "facecolor", "facecolors"]
 
-        if Version(mpl.__version__) >= Version("3.1.0"):
+        if not _version_predates(mpl, "3.1.0"):
             # https://github.com/matplotlib/matplotlib/pull/12851
             keys.append("fc")
 
@@ -2092,7 +2092,7 @@ class SharedScatterTests(SharedAxesLevelTests):
         # (Even though visual output is ok -- so it's not an actual bug).
         # I'm not exactly sure why, so this version check is approximate
         # and should be revisited on a version bump.
-        if Version(mpl.__version__) < Version("3.1"):
+        if _version_predates(mpl, "3.1"):
             pytest.xfail()
 
         ax = plt.figure().subplots()
@@ -3369,7 +3369,7 @@ class TestBoxenPlotter(CategoricalFixture):
         plt.close("all")
 
     @pytest.mark.skipif(
-        Version(pd.__version__) < Version("1.2"),
+        _version_predates(pd, "1.2"),
         reason="Test requires pandas>=1.2")
     def test_Float64_input(self):
         data = pd.DataFrame(

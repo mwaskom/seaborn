@@ -16,7 +16,7 @@ from seaborn._marks.base import (
     resolve_color,
     document_properties
 )
-from seaborn.external.version import Version
+from seaborn.utils import _version_predates
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
@@ -164,11 +164,11 @@ class Bar(BarBase):
                 ax.add_patch(bar)
 
             # Add a container which is useful for, e.g. Axes.bar_label
-            if Version(mpl.__version__) >= Version("3.4.0"):
+            if _version_predates(mpl, "3.4"):
+                container_kws = {}
+            else:
                 orientation = {"x": "vertical", "y": "horizontal"}[orient]
                 container_kws = dict(datavalues=vals, orientation=orientation)
-            else:
-                container_kws = {}
             container = mpl.container.BarContainer(bars, **container_kws)
             ax.add_container(container)
 

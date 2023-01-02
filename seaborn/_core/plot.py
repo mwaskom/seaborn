@@ -41,7 +41,7 @@ from seaborn._core.rules import categorical_order
 from seaborn._compat import set_scale_obj, set_layout_engine
 from seaborn.rcmod import axes_style, plotting_context
 from seaborn.palettes import color_palette
-from seaborn.external.version import Version
+from seaborn.utils import _version_predates
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
@@ -1238,7 +1238,7 @@ class Plotter:
             # https://github.com/matplotlib/matplotlib/pull/18308
             # This only affects us when sharing *paired* axes. This is a novel/niche
             # behavior, so we will raise rather than hack together a workaround.
-            if axis is not None and Version(mpl.__version__) < Version("3.4.0"):
+            if axis is not None and _version_predates(mpl, "3.4"):
                 paired_axis = axis in p._pair_spec.get("structure", {})
                 cat_scale = isinstance(scale, Nominal)
                 ok_dim = {"x": "col", "y": "row"}[axis]
