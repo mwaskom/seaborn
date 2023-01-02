@@ -9,7 +9,7 @@ from matplotlib.colors import same_color, to_rgba
 import pytest
 from numpy.testing import assert_array_equal, assert_array_almost_equal
 
-from seaborn.external.version import Version
+from seaborn.utils import _version_predates
 from seaborn.palettes import color_palette
 from seaborn._oldcore import categorical_order
 
@@ -1347,7 +1347,7 @@ class TestScatterPlotter(SharedAxesLevelTests, Helpers):
         self.func(data=long_df, x="x", y="y", facecolors="C6", ax=ax)
         assert self.get_last_color(ax) == to_rgba("C6")
 
-        if Version(mpl.__version__) >= Version("3.1.0"):
+        if not _version_predates(mpl, "3.1.0"):
             # https://github.com/matplotlib/matplotlib/pull/12851
 
             ax = plt.figure().subplots()
@@ -1668,7 +1668,7 @@ class TestScatterPlotter(SharedAxesLevelTests, Helpers):
 
         keys = ["c", "facecolor", "facecolors"]
 
-        if Version(mpl.__version__) >= Version("3.1.0"):
+        if not _version_predates(mpl, "3.1.0"):
             # https://github.com/matplotlib/matplotlib/pull/12851
             keys.append("fc")
 

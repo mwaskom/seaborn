@@ -4,7 +4,7 @@ import pandas as pd
 
 import pytest
 
-from seaborn.external.version import Version
+from seaborn.utils import _version_predates
 from seaborn._core.rules import (
     VarType,
     variable_type,
@@ -38,7 +38,7 @@ def test_variable_type():
     s = pd.Series([np.nan, np.nan])
     assert variable_type(s) == "numeric"
 
-    if Version(pd.__version__) >= Version("1.0.0"):
+    if not _version_predates(pd, "1.0.0"):
         s = pd.Series([pd.NA, pd.NA])
         assert variable_type(s) == "numeric"
 

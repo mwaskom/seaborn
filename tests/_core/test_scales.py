@@ -25,7 +25,7 @@ from seaborn._core.properties import (
     Fill,
 )
 from seaborn.palettes import color_palette
-from seaborn.external.version import Version
+from seaborn.utils import _version_predates
 
 
 class TestContinuous:
@@ -570,7 +570,7 @@ class TestNominal:
         assert_array_equal(s(x), [])
 
     @pytest.mark.skipif(
-        Version(mpl.__version__) < Version("3.4.0"),
+        _version_predates(mpl, "3.4.0"),
         reason="Test failing on older matplotlib for unclear reasons",
     )
     def test_finalize(self, x):
@@ -650,7 +650,7 @@ class TestTemporal:
         assert isinstance(formatter, mpl.dates.AutoDateFormatter)
 
     @pytest.mark.skipif(
-        Version(mpl.__version__) < Version("3.3.0"),
+        _version_predates(mpl, "3.3.0"),
         reason="Test requires new matplotlib date epoch."
     )
     def test_tick_locator(self, t):
@@ -670,7 +670,7 @@ class TestTemporal:
         assert set(locator.maxticks.values()) == {n}
 
     @pytest.mark.skipif(
-        Version(mpl.__version__) < Version("3.3.0"),
+        _version_predates(mpl, "3.3.0"),
         reason="Test requires new matplotlib date epoch."
     )
     def test_label_formatter(self, t):
@@ -726,7 +726,7 @@ class TestBoolean:
 
     @pytest.mark.skipif(
         # TODO merge into test above when removing
-        Version(pd.__version__) < Version("1.0.0"),
+        _version_predates(pd, "1.0.0"),
         reason="Test requires nullable booleans",
     )
     def test_coordinate_with_pd_na(self, x):

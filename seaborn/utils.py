@@ -6,6 +6,7 @@ import warnings
 import colorsys
 from contextlib import contextmanager
 from urllib.request import urlopen, urlretrieve
+from types import ModuleType
 
 import numpy as np
 import pandas as pd
@@ -14,8 +15,8 @@ from matplotlib.colors import to_rgb
 import matplotlib.pyplot as plt
 from matplotlib.cbook import normalize_kwargs
 
-from .external.version import Version
-from .external.appdirs import user_cache_dir
+from seaborn.external.version import Version
+from seaborn.external.appdirs import user_cache_dir
 
 __all__ = ["desaturate", "saturate", "set_hls_values", "move_legend",
            "despine", "get_dataset_names", "get_data_home", "load_dataset"]
@@ -156,7 +157,7 @@ def _default_color(method, hue, color, kws):
             isinstance(ax.xaxis.converter, mpl.dates.DateConverter),
             isinstance(ax.yaxis.converter, mpl.dates.DateConverter),
         ])
-        if Version(mpl.__version__) < Version("3.3") and datetime_axis:
+        if _version_predates(mpl, "3.3") and datetime_axis:
             return "C0"
 
         kws = _normalize_kwargs(kws, mpl.collections.PolyCollection)
@@ -874,3 +875,8 @@ def _disable_autolayout():
         yield
     finally:
         mpl.rcParams["figure.autolayout"] = orig_val
+
+
+def _version_predates(lib: ModuleType, version: str) -> bool:
+    """Helper function for checking version compatibility."""
+    return Version(lib.__version__) < Version(version)

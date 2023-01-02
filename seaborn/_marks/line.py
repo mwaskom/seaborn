@@ -15,7 +15,7 @@ from seaborn._marks.base import (
     resolve_color,
     document_properties,
 )
-from seaborn.external.version import Version
+from seaborn.utils import _version_predates
 
 
 @document_properties
@@ -56,7 +56,7 @@ class Path(Mark):
             vals["edgecolor"] = resolve_color(self, keys, prefix="edge", scales=scales)
 
             # https://github.com/matplotlib/matplotlib/pull/16692
-            if Version(mpl.__version__) < Version("3.3.0"):
+            if _version_predates(mpl, "3.3"):
                 vals["marker"] = vals["marker"]._marker
 
             if self._sort:
@@ -89,7 +89,7 @@ class Path(Mark):
         vals["edgecolor"] = resolve_color(self, keys, prefix="edge", scales=scales)
 
         # https://github.com/matplotlib/matplotlib/pull/16692
-        if Version(mpl.__version__) < Version("3.3.0"):
+        if _version_predates(mpl, "3.3"):
             vals["marker"] = vals["marker"]._marker
 
         artist_kws = self.artist_kws.copy()

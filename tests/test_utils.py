@@ -1,6 +1,7 @@
 """Tests for seaborn utility functions."""
 import re
 import tempfile
+from types import ModuleType
 from urllib.request import urlopen
 from http.client import HTTPException
 
@@ -20,7 +21,6 @@ from pandas.testing import (
 )
 
 from seaborn import utils, rcmod
-from seaborn.external.version import Version
 from seaborn.utils import (
     get_dataset_names,
     get_color_cycle,
@@ -29,6 +29,7 @@ from seaborn.utils import (
     _assign_default_kwargs,
     _draw_figure,
     _deprecate_ci,
+    _version_predates,
 )
 
 
@@ -325,7 +326,7 @@ def test_locator_to_legend_entries():
     locator = mpl.ticker.LogLocator(numticks=5)
     limits = (5, 1425)
     levels, str_levels = utils.locator_to_legend_entries(locator, limits, int)
-    if Version(mpl.__version__) >= Version("3.1"):
+    if not _version_predates(mpl, "3.1"):
         assert str_levels == ['10', '100', '1000']
 
     limits = (0.00003, 0.02)
@@ -573,3 +574,16 @@ def test_deprecate_ci():
     with pytest.warns(FutureWarning, match=msg + r"\('ci', 68\)"):
         out = _deprecate_ci(None, 68)
     assert out == ("ci", 68)
+
+
+def test_version_predates():
+
+    mock = ModuleType("mock")
+    mock.__version__ = "1.2.3"
+
+    assert _version_predates(mock, "1.2.4")
+    assert _version_predates(mock, "1.3")
+
+    assert not _version_predates(mock, "1.2.3")
+    assert not _version_predates(mock, "0.8")
+    assert not _version_predates(mock, "1")
