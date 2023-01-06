@@ -19,7 +19,8 @@ from seaborn.external.version import Version
 from seaborn.external.appdirs import user_cache_dir
 
 __all__ = ["desaturate", "saturate", "set_hls_values", "move_legend",
-           "despine", "get_dataset_names", "get_data_home", "load_dataset"]
+           "despine", "get_dataset_names", "get_data_home", "load_dataset", 
+           "set_legend_title", "get_legend_obj"]
 
 
 def ci_to_errsize(cis, heights):
@@ -387,7 +388,8 @@ def despine(fig=None, ax=None, top=True, right=True, left=False,
 
 def get_legend_obj(obj):
     """
-    Get the legend object from a plot.
+    Get the legend object associated with the plot.
+    Requires a legend to be present, otherwise raises a ValueError.
 
     Parameters
     ----------
