@@ -385,6 +385,69 @@ def despine(fig=None, ax=None, top=True, right=True, left=False,
                 ax_i.set_yticks(newticks)
 
 
+def get_legend_obj(obj):
+    """
+    Get the legend object from a plot.
+
+    Parameters
+    ----------
+    obj : the object with the plot
+        This argument can be either a seaborn or matplotlib object:
+
+        - :class:`seaborn.FacetGrid` or :class:`seaborn.PairGrid`
+        - :class:`matplotlib.axes.Axes` or :class:`matplotlib
+    """
+    # This is a somewhat hackish solution that will hopefully be obviated by
+    # upstream improvements to matplotlib legends that make them easier to
+    # modify after creation.
+
+    from seaborn.axisgrid import Grid  # Avoid circular import, a second import is just looking it up in sys.modules["Grid"]
+
+    # Locate the legend object and a method to recreate the legend
+    if isinstance(obj, Grid):
+        legend_ = obj.legend
+        legend_func = obj.figure.legend
+    elif isinstance(obj, mpl.axes.Axes):
+        legend_ = obj.legend_
+        legend_func = obj.legend
+    elif isinstance(obj, mpl.figure.Figure):
+        if obj.legends:
+            legend_ = obj.legends[-1]
+        else:
+            legend_ = None
+        legend_func = obj.legend
+    else:
+        err = "`obj` must be a seaborn Grid or matplotlib Axes or Figure instance."
+        raise TypeError(err)
+
+    if legend_ is None:
+        err = f"{obj} has no legend attached."
+        raise ValueError(err)
+
+    return legend_, legend_func
+
+def set_legend_title(obj, title, prop=None):
+    """
+    Get the legend of obj and set its title.
+
+    Parameters
+    ----------
+    obj : the object with the plot
+        This argument can be either a seaborn or matplotlib object:
+
+        - :class:`seaborn.FacetGrid` or :class:`seaborn.PairGrid`
+        - :class:`matplotlib.axes.Axes` or :class:`matplotlib
+
+    title : str
+        The title of the legend.
+
+    prop : None or matplotlib.font_manager.FontProperties or dict
+        The font properties of the legend title. If None (default), the current matplotlib.rcParams will be used.
+    """
+
+    legend_, _ = get_legend_obj(obj)
+    legend_.set_title(title=title, prop=prop)
+
 def move_legend(obj, loc, **kwargs):
     """
     Recreate a plot's legend at a new location.
@@ -419,26 +482,7 @@ def move_legend(obj, loc, **kwargs):
 
     from seaborn.axisgrid import Grid  # Avoid circular import
 
-    # Locate the legend object and a method to recreate the legend
-    if isinstance(obj, Grid):
-        old_legend = obj.legend
-        legend_func = obj.figure.legend
-    elif isinstance(obj, mpl.axes.Axes):
-        old_legend = obj.legend_
-        legend_func = obj.legend
-    elif isinstance(obj, mpl.figure.Figure):
-        if obj.legends:
-            old_legend = obj.legends[-1]
-        else:
-            old_legend = None
-        legend_func = obj.legend
-    else:
-        err = "`obj` must be a seaborn Grid or matplotlib Axes or Figure instance."
-        raise TypeError(err)
-
-    if old_legend is None:
-        err = f"{obj} has no legend attached."
-        raise ValueError(err)
+    old_legend, legend_func = get_legend_obj(obj)
 
     # Extract the components of the legend we need to reuse
     handles = old_legend.legendHandles
