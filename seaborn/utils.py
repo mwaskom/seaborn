@@ -19,7 +19,7 @@ from seaborn.external.version import Version
 from seaborn.external.appdirs import user_cache_dir
 
 __all__ = ["desaturate", "saturate", "set_hls_values", "move_legend",
-           "despine", "get_dataset_names", "get_data_home", "load_dataset", 
+           "despine", "get_dataset_names", "get_data_home", "load_dataset",
            "set_legend_title", "get_legend_obj"]
 
 
@@ -403,7 +403,8 @@ def get_legend_obj(obj):
     # upstream improvements to matplotlib legends that make them easier to
     # modify after creation.
 
-    from seaborn.axisgrid import Grid  # Avoid circular import, a second import is just looking it up in sys.modules["Grid"]
+    from seaborn.axisgrid import Grid  # Avoid circular import,
+    # a second import is just looking it up in sys.modules["Grid"]
 
     # Locate the legend object and a method to recreate the legend
     if isinstance(obj, Grid):
@@ -428,6 +429,7 @@ def get_legend_obj(obj):
 
     return legend_, legend_func
 
+
 def set_legend_title(obj, title, prop=None):
     """
     Get the legend of obj and set its title.
@@ -444,11 +446,13 @@ def set_legend_title(obj, title, prop=None):
         The title of the legend.
 
     prop : None or matplotlib.font_manager.FontProperties or dict
-        The font properties of the legend title. If None (default), the current matplotlib.rcParams will be used.
+        The font properties of the legend title. If None (default),
+        the current matplotlib.rcParams will be used.
     """
 
     legend_, _ = get_legend_obj(obj)
     legend_.set_title(title=title, prop=prop)
+
 
 def move_legend(obj, loc, **kwargs):
     """
