@@ -412,17 +412,79 @@ def test_move_legend_grid_object(long_df):
         assert mpl.colors.to_rgb(h.get_color()) == mpl.colors.to_rgb(f"C{i}")
 
 
-def test_move_legend_input_checks():
+def test_get_legend_obj_input_checks():
+    """
+    implicitly tests also move_figure() and set_legend_title(), since they call get_legend_obj()
+    """
 
     ax = plt.figure().subplots()
     with pytest.raises(TypeError):
-        utils.move_legend(ax.xaxis, "best")
+        utils.get_legend_obj(ax.xaxis)
 
     with pytest.raises(ValueError):
-        utils.move_legend(ax, "best")
+        utils.get_legend_obj(ax)
 
     with pytest.raises(ValueError):
-        utils.move_legend(ax.figure, "best")
+        utils.get_legend_obj(ax.figure)
+
+
+def test_set_legend_title_matplotlib_objects():
+
+    fig, ax = plt.subplots()
+
+    colors = "C2", "C5"
+    labels = "first label", "second label"
+    title = "the legend"
+
+    for color, label in zip(colors, labels):
+        ax.plot([0, 1], color=color, label=label)
+    ax.legend(loc="upper right", title=title)
+    utils._draw_figure(fig)
+    
+    # --- Test title reset
+
+    new_fontsize = 20
+    new_title = "new legend title"
+    utils.set_legend_title(ax, title=new_title, prop={"size": new_fontsize})
+    utils._draw_figure(fig)
+
+    assert ax.legend_.get_title().get_text() == new_title
+    assert ax.legend_.get_title().get_size() == new_fontsize
+
+
+    # --- Test figure legend title reset
+    fig.legend(loc="upper right", title=title)
+    _draw_figure(fig)
+
+    utils.set_legend_title(fig, title=new_title, prop={"size": new_fontsize})
+    _draw_figure(fig)
+
+    assert fig.legends[0].get_title().get_text() == new_title
+    assert fig.legends[0].get_title().get_size() == new_fontsize
+
+
+def test_set_legend_title_grid_object(long_df):
+
+    from seaborn.axisgrid import FacetGrid
+
+    hue_var = "a"
+    g = FacetGrid(long_df, hue=hue_var)
+    g.map(plt.plot, "x", "y")
+
+    g.add_legend()
+    _draw_figure(g.figure)
+
+    new_fontsize = 20
+    new_title = "new legend title"
+    utils.set_legend_title(g, title=new_title, prop={"size": new_fontsize})
+    _draw_figure(g.figure)
+
+    assert g.legend.get_title().get_text() == new_title
+    assert g.legend.get_title().get_size() == new_fontsize
+
+    assert g.legend.legendHandles
+    for i, h in enumerate(g.legend.legendHandles):
+        assert mpl.colors.to_rgb(h.get_color()) == mpl.colors.to_rgb(f"C{i}")
 
 
 def check_load_dataset(name):
