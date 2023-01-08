@@ -1133,11 +1133,30 @@ class TestPlotting:
         with pytest.raises(RuntimeError, match="Cannot create multiple subplots"):
             p2.plot()
 
-    def test_on_disables_layout_algo(self):
+    @pytest.mark.skipif(
+        _version_predates(mpl, "3.6"),
+        reason="Requires newer matplotlib layout engine API"
+    )
+    def test_on_layout_algo_default(self):
 
-        f = mpl.figure.Figure()
+        class MockEngine(mpl.layout_engine.ConstrainedLayoutEngine):
+            ...
+
+        f = mpl.figure.Figure(layout=MockEngine())
         p = Plot().on(f).plot()
-        assert not p._figure.get_tight_layout()
+        layout_engine = p._figure.get_layout_engine()
+        assert layout_engine.__class__.__name__ == "MockEngine"
+
+    @pytest.mark.skipif(
+        _version_predates(mpl, "3.6"),
+        reason="Requires newer matplotlib layout engine API"
+    )
+    def test_on_layout_algo_spec(self):
+
+        f = mpl.figure.Figure(layout="constrained")
+        p = Plot().on(f).layout(engine="tight").plot()
+        layout_engine = p._figure.get_layout_engine()
+        assert layout_engine.__class__.__name__ == "TightLayoutEngine"
 
     def test_axis_labels_from_constructor(self, long_df):
 

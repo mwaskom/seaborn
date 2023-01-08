@@ -1662,6 +1662,10 @@ class Plotter:
                 if axis_key in self._scales:  # TODO when would it not be?
                     self._scales[axis_key]._finalize(p, axis_obj)
 
-        engine_default = None if p._target is not None else "tight"
-        layout_engine = p._layout_spec.get("engine", engine_default)
-        set_layout_engine(self._figure, layout_engine)
+        if engine := p._layout_spec.get("engine"):
+            set_layout_engine(self._figure, engine)
+        elif p._target is None:
+            # Don't modify the layout engine if the user supplied their own
+            # matplotlib figure and didn't specify an engine through Plot
+            # TODO switch default to "constrained"?
+            set_layout_engine(self._figure, "tight")
