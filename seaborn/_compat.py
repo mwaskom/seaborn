@@ -146,7 +146,7 @@ def register_colormap(name, cmap):
 
 def set_layout_engine(fig, engine):
     """Handle changes to auto layout engine interface in 3.6"""
-    if hasattr(fig, "set_layout_engine") and engine is not None:
+    if hasattr(fig, "set_layout_engine"):
         fig.set_layout_engine(engine)
     else:
         if engine == "tight":
