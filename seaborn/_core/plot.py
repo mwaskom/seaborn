@@ -1662,7 +1662,8 @@ class Plotter:
                 if axis_key in self._scales:  # TODO when would it not be?
                     self._scales[axis_key]._finalize(p, axis_obj)
 
-        if engine := p._layout_spec.get("engine"):
+        if (engine := p._layout_spec.get("engine", default)) is not default:
+            # None is a valid arg for Figure.set_layout_engine, hence `default`
             set_layout_engine(self._figure, engine)
         elif p._target is None:
             # Don't modify the layout engine if the user supplied their own

@@ -1402,7 +1402,7 @@ class TestFacetInterface:
         p = Plot().facet(["a", "b"]).limit(x=(.1, .9))
 
         p1 = p.layout(engine=algo).plot()
-        p2 = p.layout(engine=None).plot()
+        p2 = p.layout(engine="none").plot()
 
         # Force a draw (we probably need a method for this)
         p1.save(io.BytesIO())
