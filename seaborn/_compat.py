@@ -149,6 +149,7 @@ def set_layout_engine(fig, engine):
     if hasattr(fig, "set_layout_engine"):
         fig.set_layout_engine(engine)
     else:
+        # _version_predates(mpl, 3.6)
         if engine == "tight":
             fig.set_tight_layout(True)
         elif engine == "constrained":
