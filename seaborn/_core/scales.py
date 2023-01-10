@@ -614,8 +614,9 @@ class Continuous(ContinuousBase):
             Pre-configured formatter to use; other parameters will be ignored.
         like : str or callable
             Either a format pattern (e.g., `".2f"`), a format string with fields named
-            `x` and/or `pos` (e.g., `"${x:.2f}"`), or a callable that consumes a number
-            and returns a string.
+            `x` and/or `pos` (e.g., `"${x:.2f}"`), or a callable with a signature like
+            `f(x: float, pos: int) -> str`. In the latter variants, `x` is passed as the
+            tick value and `pos` is passed as the tick index.
         base : number
             Use log formatter (with scientific notation) having this value as the base.
             Set to `None` to override the default formatter with a log transform.
