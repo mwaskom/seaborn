@@ -149,10 +149,14 @@ def set_layout_engine(fig, engine):
     if hasattr(fig, "set_layout_engine"):
         fig.set_layout_engine(engine)
     else:
+        # _version_predates(mpl, 3.6)
         if engine == "tight":
             fig.set_tight_layout(True)
         elif engine == "constrained":
             fig.set_constrained_layout(True)
+        elif engine == "none":
+            fig.set_tight_layout(False)
+            fig.set_constrained_layout(False)
 
 
 def share_axis(ax0, ax1, which):
