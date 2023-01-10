@@ -200,3 +200,13 @@ class TestBars:
         colors = p._theme["axes.prop_cycle"].by_key()["color"]
         assert_array_equal(fcs, to_rgba_array([colors[0]] * len(x), 0))
         assert_array_equal(ecs, to_rgba_array([colors[4]] * len(x), 1))
+
+    def test_log_scale(self):
+
+        x = y = [1, 10, 100, 1000]
+        p = Plot(x, y).add(Bars()).scale(x="log").plot()
+        ax = p._figure.axes[0]
+
+        paths = ax.collections[0].get_paths()
+        for a, b in zip(paths, paths[1:]):
+            assert a.vertices[1, 0] == pytest.approx(b.vertices[0, 0])
