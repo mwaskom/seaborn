@@ -2126,3 +2126,60 @@ class TestDefaultObject:
     def test_default_repr(self):
 
         assert repr(Default()) == "<default>"
+
+
+class TestThemeConfig:
+
+    @pytest.fixture(autouse=True)
+    def reset_config(self):
+        yield
+        Plot.config.theme.reset()
+
+    def test_default(self):
+
+        p = Plot().plot()
+        ax = p._figure.axes[0]
+        expected = Plot.config.theme["axes.facecolor"]
+        assert mpl.colors.same_color(ax.get_facecolor(), expected)
+
+    def test_setitem(self):
+
+        color = "#CCC"
+        Plot.config.theme["axes.facecolor"] = color
+        p = Plot().plot()
+        ax = p._figure.axes[0]
+        assert mpl.colors.same_color(ax.get_facecolor(), color)
+
+    def test_update(self):
+
+        color = "#DDD"
+        Plot.config.theme.update({"axes.facecolor": color})
+        p = Plot().plot()
+        ax = p._figure.axes[0]
+        assert mpl.colors.same_color(ax.get_facecolor(), color)
+
+    def test_reset(self):
+
+        orig = Plot.config.theme["axes.facecolor"]
+        Plot.config.theme.update({"axes.facecolor": "#EEE"})
+        Plot.config.theme.reset()
+        p = Plot().plot()
+        ax = p._figure.axes[0]
+        assert mpl.colors.same_color(ax.get_facecolor(), orig)
+
+    def test_copy(self):
+
+        key, val = "axes.facecolor", ".95"
+        orig = Plot.config.theme[key]
+        theme = Plot.config.theme.copy()
+        theme.update({key: val})
+        assert Plot.config.theme[key] == orig
+
+    def test_html_repr(self):
+
+        res = Plot.config.theme._repr_html_()
+        for tag in ["div", "table", "tr", "td"]:
+            assert res.count(f"<{tag}") == res.count(f"</{tag}")
+
+        for key in Plot.config.theme:
+            assert f"<td>{key}:</td>" in res

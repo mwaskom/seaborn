@@ -143,6 +143,78 @@ def build_plot_signature(cls):
     return cls
 
 
+# ---- TODO -------------------- #
+
+
+class ThemeConfig(mpl.RcParams):
+    """
+    Configuration object for the Plot.theme, using matplotlib rc parameters.
+    """
+    style_groups = [
+        "axes", "figure", "font", "grid", "hatch", "legend", "lines",
+        "mathtext", "markers", "patch", "savefig", "scatter",
+        "xaxis", "xtick", "yaxis", "ytick",
+    ]
+
+    def __init__(self):
+
+        super().__init__()
+        self.reset()
+
+    @property
+    def _default(self):
+
+        base = {
+            k: v for k, v in mpl.rcParamsDefault.items()
+            if any(k.startswith(p) for p in self.style_groups)
+        }
+
+        return {
+            **base,
+            **axes_style("darkgrid"),
+            **plotting_context("notebook"),
+            "axes.prop_cycle": cycler("color", color_palette("deep")),
+        }
+
+    def reset(self):
+
+        self.update(self._default)
+
+    def _html_table(self, params):
+
+        lines = ["<table>"]
+        for k, v in params.items():
+            row = f"<tr><td>{k}:</td><td style='text-align:left'>{v!r}</td></tr>"
+            lines.append(row)
+        lines.append("</table>")
+        return lines
+
+    def _repr_html_(self):
+
+        repr = [
+            "<div style='height: 300px'>",
+            "<div style='border-style: inset; border-width: 2px'>",
+            *self._html_table(self),
+            "</div>",
+            "</div>",
+        ]
+        return "".join(repr)
+
+
+class PlotConfig:
+    """
+    Configuration for :class:`Plot`.
+    """
+    _theme = ThemeConfig()
+
+    @property
+    def theme(self):
+        """
+        Dictionary of base theme parameters for :class:`Plot`.
+        """
+        return self._theme
+
+
 # ---- The main interface for declarative plotting -------------------- #
 
 
@@ -181,6 +253,8 @@ class Plot:
     the plot without rendering it to access the lower-level representation.
 
     """
+    config = PlotConfig()
+
     _data: PlotData
     _layers: list[Layer]
 
@@ -308,21 +382,7 @@ class Plot:
 
     def _theme_with_defaults(self) -> dict[str, Any]:
 
-        style_groups = [
-            "axes", "figure", "font", "grid", "hatch", "legend", "lines",
-            "mathtext", "markers", "patch", "savefig", "scatter",
-            "xaxis", "xtick", "yaxis", "ytick",
-        ]
-        base = {
-            k: mpl.rcParamsDefault[k] for k in mpl.rcParams
-            if any(k.startswith(p) for p in style_groups)
-        }
-        theme = {
-            **base,
-            **axes_style("darkgrid"),
-            **plotting_context("notebook"),
-            "axes.prop_cycle": cycler("color", color_palette("deep")),
-        }
+        theme = self.config.theme.copy()
         theme.update(self._theme)
         return theme
 
@@ -937,7 +997,7 @@ class Plotter:
         dpi = 96
         buffer = io.BytesIO()
 
-        with theme_context(self._theme):
+        with theme_context(self._theme):  # TODO _theme_with_defaults?
             self._figure.savefig(buffer, dpi=dpi * 2, format="png", bbox_inches="tight")
         data = buffer.getvalue()
 
@@ -1669,4 +1729,5 @@ class Plotter:
             # Don't modify the layout engine if the user supplied their own
             # matplotlib figure and didn't specify an engine through Plot
             # TODO switch default to "constrained"?
+            # TODO either way, make configurable
             set_layout_engine(self._figure, "tight")
