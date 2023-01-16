@@ -180,6 +180,19 @@ class ThemeConfig(mpl.RcParams):
 
         self.update(self._default)
 
+    def update(self, other=(), /, **kwds):
+        """Update the theme with a dictionary or keyword arguments of rc parameters."""
+        if other:
+            theme = {
+                # Restrict to rcParams we consider part of the "theme"
+                k: v for k, v in other.items()
+                if any(k.startswith(p) for p in self.style_groups)
+            }
+        else:
+            theme = {}
+        theme.update(kwds)
+        super().update(theme)
+
     def _html_table(self, params):
 
         lines = ["<table>"]
