@@ -150,50 +150,47 @@ class ThemeConfig(mpl.RcParams):
     """
     Configuration object for the Plot.theme, using matplotlib rc parameters.
     """
-    style_groups = [
+    THEME_GROUPS = [
         "axes", "figure", "font", "grid", "hatch", "legend", "lines",
         "mathtext", "markers", "patch", "savefig", "scatter",
         "xaxis", "xtick", "yaxis", "ytick",
     ]
 
     def __init__(self):
-
         super().__init__()
         self.reset()
 
     @property
-    def _default(self):
-
-        base = {
-            k: v for k, v in mpl.rcParamsDefault.items()
-            if any(k.startswith(p) for p in self.style_groups)
-        }
+    def _default(self) -> dict[str, Any]:
 
         return {
-            **base,
+            **self._filter_params(mpl.rcParamsDefault),
             **axes_style("darkgrid"),
             **plotting_context("notebook"),
             "axes.prop_cycle": cycler("color", color_palette("deep")),
         }
 
-    def reset(self):
+    def reset(self) -> None:
         """Update the theme dictionary with seaborn's default values."""
         self.update(self._default)
 
-    def update(self, other=(), /, **kwds):
+    def update(self, other: dict[str, Any] | None = None, /, **kwds):
         """Update the theme with a dictionary or keyword arguments of rc parameters."""
-        if other:
-            theme = {
-                # Restrict to rcParams we consider part of the "theme"
-                k: v for k, v in other.items()
-                if any(k.startswith(p) for p in self.style_groups)
-            }
+        if other is not None:
+            theme = self._filter_params(other)
         else:
             theme = {}
         theme.update(kwds)
         super().update(theme)
 
-    def _html_table(self, params):
+    def _filter_params(self, params: dict[str, Any]) -> dict[str, Any]:
+        """Restruct to thematic rc params."""
+        return {
+            k: v for k, v in params.items()
+            if any(k.startswith(p) for p in self.THEME_GROUPS)
+        }
+
+    def _html_table(self, params: dict[str, Any]) -> list[str]:
 
         lines = ["<table>"]
         for k, v in params.items():
@@ -202,7 +199,7 @@ class ThemeConfig(mpl.RcParams):
         lines.append("</table>")
         return lines
 
-    def _repr_html_(self):
+    def _repr_html_(self) -> str:
 
         repr = [
             "<div style='height: 300px'>",
@@ -219,7 +216,7 @@ class PlotConfig:
     _theme = ThemeConfig()
 
     @property
-    def theme(self):
+    def theme(self) -> dict[str, Any]:
         """Dictionary of base theme parameters for :class:`Plot`."""
         return self._theme
 
