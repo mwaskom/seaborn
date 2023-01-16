@@ -830,7 +830,7 @@ class Plot:
             err = f"theme() takes 1 positional argument, but {nargs} were given"
             raise TypeError(err)
 
-        rc = args[0]
+        rc = mpl.RcParams(args[0])
         new._theme.update(rc)
 
         return new

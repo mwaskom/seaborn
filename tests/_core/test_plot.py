@@ -922,6 +922,16 @@ class TestPlotting:
         with pytest.raises(TypeError, match=r"theme\(\) takes 1 positional"):
             p.theme("arg1", "arg2")
 
+    def test_theme_validation(self):
+
+        p = Plot()
+        # You'd think matplotlib would raise a TypeError here, but it doesn't
+        with pytest.raises(ValueError, match="Key axes.linewidth:"):
+            p.theme({"axes.linewidth": "thick"})
+
+        with pytest.raises(KeyError, match="not.a.key is not a valid rc"):
+            p.theme({"not.a.key": True})
+
     def test_stat(self, long_df):
 
         orig_df = long_df.copy(deep=True)
