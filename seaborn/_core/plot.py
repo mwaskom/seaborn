@@ -57,7 +57,7 @@ else:
 default = Default()
 
 
-# ---- Definitions for internal specs --------------------------------- #
+# ---- Definitions for internal specs ---------------------------------------------- #
 
 
 class Layer(TypedDict, total=False):
@@ -87,7 +87,7 @@ class PairSpec(TypedDict, total=False):
     wrap: int | None
 
 
-# --- Local helpers ----------------------------------------------------------------
+# --- Local helpers ---------------------------------------------------------------- #
 
 
 @contextmanager
@@ -143,7 +143,7 @@ def build_plot_signature(cls):
     return cls
 
 
-# ---- TODO -------------------- #
+# ---- Plot configuration ---------------------------------------------------------- #
 
 
 class ThemeConfig(mpl.RcParams):
@@ -177,7 +177,7 @@ class ThemeConfig(mpl.RcParams):
         }
 
     def reset(self):
-
+        """Update the theme dictionary with seaborn's default values."""
         self.update(self._default)
 
     def update(self, other=(), /, **kwds):
@@ -211,24 +211,20 @@ class ThemeConfig(mpl.RcParams):
             "</div>",
             "</div>",
         ]
-        return "".join(repr)
+        return "\n".join(repr)
 
 
 class PlotConfig:
-    """
-    Configuration for :class:`Plot`.
-    """
+    """Configuration for default behavior / appearance of class:`Plot` instances."""
     _theme = ThemeConfig()
 
     @property
     def theme(self):
-        """
-        Dictionary of base theme parameters for :class:`Plot`.
-        """
+        """Dictionary of base theme parameters for :class:`Plot`."""
         return self._theme
 
 
-# ---- The main interface for declarative plotting -------------------- #
+# ---- The main interface for declarative plotting --------------------------------- #
 
 
 @build_plot_signature
@@ -817,7 +813,7 @@ class Plot:
 
     def theme(self, *args: dict[str, Any]) -> Plot:
         """
-        Control the default appearance of elements in the plot.
+        Control the appearance of elements in the plot.
 
         .. note::
 
