@@ -4,54 +4,66 @@
 
 .. autoclass:: {{ objname }}
 
-   {% block methods %}
+{% block methods %}
 
-   .. rubric:: Specification methods
+Methods
+~~~~~~~
 
-   .. autosummary::
-      :toctree: ./
-      :nosignatures:
+.. rubric:: Specification methods
 
-      ~Plot.add
-      ~Plot.scale
+.. autosummary::
+   :toctree: ./
+   :nosignatures:
 
-   .. rubric:: Subplot methods
+   ~Plot.add
+   ~Plot.scale
 
-   .. autosummary::
-      :toctree: ./
-      :nosignatures:
+.. rubric:: Subplot methods
 
-      ~Plot.facet
-      ~Plot.pair
+.. autosummary::
+   :toctree: ./
+   :nosignatures:
 
-   .. rubric:: Customization methods
+   ~Plot.facet
+   ~Plot.pair
 
-   .. autosummary::
-      :toctree: ./
-      :nosignatures:
+.. rubric:: Customization methods
 
-      ~Plot.layout
-      ~Plot.label
-      ~Plot.limit
-      ~Plot.share
-      ~Plot.theme
+.. autosummary::
+   :toctree: ./
+   :nosignatures:
 
-   .. rubric:: Integration methods
+   ~Plot.layout
+   ~Plot.label
+   ~Plot.limit
+   ~Plot.share
+   ~Plot.theme
 
-   .. autosummary::
-      :toctree: ./
-      :nosignatures:
+.. rubric:: Integration methods
 
-      ~Plot.on
+.. autosummary::
+   :toctree: ./
+   :nosignatures:
 
-   .. rubric:: Output methods
+   ~Plot.on
 
-   .. autosummary::
-      :toctree: ./
-      :nosignatures:
+.. rubric:: Output methods
 
-      ~Plot.plot
-      ~Plot.save
-      ~Plot.show
+.. autosummary::
+   :toctree: ./
+   :nosignatures:
 
-   {% endblock %}
+   ~Plot.plot
+   ~Plot.save
+   ~Plot.show
+
+{% endblock %}
+
+.. _plot_config:
+
+Configuration
+~~~~~~~~~~~~~
+
+The :class:`Plot` object's default behavior can be configured through its :attr:`Plot.config` attribute. Notice that this is a property of the class, not a method on an instance.
+
+.. include:: ../docstrings/objects.Plot.config.rst
