@@ -14,7 +14,7 @@ import pytest
 from pandas.testing import assert_frame_equal, assert_series_equal
 from numpy.testing import assert_array_equal, assert_array_almost_equal
 
-from seaborn._core.plot import Plot, Default
+from seaborn._core.plot import Plot, PlotConfig, Default
 from seaborn._core.scales import Continuous, Nominal, Temporal
 from seaborn._core.moves import Move, Shift, Dodge
 from seaborn._core.rules import categorical_order
@@ -1055,18 +1055,6 @@ class TestPlotting:
         )
         if not gui_backend:
             assert msg
-
-    def test_png_repr(self):
-
-        p = Plot()
-        data, metadata = p._repr_png_()
-        img = Image.open(io.BytesIO(data))
-
-        assert not hasattr(p, "_figure")
-        assert isinstance(data, bytes)
-        assert img.format == "PNG"
-        assert sorted(metadata) == ["height", "width"]
-        # TODO test retina scaling
 
     def test_save(self):
 
@@ -2193,3 +2181,42 @@ class TestThemeConfig:
 
         for key in Plot.config.theme:
             assert f"<td>{key}:</td>" in res
+
+
+class TestDisplayConfig:
+
+    @pytest.fixture(autouse=True)
+    def reset_config(self):
+        yield
+        Plot.config.display.update(PlotConfig().display)
+
+    def test_svg_format(self):
+
+        Plot.config.display["format"] = "svg"
+
+        assert Plot()._repr_png_() is None
+        assert Plot().plot()._repr_png_() is None
+
+        def assert_valid_svg(p):
+            res = p._repr_svg_()
+            root = xml.etree.ElementTree.fromstring(res)
+            assert root.tag == "{http://www.w3.org/2000/svg}svg"
+
+        assert_valid_svg(Plot())
+        assert_valid_svg(Plot().plot())
+
+    def test_png_format(self):
+
+        Plot.config.display["format"] = "png"
+
+        assert Plot()._repr_svg_() is None
+        assert Plot().plot()._repr_svg_() is None
+
+        def assert_valid_png(p):
+            data, metadata = p._repr_png_()
+            img = Image.open(io.BytesIO(data))
+            assert img.format == "PNG"
+            assert sorted(metadata) == ["height", "width"]
+
+        assert_valid_png(Plot())
+        assert_valid_png(Plot().plot())

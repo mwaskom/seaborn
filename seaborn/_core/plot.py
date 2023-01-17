@@ -21,6 +21,7 @@ import matplotlib as mpl
 from matplotlib.axes import Axes
 from matplotlib.artist import Artist
 from matplotlib.figure import Figure
+from PIL import Image
 
 from seaborn._marks.base import Mark
 from seaborn._stats.base import Stat
@@ -213,7 +214,7 @@ class ThemeConfig(mpl.RcParams):
 
 
 class DisplayConfig(TypedDict):
-
+    """Configuration for IPython's rich display hooks."""
     format: Literal["png", "svg"]
     scaling: float
     hidpi: bool
@@ -1008,8 +1009,6 @@ class Plotter:
         if Plot.config.display["format"] != "png":
             return None
 
-        from PIL import Image
-
         buffer = io.BytesIO()
 
         factor = 2 if Plot.config.display["hidpi"] else 1
@@ -1037,13 +1036,11 @@ class Plotter:
         with theme_context(self._theme):  # TODO _theme_with_defaults?
             self._figure.savefig(buffer, format="svg", bbox_inches="tight")
 
-        buffer.seek(0)
-        tree = ElementTree.parse(buffer)
-        root = tree.getroot()
+        root = ElementTree.fromstring(buffer.getvalue())
         w = scaling * float(root.attrib["width"][:-2])
         h = scaling * float(root.attrib["height"][:-2])
         root.attrib.update(width=f"{w}pt", height=f"{h}pt", viewbox=f"0 0 {w} {h}")
-        tree.write(out := io.BytesIO())
+        ElementTree.ElementTree(root).write(out := io.BytesIO())
 
         return out.getvalue().decode()
 
