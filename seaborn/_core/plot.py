@@ -227,12 +227,27 @@ class PlotConfig:
 
     @property
     def theme(self) -> dict[str, Any]:
-        """Dictionary of base theme parameters for :class:`Plot`."""
+        """
+        Dictionary of base theme parameters for :class:`Plot`.
+
+        Keys and values correspond to matplotlib rc params, as documented here:
+        https://matplotlib.org/stable/tutorials/introductory/customizing.html
+
+        """
         return self._theme
 
     @property
-    def display(self) -> DisplayConfig:  # TODO rename to display?
-        """Dictionary of parameters for rich display in Jupyter notebook."""
+    def display(self) -> DisplayConfig:
+        """
+        Dictionary of parameters for rich display in Jupyter notebook.
+
+        Valid parameters:
+
+        - format ("png" or "svg"): Image format to produce
+        - scaling (float): Relative scaling of embedded image
+        - hidpi (bool): When True, double the DPI while preserving the size
+
+        """
         return self._display
 
 
