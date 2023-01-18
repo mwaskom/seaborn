@@ -222,8 +222,10 @@ class DisplayConfig(TypedDict):
 
 class PlotConfig:
     """Configuration for default behavior / appearance of class:`Plot` instances."""
-    _theme = ThemeConfig()
-    _display: DisplayConfig = {"format": "png", "scaling": .85, "hidpi": True}
+    def __init__(self):
+
+        self._theme = ThemeConfig()
+        self._display = {"format": "png", "scaling": .85, "hidpi": True}
 
     @property
     def theme(self) -> dict[str, Any]:
