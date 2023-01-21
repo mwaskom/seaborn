@@ -1492,10 +1492,9 @@ class Plotter:
     ) -> DataFrame:
         # TODO do we still have numbers in the variable name at this point?
         coord_cols = [c for c in df if re.match(r"^[xy]\D*$", str(c))]
-        drop_cols = [*coord_cols, "width"] if "width" in df else coord_cols
         out_df = (
             df
-            .drop(drop_cols, axis=1)
+            .drop(coord_cols, axis=1)
             .reindex(df.columns, axis=1)  # So unscaled columns retain their place
             .copy(deep=False)
         )
@@ -1510,12 +1509,6 @@ class Plotter:
                 transform = axis.get_transform().inverted().transform
                 inverted = transform(values)
                 out_df.loc[values.index, str(var)] = inverted
-
-                if var == orient and "width" in view_df:
-                    width = view_df["width"]
-                    out_df.loc[values.index, "width"] = (
-                        transform(values + width / 2) - transform(values - width / 2)
-                    )
 
         return out_df
 

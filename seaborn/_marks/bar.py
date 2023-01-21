@@ -29,17 +29,23 @@ class BarBase(Mark):
 
     def _make_patches(self, data, scales, orient):
 
+        transform = scales[orient]._matplotlib_scale.get_transform()
+        forward = transform.transform
+        reverse = transform.inverted().transform
+
+        other = {"x": "y", "y": "x"}[orient]
+
+        pos = reverse(forward(data[orient]) - data["width"] / 2)
+        width = reverse(forward(data[orient]) + data["width"] / 2) - pos
+
+        val = (data[other] - data["baseline"]).to_numpy()
+        base = data["baseline"].to_numpy()
+
         kws = self._resolve_properties(data, scales)
         if orient == "x":
-            kws["x"] = (data["x"] - data["width"] / 2).to_numpy()
-            kws["y"] = data["baseline"].to_numpy()
-            kws["w"] = data["width"].to_numpy()
-            kws["h"] = (data["y"] - data["baseline"]).to_numpy()
+            kws.update(x=pos, y=base, w=width, h=val)
         else:
-            kws["x"] = data["baseline"].to_numpy()
-            kws["y"] = (data["y"] - data["width"] / 2).to_numpy()
-            kws["w"] = (data["x"] - data["baseline"]).to_numpy()
-            kws["h"] = data["width"].to_numpy()
+            kws.update(x=base, y=pos, w=val, h=width)
 
         kws.pop("width", None)
         kws.pop("baseline", None)
