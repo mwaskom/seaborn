@@ -14,7 +14,7 @@ import pytest
 from pandas.testing import assert_frame_equal, assert_series_equal
 from numpy.testing import assert_array_equal, assert_array_almost_equal
 
-from seaborn._core.plot import Plot, Default
+from seaborn._core.plot import Plot, PlotConfig, Default
 from seaborn._core.scales import Continuous, Nominal, Temporal
 from seaborn._core.moves import Move, Shift, Dodge
 from seaborn._core.rules import categorical_order
@@ -1055,18 +1055,6 @@ class TestPlotting:
         )
         if not gui_backend:
             assert msg
-
-    def test_png_repr(self):
-
-        p = Plot()
-        data, metadata = p._repr_png_()
-        img = Image.open(io.BytesIO(data))
-
-        assert not hasattr(p, "_figure")
-        assert isinstance(data, bytes)
-        assert img.format == "PNG"
-        assert sorted(metadata) == ["height", "width"]
-        # TODO test retina scaling
 
     def test_save(self):
 
@@ -2193,3 +2181,91 @@ class TestThemeConfig:
 
         for key in Plot.config.theme:
             assert f"<td>{key}:</td>" in res
+
+
+class TestDisplayConfig:
+
+    @pytest.fixture(autouse=True)
+    def reset_config(self):
+        yield
+        Plot.config.display.update(PlotConfig().display)
+
+    def test_png_format(self):
+
+        Plot.config.display["format"] = "png"
+
+        assert Plot()._repr_svg_() is None
+        assert Plot().plot()._repr_svg_() is None
+
+        def assert_valid_png(p):
+            data, metadata = p._repr_png_()
+            img = Image.open(io.BytesIO(data))
+            assert img.format == "PNG"
+            assert sorted(metadata) == ["height", "width"]
+
+        assert_valid_png(Plot())
+        assert_valid_png(Plot().plot())
+
+    def test_svg_format(self):
+
+        Plot.config.display["format"] = "svg"
+
+        assert Plot()._repr_png_() is None
+        assert Plot().plot()._repr_png_() is None
+
+        def assert_valid_svg(p):
+            res = p._repr_svg_()
+            root = xml.etree.ElementTree.fromstring(res)
+            assert root.tag == "{http://www.w3.org/2000/svg}svg"
+
+        assert_valid_svg(Plot())
+        assert_valid_svg(Plot().plot())
+
+    def test_png_scaling(self):
+
+        Plot.config.display["scaling"] = 1.
+        res1, meta1 = Plot()._repr_png_()
+
+        Plot.config.display["scaling"] = .5
+        res2, meta2 = Plot()._repr_png_()
+
+        assert meta1["width"] / 2 == meta2["width"]
+        assert meta1["height"] / 2 == meta2["height"]
+
+        img1 = Image.open(io.BytesIO(res1))
+        img2 = Image.open(io.BytesIO(res2))
+        assert img1.size == img2.size
+
+    def test_svg_scaling(self):
+
+        Plot.config.display["format"] = "svg"
+
+        Plot.config.display["scaling"] = 1.
+        res1 = Plot()._repr_svg_()
+
+        Plot.config.display["scaling"] = .5
+        res2 = Plot()._repr_svg_()
+
+        root1 = xml.etree.ElementTree.fromstring(res1)
+        root2 = xml.etree.ElementTree.fromstring(res2)
+
+        def getdim(root, dim):
+            return float(root.attrib[dim][:-2])
+
+        assert getdim(root1, "width") / 2 == getdim(root2, "width")
+        assert getdim(root1, "height") / 2 == getdim(root2, "height")
+
+    def test_png_hidpi(self):
+
+        res1, meta1 = Plot()._repr_png_()
+
+        Plot.config.display["hidpi"] = False
+        res2, meta2 = Plot()._repr_png_()
+
+        assert meta1["width"] == meta2["width"]
+        assert meta1["height"] == meta2["height"]
+
+        img1 = Image.open(io.BytesIO(res1))
+        img2 = Image.open(io.BytesIO(res2))
+        assert img1.size[0] // 2 == img2.size[0]
+        assert img1.size[1] // 2 == img2.size[1]

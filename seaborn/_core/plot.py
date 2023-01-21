@@ -11,7 +11,8 @@ import textwrap
 from contextlib import contextmanager
 from collections import abc
 from collections.abc import Callable, Generator
-from typing import Any, List, Optional, cast
+from typing import Any, List, Literal, Optional, cast
+from xml.etree import ElementTree
 
 from cycler import cycler
 import pandas as pd
@@ -20,6 +21,7 @@ import matplotlib as mpl
 from matplotlib.axes import Axes
 from matplotlib.artist import Artist
 from matplotlib.figure import Figure
+from PIL import Image
 
 from seaborn._marks.base import Mark
 from seaborn._stats.base import Stat
@@ -211,14 +213,44 @@ class ThemeConfig(mpl.RcParams):
         return "\n".join(repr)
 
 
+class DisplayConfig(TypedDict):
+    """Configuration for IPython's rich display hooks."""
+    format: Literal["png", "svg"]
+    scaling: float
+    hidpi: bool
+
+
 class PlotConfig:
     """Configuration for default behavior / appearance of class:`Plot` instances."""
-    _theme = ThemeConfig()
+    def __init__(self):
+
+        self._theme = ThemeConfig()
+        self._display = {"format": "png", "scaling": .85, "hidpi": True}
 
     @property
     def theme(self) -> dict[str, Any]:
-        """Dictionary of base theme parameters for :class:`Plot`."""
+        """
+        Dictionary of base theme parameters for :class:`Plot`.
+
+        Keys and values correspond to matplotlib rc params, as documented here:
+        https://matplotlib.org/stable/tutorials/introductory/customizing.html
+
+        """
         return self._theme
+
+    @property
+    def display(self) -> DisplayConfig:
+        """
+        Dictionary of parameters for rich display in Jupyter notebook.
+
+        Valid parameters:
+
+        - format ("png" or "svg"): Image format to produce
+        - scaling (float): Relative scaling of embedded image
+        - hidpi (bool): When True, double the DPI while preserving the size
+
+        """
+        return self._display
 
 
 # ---- The main interface for declarative plotting --------------------------------- #
@@ -354,11 +386,17 @@ class Plot:
         other_type = other.__class__.__name__
         raise TypeError(f"Unsupported operand type(s) for +: 'Plot' and '{other_type}")
 
-    def _repr_png_(self) -> tuple[bytes, dict[str, float]]:
+    def _repr_png_(self) -> tuple[bytes, dict[str, float]] | None:
 
+        if Plot.config.display["format"] != "png":
+            return None
         return self.plot()._repr_png_()
 
-    # TODO _repr_svg_?
+    def _repr_svg_(self) -> str | None:
+
+        if Plot.config.display["format"] != "svg":
+            return None
+        return self.plot()._repr_svg_()
 
     def _clone(self) -> Plot:
         """Generate a new object with the same information as the current spec."""
@@ -973,13 +1011,7 @@ class Plotter:
     # TODO API for accessing the underlying matplotlib objects
     # TODO what else is useful in the public API for this class?
 
-    def _repr_png_(self) -> tuple[bytes, dict[str, float]]:
-
-        # TODO better to do this through a Jupyter hook? e.g.
-        # ipy = IPython.core.formatters.get_ipython()
-        # fmt = ipy.display_formatter.formatters["text/html"]
-        # fmt.for_type(Plot, ...)
-        # Would like to have a svg option too, not sure how to make that flexible
+    def _repr_png_(self) -> tuple[bytes, dict[str, float]] | None:
 
         # TODO use matplotlib backend directly instead of going through savefig?
 
@@ -991,26 +1023,43 @@ class Plotter:
         # Better solution would be to default (with option to change)
         # to using constrained/tight layout.
 
-        # TODO need to decide what the right default behavior here is:
-        # - Use dpi=72 to match default InlineBackend figure size?
-        # - Accept a generic "scaling" somewhere and scale DPI from that,
-        #   either with 1x -> 72 or 1x -> 96 and the default scaling be .75?
-        # - Listen to rcParams? InlineBackend behavior makes that so complicated :(
-        # - Do we ever want to *not* use retina mode at this point?
+        if Plot.config.display["format"] != "png":
+            return None
 
-        from PIL import Image
-
-        dpi = 96
         buffer = io.BytesIO()
 
+        factor = 2 if Plot.config.display["hidpi"] else 1
+        scaling = Plot.config.display["scaling"] / factor
+        dpi = 96 * factor  # TODO put dpi in Plot.config?
+
         with theme_context(self._theme):  # TODO _theme_with_defaults?
-            self._figure.savefig(buffer, dpi=dpi * 2, format="png", bbox_inches="tight")
+            self._figure.savefig(buffer, dpi=dpi, format="png", bbox_inches="tight")
         data = buffer.getvalue()
 
-        scaling = .85 / 2
         w, h = Image.open(buffer).size
         metadata = {"width": w * scaling, "height": h * scaling}
         return data, metadata
+
+    def _repr_svg_(self) -> str | None:
+
+        if Plot.config.display["format"] != "svg":
+            return None
+
+        # TODO DPI for rasterized artists?
+
+        scaling = Plot.config.display["scaling"]
+
+        buffer = io.StringIO()
+        with theme_context(self._theme):  # TODO _theme_with_defaults?
+            self._figure.savefig(buffer, format="svg", bbox_inches="tight")
+
+        root = ElementTree.fromstring(buffer.getvalue())
+        w = scaling * float(root.attrib["width"][:-2])
+        h = scaling * float(root.attrib["height"][:-2])
+        root.attrib.update(width=f"{w}pt", height=f"{h}pt", viewbox=f"0 0 {w} {h}")
+        ElementTree.ElementTree(root).write(out := io.BytesIO())
+
+        return out.getvalue().decode()
 
     def _extract_data(self, p: Plot) -> tuple[PlotData, list[Layer]]:
 
