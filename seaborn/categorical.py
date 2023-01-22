@@ -80,7 +80,7 @@ class _CategoricalPlotterNew(_RelationalPlotter):
         # For wide data, orient determines assignment to x/y differently from the
         # wide_structure rules in _core. If we do decide to make orient part of the
         # _core variable assignment, we'll want to figure out how to express that.
-        if self.input_format == "wide" and orient == "h":
+        if self.input_format == "wide" and orient in ["h", "y"]:
             self.plot_data = self.plot_data.rename(columns={"x": "y", "y": "x"})
             orig_variables = set(self.variables)
             orig_x = self.variables.pop("x", None)
@@ -3528,7 +3528,7 @@ class Beeswarm:
         orig_xy_data = points.get_offsets()
 
         # Reset the categorical positions to the center line
-        cat_idx = 1 if self.orient == "h" else 0
+        cat_idx = 1 if self.orient == "y" else 0
         orig_xy_data[:, cat_idx] = center
 
         # Transform the data coordinates to point coordinates.
@@ -3538,7 +3538,7 @@ class Beeswarm:
         orig_xy = ax.transData.transform(orig_xy_data)
 
         # Order the variables so that x is the categorical axis
-        if self.orient == "h":
+        if self.orient == "y":
             orig_xy = orig_xy[:, [1, 0]]
 
         # Add a column with each point's radius
@@ -3558,7 +3558,7 @@ class Beeswarm:
         new_xyr[sorter] = self.beeswarm(orig_xyr)
 
         # Transform the point coordinates back to data coordinates
-        if self.orient == "h":
+        if self.orient == "y":
             new_xy = new_xyr[:, [1, 0]]
         else:
             new_xy = new_xyr[:, :2]
@@ -3567,13 +3567,13 @@ class Beeswarm:
         log_scale = getattr(ax, f"get_{self.orient}scale")() == "log"
 
         # Add gutters
-        if self.orient == "h":
+        if self.orient == "y":
             self.add_gutters(new_y_data, center, log_scale=log_scale)
         else:
             self.add_gutters(new_x_data, center, log_scale=log_scale)
 
         # Reposition the points so they do not overlap
-        if self.orient == "h":
+        if self.orient == "y":
             points.set_offsets(np.c_[orig_x_data, new_y_data])
         else:
             points.set_offsets(np.c_[new_x_data, orig_y_data])
