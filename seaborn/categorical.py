@@ -449,7 +449,8 @@ class _CategoricalPlotterNew(_RelationalPlotter):
                                                  allow_empty=True):
 
             agg_data = (
-                sub_data.groupby(self.orient)
+                sub_data
+                .groupby(self.orient)
                 .apply(aggregator, agg_var)
                 .reset_index()
             )
@@ -2629,6 +2630,9 @@ def stripplot(
     if ax is None:
         ax = plt.gca()
 
+    if p.plot_data.empty:
+        return ax
+
     if p.var_types.get(p.orient) == "categorical" or not native_scale:
         p.scale_categorical(p.orient, order=order, formatter=formatter)
 
@@ -2750,6 +2754,9 @@ def swarmplot(
 
     if ax is None:
         ax = plt.gca()
+
+    if p.plot_data.empty:
+        return ax
 
     if p.var_types.get(p.orient) == "categorical" or not native_scale:
         p.scale_categorical(p.orient, order=order, formatter=formatter)
@@ -2880,15 +2887,18 @@ def barplot(
         legend=legend,
     )
 
+    if ax is None:
+        ax = plt.gca()
+
+    if p.plot_data.empty:
+        return ax
+
     if dodge == "auto":
         # Needs to be before scale_categorical changes the coordinate series dtype
         if "hue" in p.variables:
             dodge = not p.plot_data[p.orient].equals(p.plot_data["hue"])
         else:
             dodge = False
-
-    if ax is None:
-        ax = plt.gca()
 
     if p.var_types.get(p.orient) == "categorical" or not native_scale:
         p.scale_categorical(p.orient, order=order, formatter=formatter)

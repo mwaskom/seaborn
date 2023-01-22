@@ -26,9 +26,10 @@ from seaborn.categorical import (
     _CategoricalPlotterNew,
     Beeswarm,
     catplot,
-    pointplot,
     stripplot,
     swarmplot,
+    barplot,
+    pointplot,
 )
 from seaborn.palettes import color_palette
 from seaborn.utils import _normal_quantile_func, _draw_figure
@@ -40,6 +41,7 @@ PLOT_FUNCS = [
     catplot,
     stripplot,
     swarmplot,
+    barplot,
 ]
 
 
