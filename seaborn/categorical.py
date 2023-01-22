@@ -25,7 +25,13 @@ from seaborn._oldcore import (
 )
 from seaborn.relational import _RelationalPlotter
 from seaborn import utils
-from seaborn.utils import remove_na, _normal_quantile_func, _draw_figure, _default_color
+from seaborn.utils import (
+    remove_na,
+    desaturate,
+    _normal_quantile_func,
+    _draw_figure,
+    _default_color,
+)
 from seaborn._statistics import EstimateAggregator
 from seaborn.palettes import color_palette, husl_palette, light_palette, dark_palette
 from seaborn.axisgrid import FacetGrid, _facet_docs
@@ -109,14 +115,14 @@ class _CategoricalPlotterNew(_RelationalPlotter):
         # Categorical plots can be "univariate" in which case they get an anonymous
         # category label on the opposite axis. Note: this duplicates code in the core
         # scale_categorical function. We need to do it here because of the next line.
-        if self.cat_axis not in self.variables:
-            self.variables[self.cat_axis] = None
-            self.var_types[self.cat_axis] = "categorical"
-            self.plot_data[self.cat_axis] = ""
+        if self.orient not in self.variables:
+            self.variables[self.orient] = None
+            self.var_types[self.orient] = "categorical"
+            self.plot_data[self.orient] = ""
 
         # Categorical variables have discrete levels that we need to track
-        cat_levels = categorical_order(self.plot_data[self.cat_axis], order)
-        self.var_levels[self.cat_axis] = cat_levels
+        cat_levels = categorical_order(self.plot_data[self.orient], order)
+        self.var_levels[self.orient] = cat_levels
 
     def _hue_backcompat(self, color, palette, hue_order, force_hue=False):
         """Implement backwards compatibility for hue parametrization.
@@ -139,10 +145,10 @@ class _CategoricalPlotterNew(_RelationalPlotter):
         default_behavior = color is None or palette is not None
         if force_hue and "hue" not in self.variables and default_behavior:
             self._redundant_hue = True
-            self.plot_data["hue"] = self.plot_data[self.cat_axis]
-            self.variables["hue"] = self.variables[self.cat_axis]
+            self.plot_data["hue"] = self.plot_data[self.orient]
+            self.variables["hue"] = self.variables[self.orient]
             self.var_types["hue"] = "categorical"
-            hue_order = self.var_levels[self.cat_axis]
+            hue_order = self.var_levels[self.orient]
 
             # Because we convert the categorical axis variable to string,
             # we need to update a dictionary palette too
@@ -173,15 +179,19 @@ class _CategoricalPlotterNew(_RelationalPlotter):
             msg = "Passing `palette` without assigning `hue` is deprecated."
             warnings.warn(msg, FutureWarning, stacklevel=3)
             self.legend = False
-            self.plot_data["hue"] = self.plot_data[self.cat_axis]
-            self.variables["hue"] = self.variables.get(self.cat_axis)
-            self.var_types["hue"] = self.var_types.get(self.cat_axis)
-            hue_order = self.var_levels.get(self.cat_axis)
+            self.plot_data["hue"] = self.plot_data[self.orient]
+            self.variables["hue"] = self.variables.get(self.orient)
+            self.var_types["hue"] = self.var_types.get(self.orient)
+            hue_order = self.var_levels.get(self.orient)
         return hue_order
 
     @property
-    def cat_axis(self):
-        return {"v": "x", "h": "y"}[self.orient]
+    def orient(self):
+        return self._orient
+
+    @orient.setter
+    def orient(self, val):
+        self._orient = {"v": "x", "h": "y"}.get(val, val)
 
     def _get_gray(self, colors):
         """Get a grayscale value that looks good with color."""
@@ -226,7 +236,7 @@ class _CategoricalPlotterNew(_RelationalPlotter):
     @property
     def _native_width(self):
         """Return unit of width separating categories on native numeric scale."""
-        unique_values = np.unique(self.comp_data[self.cat_axis])
+        unique_values = np.unique(self.comp_data[self.orient])
         if len(unique_values) > 1:
             native_width = np.nanmin(np.diff(unique_values))
         else:
@@ -273,7 +283,7 @@ class _CategoricalPlotterNew(_RelationalPlotter):
         jlim *= self._native_width
         jitterer = partial(np.random.uniform, low=-jlim, high=+jlim)
 
-        iter_vars = [self.cat_axis]
+        iter_vars = [self.orient]
         if dodge:
             iter_vars.append("hue")
 
@@ -283,13 +293,14 @@ class _CategoricalPlotterNew(_RelationalPlotter):
         for sub_vars, sub_data in self.iter_data(iter_vars,
                                                  from_comp_data=True,
                                                  allow_empty=True):
+
             if offsets is not None and (offsets != 0).any():
                 dodge_move = offsets[sub_data["hue"].map(self._hue_map.levels.index)]
 
             jitter_move = jitterer(size=len(sub_data)) if len(sub_data) > 1 else 0
 
-            adjusted_data = sub_data[self.cat_axis] + dodge_move + jitter_move
-            sub_data[self.cat_axis] = adjusted_data
+            adjusted_data = sub_data[self.orient] + dodge_move + jitter_move
+            sub_data[self.orient] = adjusted_data
 
             for var in "xy":
                 if self._log_scaled(var):
@@ -330,7 +341,7 @@ class _CategoricalPlotterNew(_RelationalPlotter):
         width = .8 * self._native_width
         offsets = self._nested_offsets(width, dodge)
 
-        iter_vars = [self.cat_axis]
+        iter_vars = [self.orient]
         if dodge:
             iter_vars.append("hue")
 
@@ -346,7 +357,7 @@ class _CategoricalPlotterNew(_RelationalPlotter):
                 dodge_move = offsets[sub_data["hue"].map(self._hue_map.levels.index)]
 
             if not sub_data.empty:
-                sub_data[self.cat_axis] = sub_data[self.cat_axis] + dodge_move
+                sub_data[self.orient] = sub_data[self.orient] + dodge_move
 
             for var in "xy":
                 if self._log_scaled(var):
@@ -364,7 +375,7 @@ class _CategoricalPlotterNew(_RelationalPlotter):
                 points.set_edgecolors(edgecolor)
 
             if not sub_data.empty:
-                point_collections[(ax, sub_data[self.cat_axis].iloc[0])] = points
+                point_collections[(ax, sub_data[self.orient].iloc[0])] = points
 
         beeswarm = Beeswarm(
             width=width, orient=self.orient, warn_thresh=warn_thresh,
@@ -387,7 +398,7 @@ class _CategoricalPlotterNew(_RelationalPlotter):
                     # set in _adjust_cat_axis, because that method currently leave
                     # the autoscale flag in its original setting. It may be better
                     # to disable autoscaling there to avoid needing to do this.
-                    fixed_scale = self.var_types[self.cat_axis] == "categorical"
+                    fixed_scale = self.var_types[self.orient] == "categorical"
                     ax.update_datalim(points.get_datalim(ax.transData))
                     if not fixed_scale and (scalex or scaley):
                         ax.autoscale_view(scalex=scalex, scaley=scaley)
@@ -409,6 +420,112 @@ class _CategoricalPlotterNew(_RelationalPlotter):
             handles, _ = ax.get_legend_handles_labels()
             if handles:
                 ax.legend(title=self.legend_title)
+
+    def plot_bars(
+        self,
+        aggregator,
+        dodge,
+        width,
+        color,
+        saturation,
+        error_kws,
+        plot_kws,
+    ):
+
+        offsets = self._nested_offsets(width, dodge)
+
+        if "hue" in self.variables and dodge and self._hue_map.levels is not None:
+            n = len(self._hue_map.levels)
+            width /= n
+            error_kws["capsize"] /= n
+
+        agg_var = {"x": "y", "y": "x"}[self.orient]
+        iter_vars = ["hue"]
+
+        ax = self.ax
+
+        for sub_vars, sub_data in self.iter_data(iter_vars,
+                                                 from_comp_data=True,
+                                                 allow_empty=True):
+
+            agg_data = (
+                sub_data.groupby(self.orient)
+                .apply(aggregator, agg_var)
+                .reset_index()
+            )
+
+            if offsets is not None and (offsets != 0).any():
+                # TODO This could be slow; vectorize?
+                hue_offset = offsets[self._hue_map.levels.index(sub_vars["hue"])]
+                agg_data[self.orient] += hue_offset
+
+            real_width = width * self._native_width
+            agg_data["edge"] = agg_data[self.orient] - real_width / 2
+            for var in "xy":
+                if self._log_scaled(var):
+                    if var == self.orient:
+                        agg_data["edge"] = 10 ** agg_data["edge"]
+                        right_edge = 10 ** (agg_data[var] + real_width / 2)
+                        real_width = right_edge - agg_data["edge"]
+                    for suf in ["", "min", "max"]:
+                        col = f"{var}{suf}"
+                        if col in agg_data:
+                            agg_data[col] = 10 ** agg_data[col]
+
+            if self.orient == "x":
+                bar_func = ax.bar
+                kws = dict(x=agg_data["edge"], height=agg_data["y"], width=real_width)
+            else:
+                bar_func = ax.barh
+                kws = dict(y=agg_data["edge"], width=agg_data["x"], height=real_width)
+
+            container = bar_func(
+                **kws,
+                color=color,
+                align="edge",
+                **plot_kws,
+            )
+
+            if "hue" in self.variables:
+                mapped_color = desaturate(self._hue_map(sub_vars["hue"]), saturation)
+                plt.setp(container, facecolor=mapped_color)
+
+            if aggregator.error_method is not None:
+                self.plot_errorbars(agg_data, **error_kws)
+
+    def plot_errorbars(
+        self,
+        data,
+        color,
+        width,
+        capsize,
+    ):
+
+        var = {"x": "y", "y": "x"}[self.orient]
+        for row in data.to_dict("records"):
+
+            row = dict(row)
+            pos = np.array([row[self.orient], row[self.orient]])
+            val = np.array([row[f"{var}min"], row[f"{var}max"]])
+
+            cw = capsize * self._native_width
+            if self._log_scaled:
+                ...
+
+            if capsize:
+                pos = np.concatenate([
+                    [pos[0] - cw, pos[0] + cw, np.nan], pos,
+                    [np.nan, pos[-1] - cw, pos[-1] + cw],
+                ])
+                val = np.concatenate([
+                    [val[0], val[0], np.nan], val, [np.nan, val[-1], val[-1]],
+                ])
+
+            if self.orient == "x":
+                args = pos, val
+            else:
+                args = val, pos
+            self.ax.plot(*args, color=color, linewidth=width)
 
 
 class _CategoricalFacetPlotter(_CategoricalPlotterNew):
@@ -2512,8 +2629,8 @@ def stripplot(
     if ax is None:
         ax = plt.gca()
 
-    if p.var_types.get(p.cat_axis) == "categorical" or not native_scale:
-        p.scale_categorical(p.cat_axis, order=order, formatter=formatter)
+    if p.var_types.get(p.orient) == "categorical" or not native_scale:
+        p.scale_categorical(p.orient, order=order, formatter=formatter)
 
     p._attach(ax)
 
@@ -2528,10 +2645,10 @@ def stripplot(
     kwargs.setdefault("zorder", 3)
     size = kwargs.get("s", size)
 
-    kwargs.update(dict(
+    kwargs.update(
         s=size ** 2,
         edgecolor=edgecolor,
-        linewidth=linewidth)
+        linewidth=linewidth,
     )
 
     p.plot_strips(
@@ -2546,7 +2663,7 @@ def stripplot(
     # but maybe it's better out here? Alternatively, we have an open issue
     # suggesting that _attach could add default axes labels, which seems smart.
     p._add_axis_labels(ax)
-    p._adjust_cat_axis(ax, axis=p.cat_axis)
+    p._adjust_cat_axis(ax, axis=p.orient)
 
     return ax
 
@@ -2634,8 +2751,8 @@ def swarmplot(
     if ax is None:
         ax = plt.gca()
 
-    if p.var_types.get(p.cat_axis) == "categorical" or not native_scale:
-        p.scale_categorical(p.cat_axis, order=order, formatter=formatter)
+    if p.var_types.get(p.orient) == "categorical" or not native_scale:
+        p.scale_categorical(p.orient, order=order, formatter=formatter)
 
     p._attach(ax)
 
@@ -2670,7 +2787,7 @@ def swarmplot(
     )
 
     p._add_axis_labels(ax)
-    p._adjust_cat_axis(ax, axis=p.cat_axis)
+    p._adjust_cat_axis(ax, axis=p.orient)
 
     return ax
 
@@ -2740,7 +2857,9 @@ def barplot(
     data=None, *, x=None, y=None, hue=None, order=None, hue_order=None,
     estimator="mean", errorbar=("ci", 95), n_boot=1000, units=None, seed=None,
     orient=None, color=None, palette=None, saturation=.75, width=.8,
-    errcolor=".26", errwidth=None, capsize=None, dodge=True, ci="deprecated",
+    errcolor=".26", errwidth=None, capsize=None,
+    dodge="auto", native_scale=False, formatter=None, legend="auto",
+    ci="deprecated",
     ax=None,
     **kwargs,
 ):
@@ -2752,15 +2871,54 @@ def barplot(
     if estimator is len:
         estimator = "size"
 
-    plotter = _BarPlotter(x, y, hue, data, order, hue_order,
-                          estimator, errorbar, n_boot, units, seed,
-                          orient, color, palette, saturation,
-                          width, errcolor, errwidth, capsize, dodge)
+    p = _CategoricalPlotterNew(
+        data=data,
+        variables=_CategoricalPlotterNew.get_semantics(locals()),
+        order=order,
+        orient=orient,
+        require_numeric=False,
+        legend=legend,
+    )
+
+    if dodge == "auto":
+        # Needs to be before scale_categorical changes the coordinate series dtype
+        if "hue" in p.variables:
+            dodge = not p.plot_data[p.orient].equals(p.plot_data["hue"])
+        else:
+            dodge = False
 
     if ax is None:
         ax = plt.gca()
 
-    plotter.plot(ax, kwargs)
+    if p.var_types.get(p.orient) == "categorical" or not native_scale:
+        p.scale_categorical(p.orient, order=order, formatter=formatter)
+
+    p._attach(ax)
+
+    hue_order = p._palette_without_hue_backcompat(palette, hue_order)
+    palette, hue_order = p._hue_backcompat(color, palette, hue_order)
+
+    color = _default_color(ax.bar, hue, color, kwargs)
+    if color is not None:
+        color = desaturate(color, saturation)
+
+    aggregator = EstimateAggregator(estimator, errorbar, n_boot=n_boot, seed=seed)
+
+    error_kws = dict(color=errcolor, width=errwidth, capsize=capsize or 0)
+
+    p.plot_bars(
+        aggregator=aggregator,
+        dodge=dodge,
+        width=width,
+        color=color,
+        saturation=saturation,
+        error_kws=error_kws,
+        plot_kws=kwargs,
+    )
+
+    p._add_axis_labels(ax)
+    p._adjust_cat_axis(ax, axis=p.orient)
+
     return ax
 
 
@@ -3068,8 +3226,8 @@ def catplot(
         # happen or if disabling that is the cleaner solution.
         has_xy_data = p.has_xy_data
 
-        if not native_scale or p.var_types[p.cat_axis] == "categorical":
-            p.scale_categorical(p.cat_axis, order=order, formatter=formatter)
+        if not native_scale or p.var_types[p.orient] == "categorical":
+            p.scale_categorical(p.orient, order=order, formatter=formatter)
 
         p._attach(g)
 
@@ -3133,7 +3291,7 @@ def catplot(
 
         # XXX best way to do this housekeeping?
         for ax in g.axes.flat:
-            p._adjust_cat_axis(ax, axis=p.cat_axis)
+            p._adjust_cat_axis(ax, axis=p.orient)
 
         g.set_axis_labels(
             p.variables.get("x", None),
@@ -3406,8 +3564,7 @@ class Beeswarm:
             new_xy = new_xyr[:, :2]
         new_x_data, new_y_data = ax.transData.inverted().transform(new_xy).T
 
-        swarm_axis = {"h": "y", "v": "x"}[self.orient]
-        log_scale = getattr(ax, f"get_{swarm_axis}scale")() == "log"
+        log_scale = getattr(ax, f"get_{self.orient}scale")() == "log"
 
         # Add gutters
         if self.orient == "h":
