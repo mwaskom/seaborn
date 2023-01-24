@@ -1684,8 +1684,10 @@ class SharedScatterTests(SharedAxesLevelTests):
         assert_array_equal(ax.collections[0].get_facecolors(), colors)
 
     @pytest.mark.parametrize(
-        "orient,data_type",
-        itertools.product(["h", "v"], ["dataframe", "dict"]),
+        "orient,data_type", [
+            ("h", "dataframe"), ("h", "dict"),
+            ("v", "dataframe"), ("v", "dict"),
+        ]
     )
     def test_wide(self, wide_df, orient, data_type):
 
