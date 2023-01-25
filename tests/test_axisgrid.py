@@ -331,7 +331,7 @@ class TestFacetGrid:
         g = ag.FacetGrid(self.df, despine=False,
                          subplot_kws=dict(projection="polar"))
         for ax in g.axes.flat:
-            assert "PolarAxesSubplot" in str(type(ax))
+            assert "PolarAxes" in ax.__class__.__name__
 
     def test_gridspec_kws(self):
         ratios = [3, 1, 2]
