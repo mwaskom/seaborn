@@ -501,7 +501,8 @@ def get_dataset_names():
     with urlopen(DATASET_NAMES_URL) as resp:
         txt = resp.read()
 
-    return txt.split("\n")
+    dataset_names = [name.strip() for name in txt.decode().split("\n")]
+    return list(filter(None, dataset_names))
 
 
 def get_data_home(data_home=None):
