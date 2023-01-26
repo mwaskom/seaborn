@@ -19,7 +19,7 @@ from seaborn.external.version import Version
 from seaborn.external.appdirs import user_cache_dir
 
 __all__ = ["desaturate", "saturate", "set_hls_values", "move_legend",
-           "despine", "get_dataset_names", "get_data_home", "load_dataset", "DATASET_NAMES_URL"]
+           "despine", "get_dataset_names", "get_data_home", "load_dataset"]
 
 DATASET_NAMES_URL = "https://raw.githubusercontent.com/mwaskom/seaborn-data/master/dataset_names.txt"
 
