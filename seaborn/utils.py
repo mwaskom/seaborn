@@ -21,7 +21,8 @@ from seaborn.external.appdirs import user_cache_dir
 __all__ = ["desaturate", "saturate", "set_hls_values", "move_legend",
            "despine", "get_dataset_names", "get_data_home", "load_dataset"]
 
-DATASET_NAMES_URL = "https://raw.githubusercontent.com/mwaskom/seaborn-data/master/dataset_names.txt"
+DATASET_SOURCE = "https://raw.githubusercontent.com/mwaskom/seaborn-data/master"
+DATASET_NAMES_URL = f"{DATASET_SOURCE}/dataset_names.txt"
 
 
 def ci_to_errsize(cis, heights):
@@ -566,7 +567,7 @@ def load_dataset(name, cache=True, data_home=None, **kws):
         )
         raise TypeError(err)
 
-    url = f"https://raw.githubusercontent.com/mwaskom/seaborn-data/master/{name}.csv"
+    url = f"{DATASET_SOURCE}/{name}.csv"
 
     if cache:
         cache_path = os.path.join(get_data_home(data_home), os.path.basename(url))
