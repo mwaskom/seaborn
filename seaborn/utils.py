@@ -498,8 +498,7 @@ def get_dataset_names():
     Requires an internet connection.
 
     """
-    url = "https://raw.githubusercontent.com/mwaskom/seaborn-data/master/datasets.txt"
-    with urlopen(url) as resp:
+    with urlopen(DATASET_NAMES_URL) as resp:
         txt = resp.read()
 
     return txt.split("\n")
