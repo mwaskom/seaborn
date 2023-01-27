@@ -2330,6 +2330,8 @@ Parameters
 {params.core.xy}
 {params.core.hue}
 {params.facets.rowcol}
+weights : vector or key in ``data``
+    Observation weights used for computing the distribution function.
 kind : {{"hist", "kde", "ecdf"}}
     Approach for visualizing the data. Selects the underlying plotting function
     and determines the additional set of valid parameters.
