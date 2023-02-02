@@ -1,6 +1,5 @@
 """Utility functions, mostly for internal use."""
 import os
-import re
 import inspect
 import warnings
 import colorsys
@@ -20,6 +19,9 @@ from seaborn.external.appdirs import user_cache_dir
 
 __all__ = ["desaturate", "saturate", "set_hls_values", "move_legend",
            "despine", "get_dataset_names", "get_data_home", "load_dataset"]
+
+DATASET_SOURCE = "https://raw.githubusercontent.com/mwaskom/seaborn-data/master"
+DATASET_NAMES_URL = f"{DATASET_SOURCE}/dataset_names.txt"
 
 
 def ci_to_errsize(cis, heights):
@@ -496,13 +498,11 @@ def get_dataset_names():
     Requires an internet connection.
 
     """
-    url = "https://github.com/mwaskom/seaborn-data"
-    with urlopen(url) as resp:
-        html = resp.read()
+    with urlopen(DATASET_NAMES_URL) as resp:
+        txt = resp.read()
 
-    pat = r"/mwaskom/seaborn-data/blob/master/(\w*).csv"
-    datasets = re.findall(pat, html.decode())
-    return datasets
+    dataset_names = [name.strip() for name in txt.decode().split("\n")]
+    return list(filter(None, dataset_names))
 
 
 def get_data_home(data_home=None):
@@ -566,7 +566,7 @@ def load_dataset(name, cache=True, data_home=None, **kws):
         )
         raise TypeError(err)
 
-    url = f"https://raw.githubusercontent.com/mwaskom/seaborn-data/master/{name}.csv"
+    url = f"{DATASET_SOURCE}/{name}.csv"
 
     if cache:
         cache_path = os.path.join(get_data_home(data_home), os.path.basename(url))

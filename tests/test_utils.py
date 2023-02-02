@@ -29,7 +29,7 @@ from seaborn.utils import (
     _assign_default_kwargs,
     _draw_figure,
     _deprecate_ci,
-    _version_predates,
+    _version_predates, DATASET_NAMES_URL,
 )
 
 
@@ -441,14 +441,14 @@ def check_load_cached_dataset(name):
         assert_frame_equal(ds, ds2)
 
 
-@_network(url="https://github.com/mwaskom/seaborn-data")
+@_network(url=DATASET_NAMES_URL)
 def test_get_dataset_names():
     names = get_dataset_names()
     assert names
     assert "tips" in names
 
 
-@_network(url="https://github.com/mwaskom/seaborn-data")
+@_network(url=DATASET_NAMES_URL)
 def test_load_datasets():
 
     # Heavy test to verify that we can load all available datasets
@@ -459,7 +459,7 @@ def test_load_datasets():
         check_load_dataset(name)
 
 
-@_network(url="https://github.com/mwaskom/seaborn-data")
+@_network(url=DATASET_NAMES_URL)
 def test_load_dataset_string_error():
 
     name = "bad_name"
