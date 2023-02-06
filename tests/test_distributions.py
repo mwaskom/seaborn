@@ -1827,6 +1827,11 @@ class TestHistPlotUnivariate(SharedAxesLevelTests):
         assert len(handles) == 1
         assert labels == ["a label"]
 
+    def test_default_color_scout_cleanup(self, flat_series):
+
+        ax = histplot(flat_series)
+        assert len(ax.containers) == 1
+
 
 class TestHistPlotBivariate:
 

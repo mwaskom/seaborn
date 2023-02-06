@@ -253,6 +253,7 @@ class _DistributionPlotter(VectorPlotter):
                 column_groups[facet_key].append(i)
 
             baselines = curves.copy()
+
             for col_idxs in column_groups.values():
                 cols = curves.columns[col_idxs]
 

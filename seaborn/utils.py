@@ -145,6 +145,8 @@ def _default_color(method, hue, color, kws):
         scout, = method([np.nan], [np.nan], **kws)
         color = to_rgb(scout.get_facecolor())
         scout.remove()
+        # Axes.bar adds both a patch and a container
+        method.__self__.containers.pop(-1)
 
     elif method.__name__ == "fill_between":
 
