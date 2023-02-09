@@ -456,7 +456,6 @@ class _CategoricalPlotterNew(_RelationalPlotter):
             )
 
             if offsets is not None and (offsets != 0).any():
-                # TODO This could be slow; vectorize?
                 hue_offset = offsets[self._hue_map.levels.index(sub_vars["hue"])]
                 agg_data[self.orient] += hue_offset
 

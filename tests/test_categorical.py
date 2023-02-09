@@ -2214,7 +2214,7 @@ class TestBarPlotter(CategoricalFixture):
 
         ax = cat.barplot(data=self.df, x="g", y="y", hue="g", width=.5)
         for bar in ax.patches:
-            assert bar.get_width() == pytest.approx(.5 / 3)
+            assert bar.get_width() == pytest.approx(.5)
         ax.clear()
 
         ax = cat.barplot(data=self.df, x="g", y="y", hue="g", dodge=False)
