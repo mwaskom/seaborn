@@ -1612,24 +1612,29 @@ class TestViolinPlotter(CategoricalFixture):
 
 class SharedAxesLevelTests:
 
-    def test_color(self, long_df):
+    @pytest.fixture
+    def common_kws(self):
+        return {}
+
+    def test_color(self, long_df, common_kws):
+        common_kws.update(data=long_df, x="a", y="y")
 
         ax = plt.figure().subplots()
-        self.func(data=long_df, x="a", y="y", ax=ax)
-        assert self.get_last_color(ax) == to_rgba("C0")
+        self.func(ax=ax, **common_kws)
+        assert self.get_last_color(ax) == pytest.approx(to_rgba("C0"))
 
         ax = plt.figure().subplots()
-        self.func(data=long_df, x="a", y="y", ax=ax)
-        self.func(data=long_df, x="a", y="y", ax=ax)
-        assert self.get_last_color(ax) == to_rgba("C1")
+        self.func(ax=ax, **common_kws)
+        self.func(ax=ax, **common_kws)
+        assert self.get_last_color(ax) == pytest.approx(to_rgba("C1"))
 
         ax = plt.figure().subplots()
-        self.func(data=long_df, x="a", y="y", color="C2", ax=ax)
-        assert self.get_last_color(ax) == to_rgba("C2")
+        self.func(color="C2", ax=ax, **common_kws)
+        assert self.get_last_color(ax) == pytest.approx(to_rgba("C2"))
 
         ax = plt.figure().subplots()
-        self.func(data=long_df, x="a", y="y", color="C3", ax=ax)
-        assert self.get_last_color(ax) == to_rgba("C3")
+        self.func(color="C3", ax=ax, **common_kws)
+        assert self.get_last_color(ax) == pytest.approx(to_rgba("C3"))
 
     def test_two_calls(self):
 
@@ -2191,6 +2196,22 @@ class TestStripPlot(SharedScatterTests):
 class TestSwarmPlot(SharedScatterTests):
 
     func = staticmethod(partial(swarmplot, warn_thresh=1))
+
+
+class TestBarPlot(SharedAxesLevelTests):
+
+    func = staticmethod(barplot)
+
+    @pytest.fixture
+    def common_kws(self):
+        return {"saturation": 1}
+
+    def get_last_color(self, ax):
+
+        colors = [p.get_facecolor() for p in ax.containers[-1]]
+        unique_colors = np.unique(colors, axis=0)
+        assert len(unique_colors) == 1
+        return to_rgba(unique_colors.squeeze())
 
 
 class TestBarPlotter(CategoricalFixture):
