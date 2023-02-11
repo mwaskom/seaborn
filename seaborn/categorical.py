@@ -227,6 +227,14 @@ class _CategoricalPlotterNew(_RelationalPlotter):
             # Note limits that correspond to previously-inverted y axis
             ax.set_ylim(n - .5, -.5, auto=None)
 
+    def _dodge_needed(self):
+
+        if "hue" in self.variables:
+            orient = self.plot_data[self.orient].value_counts()
+            paired = self.plot_data[[self.orient, "hue"]].value_counts()
+            return orient.size != paired.size
+        return False
+
     @property
     def _native_width(self):
         """Return unit of width separating categories on native numeric scale."""
@@ -2909,10 +2917,7 @@ def barplot(
 
     if dodge == "auto":
         # Needs to be before scale_categorical changes the coordinate series dtype
-        if "hue" in p.variables:
-            dodge = not p.plot_data[p.orient].equals(p.plot_data["hue"])
-        else:
-            dodge = False
+        dodge = p._dodge_needed()
 
     if p.var_types.get(p.orient) == "categorical" or not native_scale:
         p.scale_categorical(p.orient, order=order, formatter=formatter)

@@ -2329,9 +2329,8 @@ class TestBarPlot(SharedAggTests):
 
     def test_hue_matched(self):
 
-        x = ["a", "b", "c"]
-        y = [1, 2, 3]
-        hue = ["x", "y", "z"]
+        x, y = ["a", "b", "c"], [1, 2, 3]
+        hue = ["x", "x", "y"]
 
         ax = barplot(x=x, y=y, hue=hue, saturation=1)
         for i, bar in enumerate(ax.patches):
@@ -2339,7 +2338,7 @@ class TestBarPlot(SharedAggTests):
             assert bar.get_y() == 0
             assert bar.get_height() == y[i]
             assert bar.get_width() == approx(0.8)
-            assert same_color(bar.get_facecolor(), f"C{i}")
+            assert same_color(bar.get_facecolor(), f"C{i // 2}")
 
     def test_hue_matched_by_name(self):
 
