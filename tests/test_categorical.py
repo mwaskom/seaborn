@@ -1723,6 +1723,8 @@ class SharedScatterTests(SharedAxesLevelTests):
         "orient,data_type", [
             ("h", "dataframe"), ("h", "dict"),
             ("v", "dataframe"), ("v", "dict"),
+            ("y", "dataframe"), ("y", "dict"),
+            ("x", "dataframe"), ("x", "dict"),
         ]
     )
     def test_wide(self, wide_df, orient, data_type):
@@ -1734,7 +1736,7 @@ class SharedScatterTests(SharedAxesLevelTests):
         _draw_figure(ax.figure)
         palette = color_palette()
 
-        cat_idx = 0 if orient == "x" else 1
+        cat_idx = 0 if orient in "vx" else 1
         val_idx = int(not cat_idx)
 
         axis_objs = ax.xaxis, ax.yaxis
@@ -3254,20 +3256,18 @@ class TestCatPlot(CategoricalFixture):
         for ax in g.axes.flat:
             assert len(ax.collections) == len(self.df.g.unique())
 
-        # Test unsharing workscol
-        with pytest.warns(UserWarning):
-            g = cat.catplot(
-                x="g", y="y", col="g", data=self.df, sharex=False, kind="bar",
-            )
-            for ax in g.axes.flat:
-                assert len(ax.patches) == 1
+        # Test unsharing works
+        g = cat.catplot(
+            x="g", y="y", col="g", data=self.df, sharex=False, kind="bar",
+        )
+        for ax in g.axes.flat:
+            assert len(ax.patches) == 1
 
-        with pytest.warns(UserWarning):
-            g = cat.catplot(
-                x="y", y="g", col="g", data=self.df, sharey=False, kind="bar",
-            )
-            for ax in g.axes.flat:
-                assert len(ax.patches) == 1
+        g = cat.catplot(
+            x="y", y="g", col="g", data=self.df, sharey=False, kind="bar",
+        )
+        for ax in g.axes.flat:
+            assert len(ax.patches) == 1
 
         # Make sure no warning is raised if color is provided on unshared plot
         with warnings.catch_warnings():

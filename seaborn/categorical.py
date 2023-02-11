@@ -474,6 +474,8 @@ class _CategoricalPlotterNew(_RelationalPlotter):
                         if col in agg_data:
                             agg_data[col] = 10 ** agg_data[col]
 
+            ax = self._get_axes(sub_vars)
+
             if self.orient == "x":
                 bar_func = ax.bar
                 kws = dict(x=agg_data["edge"], height=agg_data["y"], width=real_width)
@@ -495,7 +497,7 @@ class _CategoricalPlotterNew(_RelationalPlotter):
                 plt.setp(container, facecolor=mapped_color)
 
             if aggregator.error_method is not None:
-                self.plot_errorbars(agg_data, **error_kws)
+                self.plot_errorbars(ax, agg_data, **error_kws)
 
         # Finalize the axes details
         # TODO XXX this was copy-pasted from stripplot
@@ -512,6 +514,7 @@ class _CategoricalPlotterNew(_RelationalPlotter):
 
     def plot_errorbars(
         self,
+        ax,
         data,
         color,
         width,
@@ -527,7 +530,7 @@ class _CategoricalPlotterNew(_RelationalPlotter):
 
             cw = capsize * self._native_width
             if self._log_scaled:
-                ...
+                ...  # TODO
 
             if capsize:
                 pos = np.concatenate([
@@ -542,7 +545,7 @@ class _CategoricalPlotterNew(_RelationalPlotter):
                 args = pos, val
             else:
                 args = val, pos
-            self.ax.plot(*args, color=color, linewidth=width)
+            ax.plot(*args, color=color, linewidth=width)
 
 
 class _CategoricalAggPlotter(_CategoricalPlotterNew):
@@ -3213,6 +3216,9 @@ def catplot(
         kwargs.pop("ax")
 
     refactored_kinds = ["strip", "swarm", "bar"]
+
+    desaturated_kinds = ["bar"]
+
     if kind in refactored_kinds:
 
         p = _CategoricalFacetPlotter(
@@ -3269,8 +3275,12 @@ def catplot(
 
         # Set a default color
         # Otherwise each artist will be plotted separately and trip the color cycle
-        if hue is None and color is None:
-            color = "C0"
+        if hue is None:
+            if color is None:
+                color = "C0"
+            saturation = kwargs.get("saturation", 0.75)
+            if kind in desaturated_kinds and saturation < 1:
+                color = desaturate(color, saturation)
 
         if kind == "strip":
 
@@ -3316,6 +3326,39 @@ def catplot(
                 edgecolor=edgecolor,
                 warn_thresh=warn_thresh,
                 plot_kws=plot_kws,
+            )
+
+        elif kind == "bar":
+
+            saturation = kwargs.pop("saturation", 0.75)
+            width = kwargs.pop("width", 0.8)
+            error_kws = kwargs.pop("error_kws", {})
+
+            error_kws = dict(
+                color=kwargs.pop("errcolor", ".26"),
+                width=kwargs.pop("errwidth", None),
+                capsize=kwargs.pop("capsize", 0),
+            )
+
+            dodge = kwargs.pop("dodge", "auto")
+            if dodge == "auto":
+                dodge = p._dodge_needed()
+
+            aggregator = EstimateAggregator(
+                kwargs.pop("estimator", "mean"),
+                kwargs.pop("errorbar", "ci"),
+                n_boot=kwargs.pop("n_boot", 1000),
+                seed=kwargs.pop("seed", None),
+            )
+
+            p.plot_bars(
+                aggregator=aggregator,
+                dodge=dodge,
+                width=width,
+                color=color,
+                saturation=saturation,
+                error_kws=error_kws,
+                plot_kws=kwargs,
             )
 
         # XXX best way to do this housekeeping?
