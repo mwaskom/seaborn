@@ -1623,6 +1623,10 @@ class SharedAxesLevelTests:
         kws = {orient: "a", depend: "y", "hue": "b"}
 
         ax = self.func(long_df, **kws)
+
+        # To populate texts; only needed on older matplotlibs
+        _draw_figure(ax.figure)
+
         assert getattr(ax, f"get_{orient}label")() == kws[orient]
         assert getattr(ax, f"get_{depend}label")() == kws[depend]
 
@@ -1642,6 +1646,10 @@ class SharedAxesLevelTests:
 
         wide_df = wide_df.rename_axis("cols", axis=1)
         ax = self.func(wide_df)
+
+        # To populate texts; only needed on older matplotlibs
+        _draw_figure(ax.figure)
+
         assert ax.get_xlabel() == wide_df.columns.name
         labels = [t.get_text() for t in ax.get_xticklabels()]
         for label, level in zip(labels, wide_df.columns):
@@ -2239,6 +2247,10 @@ class SharedAggTests(SharedAxesLevelTests):
         ser = pd.Series([1, 2, 3], ind, name="y")
 
         ax = self.func(ser)
+
+        # To populate texts; only needed on older matplotlibs
+        _draw_figure(ax.figure)
+
         assert ax.get_xlabel() == ind.name
         assert ax.get_ylabel() == ser.name
         labels = [t.get_text() for t in ax.get_xticklabels()]
