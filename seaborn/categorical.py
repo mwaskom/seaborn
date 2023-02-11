@@ -2909,6 +2909,9 @@ def barplot(
     hue_order = p._palette_without_hue_backcompat(palette, hue_order)
     palette, hue_order = p._hue_backcompat(color, palette, hue_order)
 
+    hue_norm = None  # TODO XXX
+    p.map_hue(palette=palette, order=hue_order, norm=hue_norm)
+
     color = _default_color(ax.bar, hue, color, kwargs)
     if color is not None and saturation < 1:
         color = desaturate(color, saturation)

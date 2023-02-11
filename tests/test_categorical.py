@@ -2295,7 +2295,7 @@ class TestBarPlot(SharedAggTests):
         y = [1, 3, 2.5]
 
         ax = barplot(x=x, y=y)
-        for i, bar in enumerate(ax.bares):
+        for i, bar in enumerate(ax.patches):
             assert bar.get_x() + bar.get_width() / 2 == i
             assert bar.get_y() == 0
             assert bar.get_height() == y[i]
@@ -2307,7 +2307,7 @@ class TestBarPlot(SharedAggTests):
         y = ["a", "b", "c"]
 
         ax = barplot(x=x, y=y)
-        for i, bar in enumerate(ax.bares):
+        for i, bar in enumerate(ax.patches):
             assert bar.get_x() == 0
             assert bar.get_y() + bar.get_height() / 2 == i
             assert bar.get_height() == 0.8
@@ -2320,7 +2320,7 @@ class TestBarPlot(SharedAggTests):
         hue = ["a", "b", "c"]
 
         ax = barplot(x=x, y=y, hue=hue, saturation=1)
-        for i, bar in enumerate(ax.bares):
+        for i, bar in enumerate(ax.patches):
             assert bar.get_x() + bar.get_width() / 2 == approx(i)
             assert bar.get_y() == 0
             assert bar.get_height() == y[i]
@@ -2334,7 +2334,7 @@ class TestBarPlot(SharedAggTests):
         hue = ["x", "y", "z"]
 
         ax = barplot(x=x, y=y, hue=hue, saturation=1)
-        for i, bar in enumerate(ax.bares):
+        for i, bar in enumerate(ax.patches):
             assert bar.get_x() + bar.get_width() / 2 == approx(i)
             assert bar.get_y() == 0
             assert bar.get_height() == y[i]
@@ -2348,7 +2348,7 @@ class TestBarPlot(SharedAggTests):
         hue = ["x", "x", "y", "y"]
 
         ax = barplot(x=x, y=y, hue=hue, saturation=1)
-        for i, bar in enumerate(ax.bares):
+        for i, bar in enumerate(ax.patches):
             sign = 1 if i // 2 else -1
             assert (
                 bar.get_x() + bar.get_width() / 2
@@ -2366,7 +2366,7 @@ class TestBarPlot(SharedAggTests):
         hue = ["x", "x", "y", "y"]
 
         ax = barplot(x=x, y=y, hue=hue, saturation=1, dodge=False)
-        for i, bar in enumerate(ax.bares):
+        for i, bar in enumerate(ax.patches):
             assert bar.get_x() + bar.get_width() / 2 == approx(i % 2)
             assert bar.get_y() == 0
             assert bar.get_height() == y[i]
@@ -2379,7 +2379,7 @@ class TestBarPlot(SharedAggTests):
         y = [1, 2, 3]
 
         ax = barplot(x=x, y=y, native_scale=True)
-        for i, bar in enumerate(ax.bares):
+        for i, bar in enumerate(ax.patches):
             assert bar.get_x() + bar.get_width() / 2 == approx(x[i])
             assert bar.get_y() == 0
             assert bar.get_height() == y[i]
@@ -2392,8 +2392,8 @@ class TestBarPlot(SharedAggTests):
         hue = ["x", "x", "y", "y"]
 
         ax = barplot(x=x, y=y, hue=hue, native_scale=True)
-        for i, bar in enumerate(ax.bares):
-            for i, bar in enumerate(ax.bares):
+        for i, bar in enumerate(ax.patches):
+            for i, bar in enumerate(ax.patches):
                 sign = 1 if i // 2 else -1
                 assert (
                     bar.get_x() + bar.get_width() / 2
@@ -2410,7 +2410,7 @@ class TestBarPlot(SharedAggTests):
 
         ax = barplot(long_df, x=agg_var, y=val_var, errorbar=None)
         order = categorical_order(long_df[agg_var])
-        for i, bar in enumerate(ax.bares):
+        for i, bar in enumerate(ax.patches):
             assert bar.get_height() == approx(agg_df[order[i]])
 
     def test_estimate_string(self, long_df):
@@ -2420,7 +2420,7 @@ class TestBarPlot(SharedAggTests):
 
         ax = barplot(long_df, x=agg_var, y=val_var, estimator="median", errorbar=None)
         order = categorical_order(long_df[agg_var])
-        for i, bar in enumerate(ax.bares):
+        for i, bar in enumerate(ax.patches):
             assert bar.get_height() == approx(agg_df[order[i]])
 
     def test_estimate_func(self, long_df):
@@ -2430,7 +2430,7 @@ class TestBarPlot(SharedAggTests):
 
         ax = barplot(long_df, x=agg_var, y=val_var, estimator=np.median, errorbar=None)
         order = categorical_order(long_df[agg_var])
-        for i, bar in enumerate(ax.bares):
+        for i, bar in enumerate(ax.patches):
             assert bar.get_height() == approx(agg_df[order[i]])
 
     def test_errorbar(self, long_df):
@@ -2445,6 +2445,18 @@ class TestBarPlot(SharedAggTests):
             lo, hi = line.get_ydata()
             assert lo == approx(row["mean"] - row["std"])
             assert hi == approx(row["mean"] + row["std"])
+
+    def test_hue_implied_by_palette(self):
+
+        x = ["a", "b", "c"]
+        y = [1, 2, 3]
+        palette = "Set1"
+        colors = color_palette(palette, len(x))
+        msg = "Passing `palette` without assigning `hue` is deprecated."
+        with pytest.warns(FutureWarning, match=msg):
+            ax = barplot(x=x, y=y, saturation=1, palette=palette)
+        for i, bar in enumerate(ax.patches):
+            assert same_color(bar.get_facecolor(), colors[i])
 
 
 class TestBarPlotter(CategoricalFixture):
