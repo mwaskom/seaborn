@@ -2341,6 +2341,17 @@ class TestBarPlot(SharedAggTests):
             assert bar.get_width() == approx(0.8)
             assert same_color(bar.get_facecolor(), f"C{i}")
 
+    def test_hue_matched_by_name(self):
+
+        data = {"x": ["a", "b", "c"], "y": [1, 2, 3]}
+        ax = barplot(data, x="x", y="y", hue="x", saturation=1)
+        for i, bar in enumerate(ax.patches):
+            assert bar.get_x() + bar.get_width() / 2 == approx(i)
+            assert bar.get_y() == 0
+            assert bar.get_height() == data["y"][i]
+            assert bar.get_width() == approx(0.8)
+            assert same_color(bar.get_facecolor(), f"C{i}")
+
     def test_hue_dodged(self):
 
         x = ["a", "b", "a", "b"]
@@ -2384,6 +2395,15 @@ class TestBarPlot(SharedAggTests):
             assert bar.get_y() == 0
             assert bar.get_height() == y[i]
             assert bar.get_width() == approx(0.8 * 2)
+
+    def test_dateimte_native_scale_axis(self):
+
+        x = pd.date_range("2010-01-01", periods=20, freq="m")
+        y = np.arange(20)
+        ax = barplot(x=x, y=y, native_scale=True)
+        assert "Date" in ax.xaxis.get_major_locator().__class__.__name__
+        day = "2003-02-28"
+        assert_array_equal(ax.xaxis.convert_units([day]), mpl.dates.date2num([day]))
 
     def test_hue_native_scale_dodged(self):
 
@@ -2445,6 +2465,40 @@ class TestBarPlot(SharedAggTests):
             lo, hi = line.get_ydata()
             assert lo == approx(row["mean"] - row["std"])
             assert hi == approx(row["mean"] + row["std"])
+
+    def test_width(self):
+
+        width = .5
+        x, y = ["a", "b", "c"], [1, 2, 3]
+        ax = barplot(x=x, y=y, width=width)
+        for i, bar in enumerate(ax.patches):
+            assert bar.get_x() + bar.get_width() / 2 == approx(i)
+            assert bar.get_width() == width
+
+    def test_width_native_scale(self):
+
+        width = .5
+        x, y = [4, 6, 10], [1, 2, 3]
+        ax = barplot(x=x, y=y, width=width, native_scale=True)
+        for i, bar in enumerate(ax.patches):
+            assert bar.get_width() == (width * 2)
+
+    def test_legend_numeric_auto(self, long_df):
+
+        ax = barplot(long_df, x="x", y="y", hue="x")
+        assert len(ax.get_legend().texts) <= 6
+
+    def test_legend_numeric_full(self, long_df):
+
+        ax = barplot(long_df, x="x", y="y", hue="x", legend="full")
+        labels = [t.get_text() for t in ax.get_legend().texts]
+        levels = [str(x) for x in sorted(long_df["x"].unique())]
+        assert labels == levels
+
+    def test_legend_disabled(self, long_df):
+
+        ax = barplot(long_df, x="x", y="y", hue="b", legend=False)
+        assert ax.get_legend() is None
 
     def test_hue_implied_by_palette(self):
 
