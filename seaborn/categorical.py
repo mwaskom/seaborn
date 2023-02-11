@@ -3212,7 +3212,7 @@ def catplot(
         warnings.warn(msg, UserWarning)
         kwargs.pop("ax")
 
-    refactored_kinds = ["strip", "swarm"]
+    refactored_kinds = ["strip", "swarm", "bar"]
     if kind in refactored_kinds:
 
         p = _CategoricalFacetPlotter(
@@ -3365,7 +3365,6 @@ def catplot(
         "box": _BoxPlotter,
         "violin": _ViolinPlotter,
         "boxen": _LVPlotter,
-        "bar": _BarPlotter,
         "point": _PointPlotter,
         "count": _CountPlotter,
     }[kind]
