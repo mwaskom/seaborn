@@ -1471,39 +1471,39 @@ class TestCoreFunc:
         cats = pd.Series(["a", "b"] * 3)
         dates = pd.date_range("1999-09-22", "2006-05-14", 6)
 
-        assert infer_orient(cats, nums) == "v"
-        assert infer_orient(nums, cats) == "h"
+        assert infer_orient(cats, nums) == "x"
+        assert infer_orient(nums, cats) == "y"
 
-        assert infer_orient(cats, dates, require_numeric=False) == "v"
-        assert infer_orient(dates, cats, require_numeric=False) == "h"
+        assert infer_orient(cats, dates, require_numeric=False) == "x"
+        assert infer_orient(dates, cats, require_numeric=False) == "y"
 
-        assert infer_orient(nums, None) == "h"
+        assert infer_orient(nums, None) == "y"
         with pytest.warns(UserWarning, match="Vertical .+ `x`"):
-            assert infer_orient(nums, None, "v") == "h"
+            assert infer_orient(nums, None, "v") == "y"
 
-        assert infer_orient(None, nums) == "v"
+        assert infer_orient(None, nums) == "x"
         with pytest.warns(UserWarning, match="Horizontal .+ `y`"):
-            assert infer_orient(None, nums, "h") == "v"
+            assert infer_orient(None, nums, "h") == "x"
 
-        infer_orient(cats, None, require_numeric=False) == "h"
+        infer_orient(cats, None, require_numeric=False) == "y"
         with pytest.raises(TypeError, match="Horizontal .+ `x`"):
             infer_orient(cats, None)
 
-        infer_orient(cats, None, require_numeric=False) == "v"
+        infer_orient(cats, None, require_numeric=False) == "x"
         with pytest.raises(TypeError, match="Vertical .+ `y`"):
             infer_orient(None, cats)
 
-        assert infer_orient(nums, nums, "vert") == "v"
-        assert infer_orient(nums, nums, "hori") == "h"
+        assert infer_orient(nums, nums, "vert") == "x"
+        assert infer_orient(nums, nums, "hori") == "y"
 
-        assert infer_orient(cats, cats, "h", require_numeric=False) == "h"
-        assert infer_orient(cats, cats, "v", require_numeric=False) == "v"
-        assert infer_orient(cats, cats, require_numeric=False) == "v"
+        assert infer_orient(cats, cats, "h", require_numeric=False) == "y"
+        assert infer_orient(cats, cats, "v", require_numeric=False) == "x"
+        assert infer_orient(cats, cats, require_numeric=False) == "x"
 
         with pytest.raises(TypeError, match="Vertical .+ `y`"):
-            infer_orient(cats, cats, "v")
+            infer_orient(cats, cats, "x")
         with pytest.raises(TypeError, match="Horizontal .+ `x`"):
-            infer_orient(cats, cats, "h")
+            infer_orient(cats, cats, "y")
         with pytest.raises(TypeError, match="Neither"):
             infer_orient(cats, cats)
 
