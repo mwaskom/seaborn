@@ -2231,7 +2231,7 @@ class TestSwarmPlot(SharedScatterTests):
 
 class SharedAggTests(SharedAxesLevelTests):
 
-    def test_labels_thin(self):
+    def test_labels_flat(self):
 
         ind = pd.Index(["a", "b", "c"], name="x")
         ser = pd.Series([1, 2, 3], ind, name="y")

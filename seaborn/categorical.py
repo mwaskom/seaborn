@@ -526,6 +526,11 @@ class _CategoricalPlotterNew(_RelationalPlotter):
             self.ax.plot(*args, color=color, linewidth=width)
 
 
+class _CategoricalAggPlotter(_CategoricalPlotterNew):
+
+    flat_structure = {"x": "@index", "y": "@values"}
+
+
 class _CategoricalFacetPlotter(_CategoricalPlotterNew):
 
     semantics = _CategoricalPlotterNew.semantics + ("col", "row")
@@ -2875,9 +2880,9 @@ def barplot(
     if estimator is len:
         estimator = "size"
 
-    p = _CategoricalPlotterNew(
+    p = _CategoricalAggPlotter(
         data=data,
-        variables=_CategoricalPlotterNew.get_semantics(locals()),
+        variables=_CategoricalAggPlotter.get_semantics(locals()),
         order=order,
         orient=orient,
         require_numeric=False,
