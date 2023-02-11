@@ -34,9 +34,10 @@ from seaborn._marks.bar import Bar, Bars  # noqa: F401
 from seaborn._marks.dot import Dot, Dots  # noqa: F401
 from seaborn._marks.line import Dash, Line, Lines, Path, Paths, Range  # noqa: F401
 from seaborn._marks.text import Text  # noqa: F401
+from seaborn._marks.abline import Axhline, Axvline, Axline
 
 from seaborn._stats.base import Stat  # noqa: F401
-from seaborn._stats.aggregation import Agg, Est  # noqa: F401
+from seaborn._stats.aggregation import Agg, Agg2d, AggCustom, Est  # noqa: F401
 from seaborn._stats.counting import Count, Hist  # noqa: F401
 from seaborn._stats.density import KDE  # noqa: F401
 from seaborn._stats.order import Perc  # noqa: F401

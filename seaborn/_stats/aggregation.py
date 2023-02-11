@@ -1,6 +1,6 @@
 from __future__ import annotations
 from dataclasses import dataclass
-from typing import ClassVar, Callable
+from typing import ClassVar, Callable, TypedDict
 
 import pandas as pd
 from pandas import DataFrame
@@ -31,9 +31,15 @@ class Agg(Stat):
     .. include:: ../docstrings/objects.Agg.rst
 
     """
-    func: str | Callable[[Vector], float] = "mean"
 
-    group_by_orient: ClassVar[bool] = True
+    def __init__(
+        self, 
+        func: str | Callable[[Vector], float] = "mean",
+        group_by_orient=True,
+    ):
+        self.func = func
+        self.group_by_orient = group_by_orient
+    
 
     def __call__(
         self, data: DataFrame, groupby: GroupBy, orient: str, scales: dict[str, Scale],
@@ -47,6 +53,80 @@ class Agg(Stat):
             .reset_index(drop=True)
         )
         return res
+
+
+class AggCustom(Stat):
+    """
+    Aggregate data using provided aggregation function(s).
+
+    """
+    # TODO: Maybe enable tweak grouping vars as well.
+    def __init__(
+        self,
+        func: str | Callable[[Vector], float] | TypedDict[str | Callable[[Vector], float]] = "mean",
+        group_by_orient=True,
+    ):
+        self.group_by_orient = group_by_orient
+        self.func = func
+    
+    def __call__(
+        self, data: DataFrame, groupby: GroupBy, orient: str, scales: dict[str, Scale],
+    ) -> DataFrame:
+
+        if isinstance(self.func, dict):
+            agg_kws = self.func
+            if self.group_by_orient and orient in agg_kws:
+                raise ValueError("Aggregating 'orient' values which are used for grouping, too.")
+        else:
+            # Note: alternatively, we could 'groupby._get_groups(data)'
+            #       and apply func on remining cols
+            agg_kws = {"x": self.func, "y": self.func}
+        
+        if self.group_by_orient:
+            agg_kws.pop(orient, None)
+
+        res = (
+            groupby
+            .agg(data, agg_kws)
+            .dropna(subset=agg_kws.keys())
+            .reset_index(drop=True)
+        )
+        return res
+
+
+class Agg2d(Stat):
+    """
+    Aggregate both axes data using given method.
+
+    Parameters
+    ----------
+    func : str or callable
+        Name of a :class:`pandas.Series` method or a vector -> scalar function.
+    
+    See Also
+    --------
+    objects.Agg : Aggregation along the value axis.
+
+    Examples
+    --------
+    TODO
+    """
+    func: str | Callable[[Vector], float] = "mean"
+
+    group_by_orient: ClassVar[bool] = False
+
+    def __call__(
+        self, data: DataFrame, groupby: GroupBy, orient: str, scales: dict[str, Scale],
+    ) -> DataFrame:
+
+        res = (
+            groupby
+            .agg(data, {"x": self.func, "y": self.func})
+            .dropna(subset=["x","y"])
+            .reset_index(drop=True)
+        )
+        return res
+
 
 
 @dataclass
