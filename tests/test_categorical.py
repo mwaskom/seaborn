@@ -139,14 +139,14 @@ class TestCategoricalPlotter(CategoricalFixture):
             npt.assert_array_equal(x, y)
 
         # Check semantic attributes
-        assert p.orient == "v"
+        assert p.orient == "x"
         assert p.plot_hues is None
         assert p.group_label == "big"
         assert p.value_label is None
 
         # Test wide dataframe with forced horizontal orientation
         p.establish_variables(data=self.x_df, orient="horiz")
-        assert p.orient == "h"
+        assert p.orient == "y"
 
         # Test exception by trying to hue-group with a wide dataframe
         with pytest.raises(ValueError):
@@ -246,21 +246,21 @@ class TestCategoricalPlotter(CategoricalFixture):
         # Test passing a series to the x variable
         p.establish_variables(x=self.y)
         npt.assert_equal(p.plot_data, [self.y])
-        assert p.orient == "h"
+        assert p.orient == "y"
         assert p.value_label == "y_data"
         assert p.group_label is None
 
         # Test passing a series to the y variable
         p.establish_variables(y=self.y)
         npt.assert_equal(p.plot_data, [self.y])
-        assert p.orient == "v"
+        assert p.orient == "x"
         assert p.value_label == "y_data"
         assert p.group_label is None
 
         # Test passing an array to the y variable
         p.establish_variables(y=self.y.values)
         npt.assert_equal(p.plot_data, [self.y])
-        assert p.orient == "v"
+        assert p.orient == "x"
         assert p.group_label is None
         assert p.value_label is None
 
@@ -277,14 +277,14 @@ class TestCategoricalPlotter(CategoricalFixture):
         # Test referencing a DataFrame series in the x variable
         p.establish_variables(x="y", data=self.df)
         npt.assert_equal(p.plot_data, [self.y])
-        assert p.orient == "h"
+        assert p.orient == "y"
         assert p.value_label == "y"
         assert p.group_label is None
 
         # Test referencing a DataFrame series in the y variable
         p.establish_variables(y="y", data=self.df)
         npt.assert_equal(p.plot_data, [self.y])
-        assert p.orient == "v"
+        assert p.orient == "x"
         assert p.value_label == "y"
         assert p.group_label is None
 
@@ -296,7 +296,7 @@ class TestCategoricalPlotter(CategoricalFixture):
         p.establish_variables("g", "y", hue="h", data=self.df)
         assert len(p.plot_data) == 3
         assert len(p.plot_hues) == 3
-        assert p.orient == "v"
+        assert p.orient == "x"
         assert p.value_label == "y"
         assert p.group_label == "g"
         assert p.hue_title == "h"
@@ -329,7 +329,7 @@ class TestCategoricalPlotter(CategoricalFixture):
         p.establish_variables("y", "g", hue="h", data=df)
         assert len(p.plot_data) == 3
         assert len(p.plot_hues) == 3
-        assert p.orient == "h"
+        assert p.orient == "y"
         assert p.value_label == "y"
         assert p.group_label == "g"
         assert p.hue_title == "h"
@@ -747,7 +747,7 @@ class TestCategoricalStatPlotter(CategoricalFixture):
         p = cat._CategoricalStatPlotter()
 
         # Test vertical CIs
-        p.orient = "v"
+        p.orient = "x"
 
         f, ax = plt.subplots()
         at_group = [0, 1]
@@ -765,7 +765,7 @@ class TestCategoricalStatPlotter(CategoricalFixture):
         plt.close("all")
 
         # Test horizontal CIs
-        p.orient = "h"
+        p.orient = "y"
 
         f, ax = plt.subplots()
         p.draw_confints(ax, at_group, confints, colors)
@@ -780,7 +780,7 @@ class TestCategoricalStatPlotter(CategoricalFixture):
         plt.close("all")
 
         # Test vertical CIs with endcaps
-        p.orient = "v"
+        p.orient = "x"
 
         f, ax = plt.subplots()
         p.draw_confints(ax, at_group, confints, colors, capsize=0.3)
@@ -794,7 +794,7 @@ class TestCategoricalStatPlotter(CategoricalFixture):
         plt.close("all")
 
         # Test horizontal CIs with endcaps
-        p.orient = "h"
+        p.orient = "y"
 
         f, ax = plt.subplots()
         p.draw_confints(ax, at_group, confints, colors, capsize=0.3)
@@ -1734,7 +1734,7 @@ class SharedScatterTests(SharedAxesLevelTests):
         _draw_figure(ax.figure)
         palette = color_palette()
 
-        cat_idx = 0 if orient == "v" else 1
+        cat_idx = 0 if orient == "x" else 1
         val_idx = int(not cat_idx)
 
         axis_objs = ax.xaxis, ax.yaxis
@@ -2194,7 +2194,7 @@ class TestStripPlot(SharedScatterTests):
     def test_jitter(self, long_df, orient, jitter):
 
         cat_var, val_var = "a", "y"
-        if orient == "v":
+        if orient == "x":
             x_var, y_var = cat_var, val_var
             cat_idx, val_idx = 0, 1
         else:

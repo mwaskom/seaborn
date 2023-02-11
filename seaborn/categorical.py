@@ -659,7 +659,7 @@ class _CategoricalPlotter:
                 group_names = list(range(len(plot_data)))
 
             # Figure out the plotting orientation
-            orient = "h" if str(orient).startswith("h") else "v"
+            orient = "y" if str(orient)[0] in "hy" else "x"
 
         # Option 2:
         # We are plotting a long-form dataset
@@ -681,9 +681,7 @@ class _CategoricalPlotter:
                     raise ValueError(err)
 
             # Figure out the plotting orientation
-            orient = infer_orient(
-                x, y, orient, require_numeric=self.require_numeric
-            )
+            orient = infer_orient(x, y, orient, require_numeric=self.require_numeric)
 
             # Option 2a:
             # We are plotting a single set of data
@@ -717,7 +715,7 @@ class _CategoricalPlotter:
             else:
 
                 # Determine which role each variable will play
-                if orient == "v":
+                if orient == "x":
                     vals, groups = y, x
                 else:
                     vals, groups = x, y
@@ -875,7 +873,7 @@ class _CategoricalPlotter:
 
     def annotate_axes(self, ax):
         """Add descriptive labels to an Axes object."""
-        if self.orient == "v":
+        if self.orient == "x":
             xlabel, ylabel = self.group_label, self.value_label
         else:
             xlabel, ylabel = self.value_label, self.group_label
@@ -889,14 +887,14 @@ class _CategoricalPlotter:
         if not group_names:
             group_names = ["" for _ in range(len(self.plot_data))]
 
-        if self.orient == "v":
+        if self.orient == "x":
             ax.set_xticks(np.arange(len(self.plot_data)))
             ax.set_xticklabels(group_names)
         else:
             ax.set_yticks(np.arange(len(self.plot_data)))
             ax.set_yticklabels(group_names)
 
-        if self.orient == "v":
+        if self.orient == "x":
             ax.xaxis.grid(False)
             ax.set_xlim(-.5, len(self.plot_data) - .5, auto=None)
         else:
@@ -935,7 +933,7 @@ class _BoxPlotter(_CategoricalPlotter):
 
     def draw_boxplot(self, ax, kws):
         """Use matplotlib to draw a boxplot on an Axes."""
-        vert = self.orient == "v"
+        vert = self.orient == "x"
 
         props = {}
         for obj in ["box", "whisker", "cap", "median", "flier"]:
@@ -1027,7 +1025,7 @@ class _BoxPlotter(_CategoricalPlotter):
         """Make the plot."""
         self.draw_boxplot(ax, boxplot_kws)
         self.annotate_axes(ax)
-        if self.orient == "h":
+        if self.orient == "y":
             ax.invert_yaxis()
 
 
@@ -1277,7 +1275,7 @@ class _ViolinPlotter(_CategoricalPlotter):
 
     def draw_violins(self, ax):
         """Draw the violins onto `ax`."""
-        fill_func = ax.fill_betweenx if self.orient == "v" else ax.fill_between
+        fill_func = ax.fill_betweenx if self.orient == "x" else ax.fill_between
         for i, group_data in enumerate(self.plot_data):
 
             kws = dict(edgecolor=self.gray, linewidth=self.linewidth)
@@ -1453,7 +1451,7 @@ class _ViolinPlotter(_CategoricalPlotter):
     def draw_single_observation(self, ax, at_group, at_quant, density):
         """Draw a line to mark a single observation."""
         d_width = density * self.dwidth
-        if self.orient == "v":
+        if self.orient == "x":
             ax.plot([at_group - d_width, at_group + d_width],
                     [at_quant, at_quant],
                     color=self.gray,
@@ -1473,7 +1471,7 @@ class _ViolinPlotter(_CategoricalPlotter):
         h2 = np.max(data[data <= (q75 + whisker_lim)])
 
         # Draw a boxplot using lines and a point
-        if self.orient == "v":
+        if self.orient == "x":
             ax.plot([center, center], [h1, h2],
                     linewidth=self.linewidth,
                     color=self.gray)
@@ -1520,7 +1518,7 @@ class _ViolinPlotter(_CategoricalPlotter):
 
         grid = np.ones(len(data)) * center
 
-        if self.orient == "v":
+        if self.orient == "x":
             ax.scatter(grid, data, **kws)
         else:
             ax.scatter(data, grid, **kws)
@@ -1539,7 +1537,7 @@ class _ViolinPlotter(_CategoricalPlotter):
 
         kws["color"] = self.gray
 
-        if self.orient == "v":
+        if self.orient == "x":
             if split == "left":
                 ax.plot([center - width, center], [val, val], **kws)
             elif split == "right":
@@ -1558,7 +1556,7 @@ class _ViolinPlotter(_CategoricalPlotter):
         """Make the violin plot."""
         self.draw_violins(ax)
         self.annotate_axes(ax)
-        if self.orient == "h":
+        if self.orient == "y":
             ax.invert_yaxis()
 
 
@@ -1584,8 +1582,7 @@ class _CategoricalStatPlotter(_CategoricalPlotter):
             statistic = [[] for _ in self.plot_data]
             confint = [[] for _ in self.plot_data]
 
-        var = {"v": "y", "h": "x"}[self.orient]
-
+        var = self.orient
         agg = EstimateAggregator(estimator, errorbar, n_boot=n_boot, seed=seed)
 
         for i, group_data in enumerate(self.plot_data):
@@ -1642,7 +1639,7 @@ class _CategoricalStatPlotter(_CategoricalPlotter):
         for at, (ci_low, ci_high), color in zip(at_group,
                                                 confint,
                                                 colors):
-            if self.orient == "v":
+            if self.orient == "x":
                 ax.plot([at, at], [ci_low, ci_high], color=color, **kws)
                 if capsize is not None:
                     ax.plot([at - capsize / 2, at + capsize / 2],
@@ -1682,7 +1679,7 @@ class _BarPlotter(_CategoricalStatPlotter):
     def draw_bars(self, ax, kws):
         """Draw the bars onto `ax`."""
         # Get the right matplotlib function depending on the orientation
-        barfunc = ax.bar if self.orient == "v" else ax.barh
+        barfunc = ax.bar if self.orient == "x" else ax.barh
         barpos = np.arange(len(self.statistic))
 
         if self.plot_hues is None:
@@ -1725,7 +1722,7 @@ class _BarPlotter(_CategoricalStatPlotter):
         """Make the plot."""
         self.draw_bars(ax, bar_kws)
         self.annotate_axes(ax)
-        if self.orient == "h":
+        if self.orient == "y":
             ax.invert_yaxis()
 
 
@@ -1799,7 +1796,7 @@ class _PointPlotter(_CategoricalStatPlotter):
             if self.join:
                 color = self.colors[0]
                 ls = self.linestyles[0]
-                if self.orient == "h":
+                if self.orient == "y":
                     ax.plot(self.statistic, pointpos,
                             color=color, ls=ls, lw=lw)
                 else:
@@ -1813,7 +1810,7 @@ class _PointPlotter(_CategoricalStatPlotter):
             # Draw the estimate points
             marker = self.markers[0]
             colors = [mpl.colors.colorConverter.to_rgb(c) for c in self.colors]
-            if self.orient == "h":
+            if self.orient == "y":
                 x, y = self.statistic, pointpos
             else:
                 x, y = pointpos, self.statistic
@@ -1837,7 +1834,7 @@ class _PointPlotter(_CategoricalStatPlotter):
                 if self.join:
                     color = self.colors[j]
                     ls = self.linestyles[j]
-                    if self.orient == "h":
+                    if self.orient == "y":
                         ax.plot(statistic, offpos, color=color,
                                 zorder=z, ls=ls, lw=lw)
                     else:
@@ -1857,7 +1854,7 @@ class _PointPlotter(_CategoricalStatPlotter):
                 marker = self.markers[j]
                 color = mpl.colors.colorConverter.to_rgb(self.colors[j])
 
-                if self.orient == "h":
+                if self.orient == "y":
                     x, y = statistic, offpos
                 else:
                     x, y = offpos, statistic
@@ -1874,7 +1871,7 @@ class _PointPlotter(_CategoricalStatPlotter):
         """Make the plot."""
         self.draw_points(ax)
         self.annotate_axes(ax)
-        if self.orient == "h":
+        if self.orient == "y":
             ax.invert_yaxis()
 
 
@@ -2009,7 +2006,7 @@ class _LVPlotter(_CategoricalPlotter):
         for k, v in flier_default_kws.items():
             flier_kws.setdefault(k, v)
 
-        vert = self.orient == "v"
+        vert = self.orient == "x"
         x = positions[0]
         box_data = np.asarray(box_data)
 
@@ -2178,13 +2175,13 @@ class _LVPlotter(_CategoricalPlotter):
                                  line_kws=line_kws)
 
         # Autoscale the values axis to make sure all patches are visible
-        ax.autoscale_view(scalex=self.orient == "h", scaley=self.orient == "v")
+        ax.autoscale_view(scalex=self.orient == "y", scaley=self.orient == "x")
 
     def plot(self, ax, box_kws, flier_kws, line_kws):
         """Make the plot."""
         self.draw_letter_value_plot(ax, box_kws, flier_kws, line_kws)
         self.annotate_axes(ax)
-        if self.orient == "h":
+        if self.orient == "y":
             ax.invert_yaxis()
 
 
@@ -3122,10 +3119,10 @@ def countplot(
     capsize = None
 
     if x is None and y is not None:
-        orient = "h"
+        orient = "y"
         x = y
     elif y is None and x is not None:
-        orient = "v"
+        orient = "x"
         y = x
     elif x is not None and y is not None:
         raise ValueError("Cannot pass values for both `x` and `y`")
@@ -3354,9 +3351,9 @@ def catplot(
     # correctly in the case of a count plot
     if kind == "count":
         if x is None and y is not None:
-            x_, y_, orient = y, y, "h"
+            x_, y_, orient = y, y, "y"
         elif y is None and x is not None:
-            x_, y_, orient = x, x, "v"
+            x_, y_, orient = x, x, "x"
         else:
             raise ValueError("Either `x` or `y` must be None for kind='count'")
     else:
@@ -3377,8 +3374,8 @@ def catplot(
     p.establish_variables(x_, y_, hue, data, orient, order, hue_order)
     if (
         order is not None
-        or (sharex and p.orient == "v")
-        or (sharey and p.orient == "h")
+        or (sharex and p.orient == "x")
+        or (sharey and p.orient == "y")
     ):
         # Sync categorical axis between facets to have the same categories
         order = p.group_names
@@ -3387,9 +3384,9 @@ def catplot(
             "Setting `{}=False` with `color=None` may cause different levels of the "
             "`{}` variable to share colors. This will change in a future version."
         )
-        if not sharex and p.orient == "v":
+        if not sharex and p.orient == "x":
             warnings.warn(msg.format("sharex", "x"), UserWarning)
-        if not sharey and p.orient == "h":
+        if not sharey and p.orient == "y":
             warnings.warn(msg.format("sharey", "y"), UserWarning)
 
     hue_order = p.hue_names
@@ -3433,7 +3430,7 @@ def catplot(
     # Draw the plot onto the facets
     g.map_dataframe(plot_func, x=x, y=y, hue=hue, **plot_kws)
 
-    if p.orient == "h":
+    if p.orient == "y":
         g.set_axis_labels(p.value_label, p.group_label)
     else:
         g.set_axis_labels(p.group_label, p.value_label)
@@ -3541,7 +3538,7 @@ catplot.__doc__ = dedent("""\
 
 class Beeswarm:
     """Modifies a scatterplot artist to show a beeswarm plot."""
-    def __init__(self, orient="v", width=0.8, warn_thresh=.05):
+    def __init__(self, orient="x", width=0.8, warn_thresh=.05):
 
         # XXX should we keep the orient parameterization or specify the swarm axis?
 
