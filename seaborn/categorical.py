@@ -178,20 +178,16 @@ class _CategoricalPlotterNew(_RelationalPlotter):
         if "hue" not in self.variables and palette is not None:
             msg = "Passing `palette` without assigning `hue` is deprecated."
             warnings.warn(msg, FutureWarning, stacklevel=3)
+
             self.legend = False
             self.plot_data["hue"] = self.plot_data[self.orient]
             self.variables["hue"] = self.variables.get(self.orient)
             self.var_types["hue"] = self.var_types.get(self.orient)
+
             hue_order = self.var_levels.get(self.orient)
+            self._var_levels.pop("hue", None)
+
         return hue_order
-
-    @property
-    def orient(self):
-        return self._orient
-
-    @orient.setter
-    def orient(self, val):
-        self._orient = {"v": "x", "h": "y"}.get(val, val)
 
     def _get_gray(self, colors):
         """Get a grayscale value that looks good with color."""
@@ -387,7 +383,7 @@ class _CategoricalPlotterNew(_RelationalPlotter):
 
                     beeswarm(points, center)
 
-                    if self.orient == "h":
+                    if self.orient == "y":
                         scalex = False
                         scaley = ax.get_autoscaley_on()
                     else:
