@@ -487,7 +487,9 @@ class _CategoricalPlotterNew(_RelationalPlotter):
             )
 
             if "hue" in self.variables:
-                mapped_color = desaturate(self._hue_map(sub_vars["hue"]), saturation)
+                mapped_color = self._hue_map(sub_vars["hue"])
+                if saturation < 1:
+                    mapped_color = desaturate(mapped_color, saturation)
                 plt.setp(container, facecolor=mapped_color)
 
             if aggregator.error_method is not None:
@@ -2908,7 +2910,7 @@ def barplot(
     palette, hue_order = p._hue_backcompat(color, palette, hue_order)
 
     color = _default_color(ax.bar, hue, color, kwargs)
-    if color is not None:
+    if color is not None and saturation < 1:
         color = desaturate(color, saturation)
 
     aggregator = EstimateAggregator(estimator, errorbar, n_boot=n_boot, seed=seed)

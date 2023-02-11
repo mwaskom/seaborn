@@ -1616,25 +1616,56 @@ class SharedAxesLevelTests:
     def common_kws(self):
         return {}
 
+    @pytest.mark.parametrize("orient", ["x", "y"])
+    def test_labels_long(self, long_df, orient):
+
+        depend = {"x": "y", "y": "x"}[orient]
+        kws = {orient: "a", depend: "y", "hue": "b"}
+
+        ax = self.func(long_df, **kws)
+        assert getattr(ax, f"get_{orient}label")() == kws[orient]
+        assert getattr(ax, f"get_{depend}label")() == kws[depend]
+
+        get_ori_labels = getattr(ax, f"get_{orient}ticklabels")
+        ori_labels = [t.get_text() for t in get_ori_labels()]
+        ori_levels = categorical_order(long_df[kws[orient]])
+        assert ori_labels == ori_levels
+
+        legend = ax.get_legend()
+        assert legend.get_title().get_text() == kws["hue"]
+
+        hue_labels = [t.get_text() for t in legend.texts]
+        hue_levels = categorical_order(long_df[kws["hue"]])
+        assert hue_labels == hue_levels
+
+    def test_labels_wide(self, wide_df):
+
+        wide_df = wide_df.rename_axis("cols", axis=1)
+        ax = self.func(wide_df)
+        assert ax.get_xlabel() == wide_df.columns.name
+        labels = [t.get_text() for t in ax.get_xticklabels()]
+        for label, level in zip(labels, wide_df.columns):
+            assert label == level
+
     def test_color(self, long_df, common_kws):
         common_kws.update(data=long_df, x="a", y="y")
 
         ax = plt.figure().subplots()
         self.func(ax=ax, **common_kws)
-        assert self.get_last_color(ax) == pytest.approx(to_rgba("C0"))
+        assert self.get_last_color(ax) == to_rgba("C0")
 
         ax = plt.figure().subplots()
         self.func(ax=ax, **common_kws)
         self.func(ax=ax, **common_kws)
-        assert self.get_last_color(ax) == pytest.approx(to_rgba("C1"))
+        assert self.get_last_color(ax) == to_rgba("C1")
 
         ax = plt.figure().subplots()
         self.func(color="C2", ax=ax, **common_kws)
-        assert self.get_last_color(ax) == pytest.approx(to_rgba("C2"))
+        assert self.get_last_color(ax) == to_rgba("C2")
 
         ax = plt.figure().subplots()
         self.func(color="C3", ax=ax, **common_kws)
-        assert self.get_last_color(ax) == pytest.approx(to_rgba("C3"))
+        assert self.get_last_color(ax) == to_rgba("C3")
 
     def test_two_calls(self):
 
@@ -1656,9 +1687,9 @@ class SharedScatterTests(SharedAxesLevelTests):
 
     # ------------------------------------------------------------------------------
 
-    def test_color(self, long_df):
+    def test_color(self, long_df, common_kws):
 
-        super().test_color(long_df)
+        super().test_color(long_df, common_kws)
 
         ax = plt.figure().subplots()
         self.func(data=long_df, x="a", y="y", facecolor="C4", ax=ax)
@@ -2037,7 +2068,7 @@ class SharedScatterTests(SharedAxesLevelTests):
 
         ax = self.func(data=long_df, x="y", y="a", hue="z")
         vals = [float(t.get_text()) for t in ax.legend_.texts]
-        assert (vals[1] - vals[0]) == pytest.approx(vals[2] - vals[1])
+        assert (vals[1] - vals[0]) == approx(vals[2] - vals[1])
 
     def test_legend_disabled(self, long_df):
 
@@ -2086,7 +2117,7 @@ class SharedScatterTests(SharedAxesLevelTests):
         self.func(x=x, y=y, native_scale=True)
         for i, point in enumerate(ax.collections):
             val = point.get_offsets()[0, 0]
-            assert val == pytest.approx(x[i])
+            assert val == approx(x[i])
 
         x = y = np.ones(100)
 
@@ -2198,7 +2229,22 @@ class TestSwarmPlot(SharedScatterTests):
     func = staticmethod(partial(swarmplot, warn_thresh=1))
 
 
-class TestBarPlot(SharedAxesLevelTests):
+class SharedAggTests(SharedAxesLevelTests):
+
+    def test_labels_thin(self):
+
+        ind = pd.Index(["a", "b", "c"], name="x")
+        ser = pd.Series([1, 2, 3], ind, name="y")
+
+        ax = self.func(ser)
+        assert ax.get_xlabel() == ind.name
+        assert ax.get_ylabel() == ser.name
+        labels = [t.get_text() for t in ax.get_xticklabels()]
+        for label, level in zip(labels, ind):
+            assert label == level
+
+
+class TestBarPlot(SharedAggTests):
 
     func = staticmethod(barplot)
 
@@ -2212,6 +2258,193 @@ class TestBarPlot(SharedAxesLevelTests):
         unique_colors = np.unique(colors, axis=0)
         assert len(unique_colors) == 1
         return to_rgba(unique_colors.squeeze())
+
+    @pytest.mark.parametrize("orient", ["x", "y"])
+    def test_single_var(self, orient):
+
+        vals = pd.Series([1, 3, 10])
+        ax = barplot(**{orient: vals})
+        bar, = ax.patches
+        prop = {"x": "width", "y": "height"}[orient]
+        assert getattr(bar, f"get_{prop}")() == approx(vals.mean())
+
+    @pytest.mark.parametrize("orient", ["x", "y", "h", "v"])
+    def test_wide_df(self, wide_df, orient):
+
+        ax = barplot(wide_df, orient=orient)
+        orient = {"h": "y", "v": "x"}.get(orient, orient)
+        prop = {"x": "height", "y": "width"}[orient]
+        for i, bar in enumerate(ax.patches):
+            assert getattr(bar, f"get_{prop}")() == approx(wide_df.iloc[:, i].mean())
+
+    @pytest.mark.parametrize("orient", ["x", "y", "h", "v"])
+    def test_orient(self, orient):
+
+        keys, vals = ["a", "b", "c"], [1, 2, 3]
+        data = dict(zip(keys, vals))
+        orient = {"h": "y", "v": "x"}.get(orient, orient)
+        prop = {"x": "height", "y": "width"}[orient]
+        ax = barplot(data, orient=orient)
+        for i, bar in enumerate(ax.patches):
+            assert getattr(bar, f"get_{orient}")() == approx(i - 0.4)
+            assert getattr(bar, f"get_{prop}")() == approx(vals[i])
+
+    def test_xy_vertical(self):
+
+        x = ["a", "b", "c"]
+        y = [1, 3, 2.5]
+
+        ax = barplot(x=x, y=y)
+        for i, bar in enumerate(ax.bares):
+            assert bar.get_x() + bar.get_width() / 2 == i
+            assert bar.get_y() == 0
+            assert bar.get_height() == y[i]
+            assert bar.get_width() == 0.8
+
+    def test_xy_horizontal(self):
+
+        x = [1, 3, 2.5]
+        y = ["a", "b", "c"]
+
+        ax = barplot(x=x, y=y)
+        for i, bar in enumerate(ax.bares):
+            assert bar.get_x() == 0
+            assert bar.get_y() + bar.get_height() / 2 == i
+            assert bar.get_height() == 0.8
+            assert bar.get_width() == x[i]
+
+    def test_hue_redundant(self):
+
+        x = ["a", "b", "c"]
+        y = [1, 2, 3]
+        hue = ["a", "b", "c"]
+
+        ax = barplot(x=x, y=y, hue=hue, saturation=1)
+        for i, bar in enumerate(ax.bares):
+            assert bar.get_x() + bar.get_width() / 2 == approx(i)
+            assert bar.get_y() == 0
+            assert bar.get_height() == y[i]
+            assert bar.get_width() == approx(0.8)
+            assert same_color(bar.get_facecolor(), f"C{i}")
+
+    def test_hue_matched(self):
+
+        x = ["a", "b", "c"]
+        y = [1, 2, 3]
+        hue = ["x", "y", "z"]
+
+        ax = barplot(x=x, y=y, hue=hue, saturation=1)
+        for i, bar in enumerate(ax.bares):
+            assert bar.get_x() + bar.get_width() / 2 == approx(i)
+            assert bar.get_y() == 0
+            assert bar.get_height() == y[i]
+            assert bar.get_width() == approx(0.8)
+            assert same_color(bar.get_facecolor(), f"C{i}")
+
+    def test_hue_dodged(self):
+
+        x = ["a", "b", "a", "b"]
+        y = [1, 2, 3, 4]
+        hue = ["x", "x", "y", "y"]
+
+        ax = barplot(x=x, y=y, hue=hue, saturation=1)
+        for i, bar in enumerate(ax.bares):
+            sign = 1 if i // 2 else -1
+            assert (
+                bar.get_x() + bar.get_width() / 2
+                == approx(i % 2 + sign * 0.8 / 4)
+            )
+            assert bar.get_y() == 0
+            assert bar.get_height() == y[i]
+            assert bar.get_width() == approx(0.8 / 2)
+            assert same_color(bar.get_facecolor(), f"C{i // 2}")
+
+    def test_hue_undodged(self):
+
+        x = ["a", "b", "a", "b"]
+        y = [1, 2, 3, 4]
+        hue = ["x", "x", "y", "y"]
+
+        ax = barplot(x=x, y=y, hue=hue, saturation=1, dodge=False)
+        for i, bar in enumerate(ax.bares):
+            assert bar.get_x() + bar.get_width() / 2 == approx(i % 2)
+            assert bar.get_y() == 0
+            assert bar.get_height() == y[i]
+            assert bar.get_width() == approx(0.8)
+            assert same_color(bar.get_facecolor(), f"C{i // 2}")
+
+    def test_xy_native_scale(self):
+
+        x = [2, 4, 8]
+        y = [1, 2, 3]
+
+        ax = barplot(x=x, y=y, native_scale=True)
+        for i, bar in enumerate(ax.bares):
+            assert bar.get_x() + bar.get_width() / 2 == approx(x[i])
+            assert bar.get_y() == 0
+            assert bar.get_height() == y[i]
+            assert bar.get_width() == approx(0.8 * 2)
+
+    def test_hue_native_scale_dodged(self):
+
+        x = [2, 4, 2, 4]
+        y = [1, 2, 3, 4]
+        hue = ["x", "x", "y", "y"]
+
+        ax = barplot(x=x, y=y, hue=hue, native_scale=True)
+        for i, bar in enumerate(ax.bares):
+            for i, bar in enumerate(ax.bares):
+                sign = 1 if i // 2 else -1
+                assert (
+                    bar.get_x() + bar.get_width() / 2
+                    == approx(x[i % 2] + sign * 0.8 / 4)
+                )
+            assert bar.get_y() == 0
+            assert bar.get_height() == y[i]
+            assert bar.get_width() == approx(0.8 * 2 / 2)
+
+    def test_estimate_default(self, long_df):
+
+        agg_var, val_var = "a", "y"
+        agg_df = long_df.groupby(agg_var)[val_var].mean()
+
+        ax = barplot(long_df, x=agg_var, y=val_var, errorbar=None)
+        order = categorical_order(long_df[agg_var])
+        for i, bar in enumerate(ax.bares):
+            assert bar.get_height() == approx(agg_df[order[i]])
+
+    def test_estimate_string(self, long_df):
+
+        agg_var, val_var = "a", "y"
+        agg_df = long_df.groupby(agg_var)[val_var].median()
+
+        ax = barplot(long_df, x=agg_var, y=val_var, estimator="median", errorbar=None)
+        order = categorical_order(long_df[agg_var])
+        for i, bar in enumerate(ax.bares):
+            assert bar.get_height() == approx(agg_df[order[i]])
+
+    def test_estimate_func(self, long_df):
+
+        agg_var, val_var = "a", "y"
+        agg_df = long_df.groupby(agg_var)[val_var].median()
+
+        ax = barplot(long_df, x=agg_var, y=val_var, estimator=np.median, errorbar=None)
+        order = categorical_order(long_df[agg_var])
+        for i, bar in enumerate(ax.bares):
+            assert bar.get_height() == approx(agg_df[order[i]])
+
+    def test_errorbar(self, long_df):
+
+        agg_var, val_var = "a", "y"
+        agg_df = long_df.groupby(agg_var)[val_var].agg(["mean", "std"])
+
+        ax = barplot(long_df, x=agg_var, y=val_var, errorbar="sd")
+        order = categorical_order(long_df[agg_var])
+        for i, line in enumerate(ax.lines):
+            row = agg_df.loc[order[i]]
+            lo, hi = line.get_ydata()
+            assert lo == approx(row["mean"] - row["std"])
+            assert hi == approx(row["mean"] + row["std"])
 
 
 class TestBarPlotter(CategoricalFixture):
@@ -2230,17 +2463,17 @@ class TestBarPlotter(CategoricalFixture):
 
         ax = cat.barplot(data=self.df, x="g", y="y", hue="h")
         for bar in ax.patches:
-            assert bar.get_width() == pytest.approx(.8 / 2)
+            assert bar.get_width() == approx(.8 / 2)
         ax.clear()
 
         ax = cat.barplot(data=self.df, x="g", y="y", hue="g", width=.5)
         for bar in ax.patches:
-            assert bar.get_width() == pytest.approx(.5)
+            assert bar.get_width() == approx(.5)
         ax.clear()
 
         ax = cat.barplot(data=self.df, x="g", y="y", hue="g", dodge=False)
         for bar in ax.patches:
-            assert bar.get_width() == pytest.approx(.8)
+            assert bar.get_width() == approx(.8)
         ax.clear()
 
     def test_draw_vertical_bars(self):
