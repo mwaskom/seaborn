@@ -33,9 +33,9 @@ class Agg(Stat):
     """
 
     def __init__(
-        self, 
+        self,
         func: str | Callable[[Vector], float] = "mean",
-        group_by_orient=True,
+        group_by_orient = True,
     ):
         self.func = func
         self.group_by_orient = group_by_orient

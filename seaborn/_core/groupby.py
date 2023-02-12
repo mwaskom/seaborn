@@ -89,7 +89,11 @@ class GroupBy:
 
         if not grouper:
             # We will need to see whether there are valid usecases that end up here
-            raise ValueError("No grouping variables are present in dataframe")
+            # raise ValueError("No grouping variables are present in dataframe")
+            res = data.agg(*args, **kwargs)
+            if isinstance(res, pd.Series):
+                res = res.to_frame().transpose()
+            return res
 
         res = (
             data
@@ -99,7 +103,7 @@ class GroupBy:
             .reset_index()
             .pipe(self._reorder_columns, data)
         )
-
+        
         return res
 
     def apply(
