@@ -1413,8 +1413,8 @@ class VectorPlotter:
         if self.var_types[axis] == "numeric":
             self.plot_data = self.plot_data.sort_values(axis, kind="mergesort")
 
-        # Now get a reference to the categorical data vector
-        cat_data = self.plot_data[axis]
+        # Now get a reference to the categorical data vector and remove na values
+        cat_data = self.plot_data[axis].dropna()
 
         # Get the initial categorical order, which we do before string
         # conversion to respect the original types of the order list.

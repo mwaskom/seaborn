@@ -2327,13 +2327,29 @@ class TestBarPlot(SharedAggTests):
             assert bar.get_height() == 0.8
             assert bar.get_width() == x[i]
 
+    def test_xy_with_na_grouper(self):
+
+        x, y = ["a", None, "b"], [1, 2, 3]
+        ax = barplot(x=x, y=y)
+        assert ax.get_xticks() == [0, 1]
+        assert [t.get_text() for t in ax.get_xticklabels()] == ["a", "b"]
+        assert ax.patches[0].get_height() == 1
+        assert ax.patches[1].get_height() == 3
+
+    def test_xy_with_na_value(self):
+
+        x, y = ["a", "b", "c"], [1, None, 3]
+        ax = barplot(x=x, y=y)
+        assert ax.get_xticks() == [0, 1, 2]
+        assert [t.get_text() for t in ax.get_xticklabels()] == ["a", "b", "c"]
+        assert ax.patches[0].get_height() == 1
+        assert ax.patches[1].get_height() == 3
+
     def test_hue_redundant(self):
 
-        x = ["a", "b", "c"]
-        y = [1, 2, 3]
-        hue = ["a", "b", "c"]
+        x, y = ["a", "b", "c"], [1, 2, 3]
 
-        ax = barplot(x=x, y=y, hue=hue, saturation=1)
+        ax = barplot(x=x, y=y, hue=x, saturation=1)
         for i, bar in enumerate(ax.patches):
             assert bar.get_x() + bar.get_width() / 2 == approx(i)
             assert bar.get_y() == 0
@@ -2544,7 +2560,7 @@ class TestBarPlot(SharedAggTests):
     def test_error_caps(self):
 
         x, y = ["a", "b", "c"], [1, 2, 3]
-        ax = barplot(x=x, y=y, capsize=.4)
+        ax = barplot(x=x, y=y, capsize=.8)
 
         assert len(ax.patches) == len(ax.lines)
         for bar, error in zip(ax.patches, ax.lines):
@@ -2556,7 +2572,7 @@ class TestBarPlot(SharedAggTests):
     def test_error_caps_native_scale(self):
 
         x, y = [2, 4, 10], [1, 2, 3]
-        ax = barplot(x=x, y=y, capsize=.4, native_scale=True)
+        ax = barplot(x=x, y=y, capsize=.8, native_scale=True)
 
         assert len(ax.patches) == len(ax.lines)
         for bar, error in zip(ax.patches, ax.lines):

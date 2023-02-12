@@ -51,7 +51,7 @@ class _CategoricalPlotterNew(_RelationalPlotter):
 
     semantics = "x", "y", "hue", "units"
 
-    wide_structure = {"x": "@columns", "y": "@values", "hue": "@columns"}
+    wide_structure = {"x": "@columns", "y": "@values"}
     flat_structure = {"y": "@values"}
 
     _legend_func = "scatter"
@@ -512,7 +512,10 @@ class _CategoricalPlotterNew(_RelationalPlotter):
             if handles:
                 ax.legend(title=self.legend_title)
 
-    def plot_errorbars(self, ax, data, color, width, capsize):
+    def plot_errorbars(self, ax, data, color, linewidth, capsize):
+
+        if linewidth is None:
+            linewidth = 1.5 * mpl.rcParams["lines.linewidth"]
 
         var = {"x": "y", "y": "x"}[self.orient]
         for row in data.to_dict("records"):
@@ -521,7 +524,7 @@ class _CategoricalPlotterNew(_RelationalPlotter):
             pos = np.array([row[self.orient], row[self.orient]])
             val = np.array([row[f"{var}min"], row[f"{var}max"]])
 
-            cw = capsize * self._native_width
+            cw = capsize * self._native_width / 2
             if self._log_scaled:
                 ...  # TODO
 
@@ -538,7 +541,7 @@ class _CategoricalPlotterNew(_RelationalPlotter):
                 args = pos, val
             else:
                 args = val, pos
-            ax.plot(*args, color=color, linewidth=width)
+            ax.plot(*args, color=color, linewidth=linewidth)
 
 
 class _CategoricalAggPlotter(_CategoricalPlotterNew):
@@ -2934,7 +2937,7 @@ def barplot(
 
     aggregator = EstimateAggregator(estimator, errorbar, n_boot=n_boot, seed=seed)
 
-    error_kws = dict(color=errcolor, width=errwidth, capsize=capsize or 0)
+    error_kws = dict(color=errcolor, linewidth=errwidth, capsize=capsize or 0)
 
     p.plot_bars(
         aggregator=aggregator,
@@ -3338,7 +3341,7 @@ def catplot(
 
             error_kws = dict(
                 color=kwargs.pop("errcolor", ".26"),
-                width=kwargs.pop("errwidth", None),
+                linewidth=kwargs.pop("errwidth", None),
                 capsize=kwargs.pop("capsize", 0),
             )
 
