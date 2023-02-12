@@ -167,7 +167,7 @@ class _CategoricalPlotterNew(_RelationalPlotter):
                 "Setting a gradient palette using color= is deprecated and will be "
                 f"removed in version 0.14. Set `palette='{palette}'` for same effect."
             )
-            warnings.warn(msg, FutureWarning, stackorder=3)
+            warnings.warn(msg, FutureWarning, stacklevel=3)
 
         return palette, hue_order
 
