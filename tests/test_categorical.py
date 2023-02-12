@@ -2435,8 +2435,7 @@ class TestBarPlot(SharedAggTests):
 
     def test_xy_native_scale(self):
 
-        x = [2, 4, 8]
-        y = [1, 2, 3]
+        x, y = [2, 4, 8], [1, 2, 3]
 
         ax = barplot(x=x, y=y, native_scale=True)
         for i, bar in enumerate(ax.patches):
@@ -2444,6 +2443,21 @@ class TestBarPlot(SharedAggTests):
             assert bar.get_y() == 0
             assert bar.get_height() == y[i]
             assert bar.get_width() == approx(0.8 * 2)
+
+    def test_xy_native_scale_log_transform(self):
+
+        x, y = [1, 10, 100], [1, 2, 3]
+
+        ax = mpl.figure.Figure().subplots()
+        ax.set_xscale("log")
+        barplot(x=x, y=y, native_scale=True, ax=ax)
+        for i, bar in enumerate(ax.patches):
+            x0, x1 = np.log10([bar.get_x(), bar.get_x() + bar.get_width()])
+            center = 10 ** (x0 + (x1 - x0) / 2)
+            assert center == approx(x[i])
+            assert bar.get_y() == 0
+            assert bar.get_height() == y[i]
+        assert ax.patches[1].get_width() > ax.patches[0].get_width()
 
     def test_dateimte_native_scale_axis(self):
 
@@ -2454,23 +2468,30 @@ class TestBarPlot(SharedAggTests):
         day = "2003-02-28"
         assert_array_equal(ax.xaxis.convert_units([day]), mpl.dates.date2num([day]))
 
-    def test_hue_native_scale_dodged(self):
+    def test_native_scale_dodged(self):
 
-        x = [2, 4, 2, 4]
-        y = [1, 2, 3, 4]
+        x, y = [2, 4, 2, 4], [1, 2, 3, 4]
         hue = ["x", "x", "y", "y"]
 
         ax = barplot(x=x, y=y, hue=hue, native_scale=True)
-        for i, bar in enumerate(ax.patches):
-            for i, bar in enumerate(ax.patches):
-                sign = 1 if i // 2 else -1
-                assert (
-                    bar.get_x() + bar.get_width() / 2
-                    == approx(x[i % 2] + sign * 0.8 / 4)
-                )
-            assert bar.get_y() == 0
-            assert bar.get_height() == y[i]
-            assert bar.get_width() == approx(0.8 * 2 / 2)
+        for i, bar in enumerate(ax.patches[::2]):
+            assert bar.get_x() + bar.get_width() == approx(i)
+        for i, bar in enumerate(ax.patches[1::2]):
+            assert bar.get_x() == approx(i)
+
+    def test_native_scale_log_transform_dodged(self):
+
+        x, y = [1, 100, 1, 100], [1, 2, 3, 4]
+        hue = ["x", "x", "y", "y"]
+
+        ax = mpl.figure.Figure().subplots()
+        ax.set_xscale("log")
+        barplot(x=x, y=y, hue=hue, native_scale=True, ax=ax)
+
+        for i, bar in enumerate(ax.patches[::2]):
+            assert bar.get_x() + bar.get_width() == approx(i)
+        for i, bar in enumerate(ax.patches[1::2]):
+            assert bar.get_x() == approx(i)
 
     def test_estimate_default(self, long_df):
 
