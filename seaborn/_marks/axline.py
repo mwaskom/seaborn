@@ -45,9 +45,6 @@ class AxlineBase(so.Path):
 
             artist_kws = self.artist_kws.copy()
             xy1, xy2 = self._get_passthrough_points(vals)
-            if orient == "y":
-                xy1 = [xy[::-1] for xy in xy1]
-                xy2 = [xy[::-1] for xy in xy2]
 
             for point1, point2 in zip(xy1, xy2):
                 ax.axline(
