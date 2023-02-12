@@ -2197,23 +2197,23 @@ _categorical_docs = dict(
     .. note::
         By default, this function treats one of the variables as categorical
         and draws data at ordinal positions (0, 1, ... n) on the relevant axis.
-        This can be disabled with the `native_scale` parameter.
+        As of v0.13, this can be disabled by setting `native_scale=True`.
 
-        See the :ref:`tutorial <categorical_tutorial>` for more information.\
+    See the :ref:`tutorial <categorical_tutorial>` for more information.\
     """),
 
     # Shared function parameters
     input_params=dedent("""\
-    x, y, hue : names of variables in ``data`` or vector data, optional
+    x, y, hue : names of variables in `data` or vector data
         Inputs for plotting long-form data. See examples for interpretation.\
     """),
     string_input_params=dedent("""\
-    x, y, hue : names of variables in ``data``
+    x, y, hue : names of variables in `data`
         Inputs for plotting long-form data. See examples for interpretation.\
     """),
     categorical_data=dedent("""\
-    data : DataFrame, array, or list of arrays, optional
-        Dataset for plotting. If ``x`` and ``y`` are absent, this is
+    data : DataFrame, Series, dict, array, or list of arrays
+        Dataset for plotting. If `x` and `y` are absent, this is
         interpreted as wide-form. Otherwise it is expected to be long-form.\
     """),
     long_form_data=dedent("""\
@@ -2222,40 +2222,41 @@ _categorical_docs = dict(
         to a variable, and each row should correspond to an observation.\
     """),
     order_vars=dedent("""\
-    order, hue_order : lists of strings, optional
+    order, hue_order : lists of strings
         Order to plot the categorical levels in; otherwise the levels are
         inferred from the data objects.\
     """),
     stat_api_params=dedent("""\
-    estimator : string or callable that maps vector -> scalar, optional
+    estimator : string or callable that maps vector -> scalar
         Statistical function to estimate within each categorical bin.
     errorbar : string, (string, number) tuple, callable or None
         Name of errorbar method (either "ci", "pi", "se", or "sd"), or a tuple
         with a method name and a level parameter, or a function that maps from a
         vector to a (min, max) interval, or None to hide errorbar.
-    n_boot : int, optional
+    n_boot : int
         Number of bootstrap samples used to compute confidence intervals.
-    units : name of variable in ``data`` or vector data, optional
+    units : name of variable in `data` or vector data
         Identifier of sampling units, which will be used to perform a
         multilevel bootstrap and account for repeated measures design.
-    seed : int, numpy.random.Generator, or numpy.random.RandomState, optional
+    seed : int, `numpy.random.Generator`, or `numpy.random.RandomState`
         Seed or random number generator for reproducible bootstrapping.\
     """),
     orient=dedent("""\
-    orient : "v" | "h", optional
+    orient : "v" | "h" | "x" | "y"
         Orientation of the plot (vertical or horizontal). This is usually
         inferred based on the type of the input variables, but it can be used
         to resolve ambiguity when both `x` and `y` are numeric or when
         plotting wide-form data.\
     """),
     color=dedent("""\
-    color : matplotlib color, optional
+    color : matplotlib color
         Single color for the elements in the plot.\
     """),
     palette=dedent("""\
-    palette : palette name, list, or dict, optional
+    palette : palette name, list, dict, or :class:`matplotlib.colors.Colormap`
         Color palette that maps the hue variable. If the palette is a dictionary,
-        keys should be names of levels and values should be matplotlib colors.\
+        keys should be names of levels and values should be matplotlib colors.
+        The type/value will sometimes force a qualitative/quantitative mapping.\
     """),
     hue_norm=dedent("""\
     hue_norm : tuple or :class:`matplotlib.colors.Normalize` object
@@ -2263,40 +2264,44 @@ _categorical_docs = dict(
         variable when it is numeric. Not relevant if `hue` is categorical.\
     """),
     saturation=dedent("""\
-    saturation : float, optional
+    saturation : float
         Proportion of the original saturation to draw colors at. Large patches
         often look better with slightly desaturated colors, but set this to
         `1` if you want the plot colors to perfectly match the input color.\
     """),
     capsize=dedent("""\
-    capsize : float, optional
-        Width of the "caps" on error bars.\
+    capsize : float
+        Width of the "caps" on error bars, relative to bar spacing.\
+    """),
+    errcolor=dedent("""\
+    errcolor : matplotlib color
+        Color used for the error bar lines.\
     """),
     errwidth=dedent("""\
-    errwidth : float, optional
-        Thickness of error bar lines (and caps).\
+    errwidth : float
+        Thickness of error bar lines (and caps), in points.\
     """),
     width=dedent("""\
-    width : float, optional
+    width : float
         Width of a full element when not using hue nesting, or width of all the
         elements for one level of the major grouping variable.\
     """),
     dodge=dedent("""\
-    dodge : bool, optional
+    dodge : bool
         When hue nesting is used, whether elements should be shifted along the
         categorical axis.\
     """),
     linewidth=dedent("""\
-    linewidth : float, optional
+    linewidth : float
         Width of the gray lines that frame the plot elements.\
     """),
     native_scale=dedent("""\
-    native_scale : bool, optional
+    native_scale : bool
         When True, numeric or datetime values on the categorical axis will maintain
         their original scaling rather than being converted to fixed indices.\
     """),
     formatter=dedent("""\
-    formatter : callable, optional
+    formatter : callable
         Function for converting categorical data into strings. Affects both grouping
         and tick labels.\
     """),
@@ -2309,7 +2314,7 @@ legend : "auto", "brief", "full", or False
     If `False`, no legend data is added and no legend is drawn.
     """),
     ax_in=dedent("""\
-    ax : matplotlib Axes, optional
+    ax : matplotlib Axes
         Axes object to draw the plot onto, otherwise uses the current Axes.\
     """),
     ax_out=dedent("""\
@@ -2396,10 +2401,10 @@ boxplot.__doc__ = dedent("""\
     {saturation}
     {width}
     {dodge}
-    fliersize : float, optional
+    fliersize : float
         Size of the markers used to indicate outlier observations.
     {linewidth}
-    whis : float, optional
+    whis : float
         Maximum length of the plot whiskers as proportion of the
         interquartile range. Whiskers extend to the furthest datapoint
         within that range. More extreme points are marked as outliers.
@@ -2469,36 +2474,36 @@ violinplot.__doc__ = dedent("""\
     {categorical_data}
     {input_params}
     {order_vars}
-    bw : {{'scott', 'silverman', float}}, optional
+    bw : {{'scott', 'silverman', float}}
         Either the name of a reference rule or the scale factor to use when
         computing the kernel bandwidth. The actual kernel size will be
         determined by multiplying the scale factor by the standard deviation of
         the data within each bin.
-    cut : float, optional
+    cut : float
         Distance, in units of bandwidth size, to extend the density past the
         extreme datapoints. Set to 0 to limit the violin range within the range
         of the observed data (i.e., to have the same effect as ``trim=True`` in
         ``ggplot``.
-    scale : {{"area", "count", "width"}}, optional
+    scale : {{"area", "count", "width"}}
         The method used to scale the width of each violin. If ``area``, each
         violin will have the same area. If ``count``, the width of the violins
         will be scaled by the number of observations in that bin. If ``width``,
         each violin will have the same width.
-    scale_hue : bool, optional
+    scale_hue : bool
         When nesting violins using a ``hue`` variable, this parameter
         determines whether the scaling is computed within each level of the
         major grouping variable (``scale_hue=True``) or across all the violins
         on the plot (``scale_hue=False``).
-    gridsize : int, optional
+    gridsize : int
         Number of points in the discrete grid used to compute the kernel
         density estimate.
     {width}
-    inner : {{"box", "quartile", "point", "stick", None}}, optional
+    inner : {{"box", "quartile", "point", "stick", None}}
         Representation of the datapoints in the violin interior. If ``box``,
         draw a miniature boxplot. If ``quartiles``, draw the quartiles of the
         distribution.  If ``point`` or ``stick``, show each underlying
         datapoint. Using ``None`` will draw unadorned violins.
-    split : bool, optional
+    split : bool
         When using hue nesting with a variable that takes two levels, setting
         ``split`` to True will draw half of a violin for each level. This can
         make it easier to directly compare the distributions.
@@ -2581,29 +2586,29 @@ boxenplot.__doc__ = dedent("""\
         statistical properties. If "proportion", draw no more than
         `outlier_prop` extreme observations. If "full", draw `log(n)+1` boxes.
     {linewidth}
-    scale : {{"exponential", "linear", "area"}}, optional
+    scale : {{"exponential", "linear", "area"}}
         Method to use for the width of the letter value boxes. All give similar
         results visually. "linear" reduces the width by a constant linear
         factor, "exponential" uses the proportion of data not covered, "area"
         is proportional to the percentage of data covered.
-    outlier_prop : float, optional
+    outlier_prop : float
         Proportion of data believed to be outliers. Must be in the range
         (0, 1]. Used to determine the number of boxes to plot when
         `k_depth="proportion"`.
-    trust_alpha : float, optional
+    trust_alpha : float
         Confidence level for a box to be plotted. Used to determine the
         number of boxes to plot when `k_depth="trustworthy"`. Must be in the
         range (0, 1).
-    showfliers : bool, optional
+    showfliers : bool
         If False, suppress the plotting of outliers.
     {ax_in}
-    box_kws: dict, optional
+    box_kws: dict
         Keyword arguments for the box artists; passed to
         :class:`matplotlib.patches.Rectangle`.
-    line_kws: dict, optional
+    line_kws: dict
         Keyword arguments for the line denoting the median; passed to
         :meth:`matplotlib.axes.Axes.plot`.
-    flier_kws: dict, optional
+    flier_kws: dict
         Keyword arguments for the scatter denoting the outlier observations;
         passed to :meth:`matplotlib.axes.Axes.scatter`.
 
@@ -2698,16 +2703,16 @@ stripplot.__doc__ = dedent("""\
 
     Parameters
     ----------
-    {input_params}
     {categorical_data}
+    {input_params}
     {order_vars}
-    jitter : float, ``True``/``1`` is special-cased, optional
+    jitter : float, ``True``/``1`` is special-cased
         Amount of jitter (only along the categorical axis) to apply. This
         can be useful when you have many points and they overlap, so that
         it is easier to see the distribution. You can specify the amount
         of jitter (half the width of the uniform random variable support),
         or just use ``True`` for a good default.
-    dodge : bool, optional
+    dodge : bool
         When using ``hue`` nesting, setting this to ``True`` will separate
         the strips for different hue levels along the categorical axis.
         Otherwise, the points for each level will be plotted on top of
@@ -2715,14 +2720,15 @@ stripplot.__doc__ = dedent("""\
     {orient}
     {color}
     {palette}
-    size : float, optional
+    size : float
         Radius of the markers, in points.
-    edgecolor : matplotlib color, "gray" is special-cased, optional
+    edgecolor : matplotlib color, "gray" is special-cased
         Color of the lines around each point. If you pass ``"gray"``, the
         brightness is determined by the color palette used for the body
         of the points. Note that `stripplot` has `linewidth=0` by default,
         so edge colors are only visible with nonzero line width.
     {linewidth}
+    {hue_norm}
     {native_scale}
     {formatter}
     {legend}
@@ -2834,16 +2840,16 @@ swarmplot.__doc__ = dedent("""\
     {categorical_data}
     {input_params}
     {order_vars}
-    dodge : bool, optional
+    dodge : bool
         When using ``hue`` nesting, setting this to ``True`` will separate
         the strips for different hue levels along the categorical axis.
         Otherwise, the points for each level will be plotted in one swarm.
     {orient}
     {color}
     {palette}
-    size : float, optional
+    size : float
         Radius of the markers, in points.
-    edgecolor : matplotlib color, "gray" is special-cased, optional
+    edgecolor : matplotlib color, "gray" is special-cased
         Color of the lines around each point. If you pass ``"gray"``, the
         brightness is determined by the color palette used for the body
         of the points.
@@ -2878,7 +2884,7 @@ swarmplot.__doc__ = dedent("""\
 def barplot(
     data=None, *, x=None, y=None, hue=None, order=None, hue_order=None,
     estimator="mean", errorbar=("ci", 95), n_boot=1000, units=None, seed=None,
-    orient=None, color=None, palette=None, saturation=.75, width=.8,
+    orient=None, color=None, palette=None, saturation=.75, hue_norm=None, width=.8,
     errcolor=".26", errwidth=None, capsize=None,
     dodge="auto", native_scale=False, formatter=None, legend="auto",
     ci="deprecated",
@@ -2920,7 +2926,6 @@ def barplot(
     hue_order = p._palette_without_hue_backcompat(palette, hue_order)
     palette, hue_order = p._hue_backcompat(color, palette, hue_order)
 
-    hue_norm = None  # TODO XXX
     p.map_hue(palette=palette, order=hue_order, norm=hue_norm)
 
     color = _default_color(ax.bar, hue, color, kwargs)
@@ -2950,24 +2955,13 @@ def barplot(
 barplot.__doc__ = dedent("""\
     Show point estimates and errors as rectangular bars.
 
-    A bar plot represents an estimate of central tendency for a numeric
-    variable with the height of each rectangle and provides some indication of
-    the uncertainty around that estimate using error bars. Bar plots include 0
-    in the quantitative axis range, and they are a good choice when 0 is a
-    meaningful value for the quantitative variable, and you want to make
-    comparisons against it.
+    A bar plot represents an aggregate or statistical estimate for a numeric
+    variable with the height of each rectangle and indicates the uncertainty
+    around that estimate using an error bar. Bar plots include 0 in the
+    axis range, and they are a good choice when 0 is a meaningful value
+    for the variable to take.
 
-    For datasets where 0 is not a meaningful value, a point plot will allow you
-    to focus on differences between levels of one or more categorical
-    variables.
-
-    It is also important to keep in mind that a bar plot shows only the mean
-    (or other estimator) value, but in many cases it may be more informative to
-    show the distribution of values at each level of the categorical variables.
-    In that case, other approaches such as a box or violin plot may be more
-    appropriate.
-
-    {categorical_narrative}
+    {new_categorical_narrative}
 
     Parameters
     ----------
@@ -2979,12 +2973,15 @@ barplot.__doc__ = dedent("""\
     {color}
     {palette}
     {saturation}
+    {hue_norm}
     {width}
-    errcolor : matplotlib color
-        Color used for the error bar lines.
+    {errcolor}
     {errwidth}
     {capsize}
     {dodge}
+    {native_scale}
+    {formatter}
+    {legend}
     {ax_in}
     kwargs : key, value mappings
         Other keyword arguments are passed through to
@@ -3000,9 +2997,21 @@ barplot.__doc__ = dedent("""\
     {pointplot}
     {catplot}
 
+    Notes
+    -----
+
+    For datasets where 0 is not a meaningful value, a :func:`pointplot` will
+    allow you to focus on differences between levels of one or more categorical
+    variables.
+
+    It is also important to keep in mind that a bar plot shows only the mean (or
+    other aggregate) value, but it is often more informative to show the
+    distribution of values at each level of the categorical variables. In those
+    cases, approaches such as a :func:`boxplot` or :func:`violinplot` may be
+    more appropriate.
+
     Examples
     --------
-
     .. include:: ../docstrings/barplot.rst
 
 
@@ -3061,24 +3070,24 @@ pointplot.__doc__ = dedent("""\
     {input_params}
     {order_vars}
     {stat_api_params}
-    markers : string or list of strings, optional
+    markers : string or list of strings
         Markers to use for each of the ``hue`` levels.
-    linestyles : string or list of strings, optional
+    linestyles : string or list of strings
         Line styles to use for each of the ``hue`` levels.
-    dodge : bool or float, optional
+    dodge : bool or float
         Amount to separate the points for each level of the ``hue`` variable
         along the categorical axis.
-    join : bool, optional
+    join : bool
         If ``True``, lines will be drawn between point estimates at the same
         ``hue`` level.
-    scale : float, optional
+    scale : float
         Scale factor for the plot elements.
     {orient}
     {color}
     {palette}
     {errwidth}
     {capsize}
-    label : string, optional
+    label : string
         Label to represent the plot in a legend, only relevant when not using `hue`.
     {ax_in}
 
@@ -3523,17 +3532,17 @@ catplot.__doc__ = dedent("""\
     ----------
     {long_form_data}
     {string_input_params}
-    row, col : names of variables in `data`, optional
+    row, col : names of variables in `data`
         Categorical variables that will determine the faceting of the grid.
     {col_wrap}
     {stat_api_params}
     {order_vars}
-    row_order, col_order : lists of strings, optional
+    row_order, col_order : lists of strings
         Order to organize the rows and/or columns of the grid in, otherwise the
         orders are inferred from the data objects.
     {height}
     {aspect}
-    kind : str, optional
+    kind : str
         The kind of plot to draw, corresponds to the name of a categorical
         axes-level plotting function. Options are: "strip", "swarm", "box", "violin",
         "boxen", "point", "bar", or "count".
@@ -3543,13 +3552,13 @@ catplot.__doc__ = dedent("""\
     {color}
     {palette}
     {hue_norm}
-    legend : str or bool, optional
+    legend : str or bool
         Set to `False` to disable the legend. With `strip` or `swarm` plots,
         this also accepts a string, as described in the axes-level docstrings.
     {legend_out}
     {share_xy}
     {margin_titles}
-    facet_kws : dict, optional
+    facet_kws : dict
         Dictionary of other keyword arguments to pass to :class:`FacetGrid`.
     kwargs : key, value pairings
         Other keyword arguments are passed through to the underlying plotting

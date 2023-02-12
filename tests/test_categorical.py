@@ -2397,6 +2397,26 @@ class TestBarPlot(SharedAggTests):
             assert bar.get_width() == approx(0.8)
             assert same_color(bar.get_facecolor(), f"C{i // 2}")
 
+    def test_hue_order(self):
+
+        x, y = ["a", "b", "c"], [1, 2, 3]
+        hue_order = ["c", "b", "a"]
+
+        ax = barplot(x=x, y=y, hue=x, hue_order=hue_order, saturation=1)
+        for i, bar in enumerate(ax.patches):
+            assert same_color(bar.get_facecolor(), f"C{i}")
+            assert bar.get_x() + bar.get_width() / 2 == approx(2 - i)
+
+    def test_hue_norm(self):
+
+        x, y = [1, 2, 3, 4], [1, 2, 3, 4]
+
+        ax = barplot(x=x, y=y, hue=x, hue_norm=(2, 3))
+        colors = [bar.get_facecolor() for bar in ax.patches]
+        assert colors[0] == colors[1]
+        assert colors[1] != colors[2]
+        assert colors[2] == colors[3]
+
     def test_xy_native_scale(self):
 
         x = [2, 4, 8]
