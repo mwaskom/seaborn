@@ -165,9 +165,9 @@ class _CategoricalPlotterNew(_RelationalPlotter):
             palette = f"dark:{color}"
             msg = (
                 "Setting a gradient palette using color= is deprecated and will be "
-                f"removed in version 0.13. Set `palette='{palette}'` for same effect."
+                f"removed in version 0.14. Set `palette='{palette}'` for same effect."
             )
-            warnings.warn(msg, FutureWarning)
+            warnings.warn(msg, FutureWarning, stackorder=3)
 
         return palette, hue_order
 
@@ -512,14 +512,7 @@ class _CategoricalPlotterNew(_RelationalPlotter):
             if handles:
                 ax.legend(title=self.legend_title)
 
-    def plot_errorbars(
-        self,
-        ax,
-        data,
-        color,
-        width,
-        capsize,
-    ):
+    def plot_errorbars(self, ax, data, color, width, capsize):
 
         var = {"x": "y", "y": "x"}[self.orient]
         for row in data.to_dict("records"):
@@ -3361,7 +3354,6 @@ def catplot(
                 plot_kws=kwargs,
             )
 
-        # XXX best way to do this housekeeping?
         for ax in g.axes.flat:
             p._adjust_cat_axis(ax, axis=p.orient)
 
@@ -3372,7 +3364,6 @@ def catplot(
         g.set_titles()
         g.tight_layout()
 
-        # XXX Hack to get the legend data in the right place
         for ax in g.axes.flat:
             g._update_legend_data(ax)
             ax.legend_ = None

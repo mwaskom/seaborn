@@ -2466,6 +2466,14 @@ class TestBarPlot(SharedAggTests):
         for i, bar in enumerate(ax.patches):
             assert bar.get_height() == approx(agg_df[order[i]])
 
+    def test_estimate_log_transform(self, long_df):
+
+        ax = mpl.figure.Figure().subplots()
+        ax.set_xscale("log")
+        barplot(x=long_df["z"], ax=ax)
+        bar, = ax.patches
+        assert bar.get_width() == 10 ** np.log10(long_df["z"]).mean()
+
     def test_errorbar(self, long_df):
 
         agg_var, val_var = "a", "y"
@@ -2512,6 +2520,30 @@ class TestBarPlot(SharedAggTests):
 
         ax = barplot(long_df, x="x", y="y", hue="b", legend=False)
         assert ax.get_legend() is None
+
+    def test_error_caps(self):
+
+        x, y = ["a", "b", "c"], [1, 2, 3]
+        ax = barplot(x=x, y=y, capsize=.4)
+
+        assert len(ax.patches) == len(ax.lines)
+        for bar, error in zip(ax.patches, ax.lines):
+            pos = error.get_xdata()
+            assert len(pos) == 8
+            assert np.nanmin(pos) == approx(bar.get_x())
+            assert np.nanmax(pos) == approx(bar.get_x() + bar.get_width())
+
+    def test_error_caps_native_scale(self):
+
+        x, y = [2, 4, 10], [1, 2, 3]
+        ax = barplot(x=x, y=y, capsize=.4, native_scale=True)
+
+        assert len(ax.patches) == len(ax.lines)
+        for bar, error in zip(ax.patches, ax.lines):
+            pos = error.get_xdata()
+            assert len(pos) == 8
+            assert np.nanmin(pos) == approx(bar.get_x())
+            assert np.nanmax(pos) == approx(bar.get_x() + bar.get_width())
 
     def test_hue_implied_by_palette(self):
 
