@@ -434,13 +434,6 @@ class _CategoricalPlotterNew(_RelationalPlotter):
         plot_kws,
     ):
 
-        offsets = self._nested_offsets(width, dodge)
-
-        if "hue" in self.variables and dodge and self._hue_map.levels is not None:
-            n = len(self._hue_map.levels)
-            width /= n
-            error_kws["capsize"] /= n
-
         agg_var = {"x": "y", "y": "x"}[self.orient]
         iter_vars = ["hue"]
 
@@ -457,11 +450,14 @@ class _CategoricalPlotterNew(_RelationalPlotter):
                 .reset_index()
             )
 
-            if offsets is not None and (offsets != 0).any():
-                hue_offset = offsets[self._hue_map.levels.index(sub_vars["hue"])]
-                agg_data[self.orient] += hue_offset
-
             real_width = width * self._native_width
+            if dodge:
+                hue_idx = self._hue_map.levels.index(sub_vars["hue"])
+                real_width /= len(self._hue_map.levels)
+                full_width = real_width * len(self._hue_map.levels)
+                offset = real_width * hue_idx + real_width / 2 - full_width / 2
+                agg_data[self.orient] += offset
+
             agg_data["edge"] = agg_data[self.orient] - real_width / 2
             for var in "xy":
                 if self._log_scaled(var):

@@ -2474,10 +2474,11 @@ class TestBarPlot(SharedAggTests):
         hue = ["x", "x", "y", "y"]
 
         ax = barplot(x=x, y=y, hue=hue, native_scale=True)
-        for i, bar in enumerate(ax.patches[::2]):
-            assert bar.get_x() + bar.get_width() == approx(i)
-        for i, bar in enumerate(ax.patches[1::2]):
-            assert bar.get_x() == approx(i)
+
+        for x_i, bar in zip(x[:2], ax.patches[:2]):
+            assert bar.get_x() + bar.get_width() == approx(x_i)
+        for x_i, bar in zip(x[2:], ax.patches[2:]):
+            assert bar.get_x() == approx(x_i)
 
     def test_native_scale_log_transform_dodged(self):
 
@@ -2488,10 +2489,10 @@ class TestBarPlot(SharedAggTests):
         ax.set_xscale("log")
         barplot(x=x, y=y, hue=hue, native_scale=True, ax=ax)
 
-        for i, bar in enumerate(ax.patches[::2]):
-            assert bar.get_x() + bar.get_width() == approx(i)
-        for i, bar in enumerate(ax.patches[1::2]):
-            assert bar.get_x() == approx(i)
+        for x_i, bar in zip(x[:2], ax.patches[:2]):
+            assert bar.get_x() + bar.get_width() == approx(x_i)
+        for x_i, bar in zip(x[2:], ax.patches[2:]):
+            assert bar.get_x() == approx(x_i)
 
     def test_estimate_default(self, long_df):
 
@@ -2561,6 +2562,22 @@ class TestBarPlot(SharedAggTests):
         for i, bar in enumerate(ax.patches):
             assert bar.get_width() == (width * 2)
 
+    def test_saturation_color(self):
+
+        color = (.1, .9, .2)
+        x, y = ["a", "b", "c"], [1, 2, 3]
+        ax = barplot(x=x, y=y)
+        for bar in ax.patches:
+            assert np.var(bar.get_facecolor()[:3]) < np.var(color)
+
+    def test_saturation_palette(self):
+
+        palette = color_palette("viridis", 3)
+        x, y = ["a", "b", "c"], [1, 2, 3]
+        ax = barplot(x=x, y=y, palette=palette)
+        for i, bar in enumerate(ax.patches):
+            assert np.var(bar.get_facecolor()[:3]) < np.var(palette[i])
+
     def test_legend_numeric_auto(self, long_df):
 
         ax = barplot(long_df, x="x", y="y", hue="x")
@@ -2580,8 +2597,8 @@ class TestBarPlot(SharedAggTests):
 
     def test_error_caps(self):
 
-        x, y = ["a", "b", "c"], [1, 2, 3]
-        ax = barplot(x=x, y=y, capsize=.8)
+        x, y = ["a", "b", "c"] * 2, [1, 2, 3, 4, 5, 6]
+        ax = barplot(x=x, y=y, capsize=.8, errorbar="pi")
 
         assert len(ax.patches) == len(ax.lines)
         for bar, error in zip(ax.patches, ax.lines):
@@ -2592,8 +2609,8 @@ class TestBarPlot(SharedAggTests):
 
     def test_error_caps_native_scale(self):
 
-        x, y = [2, 4, 10], [1, 2, 3]
-        ax = barplot(x=x, y=y, capsize=.8, native_scale=True)
+        x, y = [2, 4, 20] * 2, [1, 2, 3, 4, 5, 6]
+        ax = barplot(x=x, y=y, capsize=.8, native_scale=True, errorbar="pi")
 
         assert len(ax.patches) == len(ax.lines)
         for bar, error in zip(ax.patches, ax.lines):
@@ -2601,6 +2618,16 @@ class TestBarPlot(SharedAggTests):
             assert len(pos) == 8
             assert np.nanmin(pos) == approx(bar.get_x())
             assert np.nanmax(pos) == approx(bar.get_x() + bar.get_width())
+
+    def test_bar_kwargs(self):
+
+        x, y = ["a", "b", "c"], [1, 2, 3]
+        kwargs = dict(linewidth=3, facecolor=(.5, .4, .3, .2), rasterized=True)
+        ax = barplot(x=x, y=y, **kwargs)
+        for bar in ax.patches:
+            assert bar.get_linewidth() == kwargs["linewidth"]
+            assert bar.get_facecolor() == kwargs["facecolor"]
+            assert bar.get_rasterized() == kwargs["rasterized"]
 
     def test_hue_implied_by_palette(self):
 
