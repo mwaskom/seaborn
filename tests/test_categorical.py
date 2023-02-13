@@ -1742,7 +1742,6 @@ class SharedScatterTests(SharedAxesLevelTests):
 
         ax = self.func(data=wide_df, orient=orient)
         _draw_figure(ax.figure)
-        palette = color_palette()
 
         cat_idx = 0 if orient in "vx" else 1
         val_idx = int(not cat_idx)
@@ -1762,7 +1761,7 @@ class SharedScatterTests(SharedAxesLevelTests):
             assert_array_equal(val_pos, wide_df[key])
 
             for point_color in points.get_facecolors():
-                assert tuple(point_color) == to_rgba(palette[i])
+                assert tuple(point_color) == to_rgba("C0")
 
     @pytest.mark.parametrize("orient", ["h", "v"])
     def test_flat(self, flat_series, orient):
@@ -2576,7 +2575,7 @@ class TestBarPlot(SharedAggTests):
 
         palette = color_palette("viridis", 3)
         x, y = ["a", "b", "c"], [1, 2, 3]
-        ax = barplot(x=x, y=y, palette=palette)
+        ax = barplot(x=x, y=y, hue=x, palette=palette)
         for i, bar in enumerate(ax.patches):
             assert np.var(bar.get_facecolor()[:3]) < np.var(palette[i])
 
