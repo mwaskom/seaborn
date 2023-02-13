@@ -2619,6 +2619,20 @@ class TestBarPlot(SharedAggTests):
             assert np.nanmin(pos) == approx(bar.get_x())
             assert np.nanmax(pos) == approx(bar.get_x() + bar.get_width())
 
+    def test_error_caps_native_scale_log_transform(self):
+
+        x, y = [1, 10, 1000] * 2, [1, 2, 3, 4, 5, 6]
+        ax = mpl.figure.Figure().subplots()
+        ax.set_xscale("log")
+        barplot(x=x, y=y, capsize=.8, native_scale=True, errorbar="pi", ax=ax)
+
+        assert len(ax.patches) == len(ax.lines)
+        for bar, error in zip(ax.patches, ax.lines):
+            pos = error.get_xdata()
+            assert len(pos) == 8
+            assert np.nanmin(pos) == approx(bar.get_x())
+            assert np.nanmax(pos) == approx(bar.get_x() + bar.get_width())
+
     def test_bar_kwargs(self):
 
         x, y = ["a", "b", "c"], [1, 2, 3]

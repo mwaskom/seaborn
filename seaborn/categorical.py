@@ -439,6 +439,12 @@ class _CategoricalPlotterNew(_RelationalPlotter):
 
         ax = self.ax
 
+        if self._hue_map.levels is None:
+            dodge = False
+
+        if dodge and error_kws.get("capsize") is not None:
+            error_kws["capsize"] /= len(self._hue_map.levels)
+
         for sub_vars, sub_data in self.iter_data(iter_vars,
                                                  from_comp_data=True,
                                                  allow_empty=True):
@@ -454,6 +460,7 @@ class _CategoricalPlotterNew(_RelationalPlotter):
             if dodge:
                 hue_idx = self._hue_map.levels.index(sub_vars["hue"])
                 real_width /= len(self._hue_map.levels)
+
                 full_width = real_width * len(self._hue_map.levels)
                 offset = real_width * hue_idx + real_width / 2 - full_width / 2
                 agg_data[self.orient] += offset
@@ -521,13 +528,16 @@ class _CategoricalPlotterNew(_RelationalPlotter):
             val = np.array([row[f"{var}min"], row[f"{var}max"]])
 
             cw = capsize * self._native_width / 2
-            if self._log_scaled:
-                ...  # TODO
+
+            if self._log_scaled(self.orient):
+                log_pos = np.log10(pos)
+                cap = 10 ** (log_pos[0] - cw), 10 ** (log_pos[1] + cw)
+            else:
+                cap = pos[0] - cw, pos[1] + cw
 
             if capsize:
                 pos = np.concatenate([
-                    [pos[0] - cw, pos[0] + cw, np.nan], pos,
-                    [np.nan, pos[-1] - cw, pos[-1] + cw],
+                    [*cap, np.nan], pos, [np.nan, *cap]
                 ])
                 val = np.concatenate([
                     [val[0], val[0], np.nan], val, [np.nan, val[-1], val[-1]],
