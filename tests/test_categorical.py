@@ -2331,6 +2331,7 @@ class TestBarPlot(SharedAggTests):
 
         x, y = ["a", None, "b"], [1, 2, 3]
         ax = barplot(x=x, y=y)
+        _draw_figure(ax.figure)  # For matplotlib<3.5
         assert ax.get_xticks() == [0, 1]
         assert [t.get_text() for t in ax.get_xticklabels()] == ["a", "b"]
         assert ax.patches[0].get_height() == 1
@@ -2340,6 +2341,7 @@ class TestBarPlot(SharedAggTests):
 
         x, y = ["a", "b", "c"], [1, None, 3]
         ax = barplot(x=x, y=y)
+        _draw_figure(ax.figure)  # For matplotlib<3.5
         assert ax.get_xticks() == [0, 1, 2]
         assert [t.get_text() for t in ax.get_xticklabels()] == ["a", "b", "c"]
         assert ax.patches[0].get_height() == 1
