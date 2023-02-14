@@ -25,6 +25,14 @@ from .utils import (
 )
 
 
+class Deprecated:
+    def __repr__(self):
+        return "<deprecated>"
+
+
+deprecated = Deprecated()
+
+
 class SemanticMapping:
     """Base class for mapping data values to plot attributes."""
 

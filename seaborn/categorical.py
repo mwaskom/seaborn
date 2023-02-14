@@ -22,6 +22,7 @@ from seaborn._oldcore import (
     variable_type,
     infer_orient,
     categorical_order,
+    deprecated,
 )
 from seaborn.relational import _RelationalPlotter
 from seaborn import utils
@@ -31,6 +32,7 @@ from seaborn.utils import (
     _normal_quantile_func,
     _draw_figure,
     _default_color,
+    _normalize_kwargs,
 )
 from seaborn._statistics import EstimateAggregator
 from seaborn.palettes import color_palette, husl_palette, light_palette, dark_palette
@@ -186,6 +188,32 @@ class _CategoricalPlotterNew(_RelationalPlotter):
             self._var_levels.pop("hue", None)
 
         return hue_order
+
+    def _err_kws_backcompat(self, err_kws, errcolor, errwidth, capsize):
+
+        def deprecate_err_param(name, key, val):
+            if val is deprecated:
+                return
+            suggest = f"err_kws={{'{key}': {val!r}}}"
+            msg = (
+                f"\n\nThe `{name}` parameter is deprecated. And will be removed "
+                f"in v0.15.0. Pass `{suggest}` instead.\n"
+            )
+            warnings.warn(msg, FutureWarning, stacklevel=4)
+            err_kws[key] = val
+
+        deprecate_err_param("errcolor", "color", errcolor)
+        deprecate_err_param("errwidth", "linewidth", errwidth)
+
+        if capsize is None:
+            capsize = 0
+            msg = (
+                "\n\nPassing `capsize=None` is deprecated and will be removed "
+                "in v0.15.0. Pass `capsize=0` to disable caps.\n"
+            )
+            warnings.warn(msg, FutureWarning, stacklevel=3)
+
+        return err_kws, capsize
 
     def _get_gray(self, colors):
         """Get a grayscale value that looks good with color."""
@@ -430,7 +458,8 @@ class _CategoricalPlotterNew(_RelationalPlotter):
         width,
         color,
         saturation,
-        error_kws,
+        capsize,
+        err_kws,
         plot_kws,
     ):
 
@@ -442,8 +471,8 @@ class _CategoricalPlotterNew(_RelationalPlotter):
         if self._hue_map.levels is None:
             dodge = False
 
-        if dodge and error_kws.get("capsize") is not None:
-            error_kws["capsize"] /= len(self._hue_map.levels)
+        if dodge and capsize is not None:
+            capsize = capsize / len(self._hue_map.levels)
 
         for sub_vars, sub_data in self.iter_data(iter_vars,
                                                  from_comp_data=True,
@@ -500,7 +529,7 @@ class _CategoricalPlotterNew(_RelationalPlotter):
                 plt.setp(container, facecolor=mapped_color)
 
             if aggregator.error_method is not None:
-                self.plot_errorbars(ax, agg_data, **error_kws)
+                self.plot_errorbars(ax, agg_data, capsize, err_kws.copy())
 
         # Finalize the axes details
         # TODO XXX this was copy-pasted from stripplot
@@ -515,10 +544,10 @@ class _CategoricalPlotterNew(_RelationalPlotter):
             if handles:
                 ax.legend(title=self.legend_title)
 
-    def plot_errorbars(self, ax, data, color, linewidth, capsize):
+    def plot_errorbars(self, ax, data, capsize, err_kws):
 
-        if linewidth is None:
-            linewidth = 1.5 * mpl.rcParams["lines.linewidth"]
+        err_kws.setdefault("color", ".26")
+        err_kws.setdefault("linewidth", 1.5 * mpl.rcParams["lines.linewidth"])
 
         var = {"x": "y", "y": "x"}[self.orient]
         for row in data.to_dict("records"):
@@ -547,7 +576,7 @@ class _CategoricalPlotterNew(_RelationalPlotter):
                 args = pos, val
             else:
                 args = val, pos
-            ax.plot(*args, color=color, linewidth=linewidth)
+            ax.plot(*args, **err_kws)
 
 
 class _CategoricalAggPlotter(_CategoricalPlotterNew):
@@ -2242,6 +2271,8 @@ _categorical_docs = dict(
         Name of errorbar method (either "ci", "pi", "se", or "sd"), or a tuple
         with a method name and a level parameter, or a function that maps from a
         vector to a (min, max) interval, or None to hide errorbar.
+
+        .. versionadded:: v0.12.0
     n_boot : int
         Number of bootstrap samples used to compute confidence intervals.
     units : name of variable in `data` or vector data
@@ -2250,12 +2281,20 @@ _categorical_docs = dict(
     seed : int, `numpy.random.Generator`, or `numpy.random.RandomState`
         Seed or random number generator for reproducible bootstrapping.\
     """),
+    ci=dedent("""\
+    ci : float
+        .. deprecated:: v0.12.0
+            Use `errorbar=("ci", ...)`.
+    """),
     orient=dedent("""\
     orient : "v" | "h" | "x" | "y"
         Orientation of the plot (vertical or horizontal). This is usually
         inferred based on the type of the input variables, but it can be used
         to resolve ambiguity when both `x` and `y` are numeric or when
-        plotting wide-form data.\
+        plotting wide-form data.
+
+        .. versionchanged:: v0.13.0
+            Added 'x'/'y' as options, equivalent to 'v'/'h'.
     """),
     color=dedent("""\
     color : matplotlib color
@@ -2270,7 +2309,9 @@ _categorical_docs = dict(
     hue_norm=dedent("""\
     hue_norm : tuple or :class:`matplotlib.colors.Normalize` object
         Normalization in data units for colormap applied to the `hue`
-        variable when it is numeric. Not relevant if `hue` is categorical.\
+        variable when it is numeric. Not relevant if `hue` is categorical.
+
+        .. versionadded:: v0.12.0\
     """),
     saturation=dedent("""\
     saturation : float
@@ -2284,11 +2325,17 @@ _categorical_docs = dict(
     """),
     errcolor=dedent("""\
     errcolor : matplotlib color
-        Color used for the error bar lines.\
+        Color used for the error bar lines.
+
+        .. deprecated:: 0.13.0
+            Use `err_kws={'color': ...}`.\
     """),
     errwidth=dedent("""\
     errwidth : float
-        Thickness of error bar lines (and caps), in points.\
+        Thickness of error bar lines (and caps), in points.
+
+        .. deprecated:: 0.13.0
+            Use `err_kws={'linewidth': ...}`.\
     """),
     width=dedent("""\
     width : float
@@ -2307,20 +2354,26 @@ _categorical_docs = dict(
     native_scale=dedent("""\
     native_scale : bool
         When True, numeric or datetime values on the categorical axis will maintain
-        their original scaling rather than being converted to fixed indices.\
+        their original scaling rather than being converted to fixed indices.
+
+        .. versionadded:: v0.13.0\
     """),
     formatter=dedent("""\
     formatter : callable
         Function for converting categorical data into strings. Affects both grouping
-        and tick labels.\
+        and tick labels.
+
+        .. versionadded:: v0.13.0\
     """),
     legend=dedent("""\
-legend : "auto", "brief", "full", or False
-    How to draw the legend. If "brief", numeric `hue` and `size`
-    variables will be represented with a sample of evenly spaced values.
-    If "full", every group will get an entry in the legend. If "auto",
-    choose between brief or full representation based on number of levels.
-    If `False`, no legend data is added and no legend is drawn.
+    legend : "auto", "brief", "full", or False
+        How to draw the legend. If "brief", numeric `hue` and `size`
+        variables will be represented with a sample of evenly spaced values.
+        If "full", every group will get an entry in the legend. If "auto",
+        choose between brief or full representation based on number of levels.
+        If `False`, no legend data is added and no legend is drawn.
+
+        .. versionadded:: v0.13.0\
     """),
     ax_in=dedent("""\
     ax : matplotlib Axes
@@ -2894,9 +2947,8 @@ def barplot(
     data=None, *, x=None, y=None, hue=None, order=None, hue_order=None,
     estimator="mean", errorbar=("ci", 95), n_boot=1000, units=None, seed=None,
     orient=None, color=None, palette=None, saturation=.75, hue_norm=None, width=.8,
-    errcolor=".26", errwidth=None, capsize=None,
-    dodge="auto", native_scale=False, formatter=None, legend="auto",
-    ci="deprecated",
+    dodge="auto", native_scale=False, formatter=None, legend="auto", capsize=0,
+    err_kws=None, ci=deprecated, errcolor=deprecated, errwidth=deprecated,
     ax=None,
     **kwargs,
 ):
@@ -2943,7 +2995,13 @@ def barplot(
 
     aggregator = EstimateAggregator(estimator, errorbar, n_boot=n_boot, seed=seed)
 
-    error_kws = dict(color=errcolor, linewidth=errwidth, capsize=capsize or 0)
+    if err_kws is None:
+        err_kws = {}
+    else:
+        err_kws = _normalize_kwargs(err_kws, mpl.lines.Line2D)
+
+    # Deprecations to remove in v0.15.0.
+    err_kws, capsize = p._err_kws_backcompat(err_kws, errcolor, errwidth, capsize)
 
     p.plot_bars(
         aggregator=aggregator,
@@ -2951,7 +3009,8 @@ def barplot(
         width=width,
         color=color,
         saturation=saturation,
-        error_kws=error_kws,
+        capsize=capsize,
+        err_kws=err_kws,
         plot_kws=kwargs,
     )
 
@@ -2984,18 +3043,21 @@ barplot.__doc__ = dedent("""\
     {saturation}
     {hue_norm}
     {width}
-    {errcolor}
-    {errwidth}
     {capsize}
     {dodge}
     {native_scale}
     {formatter}
     {legend}
+    {ci}
+    {errcolor}
+    {errwidth}
+    err_kws : dict
+        Parameters of :class:`matplotlib.lines.Line2D`, for the error bar artists.
+
+        .. versionadded:: v0.13.0
     {ax_in}
     kwargs : key, value mappings
-        Other keyword arguments are passed through to
-        :meth:`matplotlib.axes.Axes.bar`.
-
+        Other parameters are passed through to :class:`matplotlib.patches.Rectangle`.
     Returns
     -------
     {ax_out}
@@ -3343,13 +3405,6 @@ def catplot(
 
             saturation = kwargs.pop("saturation", 0.75)
             width = kwargs.pop("width", 0.8)
-            error_kws = kwargs.pop("error_kws", {})
-
-            error_kws = dict(
-                color=kwargs.pop("errcolor", ".26"),
-                linewidth=kwargs.pop("errwidth", None),
-                capsize=kwargs.pop("capsize", 0),
-            )
 
             dodge = kwargs.pop("dodge", "auto")
             if dodge == "auto":
@@ -3362,13 +3417,21 @@ def catplot(
                 seed=kwargs.pop("seed", None),
             )
 
+            err_kws, capsize = p._err_kws_backcompat(
+                err_kws=kwargs.pop("err_kws", {}),
+                errcolor=kwargs.pop("errcolor", deprecated),
+                errwidth=kwargs.pop("errwidth", deprecated),
+                capsize=kwargs.pop("capsize", 0),
+            )
+
             p.plot_bars(
                 aggregator=aggregator,
                 dodge=dodge,
                 width=width,
                 color=color,
                 saturation=saturation,
-                error_kws=error_kws,
+                capsize=capsize,
+                err_kws=err_kws,
                 plot_kws=kwargs,
             )
 
