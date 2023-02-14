@@ -59,12 +59,39 @@ class AggCustom(Stat):
     """
     Aggregate data using provided aggregation function(s).
 
+    Parameters
+    ----------
+    func : str or callable or dict of str or callables
+        Name of a :class:`pandas.Series` method or a vector -> scalar function.
+    group_by_orient : bool
+        Whether aggregate
+    
+    See Also
+    --------
+    objects.Agg : Aggregation along the value axis.
+
+    Examples
+    --------
+
+    import seaborn as sns
+    import seaborn objects as so
+    tips = sns.load_dataset("tips")
+    (
+        so.Plot(tips, x="total_bill", y="tip")
+        .add(so.Dot(color="black", pointsize=1))
+        .add(
+            so.Axline(), 
+            so.AggCustome({"intercept": min, "slope": "mean"}, group_by_orient=False), 
+            intercept="tip", 
+            slope="tip"
+        )
+    )
+
     """
-    # TODO: Maybe enable tweak grouping vars as well.
     def __init__(
         self,
         func: str | Callable[[Vector], float] | TypedDict[str | Callable[[Vector], float]] = "mean",
-        group_by_orient=True,
+        group_by_orient=False,
     ):
         self.group_by_orient = group_by_orient
         self.func = func
@@ -76,14 +103,14 @@ class AggCustom(Stat):
         if isinstance(self.func, dict):
             agg_kws = self.func
         else:
-            # we try to apply self.func to both coordinates
+            # We try to apply self.func to both coordinates
+            # Note: alternatively, we could apply func on all remining cols
             agg_kws = {"x": self.func, "y": self.func}
-            # Note: alternatively, we could 'groupby._get_groups(data)'
-            #       and apply func on remining cols
         
         if self.group_by_orient:
+            # otherwise agg_columns precedence causes dropping var from grouper
             agg_kws.pop(orient, None)
-
+            
         res = (
             groupby
             .agg(data, agg_kws)
@@ -93,7 +120,7 @@ class AggCustom(Stat):
         return res
 
 
-class Agg2d(Stat):
+class Agg2d(AggCustom):
     """
     Aggregate both axes data using given method.
 
@@ -108,23 +135,21 @@ class Agg2d(Stat):
 
     Examples
     --------
-    TODO
+    import seaborn as sns
+    import seaborn.objects as so
+
+    (
+        so.Plot(tips, x="total_bill", y="tip")
+        .add(so.Axhline(), so.Agg2d())
+        .add(so.Axvline(), so.Agg2d())
+    )
     """
-    func: str | Callable[[Vector], float] = "mean"
-
-    group_by_orient: ClassVar[bool] = False
-
-    def __call__(
-        self, data: DataFrame, groupby: GroupBy, orient: str, scales: dict[str, Scale],
-    ) -> DataFrame:
-
-        res = (
-            groupby
-            .agg(data, {"x": self.func, "y": self.func})
-            .dropna(subset=["x","y"])
-            .reset_index(drop=True)
-        )
-        return res
+    
+    def __init__(
+        self,
+        func: str | Callable[[Vector], float] = "mean",
+    ):
+        super().__init__(func=func, group_by_orient=False)
 
 
 
