@@ -46,19 +46,24 @@ class GroupBy:
             order = {k: None for k in order}
         self.order = order
 
+
     def _get_groups(
-        self, data: DataFrame
+        self, data: DataFrame, agg_args
     ) -> tuple[str | list[str], Index | MultiIndex]:
         """Return index with Cartesian product of ordered grouping variable levels."""
+        agg_columns = []
+        if len(agg_args) > 0 and isinstance(agg_args[0], dict):
+            agg_columns = list(agg_args[0])
+
         levels = {}
         for var, order in self.order.items():
-            if var in data:
+            if var in data and var not in agg_columns:
                 if order is None:
                     order = categorical_order(data[var])
                 levels[var] = order
 
         grouper: str | list[str]
-        groups: Index | MultiIndex
+        groups: Index | MultiIndex        
         if not levels:
             grouper = []
             groups = pd.Index([])
@@ -85,8 +90,8 @@ class GroupBy:
         those combinations do not appear in the dataset.
 
         """
-        grouper, groups = self._get_groups(data)
-
+        grouper, groups = self._get_groups(data, args)
+        
         if not grouper:
             # We will need to see whether there are valid usecases that end up here
             # raise ValueError("No grouping variables are present in dataframe")

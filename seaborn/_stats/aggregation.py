@@ -75,12 +75,11 @@ class AggCustom(Stat):
 
         if isinstance(self.func, dict):
             agg_kws = self.func
-            if self.group_by_orient and orient in agg_kws:
-                raise ValueError("Aggregating 'orient' values which are used for grouping, too.")
         else:
+            # we try to apply self.func to both coordinates
+            agg_kws = {"x": self.func, "y": self.func}
             # Note: alternatively, we could 'groupby._get_groups(data)'
             #       and apply func on remining cols
-            agg_kws = {"x": self.func, "y": self.func}
         
         if self.group_by_orient:
             agg_kws.pop(orient, None)
