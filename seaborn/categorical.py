@@ -166,8 +166,8 @@ class _CategoricalPlotterNew(_RelationalPlotter):
                 color = mpl.colors.to_hex(color)
             palette = f"dark:{color}"
             msg = (
-                "Setting a gradient palette using color= is deprecated and will be "
-                f"removed in version 0.14. Set `palette='{palette}'` for same effect."
+                "\n\nSetting a gradient palette using color= is deprecated and will be "
+                f"removed in v0.14.0. Set `palette='{palette}'` for the same effect.\n"
             )
             warnings.warn(msg, FutureWarning, stacklevel=3)
 
@@ -176,7 +176,11 @@ class _CategoricalPlotterNew(_RelationalPlotter):
     def _palette_without_hue_backcompat(self, palette, hue_order):
         """Provide one cycle where palette= implies hue= when not provided"""
         if "hue" not in self.variables and palette is not None:
-            msg = "Passing `palette` without assigning `hue` is deprecated."
+            msg = (
+                "\n\nPassing `palette` without assigning `hue` is deprecated "
+                f"and will be removed in v0.14.0. Assign the `{self.orient}` variable "
+                "to `hue` and set `legend=False` for the same effect.\n"
+            )
             warnings.warn(msg, FutureWarning, stacklevel=3)
 
             self.legend = False
