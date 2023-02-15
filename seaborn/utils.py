@@ -831,7 +831,8 @@ def _deprecate_ci(errorbar, ci):
     (and extracted from kwargs) after one cycle.
 
     """
-    if ci != "deprecated":
+    from seaborn._oldcore import deprecated  # avoid circular import
+    if ci is not deprecated and ci != "deprecated":
         if ci is None:
             errorbar = None
         elif ci == "sd":

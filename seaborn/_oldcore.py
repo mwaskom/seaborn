@@ -25,6 +25,14 @@ from .utils import (
 )
 
 
+class Deprecated:
+    def __repr__(self):
+        return "<deprecated>"
+
+
+deprecated = Deprecated()
+
+
 class SemanticMapping:
     """Base class for mapping data values to plot attributes."""
 
@@ -1413,8 +1421,8 @@ class VectorPlotter:
         if self.var_types[axis] == "numeric":
             self.plot_data = self.plot_data.sort_values(axis, kind="mergesort")
 
-        # Now get a reference to the categorical data vector
-        cat_data = self.plot_data[axis]
+        # Now get a reference to the categorical data vector and remove na values
+        cat_data = self.plot_data[axis].dropna()
 
         # Get the initial categorical order, which we do before string
         # conversion to respect the original types of the order list.
@@ -1562,17 +1570,18 @@ def infer_orient(x=None, y=None, orient=None, require_numeric=True):
     x, y : Vector data or None
         Positional data vectors for the plot.
     orient : string or None
-        Specified orientation, which must start with "v" or "h" if not None.
+        Specified orientation. If not None, can be "x" or "y", or otherwise
+        must start with "v" or "h".
     require_numeric : bool
         If set, raise when the implied dependent variable is not numeric.
 
     Returns
     -------
-    orient : "v" or "h"
+    orient : "x" or "y"
 
     Raises
     ------
-    ValueError: When `orient` is not None and does not start with "h" or "v"
+    ValueError: When `orient` is an unknown string.
     TypeError: When dependent variable is not numeric, with `require_numeric`
 
     """
@@ -1588,24 +1597,24 @@ def infer_orient(x=None, y=None, orient=None, require_numeric=True):
             warnings.warn(single_var_warning.format("Horizontal", "y"))
         if require_numeric and y_type != "numeric":
             raise TypeError(nonnumeric_dv_error.format("Vertical", "y"))
-        return "v"
+        return "x"
 
     elif y is None:
         if str(orient).startswith("v"):
             warnings.warn(single_var_warning.format("Vertical", "x"))
         if require_numeric and x_type != "numeric":
             raise TypeError(nonnumeric_dv_error.format("Horizontal", "x"))
-        return "h"
+        return "y"
 
-    elif str(orient).startswith("v"):
+    elif str(orient).startswith("v") or orient == "x":
         if require_numeric and y_type != "numeric":
             raise TypeError(nonnumeric_dv_error.format("Vertical", "y"))
-        return "v"
+        return "x"
 
-    elif str(orient).startswith("h"):
+    elif str(orient).startswith("h") or orient == "y":
         if require_numeric and x_type != "numeric":
             raise TypeError(nonnumeric_dv_error.format("Horizontal", "x"))
-        return "h"
+        return "y"
 
     elif orient is not None:
         err = (
@@ -1615,20 +1624,20 @@ def infer_orient(x=None, y=None, orient=None, require_numeric=True):
         raise ValueError(err)
 
     elif x_type != "categorical" and y_type == "categorical":
-        return "h"
+        return "y"
 
     elif x_type != "numeric" and y_type == "numeric":
-        return "v"
+        return "x"
 
     elif x_type == "numeric" and y_type != "numeric":
-        return "h"
+        return "y"
 
     elif require_numeric and "numeric" not in (x_type, y_type):
         err = "Neither the `x` nor `y` variable appears to be numeric."
         raise TypeError(err)
 
     else:
-        return "v"
+        return "x"
 
 
 def unique_dashes(n):
