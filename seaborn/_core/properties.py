@@ -832,6 +832,8 @@ PROPERTY_CLASSES = {
     "ymin": Coordinate,
     "ymax": Coordinate,
     "group": Property,
+    "intercept": Property,
+    "slope": Property,
     # TODO pattern?
     # TODO gradient?
 }

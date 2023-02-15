@@ -93,8 +93,6 @@ class GroupBy:
         grouper, groups = self._get_groups(data, args)
         
         if not grouper:
-            # We will need to see whether there are valid usecases that end up here
-            # raise ValueError("No grouping variables are present in dataframe")
             res = data.agg(*args, **kwargs)
             if isinstance(res, pd.Series):
                 res = res.to_frame().transpose()
