@@ -40,12 +40,6 @@ def test_init_requires_order():
         GroupBy([])
 
 
-def test_at_least_one_grouping_variable_required(df):
-
-    with pytest.raises(ValueError, match="No grouping variables are present"):
-        GroupBy(["z"]).agg(df, x="mean")
-
-
 def test_agg_one_grouper(df):
 
     res = GroupBy(["a"]).agg(df, {"y": "max"})

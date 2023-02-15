@@ -48,22 +48,19 @@ class GroupBy:
 
 
     def _get_groups(
-        self, data: DataFrame, agg_args
+        self, data: DataFrame, ignored_groupers: tuple = []
     ) -> tuple[str | list[str], Index | MultiIndex]:
         """Return index with Cartesian product of ordered grouping variable levels."""
-        agg_columns = []
-        if len(agg_args) > 0 and isinstance(agg_args[0], dict):
-            agg_columns = list(agg_args[0])
 
         levels = {}
         for var, order in self.order.items():
-            if var in data and var not in agg_columns:
+            if var in data and var not in ignored_groupers:
                 if order is None:
                     order = categorical_order(data[var])
                 levels[var] = order
 
         grouper: str | list[str]
-        groups: Index | MultiIndex        
+        groups: Index | MultiIndex
         if not levels:
             grouper = []
             groups = pd.Index([])
@@ -90,7 +87,12 @@ class GroupBy:
         those combinations do not appear in the dataset.
 
         """
-        grouper, groups = self._get_groups(data, args)
+
+        agg_columns = []
+        if len(args) > 0 and isinstance(args[0], dict):
+            agg_columns = list(args[0])
+
+        grouper, groups = self._get_groups(data, agg_columns)
         
         if not grouper:
             res = data.agg(*args, **kwargs)
@@ -114,7 +116,7 @@ class GroupBy:
         *args, **kwargs,
     ) -> DataFrame:
         """Apply a DataFrame -> DataFrame mapping to each group."""
-        grouper, groups = self._get_groups(data)
+        grouper, groups = self._get_groups(data, [])
 
         if not grouper:
             return self._reorder_columns(func(data, *args, **kwargs), data)
