@@ -129,6 +129,27 @@ class Line(Path):
 
 @document_properties
 @dataclass
+class StepLine(Line):
+    """
+    A step-wise variant of a Line mark. It uses a step function to connect
+    data points with sorting along the orientation axis.
+
+    See also
+    --------
+    Line : A mark connecting data points with sorting along the orientation axis.
+
+    Examples
+    --------
+    .. include:: ../docstrings/objects.StepLine.rst
+
+    """
+    def __init__(self):
+        super().__init__()
+        self.artist_kws.update({"drawstyle":"steps-post"})
+
+
+@document_properties
+@dataclass
 class Paths(Mark):
     """
     A faster but less-flexible mark for drawing many paths.
