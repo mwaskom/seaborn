@@ -155,7 +155,7 @@ def repeated_df(rng):
 
 
 @pytest.fixture
-def missing_df(rng, long_df):
+def null_df(rng, long_df):
 
     df = long_df.copy()
     for col in df:

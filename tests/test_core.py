@@ -980,10 +980,10 @@ class TestVectorPlotter:
         for i, (sub_vars, _) in enumerate(iterator):
             assert sub_vars["hue"] == reversed_order[i]
 
-    def test_iter_data_dropna(self, missing_df):
+    def test_iter_data_dropna(self, null_df):
 
         p = VectorPlotter(
-            data=missing_df,
+            data=null_df,
             variables=dict(x="x", y="y", hue="a")
         )
         for _, sub_df in p.iter_data("hue"):

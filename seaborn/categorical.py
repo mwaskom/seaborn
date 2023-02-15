@@ -590,8 +590,12 @@ class _CategoricalAggPlotter(_CategoricalPlotterNew):
 
 
 class _CategoricalFacetPlotter(_CategoricalPlotterNew):
-
     semantics = _CategoricalPlotterNew.semantics + ("col", "row")
+
+
+class _CategoricalAggFacetPlotter(_CategoricalAggPlotter, _CategoricalFacetPlotter):
+    # Ugh, this is messy
+    pass
 
 
 class _CategoricalPlotter:
@@ -2953,8 +2957,7 @@ def barplot(
     orient=None, color=None, palette=None, saturation=.75, hue_norm=None, width=.8,
     dodge="auto", native_scale=False, formatter=None, legend="auto", capsize=0,
     err_kws=None, ci=deprecated, errcolor=deprecated, errwidth=deprecated,
-    ax=None,
-    **kwargs,
+    ax=None, **kwargs,
 ):
 
     errorbar = utils._deprecate_ci(errorbar, ci)
@@ -3298,9 +3301,14 @@ def catplot(
 
     if kind in refactored_kinds:
 
-        p = _CategoricalFacetPlotter(
+        if kind in ["bar", "point"]:
+            Plotter = _CategoricalAggFacetPlotter
+        else:
+            Plotter = _CategoricalFacetPlotter
+
+        p = Plotter(
             data=data,
-            variables=_CategoricalFacetPlotter.get_semantics(locals()),
+            variables=Plotter.get_semantics(locals()),
             order=order,
             orient=orient,
             require_numeric=False,
@@ -3415,14 +3423,11 @@ def catplot(
                 dodge = p._dodge_needed()
 
             aggregator = EstimateAggregator(
-                kwargs.pop("estimator", "mean"),
-                kwargs.pop("errorbar", "ci"),
-                n_boot=kwargs.pop("n_boot", 1000),
-                seed=kwargs.pop("seed", None),
+                estimator, errorbar, n_boot=n_boot, seed=seed
             )
 
             err_kws, capsize = p._err_kws_backcompat(
-                err_kws=kwargs.pop("err_kws", {}),
+                _normalize_kwargs(kwargs.pop("err_kws", {}), mpl.lines.Line2D),
                 errcolor=kwargs.pop("errcolor", deprecated),
                 errwidth=kwargs.pop("errwidth", deprecated),
                 capsize=kwargs.pop("capsize", 0),
@@ -3442,10 +3447,7 @@ def catplot(
         for ax in g.axes.flat:
             p._adjust_cat_axis(ax, axis=p.orient)
 
-        g.set_axis_labels(
-            p.variables.get("x", None),
-            p.variables.get("y", None),
-        )
+        g.set_axis_labels(p.variables.get("x"), p.variables.get("y"))
         g.set_titles()
         g.tight_layout()
 
@@ -3453,8 +3455,8 @@ def catplot(
             g._update_legend_data(ax)
             ax.legend_ = None
 
-        if legend and (hue is not None) and (hue not in [x, row, col]):
-            g.add_legend(title=hue, label_order=hue_order)
+        if legend and "hue" in p.variables:
+            g.add_legend(title=p.variables.get("hue"), label_order=hue_order)
 
         return g
 

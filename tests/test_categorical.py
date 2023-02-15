@@ -2653,6 +2653,53 @@ class TestBarPlot(SharedAggTests):
             assert line.get_color() == err_kws["color"]
             assert line.get_linewidth() == err_kws["linewidth"]
 
+    @pytest.mark.parametrize(
+        "kwargs",
+        [
+            dict(data="wide"),
+            dict(data="wide", orient="h"),
+            dict(data="flat"),
+            dict(data="long", x="a", y="y"),
+            dict(data=None, x="a", y="y"),
+            dict(data="long", x="a", y="y", hue="a"),
+            dict(data=None, x="a", y="y", hue="a"),
+            dict(data="long", x="a", y="y", hue="b"),
+            dict(data=None, x="s", y="y", hue="a"),
+            dict(data="long", x="a", y="y", hue="s"),
+            dict(data="long", x="a", y="y", units="c"),
+            dict(data="null", x="a", y="y", hue="a"),
+            dict(data="long", x="s", y="y", hue="a", native_scale=True),
+            dict(data="long", x="d", y="y", hue="a", native_scale=True),
+            dict(data="long", x="a", y="y", errorbar=("pi", 50)),
+            dict(data="long", x="a", y="y", errorbar=None),
+            dict(data="long", x="a", y="y", capsize=.3, err_kws=dict(c="k")),
+            dict(data="long", x="a", y="y", color="blue", ec="green", alpha=.5),
+        ]
+    )
+    def test_vs_catplot(self, long_df, wide_df, null_df, flat_series, kwargs):
+
+        kwargs = kwargs.copy()
+        kwargs["seed"] = 0
+        kwargs["n_boot"] = 10
+
+        if kwargs["data"] == "long":
+            kwargs["data"] = long_df
+        elif kwargs["data"] == "wide":
+            kwargs["data"] = wide_df
+        elif kwargs["data"] == "flat":
+            kwargs["data"] = flat_series
+        elif kwargs["data"] == "null":
+            kwargs["data"] = null_df
+        elif kwargs["data"] is None:
+            for var in ["x", "y", "hue"]:
+                if var in kwargs:
+                    kwargs[var] = long_df[kwargs[var]]
+
+        ax = barplot(**kwargs)
+        g = catplot(**kwargs, kind="bar")
+
+        assert_plots_equal(ax, g.ax)
+
     def test_errwidth_deprecation(self):
 
         x, y = ["a", "b", "c"], [1, 2, 3]
