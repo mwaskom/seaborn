@@ -1225,7 +1225,7 @@ class TestLinePlotter(SharedAxesLevelTests, Helpers):
         wide_df, wide_array,
         wide_list_of_series, wide_list_of_arrays, wide_list_of_lists,
         flat_array, flat_series, flat_list,
-        long_df, missing_df, object_df
+        long_df, null_df, object_df
     ):
 
         f, ax = plt.subplots()
@@ -1281,10 +1281,10 @@ class TestLinePlotter(SharedAxesLevelTests, Helpers):
         lineplot(x="x", y="y", hue="a", style="b", data=long_df)
         ax.clear()
 
-        lineplot(x="x", y="y", hue="a", style="a", data=missing_df)
+        lineplot(x="x", y="y", hue="a", style="a", data=null_df)
         ax.clear()
 
-        lineplot(x="x", y="y", hue="a", style="b", data=missing_df)
+        lineplot(x="x", y="y", hue="a", style="b", data=null_df)
         ax.clear()
 
         lineplot(x="x", y="y", hue="a", size="a", data=long_df)
@@ -1293,10 +1293,10 @@ class TestLinePlotter(SharedAxesLevelTests, Helpers):
         lineplot(x="x", y="y", hue="a", size="s", data=long_df)
         ax.clear()
 
-        lineplot(x="x", y="y", hue="a", size="a", data=missing_df)
+        lineplot(x="x", y="y", hue="a", size="a", data=null_df)
         ax.clear()
 
-        lineplot(x="x", y="y", hue="a", size="s", data=missing_df)
+        lineplot(x="x", y="y", hue="a", size="s", data=null_df)
         ax.clear()
 
         lineplot(x="x", y="y", hue="f", data=object_df)
@@ -1782,7 +1782,7 @@ class TestScatterPlotter(SharedAxesLevelTests, Helpers):
         wide_df, wide_array,
         flat_series, flat_array, flat_list,
         wide_list_of_series, wide_list_of_arrays, wide_list_of_lists,
-        long_df, missing_df, object_df
+        long_df, null_df, object_df
     ):
 
         f, ax = plt.subplots()
@@ -1835,10 +1835,10 @@ class TestScatterPlotter(SharedAxesLevelTests, Helpers):
         scatterplot(x="x", y="y", hue="a", style="b", data=long_df)
         ax.clear()
 
-        scatterplot(x="x", y="y", hue="a", style="a", data=missing_df)
+        scatterplot(x="x", y="y", hue="a", style="a", data=null_df)
         ax.clear()
 
-        scatterplot(x="x", y="y", hue="a", style="b", data=missing_df)
+        scatterplot(x="x", y="y", hue="a", style="b", data=null_df)
         ax.clear()
 
         scatterplot(x="x", y="y", hue="a", size="a", data=long_df)
@@ -1847,10 +1847,10 @@ class TestScatterPlotter(SharedAxesLevelTests, Helpers):
         scatterplot(x="x", y="y", hue="a", size="s", data=long_df)
         ax.clear()
 
-        scatterplot(x="x", y="y", hue="a", size="a", data=missing_df)
+        scatterplot(x="x", y="y", hue="a", size="a", data=null_df)
         ax.clear()
 
-        scatterplot(x="x", y="y", hue="a", size="s", data=missing_df)
+        scatterplot(x="x", y="y", hue="a", size="s", data=null_df)
         ax.clear()
 
         scatterplot(x="x", y="y", hue="f", data=object_df)
