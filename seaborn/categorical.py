@@ -29,9 +29,10 @@ from seaborn import utils
 from seaborn.utils import (
     remove_na,
     desaturate,
-    _normal_quantile_func,
+    _check_argument,
     _draw_figure,
     _default_color,
+    _normal_quantile_func,
     _normalize_kwargs,
 )
 from seaborn._statistics import EstimateAggregator
@@ -260,10 +261,11 @@ class _CategoricalPlotterNew(_RelationalPlotter):
             ax.set_ylim(n - .5, -.5, auto=None)
 
     def _dodge_needed(self):
-
+        """Return True when use of `hue` would cause overlaps."""
+        groupers = list({self.orient, "col", "row"} & set(self.variables))
         if "hue" in self.variables:
-            orient = self.plot_data[self.orient].value_counts()
-            paired = self.plot_data[[self.orient, "hue"]].value_counts()
+            orient = self.plot_data[groupers].value_counts()
+            paired = self.plot_data[[*groupers, "hue"]].value_counts()
             return orient.size != paired.size
         return False
 
@@ -482,12 +484,15 @@ class _CategoricalPlotterNew(_RelationalPlotter):
                                                  from_comp_data=True,
                                                  allow_empty=True):
 
-            agg_data = (
-                sub_data
-                .groupby(self.orient)
-                .apply(aggregator, agg_var)
-                .reset_index()
-            )
+            if sub_data.empty:
+                agg_data = sub_data
+            else:
+                agg_data = (
+                    sub_data
+                    .groupby(self.orient)
+                    .apply(aggregator, agg_var)
+                    .reset_index()
+                )
 
             real_width = width * self._native_width
             if dodge:
@@ -3188,41 +3193,79 @@ pointplot.__doc__ = dedent("""\
 
 def countplot(
     data=None, *, x=None, y=None, hue=None, order=None, hue_order=None,
-    orient=None, color=None, palette=None, saturation=.75, width=.8,
-    dodge=True, ax=None, **kwargs
+    orient=None, color=None, palette=None, saturation=.75, hue_norm=None,
+    stat="count", width=.8, dodge="auto", native_scale=False, formatter=None,
+    legend="auto", ax=None, **kwargs
 ):
-
-    estimator = "size"
-    errorbar = None
-    n_boot = 0
-    units = None
-    seed = None
-    errcolor = None
-    errwidth = None
-    capsize = None
 
     if x is None and y is not None:
         orient = "y"
-        x = y
-    elif y is None and x is not None:
+        x = 1
+    elif x is not None and y is None:
         orient = "x"
-        y = x
+        y = 1
     elif x is not None and y is not None:
-        raise ValueError("Cannot pass values for both `x` and `y`")
+        raise TypeError("Cannot pass values for both `x` and `y`.")
 
-    plotter = _CountPlotter(
-        x, y, hue, data, order, hue_order,
-        estimator, errorbar, n_boot, units, seed,
-        orient, color, palette, saturation,
-        width, errcolor, errwidth, capsize, dodge
+    p = _CategoricalAggPlotter(
+        data=data,
+        variables=_CategoricalAggPlotter.get_semantics(locals()),
+        order=order,
+        orient=orient,
+        require_numeric=False,
+        legend=legend,
     )
-
-    plotter.value_label = "count"
 
     if ax is None:
         ax = plt.gca()
 
-    plotter.plot(ax, kwargs)
+    if p.plot_data.empty:
+        return ax
+
+    if dodge == "auto":
+        # Needs to be before scale_categorical changes the coordinate series dtype
+        dodge = p._dodge_needed()
+
+    if p.var_types.get(p.orient) == "categorical" or not native_scale:
+        p.scale_categorical(p.orient, order=order, formatter=formatter)
+
+    p._attach(ax)
+
+    hue_order = p._palette_without_hue_backcompat(palette, hue_order)
+    palette, hue_order = p._hue_backcompat(color, palette, hue_order)
+
+    p.map_hue(palette=palette, order=hue_order, norm=hue_norm)
+
+    color = _default_color(ax.bar, hue, color, kwargs)
+    if color is not None and saturation < 1:
+        color = desaturate(color, saturation)
+
+    count_axis = {"x": "y", "y": "x"}[p.orient]
+    if p.input_format == "wide":
+        p.plot_data[count_axis] = 1
+
+    _check_argument("stat", ["count", "percent", "probability", "proportion"], stat)
+    p.variables[count_axis] = stat
+    if stat != "count":
+        denom = 100 if stat == "percent" else 1
+        p.plot_data[count_axis] /= len(p.plot_data) / denom
+
+    aggregator = EstimateAggregator("sum", errorbar=None)
+
+    p.plot_bars(
+        aggregator=aggregator,
+        dodge=dodge,
+        width=width,
+        color=color,
+        saturation=saturation,
+        capsize=0,
+        err_kws={},
+        plot_kws=kwargs,
+    )
+
+    p._add_axis_labels(ax)
+    p._adjust_cat_axis(ax, axis=p.orient)
+
     return ax
 
 
@@ -3233,10 +3276,10 @@ countplot.__doc__ = dedent("""\
     of quantitative, variable. The basic API and options are identical to those
     for :func:`barplot`, so you can compare counts across nested variables.
 
-    Note that the newer :func:`histplot` function offers more functionality, although
-    its default behavior is somewhat different.
+    Note that :func:`histplot` function offers similar functionality with additional
+    features (e.g. bar stacking), although its default behavior is somewhat different.
 
-    {categorical_narrative}
+    {new_categorical_narrative}
 
     Parameters
     ----------
@@ -3247,11 +3290,20 @@ countplot.__doc__ = dedent("""\
     {color}
     {palette}
     {saturation}
+    {hue_norm}
+    stat : {{'count', 'percent', 'proportion', 'probability'}}
+        Statistic to compute; when not `'count'`, bar heights will be normalized so that
+        they sum to 100 (for `'percent'`) or 1 (otherwise) across the plot.
+
+        .. versionadded:: v0.13.0
+    {width}
     {dodge}
+    {native_scale}
+    {formatter}
+    {legend}
     {ax_in}
     kwargs : key, value mappings
-        Other keyword arguments are passed through to
-        :meth:`matplotlib.axes.Axes.bar`.
+        Other parameters are passed through to :class:`matplotlib.patches.Rectangle`.
 
     Returns
     -------
@@ -3259,6 +3311,7 @@ countplot.__doc__ = dedent("""\
 
     See Also
     --------
+    histplot : Bin and count observations with additional options.
     {barplot}
     {catplot}
 
@@ -3266,7 +3319,6 @@ countplot.__doc__ = dedent("""\
     --------
 
     .. include:: ../docstrings/countplot.rst
-
     """).format(**_categorical_docs)
 
 
@@ -3295,16 +3347,26 @@ def catplot(
         warnings.warn(msg, UserWarning)
         kwargs.pop("ax")
 
-    refactored_kinds = ["strip", "swarm", "bar"]
-
-    desaturated_kinds = ["bar"]
+    refactored_kinds = ["strip", "swarm", "bar", "count"]
+    desaturated_kinds = ["bar", "count"]
+    scatter_kinds = ["strip", "swarm"]
 
     if kind in refactored_kinds:
 
-        if kind in ["bar", "point"]:
+        if kind in ["bar", "point", "count"]:
             Plotter = _CategoricalAggFacetPlotter
         else:
             Plotter = _CategoricalFacetPlotter
+
+        if kind == "count":
+            if x is None and y is not None:
+                orient = "y"
+                x = 1
+            elif x is not None and y is None:
+                orient = "x"
+                y = 1
+            elif x is not None and y is not None:
+                raise ValueError("Cannot pass values for both `x` and `y`.")
 
         p = Plotter(
             data=data,
@@ -3360,23 +3422,26 @@ def catplot(
 
         # Set a default color
         # Otherwise each artist will be plotted separately and trip the color cycle
+        saturation = kwargs.pop("saturation", 0.75)
         if hue is None:
             if color is None:
                 color = "C0"
-            saturation = kwargs.get("saturation", 0.75)
             if kind in desaturated_kinds and saturation < 1:
                 color = desaturate(color, saturation)
+        edgecolor = kwargs.pop("edgecolor", "gray")  # XXX TODO default
+
+        width = kwargs.pop("width", 0.8)
+        dodge = kwargs.pop("dodge", None if kind in scatter_kinds else "auto")
+        if dodge == "auto":
+            dodge = p._dodge_needed()
 
         if kind == "strip":
 
             # TODO get these defaults programmatically?
             jitter = kwargs.pop("jitter", True)
-            dodge = kwargs.pop("dodge", False)
-            edgecolor = kwargs.pop("edgecolor", "gray")  # XXX TODO default
-
-            plot_kws = kwargs.copy()
 
             # XXX Copying possibly bad default decisions from original code for now
+            plot_kws = kwargs.copy()
             plot_kws.setdefault("zorder", 3)
             plot_kws.setdefault("s", plot_kws.pop("size", 5) ** 2)
             plot_kws.setdefault("linewidth", 0)
@@ -3392,13 +3457,10 @@ def catplot(
         elif kind == "swarm":
 
             # TODO get these defaults programmatically?
-            dodge = kwargs.pop("dodge", False)
-            edgecolor = kwargs.pop("edgecolor", "gray")  # XXX TODO default
             warn_thresh = kwargs.pop("warn_thresh", .05)
 
-            plot_kws = kwargs.copy()
-
             # XXX Copying possibly bad default decisions from original code for now
+            plot_kws = kwargs.copy()
             plot_kws.setdefault("zorder", 3)
             plot_kws.setdefault("s", plot_kws.pop("size", 5) ** 2)
 
@@ -3414,13 +3476,6 @@ def catplot(
             )
 
         elif kind == "bar":
-
-            saturation = kwargs.pop("saturation", 0.75)
-            width = kwargs.pop("width", 0.8)
-
-            dodge = kwargs.pop("dodge", "auto")
-            if dodge == "auto":
-                dodge = p._dodge_needed()
 
             aggregator = EstimateAggregator(
                 estimator, errorbar, n_boot=n_boot, seed=seed
@@ -3441,6 +3496,31 @@ def catplot(
                 saturation=saturation,
                 capsize=capsize,
                 err_kws=err_kws,
+                plot_kws=kwargs,
+            )
+
+        elif kind == "count":
+
+            aggregator = EstimateAggregator("sum", errorbar=None)
+
+            count_axis = {"x": "y", "y": "x"}[p.orient]
+            p.plot_data[count_axis] = 1
+
+            stat_options = ["count", "percent", "probability", "proportion"]
+            stat = _check_argument("stat", stat_options, kwargs.pop("stat", "count"))
+            p.variables[count_axis] = stat
+            if stat != "count":
+                denom = 100 if stat == "percent" else 1
+                p.plot_data[count_axis] /= len(p.plot_data) / denom
+
+            p.plot_bars(
+                aggregator=aggregator,
+                dodge=dodge,
+                width=width,
+                color=color,
+                saturation=saturation,
+                capsize=0,
+                err_kws={},
                 plot_kws=kwargs,
             )
 
