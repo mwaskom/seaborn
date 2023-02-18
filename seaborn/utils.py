@@ -781,6 +781,7 @@ def _check_argument(param, options, value):
         raise ValueError(
             f"`{param}` must be one of {options}, but {repr(value)} was passed."
         )
+    return value
 
 
 def _assign_default_kwargs(kws, call_func, source_func):

@@ -26,10 +26,11 @@ from seaborn.categorical import (
     _CategoricalPlotterNew,
     Beeswarm,
     catplot,
+    barplot,
+    countplot,
+    pointplot,
     stripplot,
     swarmplot,
-    barplot,
-    pointplot,
 )
 from seaborn.palettes import color_palette
 from seaborn.utils import _normal_quantile_func, _draw_figure
@@ -2739,6 +2740,156 @@ class TestBarPlot(SharedAggTests):
             assert same_color(bar.get_facecolor(), colors[i])
 
 
+class TestCountPlot(SharedAxesLevelTests):
+
+    def test_wide_data(self, wide_df):
+
+        ax = countplot(wide_df)
+        assert len(ax.patches) == len(wide_df.columns)
+        for i, bar in enumerate(ax.patches):
+            assert bar.get_x() + bar.get_width() / 2 == i
+            assert bar.get_y() == 0
+            assert bar.get_height() == len(wide_df)
+            assert bar.get_width() == 0.8
+
+    def test_flat_series(self):
+
+        vals = ["a", "b", "c"]
+        counts = [2, 1, 4]
+        vals = pd.Series([x for x, n in zip(vals, counts) for _ in range(n)])
+        ax = countplot(vals)
+        for i, bar in enumerate(ax.patches):
+            assert bar.get_x() == 0
+            assert bar.get_y() + bar.get_height() / 2 == i
+            assert bar.get_height() == 0.8
+            assert bar.get_width() == counts[i]
+
+    def test_x_series(self):
+
+        vals = ["a", "b", "c"]
+        counts = [2, 1, 4]
+        vals = pd.Series([x for x, n in zip(vals, counts) for _ in range(n)])
+        ax = countplot(x=vals)
+        for i, bar in enumerate(ax.patches):
+            assert bar.get_x() + bar.get_width() / 2 == i
+            assert bar.get_y() == 0
+            assert bar.get_height() == counts[i]
+            assert bar.get_width() == 0.8
+
+    def test_y_series(self):
+
+        vals = ["a", "b", "c"]
+        counts = [2, 1, 4]
+        vals = pd.Series([x for x, n in zip(vals, counts) for _ in range(n)])
+        ax = countplot(y=vals)
+        for i, bar in enumerate(ax.patches):
+            assert bar.get_x() == 0
+            assert bar.get_y() + bar.get_height() / 2 == i
+            assert bar.get_height() == 0.8
+            assert bar.get_width() == counts[i]
+
+    def test_hue_redundant(self):
+
+        vals = ["a", "b", "c"]
+        counts = [2, 1, 4]
+        vals = pd.Series([x for x, n in zip(vals, counts) for _ in range(n)])
+
+        ax = countplot(x=vals, hue=vals, saturation=1)
+        for i, bar in enumerate(ax.patches):
+            assert bar.get_x() + bar.get_width() / 2 == approx(i)
+            assert bar.get_y() == 0
+            assert bar.get_height() == counts[i]
+            assert bar.get_width() == approx(0.8)
+            assert same_color(bar.get_facecolor(), f"C{i}")
+
+    def test_hue_dodged(self):
+
+        vals = ["a", "a", "a", "b", "b", "b", "b"]
+        hue = ["x", "y", "y", "x", "x", "x", "y"]
+        counts = [1, 3, 2, 1]
+
+        ax = countplot(x=vals, hue=hue, saturation=1)
+        for i, bar in enumerate(ax.patches):
+            sign = 1 if i // 2 else -1
+            assert (
+                bar.get_x() + bar.get_width() / 2
+                == approx(i % 2 + sign * 0.8 / 4)
+            )
+            assert bar.get_y() == 0
+            assert bar.get_height() == counts[i]
+            assert bar.get_width() == approx(0.8 / 2)
+            assert same_color(bar.get_facecolor(), f"C{i // 2}")
+
+    @pytest.mark.parametrize("stat", ["percent", "probability", "proportion"])
+    def test_stat(self, long_df, stat):
+
+        col = "a"
+        order = categorical_order(long_df[col])
+        expected = long_df[col].value_counts(normalize=True)
+        if stat == "percent":
+            expected *= 100
+        ax = countplot(long_df, x=col, stat=stat)
+        for i, bar in enumerate(ax.patches):
+            assert bar.get_height() == approx(expected[order[i]])
+
+    def test_xy_error(self, long_df):
+
+        with pytest.raises(TypeError, match="Cannot pass values for both"):
+            countplot(long_df, x="a", y="b")
+
+    def test_legend_numeric_auto(self, long_df):
+
+        ax = countplot(long_df, x="x", hue="x")
+        assert len(ax.get_legend().texts) <= 6
+
+    def test_legend_disabled(self, long_df):
+
+        ax = countplot(long_df, x="x", hue="b", legend=False)
+        assert ax.get_legend() is None
+
+    @pytest.mark.parametrize(
+        "kwargs",
+        [
+            dict(data="wide"),
+            dict(data="wide", orient="h"),
+            dict(data="flat"),
+            dict(data="long", x="a"),
+            dict(data=None, x="a"),
+            dict(data="long", x="a", hue="a"),
+            dict(data=None, x="a", hue="a"),
+            dict(data="long", x="a", hue="b"),
+            dict(data=None, x="s", hue="a"),
+            dict(data="long", x="a", hue="s"),
+            dict(data="null", x="a", hue="a"),
+            dict(data="long", x="s", hue="a", native_scale=True),
+            dict(data="long", x="d", hue="a", native_scale=True),
+            dict(data="long", x="a", stat="percent"),
+            dict(data="long", x="a", hue="b", stat="proportion"),
+            dict(data="long", x="a", color="blue", ec="green", alpha=.5),
+        ]
+    )
+    def test_vs_catplot(self, long_df, wide_df, null_df, flat_series, kwargs):
+
+        kwargs = kwargs.copy()
+        if kwargs["data"] == "long":
+            kwargs["data"] = long_df
+        elif kwargs["data"] == "wide":
+            kwargs["data"] = wide_df
+        elif kwargs["data"] == "flat":
+            kwargs["data"] = flat_series
+        elif kwargs["data"] == "null":
+            kwargs["data"] = null_df
+        elif kwargs["data"] is None:
+            for var in ["x", "y", "hue"]:
+                if var in kwargs:
+                    kwargs[var] = long_df[kwargs[var]]
+
+        ax = countplot(**kwargs)
+        g = catplot(**kwargs, kind="count")
+
+        assert_plots_equal(ax, g.ax)
+
+
 class TestBarPlotter(CategoricalFixture):
 
     default_kws = dict(
@@ -3297,38 +3448,6 @@ class TestPointPlotter(CategoricalFixture):
         order = categorical_order(long_df["a"])
         legend_texts = [t.get_text() for t in g.legend.texts]
         assert legend_texts == order
-
-
-class TestCountPlot(CategoricalFixture):
-
-    def test_plot_elements(self):
-
-        ax = cat.countplot(x="g", data=self.df)
-        assert len(ax.patches) == self.g.unique().size
-        for p in ax.patches:
-            assert p.get_y() == 0
-            assert p.get_height() == self.g.size / self.g.unique().size
-        plt.close("all")
-
-        ax = cat.countplot(y="g", data=self.df)
-        assert len(ax.patches) == self.g.unique().size
-        for p in ax.patches:
-            assert p.get_x() == 0
-            assert p.get_width() == self.g.size / self.g.unique().size
-        plt.close("all")
-
-        ax = cat.countplot(x="g", hue="h", data=self.df)
-        assert len(ax.patches) == self.g.unique().size * self.h.unique().size
-        plt.close("all")
-
-        ax = cat.countplot(y="g", hue="h", data=self.df)
-        assert len(ax.patches) == self.g.unique().size * self.h.unique().size
-        plt.close("all")
-
-    def test_input_error(self):
-
-        with pytest.raises(ValueError):
-            cat.countplot(x="g", y="h", data=self.df)
 
 
 class TestCatPlot(CategoricalFixture):
