@@ -2742,6 +2742,14 @@ class TestBarPlot(SharedAggTests):
 
 class TestCountPlot:
 
+    def test_empty(self):
+
+        ax = countplot()
+        assert not ax.patches
+
+        ax = countplot(x=[])
+        assert not ax.patches
+
     def test_labels_long(self, long_df):
 
         fig = mpl.figure.Figure()
@@ -2819,9 +2827,9 @@ class TestCountPlot:
 
     def test_hue_dodged(self):
 
-        vals = ["a", "a", "a", "b", "b", "b", "b"]
-        hue = ["x", "y", "y", "x", "x", "x", "y"]
-        counts = [1, 3, 2, 1]
+        vals = ["a", "a", "a", "b", "b", "b"]
+        hue = ["x", "y", "y", "x", "x", "x"]
+        counts = [1, 3, 2, 0]
 
         ax = countplot(x=vals, hue=hue, saturation=1)
         for i, bar in enumerate(ax.patches):
@@ -2870,6 +2878,7 @@ class TestCountPlot:
             dict(data="flat"),
             dict(data="long", x="a"),
             dict(data=None, x="a"),
+            dict(data="long", y="b"),
             dict(data="long", x="a", hue="a"),
             dict(data=None, x="a", hue="a"),
             dict(data="long", x="a", hue="b"),
