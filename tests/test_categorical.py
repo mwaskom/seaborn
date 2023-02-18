@@ -2740,7 +2740,22 @@ class TestBarPlot(SharedAggTests):
             assert same_color(bar.get_facecolor(), colors[i])
 
 
-class TestCountPlot(SharedAxesLevelTests):
+class TestCountPlot:
+
+    def test_labels_long(self, long_df):
+
+        fig = mpl.figure.Figure()
+        axs = fig.subplots(2)
+        countplot(long_df, x="a", ax=axs[0])
+        countplot(long_df, x="b", stat="percent", ax=axs[1])
+
+        # To populate texts; only needed on older matplotlibs
+        _draw_figure(fig)
+
+        assert axs[0].get_xlabel() == "a"
+        assert axs[1].get_xlabel() == "b"
+        assert axs[0].get_ylabel() == "count"
+        assert axs[1].get_ylabel() == "percent"
 
     def test_wide_data(self, wide_df):
 
