@@ -18,11 +18,11 @@ from matplotlib.collections import PatchCollection
 import matplotlib.patches as Patches
 import matplotlib.pyplot as plt
 
+from seaborn._core.typing import default, deprecated
 from seaborn._oldcore import (
     variable_type,
     infer_orient,
     categorical_order,
-    deprecated,
 )
 from seaborn.relational import _RelationalPlotter
 from seaborn import utils
@@ -194,8 +194,27 @@ class _CategoricalPlotterNew(_RelationalPlotter):
 
         return hue_order
 
-    def _err_kws_backcompat(self, err_kws, errcolor, errwidth, capsize):
+    def _point_scale_backcompat(self, scale, kwargs):
 
+        if scale is deprecated:
+            return
+
+        lw = mpl.rcParams["lines.linewidth"] * 1.8 * scale
+        mew = lw * .75
+        ms = lw * 2
+
+        msg = (
+            "\n\n"
+            "The `scale` parameter is deprecated and will be removed in v0.15.0. "
+            "You can now control the size of each plot element using matplotlib "
+            "parameters (e.g., `linewidth`, `markersize`, etc.)."
+            "\n"
+        )
+        warnings.warn(msg, stacklevel=3)
+        kwargs.update(linewidth=lw, markeredgewidth=mew, markersize=ms)
+
+    def _err_kws_backcompat(self, err_kws, errcolor, errwidth, capsize):
+        """Provide two cycles where existing signature-level err_kws are handled."""
         def deprecate_err_param(name, key, val):
             if val is deprecated:
                 return
@@ -207,7 +226,8 @@ class _CategoricalPlotterNew(_RelationalPlotter):
             warnings.warn(msg, FutureWarning, stacklevel=4)
             err_kws[key] = val
 
-        deprecate_err_param("errcolor", "color", errcolor)
+        if errcolor is not None:
+            deprecate_err_param("errcolor", "color", errcolor)
         deprecate_err_param("errwidth", "linewidth", errwidth)
 
         if capsize is None:
@@ -228,6 +248,26 @@ class _CategoricalPlotterNew(_RelationalPlotter):
         light_vals = [rgb_to_hls(*rgb[:3])[1] for rgb in unique_colors]
         lum = min(light_vals) * .6
         return (lum, lum, lum)
+
+    def _map_prop_with_hue(self, name, value, fallback, plot_kws):
+
+        if value is default:
+            value = plot_kws.pop(name, fallback)
+
+        if isinstance(value, list):
+            if (levels := self._hue_map.levels) is None:
+                # TODO raise?
+                ...
+            else:
+                # TODO assert same length?
+                mapping = {k: v for k, v in zip(levels, value)}
+        else:
+            if (levels := self._hue_map.levels) is None:
+                mapping = {None: value}
+            else:
+                mapping = {k: value for k in levels}
+
+        return mapping
 
     def _adjust_cat_axis(self, ax, axis):
         """Set ticks and limits for a categorical variable."""
@@ -457,6 +497,67 @@ class _CategoricalPlotterNew(_RelationalPlotter):
             if handles:
                 ax.legend(title=self.legend_title)
 
+    def plot_points(
+        self,
+        aggregator,
+        join,
+        markers,
+        linestyles,
+        dodge,
+        color,
+        capsize,
+        err_kws,
+        plot_kws,
+    ):
+
+        agg_var = {"x": "y", "y": "x"}[self.orient]
+        iter_vars = ["hue"]
+
+        plot_kws = _normalize_kwargs(plot_kws, mpl.lines.Line2D)
+        plot_kws.setdefault("linewidth", mpl.rcParams["lines.linewidth"] * 1.8)
+        plot_kws.setdefault("markeredgewidth", plot_kws["linewidth"] * 0.75)
+        plot_kws.setdefault("markersize", plot_kws["linewidth"] * np.sqrt(2 * np.pi))
+
+        markers = self._map_prop_with_hue("marker", markers, "o", plot_kws)
+        linestyles = self._map_prop_with_hue("linestyle", linestyles, "-", plot_kws)
+
+        positions = self.var_levels[self.orient]
+        if self.var_types[self.orient] == "categorical":
+            positions = [i for i, _ in enumerate(positions)]
+        positions = pd.Index(positions, name=self.orient)
+
+        ax = self.ax
+
+        for sub_vars, sub_data in self.iter_data(iter_vars,
+                                                 from_comp_data=True,
+                                                 allow_empty=True):
+
+            if sub_data.empty:
+                agg_data = sub_data
+            else:
+                agg_data = (
+                    sub_data
+                    .groupby(self.orient)
+                    .apply(aggregator, agg_var)
+                    .reindex(positions)
+                    .reset_index()
+                )
+
+            line, = ax.plot(
+                agg_data["x"],
+                agg_data["y"],
+                color=color,
+                marker=markers[sub_vars.get("hue")],
+                linestyle=linestyles[sub_vars.get("hue")],
+                **plot_kws,
+            )
+
+            sub_err_kws = err_kws.copy()
+            sub_err_kws.setdefault("color", line.get_color())
+            sub_err_kws.setdefault("linewidth", line.get_linewidth())
+            if aggregator.error_method is not None:
+                self.plot_errorbars(ax, agg_data, capsize, sub_err_kws)
+
     def plot_bars(
         self,
         aggregator,
@@ -479,6 +580,9 @@ class _CategoricalPlotterNew(_RelationalPlotter):
 
         if dodge and capsize is not None:
             capsize = capsize / len(self._hue_map.levels)
+
+        err_kws.setdefault("color", ".26")
+        err_kws.setdefault("linewidth", 1.5 * mpl.rcParams["lines.linewidth"])
 
         for sub_vars, sub_data in self.iter_data(iter_vars,
                                                  from_comp_data=True,
@@ -554,9 +658,6 @@ class _CategoricalPlotterNew(_RelationalPlotter):
                 ax.legend(title=self.legend_title)
 
     def plot_errorbars(self, ax, data, capsize, err_kws):
-
-        err_kws.setdefault("color", ".26")
-        err_kws.setdefault("linewidth", 1.5 * mpl.rcParams["lines.linewidth"])
 
         var = {"x": "y", "y": "x"}[self.orient]
         for row in data.to_dict("records"):
@@ -3006,11 +3107,7 @@ def barplot(
         color = desaturate(color, saturation)
 
     aggregator = EstimateAggregator(estimator, errorbar, n_boot=n_boot, seed=seed)
-
-    if err_kws is None:
-        err_kws = {}
-    else:
-        err_kws = _normalize_kwargs(err_kws, mpl.lines.Line2D)
+    err_kws = {} if err_kws is None else _normalize_kwargs(err_kws, mpl.lines.Line2D)
 
     # Deprecations to remove in v0.15.0.
     err_kws, capsize = p._err_kws_backcompat(err_kws, errcolor, errwidth, capsize)
@@ -3104,22 +3201,65 @@ barplot.__doc__ = dedent("""\
 def pointplot(
     data=None, *, x=None, y=None, hue=None, order=None, hue_order=None,
     estimator="mean", errorbar=("ci", 95), n_boot=1000, units=None, seed=None,
-    markers="o", linestyles="-", dodge=False, join=True, scale=1,
-    orient=None, color=None, palette=None, errwidth=None, ci="deprecated",
-    capsize=None, label=None, ax=None,
+    markers=default, linestyles=default, dodge=False, join=True, native_scale=False,
+    orient=None, color=None, palette=None, hue_norm=None,
+    capsize=0, formatter=None, legend="auto", err_kws=None,
+    ci=deprecated, errwidth=deprecated, scale=deprecated,
+    ax=None,
+    **kwargs,
 ):
 
     errorbar = utils._deprecate_ci(errorbar, ci)
 
-    plotter = _PointPlotter(x, y, hue, data, order, hue_order,
-                            estimator, errorbar, n_boot, units, seed,
-                            markers, linestyles, dodge, join, scale,
-                            orient, color, palette, errwidth, capsize, label)
+    p = _CategoricalAggPlotter(
+        data=data,
+        variables=_CategoricalAggPlotter.get_semantics(locals()),
+        order=order,
+        orient=orient,
+        require_numeric=False,
+        legend=legend,
+    )
 
     if ax is None:
         ax = plt.gca()
 
-    plotter.plot(ax)
+    if p.plot_data.empty:
+        return ax
+
+    if p.var_types.get(p.orient) == "categorical" or not native_scale:
+        p.scale_categorical(p.orient, order=order, formatter=formatter)
+
+    p._attach(ax)
+
+    hue_order = p._palette_without_hue_backcompat(palette, hue_order)
+    palette, hue_order = p._hue_backcompat(color, palette, hue_order)
+
+    p.map_hue(palette=palette, order=hue_order, norm=hue_norm)
+    color = _default_color(ax.plot, hue, color, kwargs)
+
+    aggregator = EstimateAggregator(estimator, errorbar, n_boot=n_boot, seed=seed)
+    err_kws = {} if err_kws is None else _normalize_kwargs(err_kws, mpl.lines.Line2D)
+
+    p._point_scale_backcompat(scale, kwargs)
+
+    # Deprecations to remove in v0.15.0.
+    err_kws, capsize = p._err_kws_backcompat(err_kws, None, errwidth, capsize)
+
+    p.plot_points(
+        aggregator=aggregator,
+        join=join,  # TODO deprecate and redirect to use `linestyle=""`?
+        markers=markers,
+        linestyles=linestyles,
+        dodge=dodge,
+        color=color,
+        capsize=capsize,
+        err_kws=err_kws,
+        plot_kws=kwargs,
+    )
+
+    p._add_axis_labels(ax)
+    p._adjust_cat_axis(ax, axis=p.orient)
+
     return ax
 
 
