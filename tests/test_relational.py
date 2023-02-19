@@ -22,7 +22,7 @@ from seaborn.relational import (
 )
 
 from seaborn.utils import _draw_figure
-from seaborn._compat import get_colormap
+from seaborn._compat import get_colormap, get_legend_handles
 from seaborn._testing import assert_plots_equal
 
 
@@ -1739,7 +1739,7 @@ class TestScatterPlotter(SharedAxesLevelTests, Helpers):
         legend_data = [
             {
                 label.get_text(): handle.get_sizes().item()
-                for label, handle in zip(legend.get_texts(), legend.legendHandles)
+                for label, handle in zip(legend.get_texts(), get_legend_handles(legend))
             } for legend in legends
         ]
 

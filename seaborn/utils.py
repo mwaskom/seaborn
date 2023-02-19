@@ -445,7 +445,9 @@ def move_legend(obj, loc, **kwargs):
         raise ValueError(err)
 
     # Extract the components of the legend we need to reuse
-    handles = old_legend.legendHandles
+    # Import here to avoid a circular import
+    from seaborn._compat import get_legend_handles
+    handles = get_legend_handles(old_legend)
     labels = [t.get_text() for t in old_legend.get_texts()]
 
     # Extract legend properties that can be passed to the recreation method
