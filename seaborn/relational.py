@@ -190,7 +190,7 @@ class _RelationalPlotter(VectorPlotter):
     # TODO where best to define default parameters?
     sort = True
 
-    def add_legend_data(self, ax):
+    def add_legend_data(self, ax, func=None):
         """Add labeled artists to represent the different plot semantics."""
         verbosity = self.legend
         if isinstance(verbosity, str) and verbosity not in ["auto", "brief", "full"]:
@@ -318,7 +318,8 @@ class _RelationalPlotter(VectorPlotter):
                         dashes=attrs.get("dashes", ""),
                     )
 
-        func = getattr(ax, self._legend_func)
+        if func is None:
+            func = getattr(ax, self._legend_func)
 
         legend_data = {}
         legend_order = []
@@ -333,7 +334,7 @@ class _RelationalPlotter(VectorPlotter):
                 if attr in kws:
                     use_kws[attr] = kws[attr]
             artist = func([], [], label=label, **use_kws)
-            if self._legend_func == "plot":
+            if func.__name__ == "plot":
                 artist = artist[0]
             legend_data[key] = artist
             legend_order.append(key)

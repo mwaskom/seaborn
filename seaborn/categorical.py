@@ -558,6 +558,19 @@ class _CategoricalPlotterNew(_RelationalPlotter):
             if aggregator.error_method is not None:
                 self.plot_errorbars(ax, agg_data, capsize, sub_err_kws)
 
+        # Finalize the axes details
+        # TODO XXX this was copy-pasted from stripplot
+        if self.legend == "auto":
+            show_legend = not self._redundant_hue and self.input_format != "wide"
+        else:
+            show_legend = bool(self.legend)
+
+        if show_legend:
+            self.add_legend_data(ax, ax.plot)
+            handles, _ = ax.get_legend_handles_labels()
+            if handles:
+                ax.legend(title=self.legend_title)
+
     def plot_bars(
         self,
         aggregator,
@@ -652,7 +665,7 @@ class _CategoricalPlotterNew(_RelationalPlotter):
             show_legend = bool(self.legend)
 
         if show_legend:
-            self.add_legend_data(ax)
+            self.add_legend_data(ax, ax.fill_between)
             handles, _ = ax.get_legend_handles_labels()
             if handles:
                 ax.legend(title=self.legend_title)
@@ -692,7 +705,6 @@ class _CategoricalPlotterNew(_RelationalPlotter):
 class _CategoricalAggPlotter(_CategoricalPlotterNew):
 
     flat_structure = {"x": "@index", "y": "@values"}
-    _legend_func = "fill_between"
 
 
 class _CategoricalFacetPlotter(_CategoricalPlotterNew):

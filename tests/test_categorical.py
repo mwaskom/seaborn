@@ -3418,32 +3418,28 @@ class TestPointPlotter(CategoricalFixture):
     def test_simple_pointplots(self):
 
         ax = cat.pointplot(x="g", y="y", data=self.df)
-        assert len(ax.collections) == 1
-        assert len(ax.lines) == len(self.g.unique()) + 1
+        assert len(ax.lines) == 1 + len(self.g.unique())
         assert ax.get_xlabel() == "g"
         assert ax.get_ylabel() == "y"
         plt.close("all")
 
         ax = cat.pointplot(x="y", y="g", orient="h", data=self.df)
-        assert len(ax.collections) == 1
-        assert len(ax.lines) == len(self.g.unique()) + 1
+        assert len(ax.lines) == 1 + len(self.g.unique())
         assert ax.get_xlabel() == "y"
         assert ax.get_ylabel() == "g"
         plt.close("all")
 
         ax = cat.pointplot(x="g", y="y", hue="h", data=self.df)
-        assert len(ax.collections) == len(self.h.unique())
         assert len(ax.lines) == (
-            len(self.g.unique()) * len(self.h.unique()) + len(self.h.unique())
+            len(self.g.unique()) * len(self.h.unique()) + 2 * len(self.h.unique())
         )
         assert ax.get_xlabel() == "g"
         assert ax.get_ylabel() == "y"
         plt.close("all")
 
         ax = cat.pointplot(x="y", y="g", hue="h", orient="h", data=self.df)
-        assert len(ax.collections) == len(self.h.unique())
         assert len(ax.lines) == (
-            len(self.g.unique()) * len(self.h.unique()) + len(self.h.unique())
+            len(self.g.unique()) * len(self.h.unique()) + 2 * len(self.h.unique())
         )
         assert ax.get_xlabel() == "y"
         assert ax.get_ylabel() == "g"
@@ -3456,7 +3452,7 @@ class TestPointPlotter(CategoricalFixture):
         )
         order = categorical_order(long_df["a"])
 
-        for i, line in enumerate(ax.lines):
+        for i, line in enumerate(ax.lines[1:]):
             sub_df = long_df.loc[long_df["a"] == order[i], "y"]
             mean = sub_df.mean()
             sd = sub_df.std()
@@ -3493,14 +3489,13 @@ class TestCatPlot(CategoricalFixture):
     def test_plot_elements(self):
 
         g = cat.catplot(x="g", y="y", data=self.df, kind="point")
-        assert len(g.ax.collections) == 1
-        want_lines = self.g.unique().size + 1
+        want_lines = 1 + self.g.unique().size
         assert len(g.ax.lines) == want_lines
 
         g = cat.catplot(x="g", y="y", hue="h", data=self.df, kind="point")
-        want_collections = self.h.unique().size
-        assert len(g.ax.collections) == want_collections
-        want_lines = (self.g.unique().size + 1) * self.h.unique().size
+        want_lines = (
+            len(self.g.unique()) * len(self.h.unique()) + 2 * len(self.h.unique())
+        )
         assert len(g.ax.lines) == want_lines
 
         g = cat.catplot(x="g", y="y", data=self.df, kind="bar")
