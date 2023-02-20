@@ -2931,9 +2931,9 @@ class TestPointPlot(SharedAggTests):
         ax.set_xscale("log")
         pointplot(x=x, y=y, hue=hue, dodge=.2, native_scale=True, errorbar=None, ax=ax)
         for i, xy in enumerate(ax.lines[0].get_xydata()):
-            assert tuple(xy) == (10 ** (np.log10(x[i]) - .2), y[i])
+            assert tuple(xy) == approx((10 ** (np.log10(x[i]) - .2), y[i]))
         for i, xy in enumerate(ax.lines[1].get_xydata()):
-            assert tuple(xy) == (10 ** (np.log10(x[2 + i]) + .2), y[2 + i])
+            assert tuple(xy) == approx((10 ** (np.log10(x[2 + i]) + .2), y[2 + i]))
 
     def test_err_kws(self):
 
