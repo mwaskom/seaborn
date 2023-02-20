@@ -194,24 +194,35 @@ class _CategoricalPlotterNew(_RelationalPlotter):
 
         return hue_order
 
-    def _point_scale_backcompat(self, scale, kwargs):
+    def _point_kwargs_backcompat(self, scale, join, kwargs):
+        """Provide two cycles where scale= and join= work, but redirect to kwargs."""
+        if scale is not deprecated:
+            lw = mpl.rcParams["lines.linewidth"] * 1.8 * scale
+            mew = lw * .75
+            ms = lw * 2
 
-        if scale is deprecated:
-            return
+            msg = (
+                "\n\n"
+                "The `scale` parameter is deprecated and will be removed in v0.15.0. "
+                "You can now control the size of each plot element using matplotlib "
+                "`Line2D` parameters (e.g., `linewidth`, `markersize`, etc.)."
+                "\n"
+            )
+            warnings.warn(msg, stacklevel=3)
+            kwargs.update(linewidth=lw, markeredgewidth=mew, markersize=ms)
 
-        lw = mpl.rcParams["lines.linewidth"] * 1.8 * scale
-        mew = lw * .75
-        ms = lw * 2
-
-        msg = (
-            "\n\n"
-            "The `scale` parameter is deprecated and will be removed in v0.15.0. "
-            "You can now control the size of each plot element using matplotlib "
-            "parameters (e.g., `linewidth`, `markersize`, etc.)."
-            "\n"
-        )
-        warnings.warn(msg, stacklevel=3)
-        kwargs.update(linewidth=lw, markeredgewidth=mew, markersize=ms)
+        if join is not deprecated:
+            msg = (
+                "\n\n"
+                "The `join` parameter is deprecated and will be removed in v0.15.0."
+            )
+            if not join:
+                msg += (
+                    " You can remove the line between points with `linestyle='none'`."
+                )
+                kwargs.update(linestyle="")
+            msg += "\n"
+            warnings.warn(msg, stacklevel=3)
 
     def _err_kws_backcompat(self, err_kws, errcolor, errwidth, capsize):
         """Provide two cycles where existing signature-level err_kws are handled."""
@@ -250,16 +261,12 @@ class _CategoricalPlotterNew(_RelationalPlotter):
         return (lum, lum, lum)
 
     def _map_prop_with_hue(self, name, value, fallback, plot_kws):
-
+        """Support pointplot behavior of modifying the marker/linestyle with hue."""
         if value is default:
             value = plot_kws.pop(name, fallback)
 
         if isinstance(value, list):
-            if (levels := self._hue_map.levels) is None:
-                # TODO raise?
-                ...
-            else:
-                # TODO assert same length?
+            if (levels := self._hue_map.levels) is not None:
                 mapping = {k: v for k, v in zip(levels, value)}
         else:
             if (levels := self._hue_map.levels) is None:
@@ -308,6 +315,14 @@ class _CategoricalPlotterNew(_RelationalPlotter):
             paired = self.plot_data[[*groupers, "hue"]].value_counts()
             return orient.size != paired.size
         return False
+
+    def _invert_scale(self, data, vars=("x", "y")):
+        """Undo log scaling after computation so data are plotted correctly."""
+        for var in vars:
+            if self._log_scaled(var):
+                for suf in ["", "min", "max"]:
+                    if (col := f"{var}{suf}") in data:
+                        data[col] = np.power(10, data[col])
 
     @property
     def _native_width(self):
@@ -377,10 +392,7 @@ class _CategoricalPlotterNew(_RelationalPlotter):
 
             adjusted_data = sub_data[self.orient] + dodge_move + jitter_move
             sub_data[self.orient] = adjusted_data
-
-            for var in "xy":
-                if self._log_scaled(var):
-                    sub_data[var] = np.power(10, sub_data[var])
+            self._invert_scale(sub_data)
 
             ax = self._get_axes(sub_vars)
             points = ax.scatter(sub_data["x"], sub_data["y"], color=color, **plot_kws)
@@ -435,10 +447,7 @@ class _CategoricalPlotterNew(_RelationalPlotter):
             if not sub_data.empty:
                 sub_data[self.orient] = sub_data[self.orient] + dodge_move
 
-            for var in "xy":
-                if self._log_scaled(var):
-                    sub_data[var] = np.power(10, sub_data[var])
-
+            self._invert_scale(sub_data)
             ax = self._get_axes(sub_vars)
             points = ax.scatter(sub_data["x"], sub_data["y"], color=color, **plot_kws)
 
@@ -500,7 +509,6 @@ class _CategoricalPlotterNew(_RelationalPlotter):
     def plot_points(
         self,
         aggregator,
-        join,
         markers,
         linestyles,
         dodge,
@@ -510,6 +518,7 @@ class _CategoricalPlotterNew(_RelationalPlotter):
         plot_kws,
     ):
 
+        ax = self.ax
         agg_var = {"x": "y", "y": "x"}[self.orient]
         iter_vars = ["hue"]
 
@@ -524,37 +533,51 @@ class _CategoricalPlotterNew(_RelationalPlotter):
         positions = self.var_levels[self.orient]
         if self.var_types[self.orient] == "categorical":
             positions = [i for i, _ in enumerate(positions)]
+        else:
+            transform = getattr(ax, f"{self.orient}axis").get_transform()
+            positions = transform.transform(positions)
         positions = pd.Index(positions, name=self.orient)
 
-        ax = self.ax
+        n_hue_levels = 0 if self._hue_map.levels is None else len(self._hue_map.levels)
+        if dodge is True:
+            dodge = .025 * n_hue_levels
 
         for sub_vars, sub_data in self.iter_data(iter_vars,
                                                  from_comp_data=True,
                                                  allow_empty=True):
 
-            if sub_data.empty:
-                agg_data = sub_data
-            else:
-                agg_data = (
-                    sub_data
-                    .groupby(self.orient)
-                    .apply(aggregator, agg_var)
-                    .reindex(positions)
-                    .reset_index()
-                )
+            agg_data = sub_data if sub_data.empty else (
+                sub_data
+                .groupby(self.orient)
+                .apply(aggregator, agg_var)
+                .reindex(positions)
+                .reset_index()
+            )
+
+            if dodge:
+                hue_idx = self._hue_map.levels.index(sub_vars["hue"])
+                offset = -dodge * (n_hue_levels - 1) / 2 + dodge * hue_idx
+                agg_data[self.orient] += offset * self._native_width
+
+            self._invert_scale(agg_data)
+
+            line_color = (
+                color if "hue" not in sub_vars else self._hue_map(sub_vars["hue"])
+            )
 
             line, = ax.plot(
                 agg_data["x"],
                 agg_data["y"],
-                color=color,
+                color=line_color,
                 marker=markers[sub_vars.get("hue")],
                 linestyle=linestyles[sub_vars.get("hue")],
                 **plot_kws,
             )
 
             sub_err_kws = err_kws.copy()
-            sub_err_kws.setdefault("color", line.get_color())
-            sub_err_kws.setdefault("linewidth", line.get_linewidth())
+            line_props = line.properties()
+            for prop in ["color", "linewidth", "alpha", "zorder"]:
+                sub_err_kws.setdefault(prop, line_props[prop])
             if aggregator.error_method is not None:
                 self.plot_errorbars(ax, agg_data, capsize, sub_err_kws)
 
@@ -601,15 +624,12 @@ class _CategoricalPlotterNew(_RelationalPlotter):
                                                  from_comp_data=True,
                                                  allow_empty=True):
 
-            if sub_data.empty:
-                agg_data = sub_data
-            else:
-                agg_data = (
-                    sub_data
-                    .groupby(self.orient)
-                    .apply(aggregator, agg_var)
-                    .reset_index()
-                )
+            agg_data = sub_data if sub_data.empty else (
+                sub_data
+                .groupby(self.orient)
+                .apply(aggregator, agg_var)
+                .reset_index()
+            )
 
             real_width = width * self._native_width
             if dodge:
@@ -621,16 +641,11 @@ class _CategoricalPlotterNew(_RelationalPlotter):
                 agg_data[self.orient] += offset
 
             agg_data["edge"] = agg_data[self.orient] - real_width / 2
-            for var in "xy":
-                if self._log_scaled(var):
-                    if var == self.orient:
-                        agg_data["edge"] = 10 ** agg_data["edge"]
-                        right_edge = 10 ** (agg_data[var] + real_width / 2)
-                        real_width = right_edge - agg_data["edge"]
-                    for suf in ["", "min", "max"]:
-                        col = f"{var}{suf}"
-                        if col in agg_data:
-                            agg_data[col] = 10 ** agg_data[col]
+            if self._log_scaled(self.orient):
+                agg_data["edge"] = 10 ** agg_data["edge"]
+                right_edge = 10 ** (agg_data[self.orient] + real_width / 2)
+                real_width = right_edge - agg_data["edge"]
+            self._invert_scale(agg_data)
 
             ax = self._get_axes(sub_vars)
 
@@ -680,7 +695,6 @@ class _CategoricalPlotterNew(_RelationalPlotter):
             val = np.array([row[f"{var}min"], row[f"{var}max"]])
 
             cw = capsize * self._native_width / 2
-
             if self._log_scaled(self.orient):
                 log_pos = np.log10(pos)
                 cap = 10 ** (log_pos[0] - cw), 10 ** (log_pos[1] + cw)
@@ -2846,6 +2860,7 @@ def stripplot(
 
     p._attach(ax)
 
+    # Deprecations to remove in v0.14.0.
     hue_order = p._palette_without_hue_backcompat(palette, hue_order)
     palette, hue_order = p._hue_backcompat(color, palette, hue_order)
 
@@ -2975,6 +2990,7 @@ def swarmplot(
     if not p.has_xy_data:
         return ax
 
+    # Deprecations to remove in v0.14.0.
     hue_order = p._palette_without_hue_backcompat(palette, hue_order)
     palette, hue_order = p._hue_backcompat(color, palette, hue_order)
 
@@ -3109,6 +3125,7 @@ def barplot(
 
     p._attach(ax)
 
+    # Deprecations to remove in v0.14.0.
     hue_order = p._palette_without_hue_backcompat(palette, hue_order)
     palette, hue_order = p._hue_backcompat(color, palette, hue_order)
 
@@ -3213,10 +3230,10 @@ barplot.__doc__ = dedent("""\
 def pointplot(
     data=None, *, x=None, y=None, hue=None, order=None, hue_order=None,
     estimator="mean", errorbar=("ci", 95), n_boot=1000, units=None, seed=None,
-    markers=default, linestyles=default, dodge=False, join=True, native_scale=False,
-    orient=None, color=None, palette=None, hue_norm=None,
-    capsize=0, formatter=None, legend="auto", err_kws=None,
-    ci=deprecated, errwidth=deprecated, scale=deprecated,
+    color=None, palette=None, hue_norm=None, markers=default, linestyles=default,
+    dodge=False, native_scale=False, orient=None, capsize=0,
+    formatter=None, legend="auto", err_kws=None,
+    ci=deprecated, errwidth=deprecated, join=deprecated, scale=deprecated,
     ax=None,
     **kwargs,
 ):
@@ -3243,6 +3260,7 @@ def pointplot(
 
     p._attach(ax)
 
+    # Deprecations to remove in v0.14.0.
     hue_order = p._palette_without_hue_backcompat(palette, hue_order)
     palette, hue_order = p._hue_backcompat(color, palette, hue_order)
 
@@ -3252,14 +3270,12 @@ def pointplot(
     aggregator = EstimateAggregator(estimator, errorbar, n_boot=n_boot, seed=seed)
     err_kws = {} if err_kws is None else _normalize_kwargs(err_kws, mpl.lines.Line2D)
 
-    p._point_scale_backcompat(scale, kwargs)
-
     # Deprecations to remove in v0.15.0.
+    p._point_kwargs_backcompat(scale, join, kwargs)
     err_kws, capsize = p._err_kws_backcompat(err_kws, None, errwidth, capsize)
 
     p.plot_points(
         aggregator=aggregator,
-        join=join,  # TODO deprecate and redirect to use `linestyle=""`?
         markers=markers,
         linestyles=linestyles,
         dodge=dodge,
@@ -3383,6 +3399,7 @@ def countplot(
 
     p._attach(ax)
 
+    # Deprecations to remove in v0.14.0.
     hue_order = p._palette_without_hue_backcompat(palette, hue_order)
     palette, hue_order = p._hue_backcompat(color, palette, hue_order)
 
@@ -3568,8 +3585,10 @@ def catplot(
         if not has_xy_data:
             return g
 
+        # Deprecations to remove in v0.14.0.
         hue_order = p._palette_without_hue_backcompat(palette, hue_order)
         palette, hue_order = p._hue_backcompat(color, palette, hue_order)
+
         p.map_hue(palette=palette, order=hue_order, norm=hue_norm)
 
         # Set a default color

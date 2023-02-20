@@ -14,6 +14,7 @@ import numpy.testing as npt
 from numpy.testing import (
     assert_array_equal,
     assert_array_less,
+    assert_array_almost_equal,
 )
 
 from seaborn import categorical as cat
@@ -40,9 +41,10 @@ from seaborn._testing import assert_plots_equal
 
 PLOT_FUNCS = [
     catplot,
+    barplot,
+    pointplot,
     stripplot,
     swarmplot,
-    barplot,
 ]
 
 
@@ -2292,7 +2294,7 @@ class TestBarPlot(SharedAggTests):
             assert getattr(bar, f"get_{prop}")() == approx(wide_df.iloc[:, i].mean())
 
     @pytest.mark.parametrize("orient", ["x", "y", "h", "v"])
-    def test_orient(self, orient):
+    def test_vector_orient(self, orient):
 
         keys, vals = ["a", "b", "c"], [1, 2, 3]
         data = dict(zip(keys, vals))
@@ -2305,8 +2307,7 @@ class TestBarPlot(SharedAggTests):
 
     def test_xy_vertical(self):
 
-        x = ["a", "b", "c"]
-        y = [1, 3, 2.5]
+        x, y = ["a", "b", "c"], [1, 3, 2.5]
 
         ax = barplot(x=x, y=y)
         for i, bar in enumerate(ax.patches):
@@ -2317,8 +2318,7 @@ class TestBarPlot(SharedAggTests):
 
     def test_xy_horizontal(self):
 
-        x = [1, 3, 2.5]
-        y = ["a", "b", "c"]
+        x, y = [1, 3, 2.5], ["a", "b", "c"]
 
         ax = barplot(x=x, y=y)
         for i, bar in enumerate(ax.patches):
@@ -2461,7 +2461,7 @@ class TestBarPlot(SharedAggTests):
             assert bar.get_height() == y[i]
         assert ax.patches[1].get_width() > ax.patches[0].get_width()
 
-    def test_dateimte_native_scale_axis(self):
+    def test_datetime_native_scale_axis(self):
 
         x = pd.date_range("2010-01-01", periods=20, freq="m")
         y = np.arange(20)
@@ -2534,7 +2534,7 @@ class TestBarPlot(SharedAggTests):
         bar, = ax.patches
         assert bar.get_width() == 10 ** np.log10(long_df["z"]).mean()
 
-    def test_errorbar(self, long_df):
+    def test_errorbars(self, long_df):
 
         agg_var, val_var = "a", "y"
         agg_df = long_df.groupby(agg_var)[val_var].agg(["mean", "std"])
@@ -2738,6 +2738,241 @@ class TestBarPlot(SharedAggTests):
             ax = barplot(x=x, y=y, saturation=1, palette=palette)
         for i, bar in enumerate(ax.patches):
             assert same_color(bar.get_facecolor(), colors[i])
+
+
+class TestPointPlot(SharedAggTests):
+
+    func = staticmethod(pointplot)
+
+    def get_last_color(self, ax):
+
+        color = ax.lines[-1].get_color()
+        return to_rgba(color)
+
+    @pytest.mark.parametrize("orient", ["x", "y"])
+    def test_single_var(self, orient):
+
+        vals = pd.Series([1, 3, 10])
+        ax = pointplot(**{orient: vals})
+        line = ax.lines[0]
+        assert getattr(line, f"get_{orient}data")() == approx(vals.mean())
+
+    @pytest.mark.parametrize("orient", ["x", "y", "h", "v"])
+    def test_wide_df(self, wide_df, orient):
+
+        ax = pointplot(wide_df, orient=orient)
+        orient = {"h": "y", "v": "x"}.get(orient, orient)
+        depend = {"x": "y", "y": "x"}[orient]
+        line = ax.lines[0]
+        assert_array_equal(
+            getattr(line, f"get_{orient}data")(),
+            np.arange(len(wide_df.columns)),
+        )
+        assert_array_almost_equal(
+            getattr(line, f"get_{depend}data")(),
+            wide_df.mean(axis=0),
+        )
+
+    @pytest.mark.parametrize("orient", ["x", "y", "h", "v"])
+    def test_vector_orient(self, orient):
+
+        keys, vals = ["a", "b", "c"], [1, 2, 3]
+        data = dict(zip(keys, vals))
+        orient = {"h": "y", "v": "x"}.get(orient, orient)
+        depend = {"x": "y", "y": "x"}[orient]
+        ax = pointplot(data, orient=orient)
+        line = ax.lines[0]
+        assert_array_equal(
+            getattr(line, f"get_{orient}data")(),
+            np.arange(len(keys)),
+        )
+        assert_array_equal(getattr(line, f"get_{depend}data")(), vals)
+
+    def test_xy_vertical(self):
+
+        x, y = ["a", "b", "c"], [1, 3, 2.5]
+        ax = pointplot(x=x, y=y)
+        for i, xy in enumerate(ax.lines[0].get_xydata()):
+            assert tuple(xy) == (i, y[i])
+
+    def test_xy_horizontal(self):
+
+        x, y = [1, 3, 2.5], ["a", "b", "c"]
+        ax = pointplot(x=x, y=y)
+        for i, xy in enumerate(ax.lines[0].get_xydata()):
+            assert tuple(xy) == (x[i], i)
+
+    def test_xy_with_na_grouper(self):
+
+        x, y = ["a", None, "b"], [1, 2, 3]
+        ax = pointplot(x=x, y=y)
+        _draw_figure(ax.figure)  # For matplotlib<3.5
+        assert ax.get_xticks() == [0, 1]
+        assert [t.get_text() for t in ax.get_xticklabels()] == ["a", "b"]
+        assert_array_equal(ax.lines[0].get_xdata(), [0, 1])
+        assert_array_equal(ax.lines[0].get_ydata(), [1, 3])
+
+    def test_xy_with_na_value(self):
+
+        x, y = ["a", "b", "c"], [1, np.nan, 3]
+        ax = pointplot(x=x, y=y)
+        _draw_figure(ax.figure)  # For matplotlib<3.5
+        assert ax.get_xticks() == [0, 1, 2]
+        assert [t.get_text() for t in ax.get_xticklabels()] == x
+        assert_array_equal(ax.lines[0].get_xdata(), [0, 1, 2])
+        assert_array_equal(ax.lines[0].get_ydata(), y)
+
+    def test_hue(self):
+
+        x, y = ["a", "a", "b", "b"], [1, 2, 3, 4]
+        hue = ["x", "y", "x", "y"]
+        ax = pointplot(x=x, y=y, hue=hue, errorbar=None)
+        for i, line in enumerate(ax.lines[:2]):
+            assert_array_equal(line.get_ydata(), y[i::2])
+            assert same_color(line.get_color(), f"C{i}")
+
+    def test_xy_native_scale(self):
+
+        x, y = [2, 4, 8], [1, 2, 3]
+
+        ax = pointplot(x=x, y=y, native_scale=True)
+        line = ax.lines[0]
+        assert_array_equal(line.get_xdata(), x)
+        assert_array_equal(line.get_ydata(), y)
+
+    @pytest.mark.parametrize("estimator", ["mean", np.mean])
+    def test_estimate(self, long_df, estimator):
+
+        agg_var, val_var = "a", "y"
+        agg_df = long_df.groupby(agg_var)[val_var].agg(estimator)
+
+        ax = pointplot(long_df, x=agg_var, y=val_var, errorbar=None)
+        order = categorical_order(long_df[agg_var])
+        for i, xy in enumerate(ax.lines[0].get_xydata()):
+            assert tuple(xy) == approx((i, agg_df[order[i]]))
+
+    def test_estimate_log_transform(self, long_df):
+
+        ax = mpl.figure.Figure().subplots()
+        ax.set_xscale("log")
+        pointplot(x=long_df["z"], ax=ax)
+        val, = ax.lines[0].get_xdata()
+        assert val == 10 ** np.log10(long_df["z"]).mean()
+
+    def test_errorbars(self, long_df):
+
+        agg_var, val_var = "a", "y"
+        agg_df = long_df.groupby(agg_var)[val_var].agg(["mean", "std"])
+
+        ax = pointplot(long_df, x=agg_var, y=val_var, errorbar="sd")
+        order = categorical_order(long_df[agg_var])
+        for i, line in enumerate(ax.lines[1:]):
+            row = agg_df.loc[order[i]]
+            lo, hi = line.get_ydata()
+            assert lo == approx(row["mean"] - row["std"])
+            assert hi == approx(row["mean"] + row["std"])
+
+    def test_marker_linestyle(self):
+
+        x, y = ["a", "b", "c"], [1, 2, 3]
+        ax = pointplot(x=x, y=y, marker="s", linestyle="--")
+        line = ax.lines[0]
+        assert line.get_marker() == "s"
+        assert line.get_linestyle() == "--"
+
+    def test_markers_linestyles_single(self):
+
+        x, y = ["a", "b", "c"], [1, 2, 3]
+        ax = pointplot(x=x, y=y, markers="s", linestyles="--")
+        line = ax.lines[0]
+        assert line.get_marker() == "s"
+        assert line.get_linestyle() == "--"
+
+    def test_markers_linestyles_mapped(self):
+
+        x, y = ["a", "a", "b", "b"], [1, 2, 3, 4]
+        hue = ["x", "y", "x", "y"]
+        markers = ["d", "s"]
+        linestyles = ["--", ":"]
+        ax = pointplot(
+            x=x, y=y, hue=hue,
+            markers=markers, linestyles=linestyles,
+            errorbar=None,
+        )
+        for i, line in enumerate(ax.lines[:2]):
+            assert line.get_marker() == markers[i]
+            assert line.get_linestyle() == linestyles[i]
+
+    def test_dodge_boolean(self):
+
+        x, y = ["a", "b", "a", "b"], [1, 2, 3, 4]
+        hue = ["x", "x", "y", "y"]
+        ax = pointplot(x=x, y=y, hue=hue, dodge=True, errorbar=None)
+        for i, xy in enumerate(ax.lines[0].get_xydata()):
+            assert tuple(xy) == (i - .025, y[i])
+        for i, xy in enumerate(ax.lines[1].get_xydata()):
+            assert tuple(xy) == (i + .025, y[2 + i])
+
+    def test_dodge_float(self):
+
+        x, y = ["a", "b", "a", "b"], [1, 2, 3, 4]
+        hue = ["x", "x", "y", "y"]
+        ax = pointplot(x=x, y=y, hue=hue, dodge=.2, errorbar=None)
+        for i, xy in enumerate(ax.lines[0].get_xydata()):
+            assert tuple(xy) == (i - .1, y[i])
+        for i, xy in enumerate(ax.lines[1].get_xydata()):
+            assert tuple(xy) == (i + .1, y[2 + i])
+
+    def test_dodge_log_scale(self):
+
+        x, y = [10, 1000, 10, 1000], [1, 2, 3, 4]
+        hue = ["x", "x", "y", "y"]
+        ax = mpl.figure.Figure().subplots()
+        ax.set_xscale("log")
+        pointplot(x=x, y=y, hue=hue, dodge=.2, native_scale=True, errorbar=None, ax=ax)
+        for i, xy in enumerate(ax.lines[0].get_xydata()):
+            assert tuple(xy) == (10 ** (np.log10(x[i]) - .2), y[i])
+        for i, xy in enumerate(ax.lines[1].get_xydata()):
+            assert tuple(xy) == (10 ** (np.log10(x[2 + i]) + .2), y[2 + i])
+
+    def test_err_kws(self):
+
+        x, y = ["a", "a", "b", "b"], [1, 2, 3, 4]
+        err_kws = dict(color=(.2, .5, .3), linewidth=10)
+        ax = pointplot(x=x, y=y, errorbar=("pi", 100), err_kws=err_kws)
+        for line in ax.lines[1:]:
+            assert same_color(line.get_color(), err_kws["color"])
+            assert line.get_linewidth() == err_kws["linewidth"]
+
+    def test_err_kws_inherited(self):
+
+        x, y = ["a", "a", "b", "b"], [1, 2, 3, 4]
+        kws = dict(color=(.2, .5, .3), linewidth=10)
+        ax = pointplot(x=x, y=y, errorbar=("pi", 100), **kws)
+        for line in ax.lines[1:]:
+            assert same_color(line.get_color(), kws["color"])
+            assert line.get_linewidth() == kws["linewidth"]
+
+    def test_legend_disabled(self, long_df):
+
+        ax = pointplot(long_df, x="x", y="y", hue="b", legend=False)
+        assert ax.get_legend() is None
+
+    def test_join_deprecation(self):
+
+        with pytest.warns(UserWarning, match="The `join` parameter"):
+            ax = pointplot(x=["a", "b", "c"], y=[1, 2, 3], join=False)
+        assert ax.lines[0].get_linestyle().lower() == "none"
+
+    def test_scale_deprecation(self):
+
+        x, y = ["a", "b", "c"], [1, 2, 3]
+        ax = pointplot(x=x, y=y, errorbar=None)
+        with pytest.warns(UserWarning, match="The `scale` parameter"):
+            pointplot(x=x, y=y, errorbar=None, scale=2)
+        l1, l2 = ax.lines
+        assert l2.get_linewidth() == 2 * l1.get_linewidth()
+        assert l2.get_markersize() > l1.get_markersize()
 
 
 class TestCountPlot:
