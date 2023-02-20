@@ -561,18 +561,14 @@ class _CategoricalPlotterNew(_RelationalPlotter):
 
             self._invert_scale(agg_data)
 
-            line_color = (
-                color if "hue" not in sub_vars else self._hue_map(sub_vars["hue"])
-            )
-
-            line, = ax.plot(
-                agg_data["x"],
-                agg_data["y"],
-                color=line_color,
+            sub_kws = plot_kws.copy()
+            sub_kws.update(
                 marker=markers[sub_vars.get("hue")],
                 linestyle=linestyles[sub_vars.get("hue")],
-                **plot_kws,
+                color=self._hue_map(sub_vars["hue"]) if "hue" in sub_vars else color,
             )
+
+            line, = ax.plot(agg_data["x"], agg_data["y"], **sub_kws)
 
             sub_err_kws = err_kws.copy()
             line_props = line.properties()
@@ -589,7 +585,8 @@ class _CategoricalPlotterNew(_RelationalPlotter):
             show_legend = bool(self.legend)
 
         if show_legend:
-            self.add_legend_data(ax, ax.plot)
+            semantic_kws = {"hue": {"marker": markers, "linestyle": linestyles}}
+            self.add_legend_data(ax, ax.plot, sub_kws, semantic_kws)
             handles, _ = ax.get_legend_handles_labels()
             if handles:
                 ax.legend(title=self.legend_title)

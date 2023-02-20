@@ -190,7 +190,94 @@ class _RelationalPlotter(VectorPlotter):
     # TODO where best to define default parameters?
     sort = True
 
-    def _update_legend_data(self, update, var, verbosity, title, title_kws, attr_name):
+    def add_legend_data(self, ax, func=None, common_kws=None, semantic_kws=None):
+        """Add labeled artists to represent the different plot semantics."""
+        verbosity = self.legend
+        if isinstance(verbosity, str) and verbosity not in ["auto", "brief", "full"]:
+            err = "`legend` must be 'auto', 'brief', 'full', or a boolean."
+            raise ValueError(err)
+        elif verbosity is True:
+            verbosity = "auto"
+
+        keys = []
+        legend_kws = {}
+        common_kws = {} if common_kws is None else common_kws
+        semantic_kws = {} if semantic_kws is None else semantic_kws
+
+        # Assign a legend title if there is only going to be one sub-legend,
+        # otherwise, subtitles will be inserted into the texts list with an
+        # invisible handle (which is a hack)
+        titles = {
+            title for title in
+            (self.variables.get(v, None) for v in ["hue", "size", "style"])
+            if title is not None
+        }
+        legend_title = "" if len(titles) != 1 else titles.pop()
+
+        title_kws = dict(
+            visible=False, color="w", s=0, linewidth=0, marker="", dashes=""
+        )
+
+        def update(var_name, val_name, **kws):
+
+            key = var_name, val_name
+            if key in legend_kws:
+                legend_kws[key].update(**kws)
+            else:
+                keys.append(key)
+                legend_kws[key] = dict(**kws)
+
+        update_args = verbosity, legend_title, title_kws
+        self._update_legend_data(
+            update, "hue", *update_args, "color", semantic_kws.get("hue")
+        )
+        self._update_legend_data(
+            update, "size", *update_args, ["linewidth", "s"], semantic_kws.get("size")
+        )
+        self._update_legend_data(
+            update, "style", *update_args, None, semantic_kws.get("style")
+        )
+
+        if func is None:
+            func = getattr(ax, self._legend_func)
+
+        legend_data = {}
+        legend_order = []
+
+        for key in keys:
+
+            _, label = key
+            kws = legend_kws[key]
+            kws.setdefault("color", ".2")
+            level_kws = {}
+            use_attrs = [
+                *self._legend_attributes,
+                *common_kws,
+                *[attr for var_attrs in semantic_kws.values() for attr in var_attrs],
+            ]
+            for attr in use_attrs:
+                if attr in kws:
+                    level_kws[attr] = kws[attr]
+            artist = func([], [], label=label, **{**common_kws, **level_kws})
+            if func.__name__ == "plot":
+                artist = artist[0]
+            legend_data[key] = artist
+            legend_order.append(key)
+
+        self.legend_title = legend_title
+        self.legend_data = legend_data
+        self.legend_order = legend_order
+
+    def _update_legend_data(
+        self,
+        update,
+        var,
+        verbosity,
+        title,
+        title_kws,
+        attr_names,
+        other_props,
+    ):
 
         brief_ticks = 6
         mapper = getattr(self, f"_{var}_map")
@@ -216,79 +303,17 @@ class _RelationalPlotter(VectorPlotter):
         if not title and self.variables.get(var, None) is not None:
             update((self.variables[var], "title"), self.variables[var], **title_kws)
 
+        other_props = {} if other_props is None else other_props
+
         for level, formatted_level in zip(levels, formatted_levels):
             if level is not None:
                 attr = mapper(level)
-                if isinstance(attr_name, list):
-                    attr = {name: attr for name in attr_name}
-                elif attr_name is not None:
-                    attr = {attr_name: attr}
+                if isinstance(attr_names, list):
+                    attr = {name: attr for name in attr_names}
+                elif attr_names is not None:
+                    attr = {attr_names: attr}
+                attr.update({k: v[level] for k, v in other_props.items() if level in v})
                 update(self.variables[var], formatted_level, **attr)
-
-    def add_legend_data(self, ax, func=None):
-        """Add labeled artists to represent the different plot semantics."""
-        verbosity = self.legend
-        if isinstance(verbosity, str) and verbosity not in ["auto", "brief", "full"]:
-            err = "`legend` must be 'auto', 'brief', 'full', or a boolean."
-            raise ValueError(err)
-        elif verbosity is True:
-            verbosity = "auto"
-
-        legend_kwargs = {}
-        keys = []
-
-        # Assign a legend title if there is only going to be one sub-legend,
-        # otherwise, subtitles will be inserted into the texts list with an
-        # invisible handle (which is a hack)
-        titles = {
-            title for title in
-            (self.variables.get(v, None) for v in ["hue", "size", "style"])
-            if title is not None
-        }
-        legend_title = "" if len(titles) != 1 else titles.pop()
-
-        title_kws = dict(
-            visible=False, color="w", s=0, linewidth=0, marker="", dashes=""
-        )
-
-        def update(var_name, val_name, **kws):
-
-            key = var_name, val_name
-            if key in legend_kwargs:
-                legend_kwargs[key].update(**kws)
-            else:
-                keys.append(key)
-                legend_kwargs[key] = dict(**kws)
-
-        update_args = verbosity, legend_title, title_kws
-        self._update_legend_data(update, "hue", *update_args, "color")
-        self._update_legend_data(update, "size", *update_args, ["linewidth", "s"])
-        self._update_legend_data(update, "style", *update_args, None)
-
-        if func is None:
-            func = getattr(ax, self._legend_func)
-
-        legend_data = {}
-        legend_order = []
-
-        for key in keys:
-
-            _, label = key
-            kws = legend_kwargs[key]
-            kws.setdefault("color", ".2")
-            use_kws = {}
-            for attr in self._legend_attributes + ["visible"]:
-                if attr in kws:
-                    use_kws[attr] = kws[attr]
-            artist = func([], [], label=label, **use_kws)
-            if func.__name__ == "plot":
-                artist = artist[0]
-            legend_data[key] = artist
-            legend_order.append(key)
-
-        self.legend_title = legend_title
-        self.legend_data = legend_data
-        self.legend_order = legend_order
 
 
 class _LinePlotter(_RelationalPlotter):
