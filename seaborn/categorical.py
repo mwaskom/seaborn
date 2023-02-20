@@ -2486,6 +2486,12 @@ _categorical_docs = dict(
 
         .. versionadded:: v0.13.0\
     """),
+    err_kws=dedent("""\
+    err_kws : dict
+        Parameters of :class:`matplotlib.lines.Line2D`, for the error bar artists.
+
+        .. versionadded:: v0.13.0\
+    """),
     ax_in=dedent("""\
     ax : matplotlib Axes
         Axes object to draw the plot onto, otherwise uses the current Axes.\
@@ -3157,16 +3163,14 @@ barplot.__doc__ = dedent("""\
     {native_scale}
     {formatter}
     {legend}
+    {err_kws}
     {ci}
     {errcolor}
     {errwidth}
-    err_kws : dict
-        Parameters of :class:`matplotlib.lines.Line2D`, for the error bar artists.
-
-        .. versionadded:: v0.13.0
     {ax_in}
     kwargs : key, value mappings
         Other parameters are passed through to :class:`matplotlib.patches.Rectangle`.
+
     Returns
     -------
     {ax_out}
@@ -3263,7 +3267,7 @@ def pointplot(
 
 
 pointplot.__doc__ = dedent("""\
-    Show point estimates and errors using dot marks.
+    Show point estimates and errors using lines with markers.
 
     A point plot represents an estimate of central tendency for a numeric
     variable by the position of the dot and provides some indication of the
@@ -3278,13 +3282,7 @@ pointplot.__doc__ = dedent("""\
     easier for the eyes than comparing the heights of several groups of points
     or bars.
 
-    It is important to keep in mind that a point plot shows only the mean (or
-    other estimator) value, but in many cases it may be more informative to
-    show the distribution of values at each level of the categorical variables.
-    In that case, other approaches such as a box or violin plot may be more
-    appropriate.
-
-    {categorical_narrative}
+    {new_categorical_narrative}
 
     Parameters
     ----------
@@ -3292,26 +3290,38 @@ pointplot.__doc__ = dedent("""\
     {input_params}
     {order_vars}
     {stat_api_params}
+    {color}
+    {palette}
     markers : string or list of strings
-        Markers to use for each of the ``hue`` levels.
+        Markers to use for each of the `hue` levels.
     linestyles : string or list of strings
-        Line styles to use for each of the ``hue`` levels.
+        Line styles to use for each of the `hue` levels.
     dodge : bool or float
         Amount to separate the points for each level of the ``hue`` variable
         along the categorical axis.
+    {native_scale}
+    {orient}
+    {capsize}
+    {formatter}
+    {legend}
+    {err_kws}
+    {ci}
+    {errwidth}
     join : bool
-        If ``True``, lines will be drawn between point estimates at the same
-        ``hue`` level.
+        If `True`, draw lines will be drawn between point estimates.
+
+        .. deprecated:: v0.13.0
+            Set `linestyle="none"` to remove the lines between the points.
     scale : float
         Scale factor for the plot elements.
-    {orient}
-    {color}
-    {palette}
-    {errwidth}
-    {capsize}
-    label : string
-        Label to represent the plot in a legend, only relevant when not using `hue`.
+
+        .. deprecated:: v0.13.0
+            Control element sizes with :class:`matplotlib.lines.Line2D` parameters.
     {ax_in}
+    kwargs : key, value mappings
+        Other parameters are passed through to :class:`matplotlib.lines.Line2D`.
+
+        .. versionadded:: v0.13.0
 
     Returns
     -------
@@ -3322,9 +3332,16 @@ pointplot.__doc__ = dedent("""\
     {barplot}
     {catplot}
 
+    Notes
+    -----
+    It is important to keep in mind that a point plot shows only the mean (or
+    other estimator) value, but in many cases it may be more informative to
+    show the distribution of values at each level of the categorical variables.
+    In that case, other approaches such as a box or violin plot may be more
+    appropriate.
+
     Examples
     --------
-
     .. include:: ../docstrings/pointplot.rst
 
     """).format(**_categorical_docs)
