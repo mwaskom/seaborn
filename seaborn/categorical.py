@@ -324,6 +324,19 @@ class _CategoricalPlotterNew(_RelationalPlotter):
                     if (col := f"{var}{suf}") in data:
                         data[col] = np.power(10, data[col])
 
+    def _configure_legend(self, ax, func, common_kws=None, semantic_kws=None):
+
+        if self.legend == "auto":
+            show_legend = not self._redundant_hue and self.input_format != "wide"
+        else:
+            show_legend = bool(self.legend)
+
+        if show_legend:
+            self.add_legend_data(ax, func, common_kws, semantic_kws)
+            handles, _ = ax.get_legend_handles_labels()
+            if handles:
+                ax.legend(title=self.legend_title)
+
     @property
     def _native_width(self):
         """Return unit of width separating categories on native numeric scale."""
@@ -405,17 +418,7 @@ class _CategoricalPlotterNew(_RelationalPlotter):
             else:
                 points.set_edgecolors(edgecolor)
 
-        # Finalize the axes details
-        if self.legend == "auto":
-            show_legend = not self._redundant_hue and self.input_format != "wide"
-        else:
-            show_legend = bool(self.legend)
-
-        if show_legend:
-            self.add_legend_data(ax)
-            handles, _ = ax.get_legend_handles_labels()
-            if handles:
-                ax.legend(title=self.legend_title)
+        self._configure_legend(ax, ax.scatter)
 
     def plot_swarms(
         self,
@@ -493,18 +496,7 @@ class _CategoricalPlotterNew(_RelationalPlotter):
                 points.draw = draw.__get__(points)
 
         _draw_figure(ax.figure)
-
-        # Finalize the axes details
-        if self.legend == "auto":
-            show_legend = not self._redundant_hue and self.input_format != "wide"
-        else:
-            show_legend = bool(self.legend)
-
-        if show_legend:
-            self.add_legend_data(ax)
-            handles, _ = ax.get_legend_handles_labels()
-            if handles:
-                ax.legend(title=self.legend_title)
+        self._configure_legend(ax, ax.scatter)
 
     def plot_points(
         self,
@@ -577,19 +569,8 @@ class _CategoricalPlotterNew(_RelationalPlotter):
             if aggregator.error_method is not None:
                 self.plot_errorbars(ax, agg_data, capsize, sub_err_kws)
 
-        # Finalize the axes details
-        # TODO XXX this was copy-pasted from stripplot
-        if self.legend == "auto":
-            show_legend = not self._redundant_hue and self.input_format != "wide"
-        else:
-            show_legend = bool(self.legend)
-
-        if show_legend:
-            semantic_kws = {"hue": {"marker": markers, "linestyle": linestyles}}
-            self.add_legend_data(ax, ax.plot, sub_kws, semantic_kws)
-            handles, _ = ax.get_legend_handles_labels()
-            if handles:
-                ax.legend(title=self.legend_title)
+        semantic_kws = {"hue": {"marker": markers, "linestyle": linestyles}}
+        self._configure_legend(ax, ax.plot, sub_kws, semantic_kws)
 
     def plot_bars(
         self,
@@ -669,18 +650,7 @@ class _CategoricalPlotterNew(_RelationalPlotter):
             if aggregator.error_method is not None:
                 self.plot_errorbars(ax, agg_data, capsize, err_kws.copy())
 
-        # Finalize the axes details
-        # TODO XXX this was copy-pasted from stripplot
-        if self.legend == "auto":
-            show_legend = not self._redundant_hue and self.input_format != "wide"
-        else:
-            show_legend = bool(self.legend)
-
-        if show_legend:
-            self.add_legend_data(ax, ax.fill_between)
-            handles, _ = ax.get_legend_handles_labels()
-            if handles:
-                ax.legend(title=self.legend_title)
+        self._configure_legend(ax, ax.fill_between)
 
     def plot_errorbars(self, ax, data, capsize, err_kws):
 
