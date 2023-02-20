@@ -190,6 +190,41 @@ class _RelationalPlotter(VectorPlotter):
     # TODO where best to define default parameters?
     sort = True
 
+    def _update_legend_data(self, update, var, verbosity, title, title_kws, attr_name):
+
+        brief_ticks = 6
+        mapper = getattr(self, f"_{var}_map")
+
+        brief = mapper.map_type == "numeric" and (
+            verbosity == "brief"
+            or (verbosity == "auto" and len(mapper.levels) > brief_ticks)
+        )
+        if brief:
+            if isinstance(mapper.norm, mpl.colors.LogNorm):
+                locator = mpl.ticker.LogLocator(numticks=brief_ticks)
+            else:
+                locator = mpl.ticker.MaxNLocator(nbins=brief_ticks)
+            limits = min(mapper.levels), max(mapper.levels)
+            levels, formatted_levels = locator_to_legend_entries(
+                locator, limits, self.plot_data[var].infer_objects().dtype
+            )
+        elif mapper.levels is None:
+            levels = formatted_levels = []
+        else:
+            levels = formatted_levels = mapper.levels
+
+        if not title and self.variables.get(var, None) is not None:
+            update((self.variables[var], "title"), self.variables[var], **title_kws)
+
+        for level, formatted_level in zip(levels, formatted_levels):
+            if level is not None:
+                attr = mapper(level)
+                if isinstance(attr_name, list):
+                    attr = {name: attr for name in attr_name}
+                elif attr_name is not None:
+                    attr = {attr_name: attr}
+                update(self.variables[var], formatted_level, **attr)
+
     def add_legend_data(self, ax, func=None):
         """Add labeled artists to represent the different plot semantics."""
         verbosity = self.legend
@@ -210,10 +245,7 @@ class _RelationalPlotter(VectorPlotter):
             (self.variables.get(v, None) for v in ["hue", "size", "style"])
             if title is not None
         }
-        if len(titles) == 1:
-            legend_title = titles.pop()
-        else:
-            legend_title = ""
+        legend_title = "" if len(titles) != 1 else titles.pop()
 
         title_kws = dict(
             visible=False, color="w", s=0, linewidth=0, marker="", dashes=""
@@ -226,97 +258,12 @@ class _RelationalPlotter(VectorPlotter):
                 legend_kwargs[key].update(**kws)
             else:
                 keys.append(key)
-
                 legend_kwargs[key] = dict(**kws)
 
-        # Define the maximum number of ticks to use for "brief" legends
-        brief_ticks = 6
-
-        # -- Add a legend for hue semantics
-        brief_hue = self._hue_map.map_type == "numeric" and (
-            verbosity == "brief"
-            or (verbosity == "auto" and len(self._hue_map.levels) > brief_ticks)
-        )
-        if brief_hue:
-            if isinstance(self._hue_map.norm, mpl.colors.LogNorm):
-                locator = mpl.ticker.LogLocator(numticks=brief_ticks)
-            else:
-                locator = mpl.ticker.MaxNLocator(nbins=brief_ticks)
-            limits = min(self._hue_map.levels), max(self._hue_map.levels)
-            hue_levels, hue_formatted_levels = locator_to_legend_entries(
-                locator, limits, self.plot_data["hue"].infer_objects().dtype
-            )
-        elif self._hue_map.levels is None:
-            hue_levels = hue_formatted_levels = []
-        else:
-            hue_levels = hue_formatted_levels = self._hue_map.levels
-
-        # Add the hue semantic subtitle
-        if not legend_title and self.variables.get("hue", None) is not None:
-            update((self.variables["hue"], "title"),
-                   self.variables["hue"], **title_kws)
-
-        # Add the hue semantic labels
-        for level, formatted_level in zip(hue_levels, hue_formatted_levels):
-            if level is not None:
-                color = self._hue_map(level)
-                update(self.variables["hue"], formatted_level, color=color)
-
-        # -- Add a legend for size semantics
-        brief_size = self._size_map.map_type == "numeric" and (
-            verbosity == "brief"
-            or (verbosity == "auto" and len(self._size_map.levels) > brief_ticks)
-        )
-        if brief_size:
-            # Define how ticks will interpolate between the min/max data values
-            if isinstance(self._size_map.norm, mpl.colors.LogNorm):
-                locator = mpl.ticker.LogLocator(numticks=brief_ticks)
-            else:
-                locator = mpl.ticker.MaxNLocator(nbins=brief_ticks)
-            # Define the min/max data values
-            limits = min(self._size_map.levels), max(self._size_map.levels)
-            size_levels, size_formatted_levels = locator_to_legend_entries(
-                locator, limits, self.plot_data["size"].infer_objects().dtype
-            )
-        elif self._size_map.levels is None:
-            size_levels = size_formatted_levels = []
-        else:
-            size_levels = size_formatted_levels = self._size_map.levels
-
-        # Add the size semantic subtitle
-        if not legend_title and self.variables.get("size", None) is not None:
-            update((self.variables["size"], "title"),
-                   self.variables["size"], **title_kws)
-
-        # Add the size semantic labels
-        for level, formatted_level in zip(size_levels, size_formatted_levels):
-            if level is not None:
-                size = self._size_map(level)
-                update(
-                    self.variables["size"],
-                    formatted_level,
-                    linewidth=size,
-                    s=size,
-                )
-
-        # -- Add a legend for style semantics
-
-        # Add the style semantic title
-        if not legend_title and self.variables.get("style", None) is not None:
-            update((self.variables["style"], "title"),
-                   self.variables["style"], **title_kws)
-
-        # Add the style semantic labels
-        if self._style_map.levels is not None:
-            for level in self._style_map.levels:
-                if level is not None:
-                    attrs = self._style_map(level)
-                    update(
-                        self.variables["style"],
-                        level,
-                        marker=attrs.get("marker", ""),
-                        dashes=attrs.get("dashes", ""),
-                    )
+        update_args = verbosity, legend_title, title_kws
+        self._update_legend_data(update, "hue", *update_args, "color")
+        self._update_legend_data(update, "size", *update_args, ["linewidth", "s"])
+        self._update_legend_data(update, "style", *update_args, None)
 
         if func is None:
             func = getattr(ax, self._legend_func)
