@@ -2953,6 +2953,40 @@ class TestPointPlot(SharedAggTests):
             assert same_color(line.get_color(), kws["color"])
             assert line.get_linewidth() == kws["linewidth"]
 
+    def test_legend_contents(self):
+
+        x, y = ["a", "a", "b", "b"], [1, 2, 3, 4]
+        hue = ["x", "y", "x", "y"]
+        ax = pointplot(x=x, y=y, hue=hue)
+        legend = ax.get_legend()
+        assert [t.get_text() for t in legend.texts] == ["x", "y"]
+        for i, handle in enumerate(legend.legendHandles):
+            assert handle.get_marker() == "o"
+            assert handle.get_linestyle() == "-"
+            assert same_color(handle.get_color(), f"C{i}")
+
+    def test_legend_set_props(self):
+
+        x, y = ["a", "a", "b", "b"], [1, 2, 3, 4]
+        hue = ["x", "y", "x", "y"]
+        kws = dict(marker="s", linewidth=1)
+        ax = pointplot(x=x, y=y, hue=hue, **kws)
+        legend = ax.get_legend()
+        for i, handle in enumerate(legend.legendHandles):
+            assert handle.get_marker() == kws["marker"]
+            assert handle.get_linewidth() == kws["linewidth"]
+
+    def test_legend_synced_props(self):
+
+        x, y = ["a", "a", "b", "b"], [1, 2, 3, 4]
+        hue = ["x", "y", "x", "y"]
+        kws = dict(markers=["s", "d"], linestyles=["--", ":"])
+        ax = pointplot(x=x, y=y, hue=hue, **kws)
+        legend = ax.get_legend()
+        for i, handle in enumerate(legend.legendHandles):
+            assert handle.get_marker() == kws["markers"][i]
+            assert handle.get_linestyle() == kws["linestyles"][i]
+
     def test_legend_disabled(self, long_df):
 
         ax = pointplot(long_df, x="x", y="y", hue="b", legend=False)
