@@ -265,12 +265,11 @@ class _CategoricalPlotterNew(_RelationalPlotter):
         if value is default:
             value = plot_kws.pop(name, fallback)
 
-        if isinstance(value, list):
-            if (levels := self._hue_map.levels) is not None:
-                mapping = {k: v for k, v in zip(levels, value)}
+        if (levels := self._hue_map.levels) is None:
+            mapping = {None: value}
         else:
-            if (levels := self._hue_map.levels) is None:
-                mapping = {None: value}
+            if isinstance(value, list):
+                mapping = {k: v for k, v in zip(levels, value)}
             else:
                 mapping = {k: value for k in levels}
 
@@ -510,7 +509,6 @@ class _CategoricalPlotterNew(_RelationalPlotter):
         plot_kws,
     ):
 
-        ax = self.ax
         agg_var = {"x": "y", "y": "x"}[self.orient]
         iter_vars = ["hue"]
 
@@ -526,13 +524,17 @@ class _CategoricalPlotterNew(_RelationalPlotter):
         if self.var_types[self.orient] == "categorical":
             positions = [i for i, _ in enumerate(positions)]
         else:
-            transform = getattr(ax, f"{self.orient}axis").get_transform()
-            positions = transform.transform(positions)
+            if self._log_scaled(self.orient):
+                positions = np.log10(positions)
+            if self.var_types[self.orient] == "datetime":
+                positions = mpl.dates.date2num(positions)
         positions = pd.Index(positions, name=self.orient)
 
         n_hue_levels = 0 if self._hue_map.levels is None else len(self._hue_map.levels)
         if dodge is True:
             dodge = .025 * n_hue_levels
+
+        ax = self.ax
 
         for sub_vars, sub_data in self.iter_data(iter_vars,
                                                  from_comp_data=True,
@@ -560,6 +562,7 @@ class _CategoricalPlotterNew(_RelationalPlotter):
                 color=self._hue_map(sub_vars["hue"]) if "hue" in sub_vars else color,
             )
 
+            ax = self._get_axes(sub_vars)
             line, = ax.plot(agg_data["x"], agg_data["y"], **sub_kws)
 
             sub_err_kws = err_kws.copy()
@@ -608,6 +611,7 @@ class _CategoricalPlotterNew(_RelationalPlotter):
                 .apply(aggregator, agg_var)
                 .reset_index()
             )
+            print(agg_data)
 
             real_width = width * self._native_width
             if dodge:
@@ -3483,9 +3487,9 @@ def catplot(
         warnings.warn(msg, UserWarning)
         kwargs.pop("ax")
 
-    refactored_kinds = ["strip", "swarm", "bar", "count"]
+    refactored_kinds = ["strip", "swarm", "point", "bar", "count"]
     desaturated_kinds = ["bar", "count"]
-    scatter_kinds = ["strip", "swarm"]
+    undodged_kinds = ["strip", "swarm", "point"]
 
     if kind in refactored_kinds:
 
@@ -3569,7 +3573,7 @@ def catplot(
         edgecolor = kwargs.pop("edgecolor", "gray")  # XXX TODO default
 
         width = kwargs.pop("width", 0.8)
-        dodge = kwargs.pop("dodge", None if kind in scatter_kinds else "auto")
+        dodge = kwargs.pop("dodge", False if kind in undodged_kinds else "auto")
         if dodge == "auto":
             dodge = p._dodge_needed()
 
@@ -3611,6 +3615,28 @@ def catplot(
                 edgecolor=edgecolor,
                 warn_thresh=warn_thresh,
                 plot_kws=plot_kws,
+            )
+
+        elif kind == "point":
+
+            aggregator = EstimateAggregator(
+                estimator, errorbar, n_boot=n_boot, seed=seed
+            )
+
+            err_kws = _normalize_kwargs(kwargs.pop("err_kws", {}), mpl.lines.Line2D)
+            markers = kwargs.pop("markers", default)
+            linestyles = kwargs.pop("linestyles", default)
+            capsize = kwargs.pop("capsize", 0)
+
+            p.plot_points(
+                aggregator=aggregator,
+                markers=markers,
+                linestyles=linestyles,
+                dodge=dodge,
+                color=color,
+                capsize=capsize,
+                err_kws=err_kws,
+                plot_kws=kwargs,
             )
 
         elif kind == "bar":
