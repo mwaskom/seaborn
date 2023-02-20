@@ -212,8 +212,7 @@ class _RelationalPlotter(VectorPlotter):
             (self.variables.get(v, None) for v in ["hue", "size", "style"])
             if title is not None
         }
-        legend_title = "" if len(titles) != 1 else titles.pop()
-
+        title = "" if len(titles) != 1 else titles.pop()
         title_kws = dict(
             visible=False, color="w", s=0, linewidth=0, marker="", dashes=""
         )
@@ -227,16 +226,11 @@ class _RelationalPlotter(VectorPlotter):
                 keys.append(key)
                 legend_kws[key] = dict(**kws)
 
-        update_args = verbosity, legend_title, title_kws
-        self._update_legend_data(
-            update, "hue", *update_args, "color", semantic_kws.get("hue")
-        )
-        self._update_legend_data(
-            update, "size", *update_args, ["linewidth", "s"], semantic_kws.get("size")
-        )
-        self._update_legend_data(
-            update, "style", *update_args, None, semantic_kws.get("style")
-        )
+        legend_attrs = {"hue": "color", "size": ["linewidth", "s"], "style": None}
+        for var, names in legend_attrs.items():
+            self._update_legend_data(
+                update, var, verbosity, title, title_kws, names, semantic_kws.get(var),
+            )
 
         if func is None:
             func = getattr(ax, self._legend_func)
@@ -264,7 +258,7 @@ class _RelationalPlotter(VectorPlotter):
             legend_data[key] = artist
             legend_order.append(key)
 
-        self.legend_title = legend_title
+        self.legend_title = title
         self.legend_data = legend_data
         self.legend_order = legend_order
 
