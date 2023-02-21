@@ -143,9 +143,67 @@ class Step(Line):
     .. include:: ../docstrings/objects.Step.rst
 
     """
-    def __init__(self):
-        super().__init__()
-        self.artist_kws.update({"drawstyle":"steps-post"})
+
+    step_position : str = "mid"
+
+
+    def __init__(self, *args, **kwargs):
+
+        super().__init__(*args, **kwargs)
+
+        assert self.step_position in ["pre", "mid", "post"]
+        self.artist_kws.update({"drawstyle": "steps-" + self.step_position})
+
+
+    def _encounter_width(self, data, scales, orient):
+        transform = scales[orient]._matplotlib_scale.get_transform()
+        forward = transform.transform
+        reverse = transform.inverted().transform
+
+        orient_start = reverse(forward(data[orient]) - data["width"] / 2 ) # - data["space"] / 2)
+        orient_end = reverse(forward(data[orient]) + data["width"] / 2) # + data["space"] / 2)
+        
+        data = data.append(data)
+        data[orient] = np.concatenate([orient_start, orient_end])
+        data.reset_index(inplace=True)
+        data.sort_values(["index", orient], inplace=True)
+        
+        return data.drop(columns=["index"])
+
+
+
+    def _plot(self, split_gen, scales, orient):
+
+        for keys, data, ax in split_gen(keep_na=not self._sort):
+
+            data = self._encounter_width(data, scales, orient)
+
+            vals = resolve_properties(self, keys, scales)
+            vals["color"] = resolve_color(self, keys, scales=scales)
+            vals["fillcolor"] = resolve_color(self, keys, prefix="fill", scales=scales)
+            vals["edgecolor"] = resolve_color(self, keys, prefix="edge", scales=scales)
+
+            if self._sort:
+                data = data.sort_values(orient, kind="mergesort")
+
+            artist_kws = self.artist_kws.copy()
+            self._handle_capstyle(artist_kws, vals)
+
+            line = mpl.lines.Line2D(
+                data["x"].to_numpy(),
+                data["y"].to_numpy(),
+                color=vals["color"],
+                linewidth=vals["linewidth"],
+                linestyle=vals["linestyle"],
+                marker=vals["marker"],
+                markersize=vals["pointsize"],
+                markerfacecolor=vals["fillcolor"],
+                markeredgecolor=vals["edgecolor"],
+                markeredgewidth=vals["edgewidth"],
+                **artist_kws,
+            )
+            ax.add_line(line)
+    
 
 
 @document_properties
