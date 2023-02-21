@@ -2394,6 +2394,8 @@ _categorical_docs = dict(
     """),
     ci=dedent("""\
     ci : float
+        Level of the confidence interval to show, in [0, 100].
+
         .. deprecated:: v0.12.0
             Use `errorbar=("ci", ...)`.
     """),
@@ -3640,10 +3642,24 @@ def catplot(
                 estimator, errorbar, n_boot=n_boot, seed=seed
             )
 
-            err_kws = _normalize_kwargs(kwargs.pop("err_kws", {}), mpl.lines.Line2D)
             markers = kwargs.pop("markers", default)
             linestyles = kwargs.pop("linestyles", default)
-            capsize = kwargs.pop("capsize", 0)
+            # Uncomment when removing deprecation backcompat
+            # capsize = kwargs.pop("capsize", 0)
+            # err_kws = _normalize_kwargs(kwargs.pop("err_kws", {}), mpl.lines.Line2D)
+
+            # Deprecations to remove in v0.15.0.
+            p._point_kwargs_backcompat(
+                kwargs.pop("scale", deprecated),
+                kwargs.pop("join", deprecated),
+                kwargs
+            )
+            err_kws, capsize = p._err_kws_backcompat(
+                _normalize_kwargs(kwargs.pop("err_kws", {}), mpl.lines.Line2D),
+                None,
+                errwidth=kwargs.pop("errwidth", deprecated),
+                capsize=kwargs.pop("capsize", 0),
+            )
 
             p.plot_points(
                 aggregator=aggregator,
