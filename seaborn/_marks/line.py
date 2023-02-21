@@ -129,7 +129,7 @@ class Line(Path):
 
 @document_properties
 @dataclass
-class StepLine(Line):
+class Step(Line):
     """
     A step-wise variant of a Line mark. It uses a step function to connect
     data points with sorting along the orientation axis.
@@ -140,7 +140,7 @@ class StepLine(Line):
 
     Examples
     --------
-    .. include:: ../docstrings/objects.StepLine.rst
+    .. include:: ../docstrings/objects.Step.rst
 
     """
     def __init__(self):
