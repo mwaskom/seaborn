@@ -611,7 +611,6 @@ class _CategoricalPlotterNew(_RelationalPlotter):
                 .apply(aggregator, agg_var)
                 .reset_index()
             )
-            print(agg_data)
 
             real_width = width * self._native_width
             if dodge:
