@@ -36,4 +36,10 @@ class Default:
         return "<default>"
 
 
+class Deprecated:
+    def __repr__(self):
+        return "<deprecated>"
+
+
 default = Default()
+deprecated = Deprecated()

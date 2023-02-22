@@ -18,11 +18,11 @@ from matplotlib.collections import PatchCollection
 import matplotlib.patches as Patches
 import matplotlib.pyplot as plt
 
+from seaborn._core.typing import default, deprecated
 from seaborn._oldcore import (
     variable_type,
     infer_orient,
     categorical_order,
-    deprecated,
 )
 from seaborn.relational import _RelationalPlotter
 from seaborn import utils
@@ -194,8 +194,38 @@ class _CategoricalPlotterNew(_RelationalPlotter):
 
         return hue_order
 
-    def _err_kws_backcompat(self, err_kws, errcolor, errwidth, capsize):
+    def _point_kwargs_backcompat(self, scale, join, kwargs):
+        """Provide two cycles where scale= and join= work, but redirect to kwargs."""
+        if scale is not deprecated:
+            lw = mpl.rcParams["lines.linewidth"] * 1.8 * scale
+            mew = lw * .75
+            ms = lw * 2
 
+            msg = (
+                "\n\n"
+                "The `scale` parameter is deprecated and will be removed in v0.15.0. "
+                "You can now control the size of each plot element using matplotlib "
+                "`Line2D` parameters (e.g., `linewidth`, `markersize`, etc.)."
+                "\n"
+            )
+            warnings.warn(msg, stacklevel=3)
+            kwargs.update(linewidth=lw, markeredgewidth=mew, markersize=ms)
+
+        if join is not deprecated:
+            msg = (
+                "\n\n"
+                "The `join` parameter is deprecated and will be removed in v0.15.0."
+            )
+            if not join:
+                msg += (
+                    " You can remove the line between points with `linestyle='none'`."
+                )
+                kwargs.update(linestyle="")
+            msg += "\n"
+            warnings.warn(msg, stacklevel=3)
+
+    def _err_kws_backcompat(self, err_kws, errcolor, errwidth, capsize):
+        """Provide two cycles where existing signature-level err_kws are handled."""
         def deprecate_err_param(name, key, val):
             if val is deprecated:
                 return
@@ -207,7 +237,8 @@ class _CategoricalPlotterNew(_RelationalPlotter):
             warnings.warn(msg, FutureWarning, stacklevel=4)
             err_kws[key] = val
 
-        deprecate_err_param("errcolor", "color", errcolor)
+        if errcolor is not None:
+            deprecate_err_param("errcolor", "color", errcolor)
         deprecate_err_param("errwidth", "linewidth", errwidth)
 
         if capsize is None:
@@ -228,6 +259,21 @@ class _CategoricalPlotterNew(_RelationalPlotter):
         light_vals = [rgb_to_hls(*rgb[:3])[1] for rgb in unique_colors]
         lum = min(light_vals) * .6
         return (lum, lum, lum)
+
+    def _map_prop_with_hue(self, name, value, fallback, plot_kws):
+        """Support pointplot behavior of modifying the marker/linestyle with hue."""
+        if value is default:
+            value = plot_kws.pop(name, fallback)
+
+        if (levels := self._hue_map.levels) is None:
+            mapping = {None: value}
+        else:
+            if isinstance(value, list):
+                mapping = {k: v for k, v in zip(levels, value)}
+            else:
+                mapping = {k: value for k in levels}
+
+        return mapping
 
     def _adjust_cat_axis(self, ax, axis):
         """Set ticks and limits for a categorical variable."""
@@ -268,6 +314,27 @@ class _CategoricalPlotterNew(_RelationalPlotter):
             paired = self.plot_data[[*groupers, "hue"]].value_counts()
             return orient.size != paired.size
         return False
+
+    def _invert_scale(self, data, vars=("x", "y")):
+        """Undo log scaling after computation so data are plotted correctly."""
+        for var in vars:
+            if self._log_scaled(var):
+                for suf in ["", "min", "max"]:
+                    if (col := f"{var}{suf}") in data:
+                        data[col] = np.power(10, data[col])
+
+    def _configure_legend(self, ax, func, common_kws=None, semantic_kws=None):
+
+        if self.legend == "auto":
+            show_legend = not self._redundant_hue and self.input_format != "wide"
+        else:
+            show_legend = bool(self.legend)
+
+        if show_legend:
+            self.add_legend_data(ax, func, common_kws, semantic_kws)
+            handles, _ = ax.get_legend_handles_labels()
+            if handles:
+                ax.legend(title=self.legend_title)
 
     @property
     def _native_width(self):
@@ -337,10 +404,7 @@ class _CategoricalPlotterNew(_RelationalPlotter):
 
             adjusted_data = sub_data[self.orient] + dodge_move + jitter_move
             sub_data[self.orient] = adjusted_data
-
-            for var in "xy":
-                if self._log_scaled(var):
-                    sub_data[var] = np.power(10, sub_data[var])
+            self._invert_scale(sub_data)
 
             ax = self._get_axes(sub_vars)
             points = ax.scatter(sub_data["x"], sub_data["y"], color=color, **plot_kws)
@@ -353,17 +417,7 @@ class _CategoricalPlotterNew(_RelationalPlotter):
             else:
                 points.set_edgecolors(edgecolor)
 
-        # Finalize the axes details
-        if self.legend == "auto":
-            show_legend = not self._redundant_hue and self.input_format != "wide"
-        else:
-            show_legend = bool(self.legend)
-
-        if show_legend:
-            self.add_legend_data(ax)
-            handles, _ = ax.get_legend_handles_labels()
-            if handles:
-                ax.legend(title=self.legend_title)
+        self._configure_legend(ax, ax.scatter)
 
     def plot_swarms(
         self,
@@ -395,10 +449,7 @@ class _CategoricalPlotterNew(_RelationalPlotter):
             if not sub_data.empty:
                 sub_data[self.orient] = sub_data[self.orient] + dodge_move
 
-            for var in "xy":
-                if self._log_scaled(var):
-                    sub_data[var] = np.power(10, sub_data[var])
-
+            self._invert_scale(sub_data)
             ax = self._get_axes(sub_vars)
             points = ax.scatter(sub_data["x"], sub_data["y"], color=color, **plot_kws)
 
@@ -444,18 +495,85 @@ class _CategoricalPlotterNew(_RelationalPlotter):
                 points.draw = draw.__get__(points)
 
         _draw_figure(ax.figure)
+        self._configure_legend(ax, ax.scatter)
 
-        # Finalize the axes details
-        if self.legend == "auto":
-            show_legend = not self._redundant_hue and self.input_format != "wide"
+    def plot_points(
+        self,
+        aggregator,
+        markers,
+        linestyles,
+        dodge,
+        color,
+        capsize,
+        err_kws,
+        plot_kws,
+    ):
+
+        agg_var = {"x": "y", "y": "x"}[self.orient]
+        iter_vars = ["hue"]
+
+        plot_kws = _normalize_kwargs(plot_kws, mpl.lines.Line2D)
+        plot_kws.setdefault("linewidth", mpl.rcParams["lines.linewidth"] * 1.8)
+        plot_kws.setdefault("markeredgewidth", plot_kws["linewidth"] * 0.75)
+        plot_kws.setdefault("markersize", plot_kws["linewidth"] * np.sqrt(2 * np.pi))
+
+        markers = self._map_prop_with_hue("marker", markers, "o", plot_kws)
+        linestyles = self._map_prop_with_hue("linestyle", linestyles, "-", plot_kws)
+
+        positions = self.var_levels[self.orient]
+        if self.var_types[self.orient] == "categorical":
+            positions = [i for i, _ in enumerate(positions)]
         else:
-            show_legend = bool(self.legend)
+            if self._log_scaled(self.orient):
+                positions = np.log10(positions)
+            if self.var_types[self.orient] == "datetime":
+                positions = mpl.dates.date2num(positions)
+        positions = pd.Index(positions, name=self.orient)
 
-        if show_legend:
-            self.add_legend_data(ax)
-            handles, _ = ax.get_legend_handles_labels()
-            if handles:
-                ax.legend(title=self.legend_title)
+        n_hue_levels = 0 if self._hue_map.levels is None else len(self._hue_map.levels)
+        if dodge is True:
+            dodge = .025 * n_hue_levels
+
+        ax = self.ax
+
+        for sub_vars, sub_data in self.iter_data(iter_vars,
+                                                 from_comp_data=True,
+                                                 allow_empty=True):
+
+            agg_data = sub_data if sub_data.empty else (
+                sub_data
+                .groupby(self.orient)
+                .apply(aggregator, agg_var)
+                .reindex(positions)
+                .reset_index()
+            )
+
+            if dodge:
+                hue_idx = self._hue_map.levels.index(sub_vars["hue"])
+                offset = -dodge * (n_hue_levels - 1) / 2 + dodge * hue_idx
+                agg_data[self.orient] += offset * self._native_width
+
+            self._invert_scale(agg_data)
+
+            sub_kws = plot_kws.copy()
+            sub_kws.update(
+                marker=markers[sub_vars.get("hue")],
+                linestyle=linestyles[sub_vars.get("hue")],
+                color=self._hue_map(sub_vars["hue"]) if "hue" in sub_vars else color,
+            )
+
+            ax = self._get_axes(sub_vars)
+            line, = ax.plot(agg_data["x"], agg_data["y"], **sub_kws)
+
+            sub_err_kws = err_kws.copy()
+            line_props = line.properties()
+            for prop in ["color", "linewidth", "alpha", "zorder"]:
+                sub_err_kws.setdefault(prop, line_props[prop])
+            if aggregator.error_method is not None:
+                self.plot_errorbars(ax, agg_data, capsize, sub_err_kws)
+
+        semantic_kws = {"hue": {"marker": markers, "linestyle": linestyles}}
+        self._configure_legend(ax, ax.plot, sub_kws, semantic_kws)
 
     def plot_bars(
         self,
@@ -480,19 +598,20 @@ class _CategoricalPlotterNew(_RelationalPlotter):
         if dodge and capsize is not None:
             capsize = capsize / len(self._hue_map.levels)
 
+        err_kws.setdefault("color", ".26")
+        err_kws.setdefault("linewidth", 1.5 * mpl.rcParams["lines.linewidth"])
+
         for sub_vars, sub_data in self.iter_data(iter_vars,
                                                  from_comp_data=True,
                                                  allow_empty=True):
 
-            if sub_data.empty:
-                agg_data = sub_data
-            else:
-                agg_data = (
-                    sub_data
-                    .groupby(self.orient)
-                    .apply(aggregator, agg_var)
-                    .reset_index()
-                )
+            agg_data = sub_data if sub_data.empty else (
+                sub_data
+                .groupby(self.orient)
+                .apply(aggregator, agg_var)
+                .reset_index()
+            )
+            print(agg_data)
 
             real_width = width * self._native_width
             if dodge:
@@ -504,16 +623,11 @@ class _CategoricalPlotterNew(_RelationalPlotter):
                 agg_data[self.orient] += offset
 
             agg_data["edge"] = agg_data[self.orient] - real_width / 2
-            for var in "xy":
-                if self._log_scaled(var):
-                    if var == self.orient:
-                        agg_data["edge"] = 10 ** agg_data["edge"]
-                        right_edge = 10 ** (agg_data[var] + real_width / 2)
-                        real_width = right_edge - agg_data["edge"]
-                    for suf in ["", "min", "max"]:
-                        col = f"{var}{suf}"
-                        if col in agg_data:
-                            agg_data[col] = 10 ** agg_data[col]
+            if self._log_scaled(self.orient):
+                agg_data["edge"] = 10 ** agg_data["edge"]
+                right_edge = 10 ** (agg_data[self.orient] + real_width / 2)
+                real_width = right_edge - agg_data["edge"]
+            self._invert_scale(agg_data)
 
             ax = self._get_axes(sub_vars)
 
@@ -540,23 +654,9 @@ class _CategoricalPlotterNew(_RelationalPlotter):
             if aggregator.error_method is not None:
                 self.plot_errorbars(ax, agg_data, capsize, err_kws.copy())
 
-        # Finalize the axes details
-        # TODO XXX this was copy-pasted from stripplot
-        if self.legend == "auto":
-            show_legend = not self._redundant_hue and self.input_format != "wide"
-        else:
-            show_legend = bool(self.legend)
-
-        if show_legend:
-            self.add_legend_data(ax)
-            handles, _ = ax.get_legend_handles_labels()
-            if handles:
-                ax.legend(title=self.legend_title)
+        self._configure_legend(ax, ax.fill_between)
 
     def plot_errorbars(self, ax, data, capsize, err_kws):
-
-        err_kws.setdefault("color", ".26")
-        err_kws.setdefault("linewidth", 1.5 * mpl.rcParams["lines.linewidth"])
 
         var = {"x": "y", "y": "x"}[self.orient]
         for row in data.to_dict("records"):
@@ -566,7 +666,6 @@ class _CategoricalPlotterNew(_RelationalPlotter):
             val = np.array([row[f"{var}min"], row[f"{var}max"]])
 
             cw = capsize * self._native_width / 2
-
             if self._log_scaled(self.orient):
                 log_pos = np.log10(pos)
                 cap = 10 ** (log_pos[0] - cw), 10 ** (log_pos[1] + cw)
@@ -591,7 +690,6 @@ class _CategoricalPlotterNew(_RelationalPlotter):
 class _CategoricalAggPlotter(_CategoricalPlotterNew):
 
     flat_structure = {"x": "@index", "y": "@values"}
-    _legend_func = "fill_between"
 
 
 class _CategoricalFacetPlotter(_CategoricalPlotterNew):
@@ -2296,6 +2394,8 @@ _categorical_docs = dict(
     """),
     ci=dedent("""\
     ci : float
+        Level of the confidence interval to show, in [0, 100].
+
         .. deprecated:: v0.12.0
             Use `errorbar=("ci", ...)`.
     """),
@@ -2385,6 +2485,12 @@ _categorical_docs = dict(
         If "full", every group will get an entry in the legend. If "auto",
         choose between brief or full representation based on number of levels.
         If `False`, no legend data is added and no legend is drawn.
+
+        .. versionadded:: v0.13.0\
+    """),
+    err_kws=dedent("""\
+    err_kws : dict
+        Parameters of :class:`matplotlib.lines.Line2D`, for the error bar artists.
 
         .. versionadded:: v0.13.0\
     """),
@@ -2733,6 +2839,7 @@ def stripplot(
 
     p._attach(ax)
 
+    # Deprecations to remove in v0.14.0.
     hue_order = p._palette_without_hue_backcompat(palette, hue_order)
     palette, hue_order = p._hue_backcompat(color, palette, hue_order)
 
@@ -2862,6 +2969,7 @@ def swarmplot(
     if not p.has_xy_data:
         return ax
 
+    # Deprecations to remove in v0.14.0.
     hue_order = p._palette_without_hue_backcompat(palette, hue_order)
     palette, hue_order = p._hue_backcompat(color, palette, hue_order)
 
@@ -2996,6 +3104,7 @@ def barplot(
 
     p._attach(ax)
 
+    # Deprecations to remove in v0.14.0.
     hue_order = p._palette_without_hue_backcompat(palette, hue_order)
     palette, hue_order = p._hue_backcompat(color, palette, hue_order)
 
@@ -3006,11 +3115,7 @@ def barplot(
         color = desaturate(color, saturation)
 
     aggregator = EstimateAggregator(estimator, errorbar, n_boot=n_boot, seed=seed)
-
-    if err_kws is None:
-        err_kws = {}
-    else:
-        err_kws = _normalize_kwargs(err_kws, mpl.lines.Line2D)
+    err_kws = {} if err_kws is None else _normalize_kwargs(err_kws, mpl.lines.Line2D)
 
     # Deprecations to remove in v0.15.0.
     err_kws, capsize = p._err_kws_backcompat(err_kws, errcolor, errwidth, capsize)
@@ -3060,16 +3165,14 @@ barplot.__doc__ = dedent("""\
     {native_scale}
     {formatter}
     {legend}
+    {err_kws}
     {ci}
     {errcolor}
     {errwidth}
-    err_kws : dict
-        Parameters of :class:`matplotlib.lines.Line2D`, for the error bar artists.
-
-        .. versionadded:: v0.13.0
     {ax_in}
     kwargs : key, value mappings
         Other parameters are passed through to :class:`matplotlib.patches.Rectangle`.
+
     Returns
     -------
     {ax_out}
@@ -3104,27 +3207,69 @@ barplot.__doc__ = dedent("""\
 def pointplot(
     data=None, *, x=None, y=None, hue=None, order=None, hue_order=None,
     estimator="mean", errorbar=("ci", 95), n_boot=1000, units=None, seed=None,
-    markers="o", linestyles="-", dodge=False, join=True, scale=1,
-    orient=None, color=None, palette=None, errwidth=None, ci="deprecated",
-    capsize=None, label=None, ax=None,
+    color=None, palette=None, hue_norm=None, markers=default, linestyles=default,
+    dodge=False, native_scale=False, orient=None, capsize=0,
+    formatter=None, legend="auto", err_kws=None,
+    ci=deprecated, errwidth=deprecated, join=deprecated, scale=deprecated,
+    ax=None,
+    **kwargs,
 ):
 
     errorbar = utils._deprecate_ci(errorbar, ci)
 
-    plotter = _PointPlotter(x, y, hue, data, order, hue_order,
-                            estimator, errorbar, n_boot, units, seed,
-                            markers, linestyles, dodge, join, scale,
-                            orient, color, palette, errwidth, capsize, label)
+    p = _CategoricalAggPlotter(
+        data=data,
+        variables=_CategoricalAggPlotter.get_semantics(locals()),
+        order=order,
+        orient=orient,
+        require_numeric=False,
+        legend=legend,
+    )
 
     if ax is None:
         ax = plt.gca()
 
-    plotter.plot(ax)
+    if p.plot_data.empty:
+        return ax
+
+    if p.var_types.get(p.orient) == "categorical" or not native_scale:
+        p.scale_categorical(p.orient, order=order, formatter=formatter)
+
+    p._attach(ax)
+
+    # Deprecations to remove in v0.14.0.
+    hue_order = p._palette_without_hue_backcompat(palette, hue_order)
+    palette, hue_order = p._hue_backcompat(color, palette, hue_order)
+
+    p.map_hue(palette=palette, order=hue_order, norm=hue_norm)
+    color = _default_color(ax.plot, hue, color, kwargs)
+
+    aggregator = EstimateAggregator(estimator, errorbar, n_boot=n_boot, seed=seed)
+    err_kws = {} if err_kws is None else _normalize_kwargs(err_kws, mpl.lines.Line2D)
+
+    # Deprecations to remove in v0.15.0.
+    p._point_kwargs_backcompat(scale, join, kwargs)
+    err_kws, capsize = p._err_kws_backcompat(err_kws, None, errwidth, capsize)
+
+    p.plot_points(
+        aggregator=aggregator,
+        markers=markers,
+        linestyles=linestyles,
+        dodge=dodge,
+        color=color,
+        capsize=capsize,
+        err_kws=err_kws,
+        plot_kws=kwargs,
+    )
+
+    p._add_axis_labels(ax)
+    p._adjust_cat_axis(ax, axis=p.orient)
+
     return ax
 
 
 pointplot.__doc__ = dedent("""\
-    Show point estimates and errors using dot marks.
+    Show point estimates and errors using lines with markers.
 
     A point plot represents an estimate of central tendency for a numeric
     variable by the position of the dot and provides some indication of the
@@ -3139,13 +3284,7 @@ pointplot.__doc__ = dedent("""\
     easier for the eyes than comparing the heights of several groups of points
     or bars.
 
-    It is important to keep in mind that a point plot shows only the mean (or
-    other estimator) value, but in many cases it may be more informative to
-    show the distribution of values at each level of the categorical variables.
-    In that case, other approaches such as a box or violin plot may be more
-    appropriate.
-
-    {categorical_narrative}
+    {new_categorical_narrative}
 
     Parameters
     ----------
@@ -3153,26 +3292,38 @@ pointplot.__doc__ = dedent("""\
     {input_params}
     {order_vars}
     {stat_api_params}
+    {color}
+    {palette}
     markers : string or list of strings
-        Markers to use for each of the ``hue`` levels.
+        Markers to use for each of the `hue` levels.
     linestyles : string or list of strings
-        Line styles to use for each of the ``hue`` levels.
+        Line styles to use for each of the `hue` levels.
     dodge : bool or float
         Amount to separate the points for each level of the ``hue`` variable
         along the categorical axis.
+    {native_scale}
+    {orient}
+    {capsize}
+    {formatter}
+    {legend}
+    {err_kws}
+    {ci}
+    {errwidth}
     join : bool
-        If ``True``, lines will be drawn between point estimates at the same
-        ``hue`` level.
+        If `True`, draw lines will be drawn between point estimates.
+
+        .. deprecated:: v0.13.0
+            Set `linestyle="none"` to remove the lines between the points.
     scale : float
         Scale factor for the plot elements.
-    {orient}
-    {color}
-    {palette}
-    {errwidth}
-    {capsize}
-    label : string
-        Label to represent the plot in a legend, only relevant when not using `hue`.
+
+        .. deprecated:: v0.13.0
+            Control element sizes with :class:`matplotlib.lines.Line2D` parameters.
     {ax_in}
+    kwargs : key, value mappings
+        Other parameters are passed through to :class:`matplotlib.lines.Line2D`.
+
+        .. versionadded:: v0.13.0
 
     Returns
     -------
@@ -3183,9 +3334,16 @@ pointplot.__doc__ = dedent("""\
     {barplot}
     {catplot}
 
+    Notes
+    -----
+    It is important to keep in mind that a point plot shows only the mean (or
+    other estimator) value, but in many cases it may be more informative to
+    show the distribution of values at each level of the categorical variables.
+    In that case, other approaches such as a box or violin plot may be more
+    appropriate.
+
     Examples
     --------
-
     .. include:: ../docstrings/pointplot.rst
 
     """).format(**_categorical_docs)
@@ -3231,6 +3389,7 @@ def countplot(
 
     p._attach(ax)
 
+    # Deprecations to remove in v0.14.0.
     hue_order = p._palette_without_hue_backcompat(palette, hue_order)
     palette, hue_order = p._hue_backcompat(color, palette, hue_order)
 
@@ -3347,9 +3506,9 @@ def catplot(
         warnings.warn(msg, UserWarning)
         kwargs.pop("ax")
 
-    refactored_kinds = ["strip", "swarm", "bar", "count"]
+    refactored_kinds = ["strip", "swarm", "point", "bar", "count"]
     desaturated_kinds = ["bar", "count"]
-    scatter_kinds = ["strip", "swarm"]
+    undodged_kinds = ["strip", "swarm", "point"]
 
     if kind in refactored_kinds:
 
@@ -3416,8 +3575,10 @@ def catplot(
         if not has_xy_data:
             return g
 
+        # Deprecations to remove in v0.14.0.
         hue_order = p._palette_without_hue_backcompat(palette, hue_order)
         palette, hue_order = p._hue_backcompat(color, palette, hue_order)
+
         p.map_hue(palette=palette, order=hue_order, norm=hue_norm)
 
         # Set a default color
@@ -3431,7 +3592,7 @@ def catplot(
         edgecolor = kwargs.pop("edgecolor", "gray")  # XXX TODO default
 
         width = kwargs.pop("width", 0.8)
-        dodge = kwargs.pop("dodge", None if kind in scatter_kinds else "auto")
+        dodge = kwargs.pop("dodge", False if kind in undodged_kinds else "auto")
         if dodge == "auto":
             dodge = p._dodge_needed()
 
@@ -3473,6 +3634,42 @@ def catplot(
                 edgecolor=edgecolor,
                 warn_thresh=warn_thresh,
                 plot_kws=plot_kws,
+            )
+
+        elif kind == "point":
+
+            aggregator = EstimateAggregator(
+                estimator, errorbar, n_boot=n_boot, seed=seed
+            )
+
+            markers = kwargs.pop("markers", default)
+            linestyles = kwargs.pop("linestyles", default)
+            # Uncomment when removing deprecation backcompat
+            # capsize = kwargs.pop("capsize", 0)
+            # err_kws = _normalize_kwargs(kwargs.pop("err_kws", {}), mpl.lines.Line2D)
+
+            # Deprecations to remove in v0.15.0.
+            p._point_kwargs_backcompat(
+                kwargs.pop("scale", deprecated),
+                kwargs.pop("join", deprecated),
+                kwargs
+            )
+            err_kws, capsize = p._err_kws_backcompat(
+                _normalize_kwargs(kwargs.pop("err_kws", {}), mpl.lines.Line2D),
+                None,
+                errwidth=kwargs.pop("errwidth", deprecated),
+                capsize=kwargs.pop("capsize", 0),
+            )
+
+            p.plot_points(
+                aggregator=aggregator,
+                markers=markers,
+                linestyles=linestyles,
+                dodge=dodge,
+                color=color,
+                capsize=capsize,
+                err_kws=err_kws,
+                plot_kws=kwargs,
             )
 
         elif kind == "bar":
