@@ -14,6 +14,7 @@ from matplotlib.colors import to_rgb
 import matplotlib.pyplot as plt
 from matplotlib.cbook import normalize_kwargs
 
+from seaborn._core.typing import deprecated
 from seaborn.external.version import Version
 from seaborn.external.appdirs import user_cache_dir
 
@@ -781,6 +782,7 @@ def _check_argument(param, options, value):
         raise ValueError(
             f"`{param}` must be one of {options}, but {repr(value)} was passed."
         )
+    return value
 
 
 def _assign_default_kwargs(kws, call_func, source_func):
@@ -831,7 +833,6 @@ def _deprecate_ci(errorbar, ci):
     (and extracted from kwargs) after one cycle.
 
     """
-    from seaborn._oldcore import deprecated  # avoid circular import
     if ci is not deprecated and ci != "deprecated":
         if ci is None:
             errorbar = None

@@ -25,14 +25,6 @@ from .utils import (
 )
 
 
-class Deprecated:
-    def __repr__(self):
-        return "<deprecated>"
-
-
-deprecated = Deprecated()
-
-
 class SemanticMapping:
     """Base class for mapping data values to plot attributes."""
 
@@ -1429,7 +1421,7 @@ class VectorPlotter:
         # Track whether the order is given explicitly so that we can know
         # whether or not to use the order constructed here downstream
         self._var_ordered[axis] = order is not None or cat_data.dtype.name == "category"
-        order = pd.Index(categorical_order(cat_data, order))
+        order = pd.Index(categorical_order(cat_data, order), name=axis)
 
         # Then convert data to strings. This is because in matplotlib,
         # "categorical" data really mean "string" data, so doing this artists
