@@ -298,7 +298,7 @@ class _HeatMapper:
 
         # setting vmin/vmax in addition to norm is deprecated
         # so avoid setting if norm is set
-        if "norm" not in kws:
+        if "norm" not in kws or not kws["norm"]:
             kws.setdefault("vmin", self.vmin)
             kws.setdefault("vmax", self.vmax)
 
