@@ -148,11 +148,11 @@ class Step(Line):
 
 
     def __init__(self, *args, **kwargs):
+        step_position = kwargs.pop("step_position", "mid")
+        assert step_position in ["pre", "mid", "post"]
 
         super().__init__(*args, **kwargs)
-
-        assert self.step_position in ["pre", "mid", "post"]
-        self.artist_kws.update({"drawstyle": "steps-" + self.step_position})
+        self.artist_kws.update({"drawstyle": "steps-" + step_position})
 
 
     def _encounter_width(self, data, scales, orient):
@@ -160,8 +160,8 @@ class Step(Line):
         forward = transform.transform
         reverse = transform.inverted().transform
 
-        orient_start = reverse(forward(data[orient]) - data["width"] / 2 ) # - data["space"] / 2)
-        orient_end = reverse(forward(data[orient]) + data["width"] / 2) # + data["space"] / 2)
+        orient_start = reverse(forward(data[orient]) - data["width"] / 2)
+        orient_end = reverse(forward(data[orient]) + data["width"] / 2)
         
         data = data.append(data)
         data[orient] = np.concatenate([orient_start, orient_end])
