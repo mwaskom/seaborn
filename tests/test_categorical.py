@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 import matplotlib as mpl
 import matplotlib.pyplot as plt
-from matplotlib.colors import rgb2hex, same_color, to_rgb, to_rgba
+from matplotlib.colors import same_color, to_rgb, to_rgba
 
 import pytest
 from pytest import approx
@@ -14,6 +14,7 @@ import numpy.testing as npt
 from numpy.testing import (
     assert_array_equal,
     assert_array_less,
+    assert_array_almost_equal,
 )
 
 from seaborn import categorical as cat
@@ -21,27 +22,28 @@ from seaborn import palettes
 
 from seaborn.utils import _version_predates
 from seaborn._oldcore import categorical_order
-from seaborn.axisgrid import FacetGrid
 from seaborn.categorical import (
     _CategoricalPlotterNew,
     Beeswarm,
     catplot,
+    barplot,
+    countplot,
+    pointplot,
     stripplot,
     swarmplot,
-    barplot,
-    pointplot,
 )
 from seaborn.palettes import color_palette
-from seaborn.utils import _normal_quantile_func, _draw_figure
+from seaborn.utils import _draw_figure
 from seaborn._compat import get_colormap
 from seaborn._testing import assert_plots_equal
 
 
 PLOT_FUNCS = [
     catplot,
+    barplot,
+    pointplot,
     stripplot,
     swarmplot,
-    barplot,
 ]
 
 
@@ -515,312 +517,6 @@ class TestCategoricalPlotter(CategoricalFixture):
 
         p.establish_colors(None, [(0, 0, 1), (1, 0, 0), "w"], .5)
         assert p.colors == [(.25, .25, .75), (.75, .25, .25), (1, 1, 1)]
-
-
-class TestCategoricalStatPlotter(CategoricalFixture):
-
-    def test_no_bootstrappig(self):
-
-        p = cat._CategoricalStatPlotter()
-        p.establish_variables("g", "y", data=self.df)
-        p.estimate_statistic("mean", None, 100, None)
-        npt.assert_array_equal(p.confint, np.array([]))
-
-        p.establish_variables("g", "y", hue="h", data=self.df)
-        p.estimate_statistic(np.mean, None, 100, None)
-        npt.assert_array_equal(p.confint, np.array([[], [], []]))
-
-    def test_single_layer_stats(self):
-
-        p = cat._CategoricalStatPlotter()
-
-        g = pd.Series(np.repeat(list("abc"), 100))
-        y = pd.Series(np.random.RandomState(0).randn(300))
-
-        p.establish_variables(g, y)
-        p.estimate_statistic("mean", ("ci", 95), 10000, None)
-
-        assert p.statistic.shape == (3,)
-        assert p.confint.shape == (3, 2)
-
-        npt.assert_array_almost_equal(p.statistic,
-                                      y.groupby(g).mean())
-
-        for ci, (_, grp_y) in zip(p.confint, y.groupby(g)):
-            sem = grp_y.std() / np.sqrt(len(grp_y))
-            mean = grp_y.mean()
-            half_ci = _normal_quantile_func(.975) * sem
-            ci_want = mean - half_ci, mean + half_ci
-            npt.assert_array_almost_equal(ci_want, ci, 2)
-
-    def test_single_layer_stats_with_units(self):
-
-        p = cat._CategoricalStatPlotter()
-
-        g = pd.Series(np.repeat(list("abc"), 90))
-        y = pd.Series(np.random.RandomState(0).randn(270))
-        u = pd.Series(np.repeat(np.tile(list("xyz"), 30), 3))
-        y[u == "x"] -= 3
-        y[u == "y"] += 3
-
-        p.establish_variables(g, y)
-        p.estimate_statistic("mean", ("ci", 95), 10000, None)
-        stat1, ci1 = p.statistic, p.confint
-
-        p.establish_variables(g, y, units=u)
-        p.estimate_statistic("mean", ("ci", 95), 10000, None)
-        stat2, ci2 = p.statistic, p.confint
-
-        npt.assert_array_equal(stat1, stat2)
-        ci1_size = ci1[:, 1] - ci1[:, 0]
-        ci2_size = ci2[:, 1] - ci2[:, 0]
-        npt.assert_array_less(ci1_size, ci2_size)
-
-    def test_single_layer_stats_with_missing_data(self):
-
-        p = cat._CategoricalStatPlotter()
-
-        g = pd.Series(np.repeat(list("abc"), 100))
-        y = pd.Series(np.random.RandomState(0).randn(300))
-
-        p.establish_variables(g, y, order=list("abdc"))
-        p.estimate_statistic("mean", ("ci", 95), 10000, None)
-
-        assert p.statistic.shape == (4,)
-        assert p.confint.shape == (4, 2)
-
-        rows = g == "b"
-        mean = y[rows].mean()
-        sem = y[rows].std() / np.sqrt(rows.sum())
-        half_ci = _normal_quantile_func(.975) * sem
-        ci = mean - half_ci, mean + half_ci
-        npt.assert_almost_equal(p.statistic[1], mean)
-        npt.assert_array_almost_equal(p.confint[1], ci, 2)
-
-        npt.assert_equal(p.statistic[2], np.nan)
-        npt.assert_array_equal(p.confint[2], (np.nan, np.nan))
-
-    def test_nested_stats(self):
-
-        p = cat._CategoricalStatPlotter()
-
-        g = pd.Series(np.repeat(list("abc"), 100))
-        h = pd.Series(np.tile(list("xy"), 150))
-        y = pd.Series(np.random.RandomState(0).randn(300))
-
-        p.establish_variables(g, y, h)
-        p.estimate_statistic("mean", ("ci", 95), 50000, None)
-
-        assert p.statistic.shape == (3, 2)
-        assert p.confint.shape == (3, 2, 2)
-
-        npt.assert_array_almost_equal(p.statistic,
-                                      y.groupby([g, h]).mean().unstack())
-
-        for ci_g, (_, grp_y) in zip(p.confint, y.groupby(g)):
-            for ci, hue_y in zip(ci_g, [grp_y.iloc[::2], grp_y.iloc[1::2]]):
-                sem = hue_y.std() / np.sqrt(len(hue_y))
-                mean = hue_y.mean()
-                half_ci = _normal_quantile_func(.975) * sem
-                ci_want = mean - half_ci, mean + half_ci
-                npt.assert_array_almost_equal(ci_want, ci, 2)
-
-    def test_bootstrap_seed(self):
-
-        p = cat._CategoricalStatPlotter()
-
-        g = pd.Series(np.repeat(list("abc"), 100))
-        h = pd.Series(np.tile(list("xy"), 150))
-        y = pd.Series(np.random.RandomState(0).randn(300))
-
-        p.establish_variables(g, y, h)
-        p.estimate_statistic("mean", ("ci", 95), 1000, 0)
-        confint_1 = p.confint
-        p.estimate_statistic("mean", ("ci", 95), 1000, 0)
-        confint_2 = p.confint
-
-        npt.assert_array_equal(confint_1, confint_2)
-
-    def test_nested_stats_with_units(self):
-
-        p = cat._CategoricalStatPlotter()
-
-        g = pd.Series(np.repeat(list("abc"), 90))
-        h = pd.Series(np.tile(list("xy"), 135))
-        u = pd.Series(np.repeat(list("ijkijk"), 45))
-        y = pd.Series(np.random.RandomState(0).randn(270))
-        y[u == "i"] -= 3
-        y[u == "k"] += 3
-
-        p.establish_variables(g, y, h)
-        p.estimate_statistic("mean", ("ci", 95), 10000, None)
-        stat1, ci1 = p.statistic, p.confint
-
-        p.establish_variables(g, y, h, units=u)
-        p.estimate_statistic("mean", ("ci", 95), 10000, None)
-        stat2, ci2 = p.statistic, p.confint
-
-        npt.assert_array_equal(stat1, stat2)
-        ci1_size = ci1[:, 0, 1] - ci1[:, 0, 0]
-        ci2_size = ci2[:, 0, 1] - ci2[:, 0, 0]
-        npt.assert_array_less(ci1_size, ci2_size)
-
-    def test_nested_stats_with_missing_data(self):
-
-        p = cat._CategoricalStatPlotter()
-
-        g = pd.Series(np.repeat(list("abc"), 100))
-        y = pd.Series(np.random.RandomState(0).randn(300))
-        h = pd.Series(np.tile(list("xy"), 150))
-
-        p.establish_variables(g, y, h,
-                              order=list("abdc"),
-                              hue_order=list("zyx"))
-        p.estimate_statistic("mean", ("ci", 95), 50000, None)
-
-        assert p.statistic.shape == (4, 3)
-        assert p.confint.shape == (4, 3, 2)
-
-        rows = (g == "b") & (h == "x")
-        mean = y[rows].mean()
-        sem = y[rows].std() / np.sqrt(rows.sum())
-        half_ci = _normal_quantile_func(.975) * sem
-        ci = mean - half_ci, mean + half_ci
-        npt.assert_almost_equal(p.statistic[1, 2], mean)
-        npt.assert_array_almost_equal(p.confint[1, 2], ci, 2)
-
-        npt.assert_array_equal(p.statistic[:, 0], [np.nan] * 4)
-        npt.assert_array_equal(p.statistic[2], [np.nan] * 3)
-        npt.assert_array_equal(p.confint[:, 0],
-                               np.zeros((4, 2)) * np.nan)
-        npt.assert_array_equal(p.confint[2],
-                               np.zeros((3, 2)) * np.nan)
-
-    def test_sd_error_bars(self):
-
-        p = cat._CategoricalStatPlotter()
-
-        g = pd.Series(np.repeat(list("abc"), 100))
-        y = pd.Series(np.random.RandomState(0).randn(300))
-
-        p.establish_variables(g, y)
-        p.estimate_statistic(np.mean, "sd", None, None)
-
-        assert p.statistic.shape == (3,)
-        assert p.confint.shape == (3, 2)
-
-        npt.assert_array_almost_equal(p.statistic,
-                                      y.groupby(g).mean())
-
-        for ci, (_, grp_y) in zip(p.confint, y.groupby(g)):
-            mean = grp_y.mean()
-            half_ci = np.std(grp_y)
-            ci_want = mean - half_ci, mean + half_ci
-            npt.assert_array_almost_equal(ci_want, ci, 2)
-
-    def test_nested_sd_error_bars(self):
-
-        p = cat._CategoricalStatPlotter()
-
-        g = pd.Series(np.repeat(list("abc"), 100))
-        h = pd.Series(np.tile(list("xy"), 150))
-        y = pd.Series(np.random.RandomState(0).randn(300))
-
-        p.establish_variables(g, y, h)
-        p.estimate_statistic(np.mean, "sd", None, None)
-
-        assert p.statistic.shape == (3, 2)
-        assert p.confint.shape == (3, 2, 2)
-
-        npt.assert_array_almost_equal(p.statistic,
-                                      y.groupby([g, h]).mean().unstack())
-
-        for ci_g, (_, grp_y) in zip(p.confint, y.groupby(g)):
-            for ci, hue_y in zip(ci_g, [grp_y.iloc[::2], grp_y.iloc[1::2]]):
-                mean = hue_y.mean()
-                half_ci = np.std(hue_y)
-                ci_want = mean - half_ci, mean + half_ci
-                npt.assert_array_almost_equal(ci_want, ci, 2)
-
-    def test_draw_cis(self):
-
-        p = cat._CategoricalStatPlotter()
-
-        # Test vertical CIs
-        p.orient = "x"
-
-        f, ax = plt.subplots()
-        at_group = [0, 1]
-        confints = [(.5, 1.5), (.25, .8)]
-        colors = [".2", ".3"]
-        p.draw_confints(ax, at_group, confints, colors)
-
-        lines = ax.lines
-        for line, at, ci, c in zip(lines, at_group, confints, colors):
-            x, y = line.get_xydata().T
-            npt.assert_array_equal(x, [at, at])
-            npt.assert_array_equal(y, ci)
-            assert line.get_color() == c
-
-        plt.close("all")
-
-        # Test horizontal CIs
-        p.orient = "y"
-
-        f, ax = plt.subplots()
-        p.draw_confints(ax, at_group, confints, colors)
-
-        lines = ax.lines
-        for line, at, ci, c in zip(lines, at_group, confints, colors):
-            x, y = line.get_xydata().T
-            npt.assert_array_equal(x, ci)
-            npt.assert_array_equal(y, [at, at])
-            assert line.get_color() == c
-
-        plt.close("all")
-
-        # Test vertical CIs with endcaps
-        p.orient = "x"
-
-        f, ax = plt.subplots()
-        p.draw_confints(ax, at_group, confints, colors, capsize=0.3)
-        capline = ax.lines[len(ax.lines) - 1]
-        caplinestart = capline.get_xdata()[0]
-        caplineend = capline.get_xdata()[1]
-        caplinelength = abs(caplineend - caplinestart)
-        assert caplinelength == approx(0.3)
-        assert len(ax.lines) == 6
-
-        plt.close("all")
-
-        # Test horizontal CIs with endcaps
-        p.orient = "y"
-
-        f, ax = plt.subplots()
-        p.draw_confints(ax, at_group, confints, colors, capsize=0.3)
-        capline = ax.lines[len(ax.lines) - 1]
-        caplinestart = capline.get_ydata()[0]
-        caplineend = capline.get_ydata()[1]
-        caplinelength = abs(caplineend - caplinestart)
-        assert caplinelength == approx(0.3)
-        assert len(ax.lines) == 6
-
-        # Test extra keyword arguments
-        f, ax = plt.subplots()
-        p.draw_confints(ax, at_group, confints, colors, lw=4)
-        line = ax.lines[0]
-        assert line.get_linewidth() == 4
-
-        plt.close("all")
-
-        # Test errwidth is set appropriately
-        f, ax = plt.subplots()
-        p.draw_confints(ax, at_group, confints, colors, errwidth=2)
-        capline = ax.lines[len(ax.lines) - 1]
-        assert capline._linewidth == 2
-        assert len(ax.lines) == 2
-
-        plt.close("all")
 
 
 class TestBoxPlotter(CategoricalFixture):
@@ -2291,7 +1987,7 @@ class TestBarPlot(SharedAggTests):
             assert getattr(bar, f"get_{prop}")() == approx(wide_df.iloc[:, i].mean())
 
     @pytest.mark.parametrize("orient", ["x", "y", "h", "v"])
-    def test_orient(self, orient):
+    def test_vector_orient(self, orient):
 
         keys, vals = ["a", "b", "c"], [1, 2, 3]
         data = dict(zip(keys, vals))
@@ -2304,8 +2000,7 @@ class TestBarPlot(SharedAggTests):
 
     def test_xy_vertical(self):
 
-        x = ["a", "b", "c"]
-        y = [1, 3, 2.5]
+        x, y = ["a", "b", "c"], [1, 3, 2.5]
 
         ax = barplot(x=x, y=y)
         for i, bar in enumerate(ax.patches):
@@ -2316,8 +2011,7 @@ class TestBarPlot(SharedAggTests):
 
     def test_xy_horizontal(self):
 
-        x = [1, 3, 2.5]
-        y = ["a", "b", "c"]
+        x, y = [1, 3, 2.5], ["a", "b", "c"]
 
         ax = barplot(x=x, y=y)
         for i, bar in enumerate(ax.patches):
@@ -2460,7 +2154,7 @@ class TestBarPlot(SharedAggTests):
             assert bar.get_height() == y[i]
         assert ax.patches[1].get_width() > ax.patches[0].get_width()
 
-    def test_dateimte_native_scale_axis(self):
+    def test_datetime_native_scale_axis(self):
 
         x = pd.date_range("2010-01-01", periods=20, freq="m")
         y = np.arange(20)
@@ -2533,7 +2227,7 @@ class TestBarPlot(SharedAggTests):
         bar, = ax.patches
         assert bar.get_width() == 10 ** np.log10(long_df["z"]).mean()
 
-    def test_errorbar(self, long_df):
+    def test_errorbars(self, long_df):
 
         agg_var, val_var = "a", "y"
         agg_df = long_df.groupby(agg_var)[val_var].agg(["mean", "std"])
@@ -2739,596 +2433,510 @@ class TestBarPlot(SharedAggTests):
             assert same_color(bar.get_facecolor(), colors[i])
 
 
-class TestBarPlotter(CategoricalFixture):
+class TestPointPlot(SharedAggTests):
 
-    default_kws = dict(
-        data=None, x=None, y=None, hue=None, units=None,
-        estimator="mean", errorbar=("ci", 95), n_boot=100, seed=None,
-        order=None, hue_order=None,
-        orient=None, color=None, palette=None,
-        saturation=.75, width=0.8,
-        errcolor=".26", errwidth=None,
-        capsize=None, dodge=True
+    func = staticmethod(pointplot)
+
+    def get_last_color(self, ax):
+
+        color = ax.lines[-1].get_color()
+        return to_rgba(color)
+
+    @pytest.mark.parametrize("orient", ["x", "y"])
+    def test_single_var(self, orient):
+
+        vals = pd.Series([1, 3, 10])
+        ax = pointplot(**{orient: vals})
+        line = ax.lines[0]
+        assert getattr(line, f"get_{orient}data")() == approx(vals.mean())
+
+    @pytest.mark.parametrize("orient", ["x", "y", "h", "v"])
+    def test_wide_df(self, wide_df, orient):
+
+        ax = pointplot(wide_df, orient=orient)
+        orient = {"h": "y", "v": "x"}.get(orient, orient)
+        depend = {"x": "y", "y": "x"}[orient]
+        line = ax.lines[0]
+        assert_array_equal(
+            getattr(line, f"get_{orient}data")(),
+            np.arange(len(wide_df.columns)),
+        )
+        assert_array_almost_equal(
+            getattr(line, f"get_{depend}data")(),
+            wide_df.mean(axis=0),
+        )
+
+    @pytest.mark.parametrize("orient", ["x", "y", "h", "v"])
+    def test_vector_orient(self, orient):
+
+        keys, vals = ["a", "b", "c"], [1, 2, 3]
+        data = dict(zip(keys, vals))
+        orient = {"h": "y", "v": "x"}.get(orient, orient)
+        depend = {"x": "y", "y": "x"}[orient]
+        ax = pointplot(data, orient=orient)
+        line = ax.lines[0]
+        assert_array_equal(
+            getattr(line, f"get_{orient}data")(),
+            np.arange(len(keys)),
+        )
+        assert_array_equal(getattr(line, f"get_{depend}data")(), vals)
+
+    def test_xy_vertical(self):
+
+        x, y = ["a", "b", "c"], [1, 3, 2.5]
+        ax = pointplot(x=x, y=y)
+        for i, xy in enumerate(ax.lines[0].get_xydata()):
+            assert tuple(xy) == (i, y[i])
+
+    def test_xy_horizontal(self):
+
+        x, y = [1, 3, 2.5], ["a", "b", "c"]
+        ax = pointplot(x=x, y=y)
+        for i, xy in enumerate(ax.lines[0].get_xydata()):
+            assert tuple(xy) == (x[i], i)
+
+    def test_xy_with_na_grouper(self):
+
+        x, y = ["a", None, "b"], [1, 2, 3]
+        ax = pointplot(x=x, y=y)
+        _draw_figure(ax.figure)  # For matplotlib<3.5
+        assert ax.get_xticks() == [0, 1]
+        assert [t.get_text() for t in ax.get_xticklabels()] == ["a", "b"]
+        assert_array_equal(ax.lines[0].get_xdata(), [0, 1])
+        assert_array_equal(ax.lines[0].get_ydata(), [1, 3])
+
+    def test_xy_with_na_value(self):
+
+        x, y = ["a", "b", "c"], [1, np.nan, 3]
+        ax = pointplot(x=x, y=y)
+        _draw_figure(ax.figure)  # For matplotlib<3.5
+        assert ax.get_xticks() == [0, 1, 2]
+        assert [t.get_text() for t in ax.get_xticklabels()] == x
+        assert_array_equal(ax.lines[0].get_xdata(), [0, 1, 2])
+        assert_array_equal(ax.lines[0].get_ydata(), y)
+
+    def test_hue(self):
+
+        x, y = ["a", "a", "b", "b"], [1, 2, 3, 4]
+        hue = ["x", "y", "x", "y"]
+        ax = pointplot(x=x, y=y, hue=hue, errorbar=None)
+        for i, line in enumerate(ax.lines[:2]):
+            assert_array_equal(line.get_ydata(), y[i::2])
+            assert same_color(line.get_color(), f"C{i}")
+
+    def test_xy_native_scale(self):
+
+        x, y = [2, 4, 8], [1, 2, 3]
+
+        ax = pointplot(x=x, y=y, native_scale=True)
+        line = ax.lines[0]
+        assert_array_equal(line.get_xdata(), x)
+        assert_array_equal(line.get_ydata(), y)
+
+    @pytest.mark.parametrize("estimator", ["mean", np.mean])
+    def test_estimate(self, long_df, estimator):
+
+        agg_var, val_var = "a", "y"
+        agg_df = long_df.groupby(agg_var)[val_var].agg(estimator)
+
+        ax = pointplot(long_df, x=agg_var, y=val_var, errorbar=None)
+        order = categorical_order(long_df[agg_var])
+        for i, xy in enumerate(ax.lines[0].get_xydata()):
+            assert tuple(xy) == approx((i, agg_df[order[i]]))
+
+    def test_estimate_log_transform(self, long_df):
+
+        ax = mpl.figure.Figure().subplots()
+        ax.set_xscale("log")
+        pointplot(x=long_df["z"], ax=ax)
+        val, = ax.lines[0].get_xdata()
+        assert val == 10 ** np.log10(long_df["z"]).mean()
+
+    def test_errorbars(self, long_df):
+
+        agg_var, val_var = "a", "y"
+        agg_df = long_df.groupby(agg_var)[val_var].agg(["mean", "std"])
+
+        ax = pointplot(long_df, x=agg_var, y=val_var, errorbar="sd")
+        order = categorical_order(long_df[agg_var])
+        for i, line in enumerate(ax.lines[1:]):
+            row = agg_df.loc[order[i]]
+            lo, hi = line.get_ydata()
+            assert lo == approx(row["mean"] - row["std"])
+            assert hi == approx(row["mean"] + row["std"])
+
+    def test_marker_linestyle(self):
+
+        x, y = ["a", "b", "c"], [1, 2, 3]
+        ax = pointplot(x=x, y=y, marker="s", linestyle="--")
+        line = ax.lines[0]
+        assert line.get_marker() == "s"
+        assert line.get_linestyle() == "--"
+
+    def test_markers_linestyles_single(self):
+
+        x, y = ["a", "b", "c"], [1, 2, 3]
+        ax = pointplot(x=x, y=y, markers="s", linestyles="--")
+        line = ax.lines[0]
+        assert line.get_marker() == "s"
+        assert line.get_linestyle() == "--"
+
+    def test_markers_linestyles_mapped(self):
+
+        x, y = ["a", "a", "b", "b"], [1, 2, 3, 4]
+        hue = ["x", "y", "x", "y"]
+        markers = ["d", "s"]
+        linestyles = ["--", ":"]
+        ax = pointplot(
+            x=x, y=y, hue=hue,
+            markers=markers, linestyles=linestyles,
+            errorbar=None,
+        )
+        for i, line in enumerate(ax.lines[:2]):
+            assert line.get_marker() == markers[i]
+            assert line.get_linestyle() == linestyles[i]
+
+    def test_dodge_boolean(self):
+
+        x, y = ["a", "b", "a", "b"], [1, 2, 3, 4]
+        hue = ["x", "x", "y", "y"]
+        ax = pointplot(x=x, y=y, hue=hue, dodge=True, errorbar=None)
+        for i, xy in enumerate(ax.lines[0].get_xydata()):
+            assert tuple(xy) == (i - .025, y[i])
+        for i, xy in enumerate(ax.lines[1].get_xydata()):
+            assert tuple(xy) == (i + .025, y[2 + i])
+
+    def test_dodge_float(self):
+
+        x, y = ["a", "b", "a", "b"], [1, 2, 3, 4]
+        hue = ["x", "x", "y", "y"]
+        ax = pointplot(x=x, y=y, hue=hue, dodge=.2, errorbar=None)
+        for i, xy in enumerate(ax.lines[0].get_xydata()):
+            assert tuple(xy) == (i - .1, y[i])
+        for i, xy in enumerate(ax.lines[1].get_xydata()):
+            assert tuple(xy) == (i + .1, y[2 + i])
+
+    def test_dodge_log_scale(self):
+
+        x, y = [10, 1000, 10, 1000], [1, 2, 3, 4]
+        hue = ["x", "x", "y", "y"]
+        ax = mpl.figure.Figure().subplots()
+        ax.set_xscale("log")
+        pointplot(x=x, y=y, hue=hue, dodge=.2, native_scale=True, errorbar=None, ax=ax)
+        for i, xy in enumerate(ax.lines[0].get_xydata()):
+            assert tuple(xy) == approx((10 ** (np.log10(x[i]) - .2), y[i]))
+        for i, xy in enumerate(ax.lines[1].get_xydata()):
+            assert tuple(xy) == approx((10 ** (np.log10(x[2 + i]) + .2), y[2 + i]))
+
+    def test_err_kws(self):
+
+        x, y = ["a", "a", "b", "b"], [1, 2, 3, 4]
+        err_kws = dict(color=(.2, .5, .3), linewidth=10)
+        ax = pointplot(x=x, y=y, errorbar=("pi", 100), err_kws=err_kws)
+        for line in ax.lines[1:]:
+            assert same_color(line.get_color(), err_kws["color"])
+            assert line.get_linewidth() == err_kws["linewidth"]
+
+    def test_err_kws_inherited(self):
+
+        x, y = ["a", "a", "b", "b"], [1, 2, 3, 4]
+        kws = dict(color=(.2, .5, .3), linewidth=10)
+        ax = pointplot(x=x, y=y, errorbar=("pi", 100), **kws)
+        for line in ax.lines[1:]:
+            assert same_color(line.get_color(), kws["color"])
+            assert line.get_linewidth() == kws["linewidth"]
+
+    @pytest.mark.skipif(
+        _version_predates(mpl, "3.6"),
+        reason="Legend handle missing marker property"
     )
+    def test_legend_contents(self):
 
-    def test_nested_width(self):
+        x, y = ["a", "a", "b", "b"], [1, 2, 3, 4]
+        hue = ["x", "y", "x", "y"]
+        ax = pointplot(x=x, y=y, hue=hue)
+        _draw_figure(ax.figure)
+        legend = ax.get_legend()
+        assert [t.get_text() for t in legend.texts] == ["x", "y"]
+        for i, handle in enumerate(legend.legendHandles):
+            assert handle.get_marker() == "o"
+            assert handle.get_linestyle() == "-"
+            assert same_color(handle.get_color(), f"C{i}")
 
-        ax = cat.barplot(data=self.df, x="g", y="y", hue="h")
-        for bar in ax.patches:
-            assert bar.get_width() == approx(.8 / 2)
-        ax.clear()
+    @pytest.mark.skipif(
+        _version_predates(mpl, "3.6"),
+        reason="Legend handle missing marker property"
+    )
+    def test_legend_set_props(self):
 
-        ax = cat.barplot(data=self.df, x="g", y="y", hue="g", width=.5)
-        for bar in ax.patches:
-            assert bar.get_width() == approx(.5)
-        ax.clear()
+        x, y = ["a", "a", "b", "b"], [1, 2, 3, 4]
+        hue = ["x", "y", "x", "y"]
+        kws = dict(marker="s", linewidth=1)
+        ax = pointplot(x=x, y=y, hue=hue, **kws)
+        legend = ax.get_legend()
+        for i, handle in enumerate(legend.legendHandles):
+            assert handle.get_marker() == kws["marker"]
+            assert handle.get_linewidth() == kws["linewidth"]
 
-        ax = cat.barplot(data=self.df, x="g", y="y", hue="g", dodge=False)
-        for bar in ax.patches:
-            assert bar.get_width() == approx(.8)
-        ax.clear()
+    @pytest.mark.skipif(
+        _version_predates(mpl, "3.6"),
+        reason="Legend handle missing marker property"
+    )
+    def test_legend_synced_props(self):
 
-    def test_draw_vertical_bars(self):
+        x, y = ["a", "a", "b", "b"], [1, 2, 3, 4]
+        hue = ["x", "y", "x", "y"]
+        kws = dict(markers=["s", "d"], linestyles=["--", ":"])
+        ax = pointplot(x=x, y=y, hue=hue, **kws)
+        legend = ax.get_legend()
+        for i, handle in enumerate(legend.legendHandles):
+            assert handle.get_marker() == kws["markers"][i]
+            assert handle.get_linestyle() == kws["linestyles"][i]
 
-        kws = self.default_kws.copy()
-        kws.update(x="g", y="y", data=self.df)
-        p = cat._BarPlotter(**kws)
+    @pytest.mark.parametrize(
+        "kwargs",
+        [
+            dict(data="wide"),
+            dict(data="wide", orient="h"),
+            dict(data="flat"),
+            dict(data="long", x="a", y="y"),
+            dict(data=None, x="a", y="y"),
+            dict(data="long", x="a", y="y", hue="a"),
+            dict(data=None, x="a", y="y", hue="a"),
+            dict(data="long", x="a", y="y", hue="b"),
+            dict(data=None, x="s", y="y", hue="a"),
+            dict(data="long", x="a", y="y", hue="s"),
+            dict(data="long", x="a", y="y", units="c"),
+            dict(data="null", x="a", y="y", hue="a"),
+            dict(data="long", x="s", y="y", hue="a", native_scale=True),
+            dict(data="long", x="d", y="y", hue="a", native_scale=True),
+            dict(data="long", x="a", y="y", errorbar=("pi", 50)),
+            dict(data="long", x="a", y="y", errorbar=None),
+            dict(data="null", x="a", y="y", hue="a", dodge=True),
+            dict(data="null", x="a", y="y", hue="a", dodge=.2),
+            dict(data="long", x="a", y="y", capsize=.3, err_kws=dict(c="k")),
+            dict(data="long", x="a", y="y", color="blue", marker="s"),
+            dict(data="long", x="a", y="y", hue="a", markers=["s", "d", "p"]),
+        ]
+    )
+    def test_vs_catplot(self, long_df, wide_df, null_df, flat_series, kwargs):
 
-        f, ax = plt.subplots()
-        p.draw_bars(ax, {})
+        kwargs = kwargs.copy()
+        kwargs["seed"] = 0
+        kwargs["n_boot"] = 10
 
-        assert len(ax.patches) == len(p.plot_data)
-        assert len(ax.lines) == len(p.plot_data)
+        if kwargs["data"] == "long":
+            kwargs["data"] = long_df
+        elif kwargs["data"] == "wide":
+            kwargs["data"] = wide_df
+        elif kwargs["data"] == "flat":
+            kwargs["data"] = flat_series
+        elif kwargs["data"] == "null":
+            kwargs["data"] = null_df
+        elif kwargs["data"] is None:
+            for var in ["x", "y", "hue"]:
+                if var in kwargs:
+                    kwargs[var] = long_df[kwargs[var]]
 
-        for bar, color in zip(ax.patches, p.colors):
-            assert bar.get_facecolor()[:-1] == color
+        ax = pointplot(**kwargs)
+        g = catplot(**kwargs, kind="point")
 
-        positions = np.arange(len(p.plot_data)) - p.width / 2
-        for bar, pos, stat in zip(ax.patches, positions, p.statistic):
-            assert bar.get_x() == pos
-            assert bar.get_width() == p.width
+        assert_plots_equal(ax, g.ax)
+
+    def test_legend_disabled(self, long_df):
+
+        ax = pointplot(long_df, x="x", y="y", hue="b", legend=False)
+        assert ax.get_legend() is None
+
+    def test_join_deprecation(self):
+
+        with pytest.warns(UserWarning, match="The `join` parameter"):
+            ax = pointplot(x=["a", "b", "c"], y=[1, 2, 3], join=False)
+        assert ax.lines[0].get_linestyle().lower() == "none"
+
+    def test_scale_deprecation(self):
+
+        x, y = ["a", "b", "c"], [1, 2, 3]
+        ax = pointplot(x=x, y=y, errorbar=None)
+        with pytest.warns(UserWarning, match="The `scale` parameter"):
+            pointplot(x=x, y=y, errorbar=None, scale=2)
+        l1, l2 = ax.lines
+        assert l2.get_linewidth() == 2 * l1.get_linewidth()
+        assert l2.get_markersize() > l1.get_markersize()
+
+
+class TestCountPlot:
+
+    def test_empty(self):
+
+        ax = countplot()
+        assert not ax.patches
+
+        ax = countplot(x=[])
+        assert not ax.patches
+
+    def test_labels_long(self, long_df):
+
+        fig = mpl.figure.Figure()
+        axs = fig.subplots(2)
+        countplot(long_df, x="a", ax=axs[0])
+        countplot(long_df, x="b", stat="percent", ax=axs[1])
+
+        # To populate texts; only needed on older matplotlibs
+        _draw_figure(fig)
+
+        assert axs[0].get_xlabel() == "a"
+        assert axs[1].get_xlabel() == "b"
+        assert axs[0].get_ylabel() == "count"
+        assert axs[1].get_ylabel() == "percent"
+
+    def test_wide_data(self, wide_df):
+
+        ax = countplot(wide_df)
+        assert len(ax.patches) == len(wide_df.columns)
+        for i, bar in enumerate(ax.patches):
+            assert bar.get_x() + bar.get_width() / 2 == i
             assert bar.get_y() == 0
-            assert bar.get_height() == stat
+            assert bar.get_height() == len(wide_df)
+            assert bar.get_width() == 0.8
 
-    def test_draw_horizontal_bars(self):
+    def test_flat_series(self):
 
-        kws = self.default_kws.copy()
-        kws.update(x="y", y="g", orient="h", data=self.df)
-        p = cat._BarPlotter(**kws)
-
-        f, ax = plt.subplots()
-        p.draw_bars(ax, {})
-
-        assert len(ax.patches) == len(p.plot_data)
-        assert len(ax.lines) == len(p.plot_data)
-
-        for bar, color in zip(ax.patches, p.colors):
-            assert bar.get_facecolor()[:-1] == color
-
-        positions = np.arange(len(p.plot_data)) - p.width / 2
-        for bar, pos, stat in zip(ax.patches, positions, p.statistic):
-            assert bar.get_y() == pos
-            assert bar.get_height() == p.width
+        vals = ["a", "b", "c"]
+        counts = [2, 1, 4]
+        vals = pd.Series([x for x, n in zip(vals, counts) for _ in range(n)])
+        ax = countplot(vals)
+        for i, bar in enumerate(ax.patches):
             assert bar.get_x() == 0
-            assert bar.get_width() == stat
+            assert bar.get_y() + bar.get_height() / 2 == i
+            assert bar.get_height() == 0.8
+            assert bar.get_width() == counts[i]
 
-    def test_draw_nested_vertical_bars(self):
+    def test_x_series(self):
 
-        kws = self.default_kws.copy()
-        kws.update(x="g", y="y", hue="h", data=self.df)
-        p = cat._BarPlotter(**kws)
+        vals = ["a", "b", "c"]
+        counts = [2, 1, 4]
+        vals = pd.Series([x for x, n in zip(vals, counts) for _ in range(n)])
+        ax = countplot(x=vals)
+        for i, bar in enumerate(ax.patches):
+            assert bar.get_x() + bar.get_width() / 2 == i
+            assert bar.get_y() == 0
+            assert bar.get_height() == counts[i]
+            assert bar.get_width() == 0.8
 
-        f, ax = plt.subplots()
-        p.draw_bars(ax, {})
+    def test_y_series(self):
 
-        n_groups, n_hues = len(p.plot_data), len(p.hue_names)
-        assert len(ax.patches) == n_groups * n_hues
-        assert len(ax.lines) == n_groups * n_hues
+        vals = ["a", "b", "c"]
+        counts = [2, 1, 4]
+        vals = pd.Series([x for x, n in zip(vals, counts) for _ in range(n)])
+        ax = countplot(y=vals)
+        for i, bar in enumerate(ax.patches):
+            assert bar.get_x() == 0
+            assert bar.get_y() + bar.get_height() / 2 == i
+            assert bar.get_height() == 0.8
+            assert bar.get_width() == counts[i]
 
-        for bar in ax.patches[:n_groups]:
-            assert bar.get_facecolor()[:-1] == p.colors[0]
-        for bar in ax.patches[n_groups:]:
-            assert bar.get_facecolor()[:-1] == p.colors[1]
+    def test_hue_redundant(self):
 
-        positions = np.arange(len(p.plot_data))
-        for bar, pos in zip(ax.patches[:n_groups], positions):
-            assert bar.get_x() == approx(pos - p.width / 2)
-            assert bar.get_width() == approx(p.nested_width)
+        vals = ["a", "b", "c"]
+        counts = [2, 1, 4]
+        vals = pd.Series([x for x, n in zip(vals, counts) for _ in range(n)])
 
-        for bar, stat in zip(ax.patches, p.statistic.T.flat):
-            assert bar.get_y() == approx(0)
-            assert bar.get_height() == approx(stat)
+        ax = countplot(x=vals, hue=vals, saturation=1)
+        for i, bar in enumerate(ax.patches):
+            assert bar.get_x() + bar.get_width() / 2 == approx(i)
+            assert bar.get_y() == 0
+            assert bar.get_height() == counts[i]
+            assert bar.get_width() == approx(0.8)
+            assert same_color(bar.get_facecolor(), f"C{i}")
 
-    def test_draw_nested_horizontal_bars(self):
+    def test_hue_dodged(self):
 
-        kws = self.default_kws.copy()
-        kws.update(x="y", y="g", hue="h", orient="h", data=self.df)
-        p = cat._BarPlotter(**kws)
+        vals = ["a", "a", "a", "b", "b", "b"]
+        hue = ["x", "y", "y", "x", "x", "x"]
+        counts = [1, 3, 2, 0]
 
-        f, ax = plt.subplots()
-        p.draw_bars(ax, {})
+        ax = countplot(x=vals, hue=hue, saturation=1)
+        for i, bar in enumerate(ax.patches):
+            sign = 1 if i // 2 else -1
+            assert (
+                bar.get_x() + bar.get_width() / 2
+                == approx(i % 2 + sign * 0.8 / 4)
+            )
+            assert bar.get_y() == 0
+            assert bar.get_height() == counts[i]
+            assert bar.get_width() == approx(0.8 / 2)
+            assert same_color(bar.get_facecolor(), f"C{i // 2}")
 
-        n_groups, n_hues = len(p.plot_data), len(p.hue_names)
-        assert len(ax.patches) == n_groups * n_hues
-        assert len(ax.lines) == n_groups * n_hues
+    @pytest.mark.parametrize("stat", ["percent", "probability", "proportion"])
+    def test_stat(self, long_df, stat):
 
-        for bar in ax.patches[:n_groups]:
-            assert bar.get_facecolor()[:-1] == p.colors[0]
-        for bar in ax.patches[n_groups:]:
-            assert bar.get_facecolor()[:-1] == p.colors[1]
+        col = "a"
+        order = categorical_order(long_df[col])
+        expected = long_df[col].value_counts(normalize=True)
+        if stat == "percent":
+            expected *= 100
+        ax = countplot(long_df, x=col, stat=stat)
+        for i, bar in enumerate(ax.patches):
+            assert bar.get_height() == approx(expected[order[i]])
 
-        positions = np.arange(len(p.plot_data))
-        for bar, pos in zip(ax.patches[:n_groups], positions):
-            assert bar.get_y() == approx(pos - p.width / 2)
-            assert bar.get_height() == approx(p.nested_width)
+    def test_xy_error(self, long_df):
 
-        for bar, stat in zip(ax.patches, p.statistic.T.flat):
-            assert bar.get_x() == approx(0)
-            assert bar.get_width() == approx(stat)
+        with pytest.raises(TypeError, match="Cannot pass values for both"):
+            countplot(long_df, x="a", y="b")
 
-    def test_draw_missing_bars(self):
+    def test_legend_numeric_auto(self, long_df):
 
-        kws = self.default_kws.copy()
+        ax = countplot(long_df, x="x", hue="x")
+        assert len(ax.get_legend().texts) <= 6
 
-        order = list("abcd")
-        kws.update(x="g", y="y", order=order, data=self.df)
-        p = cat._BarPlotter(**kws)
+    def test_legend_disabled(self, long_df):
 
-        f, ax = plt.subplots()
-        p.draw_bars(ax, {})
+        ax = countplot(long_df, x="x", hue="b", legend=False)
+        assert ax.get_legend() is None
 
-        assert len(ax.patches) == len(order)
-        assert len(ax.lines) == len(order)
-
-        plt.close("all")
-
-        hue_order = list("mno")
-        kws.update(x="g", y="y", hue="h", hue_order=hue_order, data=self.df)
-        p = cat._BarPlotter(**kws)
-
-        f, ax = plt.subplots()
-        p.draw_bars(ax, {})
-
-        assert len(ax.patches) == len(p.plot_data) * len(hue_order)
-        assert len(ax.lines) == len(p.plot_data) * len(hue_order)
-
-        plt.close("all")
-
-    def test_unaligned_index(self):
-
-        f, (ax1, ax2) = plt.subplots(2)
-        cat.barplot(x=self.g, y=self.y, errorbar="sd", ax=ax1)
-        cat.barplot(x=self.g, y=self.y_perm, errorbar="sd", ax=ax2)
-        for l1, l2 in zip(ax1.lines, ax2.lines):
-            assert approx(l1.get_xydata()) == l2.get_xydata()
-        for p1, p2 in zip(ax1.patches, ax2.patches):
-            assert approx(p1.get_xy()) == p2.get_xy()
-            assert approx(p1.get_height()) == p2.get_height()
-            assert approx(p1.get_width()) == p2.get_width()
-
-        f, (ax1, ax2) = plt.subplots(2)
-        hue_order = self.h.unique()
-        cat.barplot(x=self.g, y=self.y, hue=self.h,
-                    hue_order=hue_order, errorbar="sd", ax=ax1)
-        cat.barplot(x=self.g, y=self.y_perm, hue=self.h,
-                    hue_order=hue_order, errorbar="sd", ax=ax2)
-        for l1, l2 in zip(ax1.lines, ax2.lines):
-            assert approx(l1.get_xydata()) == l2.get_xydata()
-        for p1, p2 in zip(ax1.patches, ax2.patches):
-            assert approx(p1.get_xy()) == p2.get_xy()
-            assert approx(p1.get_height()) == p2.get_height()
-            assert approx(p1.get_width()) == p2.get_width()
-
-    def test_barplot_colors(self):
-
-        # Test unnested palette colors
-        kws = self.default_kws.copy()
-        kws.update(x="g", y="y", data=self.df,
-                   saturation=1, palette="muted")
-        p = cat._BarPlotter(**kws)
-
-        f, ax = plt.subplots()
-        p.draw_bars(ax, {})
-
-        palette = palettes.color_palette("muted", len(self.g.unique()))
-        for patch, pal_color in zip(ax.patches, palette):
-            assert patch.get_facecolor()[:-1] == pal_color
-
-        plt.close("all")
-
-        # Test single color
-        color = (.2, .2, .3, 1)
-        kws = self.default_kws.copy()
-        kws.update(x="g", y="y", data=self.df,
-                   saturation=1, color=color)
-        p = cat._BarPlotter(**kws)
-
-        f, ax = plt.subplots()
-        p.draw_bars(ax, {})
-
-        for patch in ax.patches:
-            assert patch.get_facecolor() == color
-
-        plt.close("all")
-
-        # Test nested palette colors
-        kws = self.default_kws.copy()
-        kws.update(x="g", y="y", hue="h", data=self.df,
-                   saturation=1, palette="Set2")
-        p = cat._BarPlotter(**kws)
-
-        f, ax = plt.subplots()
-        p.draw_bars(ax, {})
-
-        palette = palettes.color_palette("Set2", len(self.h.unique()))
-        for patch in ax.patches[:len(self.g.unique())]:
-            assert patch.get_facecolor()[:-1] == palette[0]
-        for patch in ax.patches[len(self.g.unique()):]:
-            assert patch.get_facecolor()[:-1] == palette[1]
-
-        plt.close("all")
-
-    def test_simple_barplots(self):
-
-        ax = cat.barplot(x="g", y="y", data=self.df)
-        assert len(ax.patches) == len(self.g.unique())
-        assert ax.get_xlabel() == "g"
-        assert ax.get_ylabel() == "y"
-        plt.close("all")
-
-        ax = cat.barplot(x="y", y="g", orient="h", data=self.df)
-        assert len(ax.patches) == len(self.g.unique())
-        assert ax.get_xlabel() == "y"
-        assert ax.get_ylabel() == "g"
-        plt.close("all")
-
-        ax = cat.barplot(x="g", y="y", hue="h", data=self.df)
-        assert len(ax.patches) == len(self.g.unique()) * len(self.h.unique())
-        assert ax.get_xlabel() == "g"
-        assert ax.get_ylabel() == "y"
-        plt.close("all")
-
-        ax = cat.barplot(x="y", y="g", hue="h", orient="h", data=self.df)
-        assert len(ax.patches) == len(self.g.unique()) * len(self.h.unique())
-        assert ax.get_xlabel() == "y"
-        assert ax.get_ylabel() == "g"
-        plt.close("all")
-
-    def test_errorbar(self, long_df):
-
-        ax = cat.barplot(data=long_df, x="a", y="y", errorbar=("sd", 2))
-        order = categorical_order(long_df["a"])
-
-        for i, line in enumerate(ax.lines):
-            sub_df = long_df.loc[long_df["a"] == order[i], "y"]
-            mean = sub_df.mean()
-            sd = sub_df.std()
-            expected = mean - 2 * sd, mean + 2 * sd
-            assert_array_equal(line.get_ydata(), expected)
-
-
-class TestPointPlotter(CategoricalFixture):
-
-    default_kws = dict(
-        x=None, y=None, hue=None, data=None,
-        estimator="mean", errorbar=("ci", 95),
-        n_boot=100, units=None, seed=None,
-        order=None, hue_order=None,
-        markers="o", linestyles="-", dodge=0,
-        join=True, scale=1, orient=None,
-        color=None, palette=None,
-        errwidth=None, capsize=None, label=None,
-
+    @pytest.mark.parametrize(
+        "kwargs",
+        [
+            dict(data="wide"),
+            dict(data="wide", orient="h"),
+            dict(data="flat"),
+            dict(data="long", x="a"),
+            dict(data=None, x="a"),
+            dict(data="long", y="b"),
+            dict(data="long", x="a", hue="a"),
+            dict(data=None, x="a", hue="a"),
+            dict(data="long", x="a", hue="b"),
+            dict(data=None, x="s", hue="a"),
+            dict(data="long", x="a", hue="s"),
+            dict(data="null", x="a", hue="a"),
+            dict(data="long", x="s", hue="a", native_scale=True),
+            dict(data="long", x="d", hue="a", native_scale=True),
+            dict(data="long", x="a", stat="percent"),
+            dict(data="long", x="a", hue="b", stat="proportion"),
+            dict(data="long", x="a", color="blue", ec="green", alpha=.5),
+        ]
     )
-
-    def test_different_defualt_colors(self):
-
-        kws = self.default_kws.copy()
-        kws.update(dict(x="g", y="y", data=self.df))
-        p = cat._PointPlotter(**kws)
-        color = palettes.color_palette()[0]
-        npt.assert_array_equal(p.colors, [color, color, color])
-
-    def test_hue_offsets(self):
-
-        kws = self.default_kws.copy()
-        kws.update(dict(x="g", y="y", hue="h", data=self.df))
-
-        p = cat._PointPlotter(**kws)
-        npt.assert_array_equal(p.hue_offsets, [0, 0])
-
-        kws.update(dict(dodge=.5))
-
-        p = cat._PointPlotter(**kws)
-        npt.assert_array_equal(p.hue_offsets, [-.25, .25])
-
-        kws.update(dict(x="h", hue="g", dodge=0))
-
-        p = cat._PointPlotter(**kws)
-        npt.assert_array_equal(p.hue_offsets, [0, 0, 0])
-
-        kws.update(dict(dodge=.3))
-
-        p = cat._PointPlotter(**kws)
-        npt.assert_array_equal(p.hue_offsets, [-.15, 0, .15])
-
-    def test_draw_vertical_points(self):
-
-        kws = self.default_kws.copy()
-        kws.update(x="g", y="y", data=self.df)
-        p = cat._PointPlotter(**kws)
-
-        f, ax = plt.subplots()
-        p.draw_points(ax)
-
-        assert len(ax.collections) == 1
-        assert len(ax.lines) == len(p.plot_data) + 1
-        points = ax.collections[0]
-        assert len(points.get_offsets()) == len(p.plot_data)
-
-        x, y = points.get_offsets().T
-        npt.assert_array_equal(x, np.arange(len(p.plot_data)))
-        npt.assert_array_equal(y, p.statistic)
-
-        for got_color, want_color in zip(points.get_facecolors(),
-                                         p.colors):
-            npt.assert_array_equal(got_color[:-1], want_color)
-
-    def test_draw_horizontal_points(self):
-
-        kws = self.default_kws.copy()
-        kws.update(x="y", y="g", orient="h", data=self.df)
-        p = cat._PointPlotter(**kws)
-
-        f, ax = plt.subplots()
-        p.draw_points(ax)
-
-        assert len(ax.collections) == 1
-        assert len(ax.lines) == len(p.plot_data) + 1
-        points = ax.collections[0]
-        assert len(points.get_offsets()) == len(p.plot_data)
-
-        x, y = points.get_offsets().T
-        npt.assert_array_equal(x, p.statistic)
-        npt.assert_array_equal(y, np.arange(len(p.plot_data)))
-
-        for got_color, want_color in zip(points.get_facecolors(),
-                                         p.colors):
-            npt.assert_array_equal(got_color[:-1], want_color)
-
-    def test_draw_vertical_nested_points(self):
-
-        kws = self.default_kws.copy()
-        kws.update(x="g", y="y", hue="h", data=self.df)
-        p = cat._PointPlotter(**kws)
-
-        f, ax = plt.subplots()
-        p.draw_points(ax)
-
-        assert len(ax.collections) == 2
-        assert len(ax.lines) == len(p.plot_data) * len(p.hue_names) + len(p.hue_names)
-
-        for points, numbers, color in zip(ax.collections,
-                                          p.statistic.T,
-                                          p.colors):
-
-            assert len(points.get_offsets()) == len(p.plot_data)
-
-            x, y = points.get_offsets().T
-            npt.assert_array_equal(x, np.arange(len(p.plot_data)))
-            npt.assert_array_equal(y, numbers)
-
-            for got_color in points.get_facecolors():
-                npt.assert_array_equal(got_color[:-1], color)
-
-    def test_draw_horizontal_nested_points(self):
-
-        kws = self.default_kws.copy()
-        kws.update(x="y", y="g", hue="h", orient="h", data=self.df)
-        p = cat._PointPlotter(**kws)
-
-        f, ax = plt.subplots()
-        p.draw_points(ax)
-
-        assert len(ax.collections) == 2
-        assert len(ax.lines) == len(p.plot_data) * len(p.hue_names) + len(p.hue_names)
-
-        for points, numbers, color in zip(ax.collections,
-                                          p.statistic.T,
-                                          p.colors):
-
-            assert len(points.get_offsets()) == len(p.plot_data)
-
-            x, y = points.get_offsets().T
-            npt.assert_array_equal(x, numbers)
-            npt.assert_array_equal(y, np.arange(len(p.plot_data)))
-
-            for got_color in points.get_facecolors():
-                npt.assert_array_equal(got_color[:-1], color)
-
-    def test_draw_missing_points(self):
-
-        kws = self.default_kws.copy()
-        df = self.df.copy()
-
-        kws.update(x="g", y="y", hue="h", hue_order=["x", "y"], data=df)
-        p = cat._PointPlotter(**kws)
-        f, ax = plt.subplots()
-        p.draw_points(ax)
-
-        df.loc[df["h"] == "m", "y"] = np.nan
-        kws.update(x="g", y="y", hue="h", data=df)
-        p = cat._PointPlotter(**kws)
-        f, ax = plt.subplots()
-        p.draw_points(ax)
-
-    def test_unaligned_index(self):
-
-        f, (ax1, ax2) = plt.subplots(2)
-        cat.pointplot(x=self.g, y=self.y, errorbar="sd", ax=ax1)
-        cat.pointplot(x=self.g, y=self.y_perm, errorbar="sd", ax=ax2)
-        for l1, l2 in zip(ax1.lines, ax2.lines):
-            assert approx(l1.get_xydata()) == l2.get_xydata()
-        for p1, p2 in zip(ax1.collections, ax2.collections):
-            assert approx(p1.get_offsets()) == p2.get_offsets()
-
-        f, (ax1, ax2) = plt.subplots(2)
-        hue_order = self.h.unique()
-        cat.pointplot(x=self.g, y=self.y, hue=self.h,
-                      hue_order=hue_order, errorbar="sd", ax=ax1)
-        cat.pointplot(x=self.g, y=self.y_perm, hue=self.h,
-                      hue_order=hue_order, errorbar="sd", ax=ax2)
-        for l1, l2 in zip(ax1.lines, ax2.lines):
-            assert approx(l1.get_xydata()) == l2.get_xydata()
-        for p1, p2 in zip(ax1.collections, ax2.collections):
-            assert approx(p1.get_offsets()) == p2.get_offsets()
-
-    def test_pointplot_colors(self):
-
-        # Test a single-color unnested plot
-        color = (.2, .2, .3, 1)
-        kws = self.default_kws.copy()
-        kws.update(x="g", y="y", data=self.df, color=color)
-        p = cat._PointPlotter(**kws)
-
-        f, ax = plt.subplots()
-        p.draw_points(ax)
-
-        for line in ax.lines:
-            assert line.get_color() == color[:-1]
-
-        for got_color in ax.collections[0].get_facecolors():
-            npt.assert_array_equal(rgb2hex(got_color), rgb2hex(color))
-
-        plt.close("all")
-
-        # Test a multi-color unnested plot
-        palette = palettes.color_palette("Set1", 3)
-        kws.update(x="g", y="y", data=self.df, palette="Set1")
-        p = cat._PointPlotter(**kws)
-
-        assert not p.join
-
-        f, ax = plt.subplots()
-        p.draw_points(ax)
-
-        for line, pal_color in zip(ax.lines, palette):
-            npt.assert_array_equal(line.get_color(), pal_color)
-
-        for point_color, pal_color in zip(ax.collections[0].get_facecolors(),
-                                          palette):
-            npt.assert_array_equal(rgb2hex(point_color), rgb2hex(pal_color))
-
-        plt.close("all")
-
-        # Test a multi-colored nested plot
-        palette = palettes.color_palette("dark", 2)
-        kws.update(x="g", y="y", hue="h", data=self.df, palette="dark")
-        p = cat._PointPlotter(**kws)
-
-        f, ax = plt.subplots()
-        p.draw_points(ax)
-
-        for line in ax.lines[:(len(p.plot_data) + 1)]:
-            assert line.get_color() == palette[0]
-        for line in ax.lines[(len(p.plot_data) + 1):]:
-            assert line.get_color() == palette[1]
-
-        for i, pal_color in enumerate(palette):
-            for point_color in ax.collections[i].get_facecolors():
-                npt.assert_array_equal(point_color[:-1], pal_color)
-
-        plt.close("all")
-
-    def test_simple_pointplots(self):
-
-        ax = cat.pointplot(x="g", y="y", data=self.df)
-        assert len(ax.collections) == 1
-        assert len(ax.lines) == len(self.g.unique()) + 1
-        assert ax.get_xlabel() == "g"
-        assert ax.get_ylabel() == "y"
-        plt.close("all")
-
-        ax = cat.pointplot(x="y", y="g", orient="h", data=self.df)
-        assert len(ax.collections) == 1
-        assert len(ax.lines) == len(self.g.unique()) + 1
-        assert ax.get_xlabel() == "y"
-        assert ax.get_ylabel() == "g"
-        plt.close("all")
-
-        ax = cat.pointplot(x="g", y="y", hue="h", data=self.df)
-        assert len(ax.collections) == len(self.h.unique())
-        assert len(ax.lines) == (
-            len(self.g.unique()) * len(self.h.unique()) + len(self.h.unique())
-        )
-        assert ax.get_xlabel() == "g"
-        assert ax.get_ylabel() == "y"
-        plt.close("all")
-
-        ax = cat.pointplot(x="y", y="g", hue="h", orient="h", data=self.df)
-        assert len(ax.collections) == len(self.h.unique())
-        assert len(ax.lines) == (
-            len(self.g.unique()) * len(self.h.unique()) + len(self.h.unique())
-        )
-        assert ax.get_xlabel() == "y"
-        assert ax.get_ylabel() == "g"
-        plt.close("all")
-
-    def test_errorbar(self, long_df):
-
-        ax = cat.pointplot(
-            data=long_df, x="a", y="y", errorbar=("sd", 2), join=False
-        )
-        order = categorical_order(long_df["a"])
-
-        for i, line in enumerate(ax.lines):
-            sub_df = long_df.loc[long_df["a"] == order[i], "y"]
-            mean = sub_df.mean()
-            sd = sub_df.std()
-            expected = mean - 2 * sd, mean + 2 * sd
-            assert_array_equal(line.get_ydata(), expected)
-
-    def test_on_facetgrid(self, long_df):
-
-        g = FacetGrid(long_df, hue="a")
-        g.map(pointplot, "a", "y")
-        g.add_legend()
-
-        order = categorical_order(long_df["a"])
-        legend_texts = [t.get_text() for t in g.legend.texts]
-        assert legend_texts == order
-
-
-class TestCountPlot(CategoricalFixture):
-
-    def test_plot_elements(self):
-
-        ax = cat.countplot(x="g", data=self.df)
-        assert len(ax.patches) == self.g.unique().size
-        for p in ax.patches:
-            assert p.get_y() == 0
-            assert p.get_height() == self.g.size / self.g.unique().size
-        plt.close("all")
-
-        ax = cat.countplot(y="g", data=self.df)
-        assert len(ax.patches) == self.g.unique().size
-        for p in ax.patches:
-            assert p.get_x() == 0
-            assert p.get_width() == self.g.size / self.g.unique().size
-        plt.close("all")
-
-        ax = cat.countplot(x="g", hue="h", data=self.df)
-        assert len(ax.patches) == self.g.unique().size * self.h.unique().size
-        plt.close("all")
-
-        ax = cat.countplot(y="g", hue="h", data=self.df)
-        assert len(ax.patches) == self.g.unique().size * self.h.unique().size
-        plt.close("all")
-
-    def test_input_error(self):
-
-        with pytest.raises(ValueError):
-            cat.countplot(x="g", y="h", data=self.df)
+    def test_vs_catplot(self, long_df, wide_df, null_df, flat_series, kwargs):
+
+        kwargs = kwargs.copy()
+        if kwargs["data"] == "long":
+            kwargs["data"] = long_df
+        elif kwargs["data"] == "wide":
+            kwargs["data"] = wide_df
+        elif kwargs["data"] == "flat":
+            kwargs["data"] = flat_series
+        elif kwargs["data"] == "null":
+            kwargs["data"] = null_df
+        elif kwargs["data"] is None:
+            for var in ["x", "y", "hue"]:
+                if var in kwargs:
+                    kwargs[var] = long_df[kwargs[var]]
+
+        ax = countplot(**kwargs)
+        g = catplot(**kwargs, kind="count")
+
+        assert_plots_equal(ax, g.ax)
 
 
 class TestCatPlot(CategoricalFixture):
@@ -3350,14 +2958,13 @@ class TestCatPlot(CategoricalFixture):
     def test_plot_elements(self):
 
         g = cat.catplot(x="g", y="y", data=self.df, kind="point")
-        assert len(g.ax.collections) == 1
-        want_lines = self.g.unique().size + 1
+        want_lines = 1 + self.g.unique().size
         assert len(g.ax.lines) == want_lines
 
         g = cat.catplot(x="g", y="y", hue="h", data=self.df, kind="point")
-        want_collections = self.h.unique().size
-        assert len(g.ax.collections) == want_collections
-        want_lines = (self.g.unique().size + 1) * self.h.unique().size
+        want_lines = (
+            len(self.g.unique()) * len(self.h.unique()) + 2 * len(self.h.unique())
+        )
         assert len(g.ax.lines) == want_lines
 
         g = cat.catplot(x="g", y="y", data=self.df, kind="bar")
