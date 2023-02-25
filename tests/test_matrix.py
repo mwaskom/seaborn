@@ -265,6 +265,20 @@ class TestHeatmap:
         hm = mat._HeatMapper(self.df_unif, **kws)
         npt.assert_array_equal(cmap(np.inf), hm.cmap(np.inf))
 
+    def test_explicit_none_norm(self):
+
+        vals = np.linspace(.2, 1, 9)
+        cmap = mpl.cm.binary
+        _, (ax1, ax2) = plt.subplots(2)
+
+        mat.heatmap([vals], vmin=0, cmap=cmap, ax=ax1)
+        fc_default_norm = ax1.collections[0].get_facecolors()
+
+        mat.heatmap([vals], vmin=0, norm=None, cmap=cmap, ax=ax2)
+        fc_explicit_norm = ax2.collections[0].get_facecolors()
+
+        npt.assert_array_almost_equal(fc_default_norm, fc_explicit_norm, 2)
+
     def test_ticklabels_off(self):
         kws = self.default_kws.copy()
         kws['xticklabels'] = False
