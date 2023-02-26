@@ -2352,7 +2352,6 @@ Parameters
 {params.core.data}
 {params.core.xy}
 {params.core.hue}
-    Semantic variable that is mapped to determine the color of plot elements.
 kind : {{ "scatter" | "kde" | "hist" | "hex" | "reg" | "resid" }}
     Kind of plot to draw. See the examples for references to the underlying functions.
 height : numeric

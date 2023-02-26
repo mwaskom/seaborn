@@ -1433,12 +1433,12 @@ class TestHistPlotUnivariate(SharedAxesLevelTests):
             assert_array_almost_equal(start, wide_df[col].min())
             assert_array_almost_equal(stop, wide_df[col].max())
 
-    def test_weights_with_missing(self, missing_df):
+    def test_weights_with_missing(self, null_df):
 
-        ax = histplot(missing_df, x="x", weights="s", bins=5)
+        ax = histplot(null_df, x="x", weights="s", bins=5)
 
         bar_heights = [bar.get_height() for bar in ax.patches]
-        total_weight = missing_df[["x", "s"]].dropna()["s"].sum()
+        total_weight = null_df[["x", "s"]].dropna()["s"].sum()
         assert sum(bar_heights) == pytest.approx(total_weight)
 
     def test_weight_norm(self, rng):
