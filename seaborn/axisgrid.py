@@ -10,7 +10,7 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 
 from ._oldcore import VectorPlotter, variable_type, categorical_order
-from ._compat import share_axis
+from ._compat import share_axis, get_legend_handles
 from . import utils
 from .utils import (
     adjust_legend_subtitles, _check_argument, _draw_figure, _disable_autolayout
@@ -229,7 +229,7 @@ class Grid(_BaseGrid):
         # Get data directly from the legend, which is necessary
         # for newer functions that don't add labeled proxy artists
         if ax.legend_ is not None and self._extract_legend_handles:
-            handles = ax.legend_.legendHandles
+            handles = get_legend_handles(ax.legend_)
             labels = [t.get_text() for t in ax.legend_.texts]
             data.update({l: h for h, l in zip(handles, labels)})
 
