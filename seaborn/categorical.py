@@ -518,9 +518,9 @@ class _CategoricalPlotterNew(_RelationalPlotter):
 
         if linecolor is None:
             if "hue" in self.variables:
-                line_color = self._get_gray(list(self._hue_map.lookup_table.values()))
+                linecolor = self._get_gray(list(self._hue_map.lookup_table.values()))
             else:
-                line_color = self._get_gray([color])
+                linecolor = self._get_gray([color])
 
         def get_props(element, artist=mpl.lines.Line2D):
             return _normalize_kwargs(plot_kws.pop(f"{element}props", {}), artist)
@@ -569,28 +569,28 @@ class _CategoricalPlotterNew(_RelationalPlotter):
                 real_width *= 1 - gap
 
             if "hue" in sub_vars:
-                main_color = self._hue_map(sub_vars["hue"])
+                maincolor = self._hue_map(sub_vars["hue"])
                 if saturation != 1:
-                    main_color = desaturate(main_color, saturation)
+                    maincolor = desaturate(maincolor, saturation)
             else:
-                main_color = color
+                maincolor = color
 
             # TODO how to handle solid / empty fliers?
 
             if fill:
                 boxprops = {
-                    "facecolor": main_color, "edgecolor": line_color, **props["box"]
+                    "facecolor": maincolor, "edgecolor": linecolor, **props["box"]
                 }
-                medianprops = {"color": line_color, **props["median"]}
-                whiskerprops = {"color": line_color, **props["whisker"]}
-                flierprops = {"markeredgecolor": line_color, **props["flier"]}
-                capprops = {"color": line_color, **props["cap"]}
+                medianprops = {"color": linecolor, **props["median"]}
+                whiskerprops = {"color": linecolor, **props["whisker"]}
+                flierprops = {"markeredgecolor": linecolor, **props["flier"]}
+                capprops = {"color": linecolor, **props["cap"]}
             else:
-                boxprops = {"color": main_color, **props["box"]}
-                medianprops = {"color": main_color, **props["median"]}
-                whiskerprops = {"color": main_color, **props["whisker"]}
-                flierprops = {"markeredgecolor": main_color, **props["flier"]}
-                capprops = {"color": main_color, **props["cap"]}
+                boxprops = {"color": maincolor, **props["box"]}
+                medianprops = {"color": maincolor, **props["median"]}
+                whiskerprops = {"color": maincolor, **props["whisker"]}
+                flierprops = {"markeredgecolor": maincolor, **props["flier"]}
+                capprops = {"color": maincolor, **props["cap"]}
 
             if linewidth is not None:
                 for prop_dict in [boxprops, medianprops, whiskerprops, capprops]:
