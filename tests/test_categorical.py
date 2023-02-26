@@ -27,6 +27,7 @@ from seaborn.categorical import (
     Beeswarm,
     catplot,
     barplot,
+    boxplot,
     countplot,
     pointplot,
     stripplot,
@@ -41,6 +42,7 @@ from seaborn._testing import assert_plots_equal
 PLOT_FUNCS = [
     catplot,
     barplot,
+    boxplot,
     pointplot,
     stripplot,
     swarmplot,
@@ -577,16 +579,15 @@ class TestBoxPlotter(CategoricalFixture):
     def test_box_colors(self):
 
         ax = cat.boxplot(x="g", y="y", data=self.df, saturation=1)
-        pal = palettes.color_palette(n_colors=3)
-        assert same_color([patch.get_facecolor() for patch in self.get_box_artists(ax)],
-                          pal)
+        for patch in self.get_box_artists(ax):
+            assert same_color(patch.get_facecolor(), "C0")
 
         plt.close("all")
 
         ax = cat.boxplot(x="g", y="y", hue="h", data=self.df, saturation=1)
         pal = palettes.color_palette(n_colors=2)
-        assert same_color([patch.get_facecolor() for patch in self.get_box_artists(ax)],
-                          pal * 3)
+        for box, color in zip(self.get_box_artists(ax)[::3], pal):
+            assert same_color(box.get_facecolor(), color)
 
         plt.close("all")
 
@@ -1872,6 +1873,25 @@ class SharedScatterTests(SharedAxesLevelTests):
         self.func(x=[], y=[], hue=[], palette=[])
 
 
+class SharedAggTests(SharedAxesLevelTests):
+
+    def test_labels_flat(self):
+
+        ind = pd.Index(["a", "b", "c"], name="x")
+        ser = pd.Series([1, 2, 3], ind, name="y")
+
+        ax = self.func(ser)
+
+        # To populate texts; only needed on older matplotlibs
+        _draw_figure(ax.figure)
+
+        assert ax.get_xlabel() == ind.name
+        assert ax.get_ylabel() == ser.name
+        labels = [t.get_text() for t in ax.get_xticklabels()]
+        for label, level in zip(labels, ind):
+            assert label == level
+
+
 class TestStripPlot(SharedScatterTests):
 
     func = staticmethod(stripplot)
@@ -1934,23 +1954,20 @@ class TestSwarmPlot(SharedScatterTests):
     func = staticmethod(partial(swarmplot, warn_thresh=1))
 
 
-class SharedAggTests(SharedAxesLevelTests):
+class TestBoxPlot(SharedAxesLevelTests):
 
-    def test_labels_flat(self):
+    func = staticmethod(boxplot)
 
-        ind = pd.Index(["a", "b", "c"], name="x")
-        ser = pd.Series([1, 2, 3], ind, name="y")
+    @pytest.fixture
+    def common_kws(self):
+        return {"saturation": 1}
 
-        ax = self.func(ser)
+    def get_last_color(self, ax):
 
-        # To populate texts; only needed on older matplotlibs
-        _draw_figure(ax.figure)
-
-        assert ax.get_xlabel() == ind.name
-        assert ax.get_ylabel() == ser.name
-        labels = [t.get_text() for t in ax.get_xticklabels()]
-        for label, level in zip(labels, ind):
-            assert label == level
+        colors = [b.get_facecolor() for b in ax.containers[-1].boxes]
+        unique_colors = np.unique(colors, axis=0)
+        assert len(unique_colors) == 1
+        return to_rgba(unique_colors.squeeze())
 
 
 class TestBarPlot(SharedAggTests):

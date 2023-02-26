@@ -537,11 +537,12 @@ class _CategoricalPlotterNew(_RelationalPlotter):
             "cap": get_props("cap"),
         }
 
+        ax = self.ax
         props["flier"].setdefault("markersize", fliersize)
 
         for sub_vars, sub_data in self.iter_data(iter_vars,
                                                  from_comp_data=True,
-                                                 allow_empty=True):
+                                                 allow_empty=False):
 
             grouped = sub_data.groupby(self.orient)[value_var]
             value_data = [x.to_numpy() for _, x in grouped]
@@ -645,6 +646,13 @@ class _CategoricalPlotterNew(_RelationalPlotter):
                             line.set_data(verts)
 
             ax.add_container(BoxPlotContainer(artists))
+
+        patch_kws = props["box"].copy()
+        if not fill:
+            patch_kws["facecolor"] = (1, 1, 1, 0)
+        else:
+            patch_kws["edgecolor"] = linecolor
+        self._configure_legend(ax, ax.fill_between, patch_kws)
 
     def plot_points(
         self,
@@ -3694,6 +3702,8 @@ def catplot(
     g = FacetGrid(**facet_kws)
 
     # Draw the plot onto the facets
+    if not plot_kws.get("order"):
+        plot_kws.pop("order", None)
     g.map_dataframe(plot_func, x=x, y=y, hue=hue, **plot_kws)
 
     if p.orient == "y":
