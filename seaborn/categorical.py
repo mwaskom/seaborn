@@ -255,6 +255,7 @@ class _CategoricalPlotterNew(_RelationalPlotter):
         """Get a grayscale value that looks good with color."""
         if not len(colors):
             return None
+        colors = [mpl.colors.to_rgb(c) for c in colors]
         unique_colors = np.unique(colors, axis=0)
         light_vals = [rgb_to_hls(*rgb[:3])[1] for rgb in unique_colors]
         lum = min(light_vals) * .6
@@ -496,6 +497,105 @@ class _CategoricalPlotterNew(_RelationalPlotter):
 
         _draw_figure(ax.figure)
         self._configure_legend(ax, ax.scatter)
+
+    def plot_boxes(
+        self,
+        whis,
+        width,
+        fill,
+        color,
+        linecolor,
+        linewidth,
+        fliersize,
+        saturation,
+        plot_kws,
+    ):
+
+        iter_vars = ["hue"]
+        value_var = {"x": "y", "y": "x"}[self.orient]
+
+        if linecolor is None:
+            if "hue" in self.variables:
+                line_color = self._get_gray(list(self._hue_map.lookup_table.values()))
+            else:
+                line_color = self._get_gray([color])
+
+        def get_props(element, artist=mpl.lines.Line2D):
+            return _normalize_kwargs(plot_kws.pop(f"{element}props", {}), artist)
+
+        if not fill and linewidth is None:
+            linewidth = mpl.rcParams["lines.linewidth"]
+
+        box_artist = mpl.patches.Rectangle if fill else mpl.lines.Line2D
+        props = {
+            "box": get_props("box", box_artist),
+            "median": get_props("median"),
+            "whisker": get_props("whisker"),
+            "flier": get_props("flier"),
+            "cap": get_props("cap"),
+        }
+
+        props["flier"].setdefault("markersize", fliersize)
+
+        for sub_vars, sub_data in self.iter_data(iter_vars,
+                                                 from_comp_data=True,
+                                                 allow_empty=True):
+
+            grouped = sub_data.groupby(self.orient)[value_var]
+            value_data = [x.to_numpy() for _, x in grouped]
+            stats = pd.DataFrame(mpl.cbook.boxplot_stats(value_data, whis=whis))
+            positions = grouped.grouper.result_index.to_numpy()
+
+            if self._log_scaled(self.orient):
+                positions = 10 ** positions
+            if self._log_scaled(value_var):
+                stats = stats.apply(lambda x: 10 ** x)
+
+            real_width = width * self._native_width
+
+            if "hue" in sub_vars:
+                main_color = self._hue_map(sub_vars["hue"])
+                if saturation != 1:
+                    main_color = desaturate(main_color, saturation)
+            else:
+                main_color = color
+
+            # TODO how to handle solid / empty fliers?
+
+            if fill:
+                boxprops = {
+                    "facecolor": main_color, "edgecolor": line_color, **props["box"]
+                }
+                medianprops = {"color": line_color, **props["median"]}
+                whiskerprops = {"color": line_color, **props["whisker"]}
+                flierprops = {"markeredgecolor": line_color, **props["flier"]}
+                capprops = {"color": line_color, **props["cap"]}
+            else:
+                boxprops = {"color": main_color, **props["box"]}
+                medianprops = {"color": main_color, **props["median"]}
+                whiskerprops = {"color": main_color, **props["whisker"]}
+                flierprops = {"markeredgecolor": main_color, **props["flier"]}
+                capprops = {"color": main_color, **props["cap"]}
+
+            if linewidth is not None:
+                for prop_dict in [boxprops, medianprops, whiskerprops, capprops]:
+                    prop_dict.setdefault("linewidth", linewidth)
+
+            ax = self._get_axes(sub_vars)
+            ax.bxp(
+                bxpstats=stats.to_dict("records"),
+                positions=positions,
+                widths=real_width,
+                patch_artist=fill,
+                vert=self.orient == "x",
+                manage_ticks=False,
+                boxprops=boxprops,
+                medianprops=medianprops,
+                whiskerprops=whiskerprops,
+                flierprops=flierprops,
+                capprops=capprops,
+                **plot_kws,
+            )
 
     def plot_points(
         self,
@@ -1738,7 +1838,7 @@ class _LVPlotter(_CategoricalPlotter):
         self.outlier_prop = outlier_prop
 
         if not 0 < trust_alpha < 1:
-            msg = f'trust_alpha {trust_alpha} not in range (0, 1)'
+            msg = f'trust_alpha {trust_alpha} not in range (0, 1) '
             raise ValueError(msg)
         self.trust_alpha = trust_alpha
 
@@ -2077,7 +2177,7 @@ _categorical_docs = dict(
         Level of the confidence interval to show, in [0, 100].
 
         .. deprecated:: v0.12.0
-            Use `errorbar=("ci", ...)`.
+            Use `errorbar=("ci", ...) `.
     """),
     orient=dedent("""\
     orient : "v" | "h" | "x" | "y"
@@ -2223,19 +2323,65 @@ _categorical_docs.update(_facet_docs)
 def boxplot(
     data=None, *, x=None, y=None, hue=None, order=None, hue_order=None,
     orient=None, color=None, palette=None, saturation=.75, width=.8,
-    dodge=True, fliersize=5, linewidth=None, whis=1.5, ax=None,
+    fill=True,  # TODO new, document
+    linecolor=None, linewidth=None, fliersize=None,
+    dodge="auto", hue_norm=None, whis=1.5,
+    native_scale=False, formatter=None, legend="auto",
+    ax=None,
     **kwargs
 ):
 
-    plotter = _BoxPlotter(x, y, hue, data, order, hue_order,
-                          orient, color, palette, saturation,
-                          width, dodge, fliersize, linewidth)
+    p = _CategoricalPlotterNew(
+        data=data,
+        variables=_CategoricalPlotterNew.get_semantics(locals()),
+        order=order,
+        orient=orient,
+        require_numeric=False,
+        legend=legend,
+    )
 
     if ax is None:
         ax = plt.gca()
-    kwargs.update(dict(whis=whis))
 
-    plotter.plot(ax, kwargs)
+    if p.plot_data.empty:
+        return ax
+
+    if dodge == "auto":
+        # Needs to be before scale_categorical changes the coordinate series dtype
+        dodge = p._dodge_needed()
+
+    if p.var_types.get(p.orient) == "categorical" or not native_scale:
+        p.scale_categorical(p.orient, order=order, formatter=formatter)
+
+    p._attach(ax)
+
+    # Deprecations to remove in v0.14.0.
+    hue_order = p._palette_without_hue_backcompat(palette, hue_order)
+    palette, hue_order = p._hue_backcompat(color, palette, hue_order)
+
+    p.map_hue(palette=palette, order=hue_order, norm=hue_norm)
+    color = _default_color(
+        ax.fill_between, hue, color,
+        {k: v for k, v in kwargs.items() if k in ["c", "color", "fc", "facecolor"]},
+    )
+    if color is not None and saturation < 1:
+        color = desaturate(color, saturation)
+
+    p.plot_boxes(
+        width=width,
+        whis=whis,
+        fill=fill,
+        color=color,
+        linecolor=linecolor,
+        linewidth=linewidth,
+        fliersize=fliersize,
+        saturation=saturation,
+        plot_kws=kwargs,
+    )
+
+    p._add_axis_labels(ax)
+    p._adjust_cat_axis(ax, axis=p.orient)
+
     return ax
 
 
@@ -2445,7 +2591,7 @@ boxenplot.__doc__ = dedent("""\
         All methods are detailed in Wickham's paper. Each makes different
         assumptions about the number of outliers and leverages different
         statistical properties. If "proportion", draw no more than
-        `outlier_prop` extreme observations. If "full", draw `log(n)+1` boxes.
+        `outlier_prop` extreme observations. If "full", draw `log(n) +1` boxes.
     {linewidth}
     scale : {{"exponential", "linear", "area"}}
         Method to use for the width of the letter value boxes. All give similar
@@ -2789,7 +2935,6 @@ def barplot(
     palette, hue_order = p._hue_backcompat(color, palette, hue_order)
 
     p.map_hue(palette=palette, order=hue_order, norm=hue_norm)
-
     color = _default_color(ax.bar, hue, color, kwargs)
     if color is not None and saturation < 1:
         color = desaturate(color, saturation)
