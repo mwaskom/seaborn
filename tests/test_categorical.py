@@ -34,7 +34,7 @@ from seaborn.categorical import (
 )
 from seaborn.palettes import color_palette
 from seaborn.utils import _draw_figure
-from seaborn._compat import get_colormap
+from seaborn._compat import get_colormap, get_legend_handles
 from seaborn._testing import assert_plots_equal
 
 
@@ -2658,7 +2658,7 @@ class TestPointPlot(SharedAggTests):
         _draw_figure(ax.figure)
         legend = ax.get_legend()
         assert [t.get_text() for t in legend.texts] == ["x", "y"]
-        for i, handle in enumerate(legend.legendHandles):
+        for i, handle in enumerate(get_legend_handles(legend)):
             assert handle.get_marker() == "o"
             assert handle.get_linestyle() == "-"
             assert same_color(handle.get_color(), f"C{i}")
@@ -2674,7 +2674,7 @@ class TestPointPlot(SharedAggTests):
         kws = dict(marker="s", linewidth=1)
         ax = pointplot(x=x, y=y, hue=hue, **kws)
         legend = ax.get_legend()
-        for i, handle in enumerate(legend.legendHandles):
+        for i, handle in enumerate(get_legend_handles(legend)):
             assert handle.get_marker() == kws["marker"]
             assert handle.get_linewidth() == kws["linewidth"]
 
@@ -2689,7 +2689,7 @@ class TestPointPlot(SharedAggTests):
         kws = dict(markers=["s", "d"], linestyles=["--", ":"])
         ax = pointplot(x=x, y=y, hue=hue, **kws)
         legend = ax.get_legend()
-        for i, handle in enumerate(legend.legendHandles):
+        for i, handle in enumerate(get_legend_handles(legend)):
             assert handle.get_marker() == kws["markers"][i]
             assert handle.get_linestyle() == kws["linestyles"][i]
 
