@@ -500,9 +500,11 @@ class _CategoricalPlotterNew(_RelationalPlotter):
 
     def plot_boxes(
         self,
-        whis,
         width,
+        dodge,
+        gap,
         fill,
+        whis,
         color,
         linecolor,
         linewidth,
@@ -544,7 +546,7 @@ class _CategoricalPlotterNew(_RelationalPlotter):
             grouped = sub_data.groupby(self.orient)[value_var]
             value_data = [x.to_numpy() for _, x in grouped]
             stats = pd.DataFrame(mpl.cbook.boxplot_stats(value_data, whis=whis))
-            positions = grouped.grouper.result_index.to_numpy()
+            positions = grouped.grouper.result_index.to_numpy(dtype=float)
 
             if self._log_scaled(self.orient):
                 positions = 10 ** positions
@@ -552,6 +554,19 @@ class _CategoricalPlotterNew(_RelationalPlotter):
                 stats = stats.apply(lambda x: 10 ** x)
 
             real_width = width * self._native_width
+            if dodge:
+                hue_idx = self._hue_map.levels.index(sub_vars["hue"])
+                real_width /= len(self._hue_map.levels)
+
+                full_width = real_width * len(self._hue_map.levels)
+                offset = real_width * hue_idx + real_width / 2 - full_width / 2
+                if self._log_scaled(self.orient):
+                    positions = 10 ** (np.log10(positions) + offset)
+                else:
+                    positions += offset
+
+            if gap:
+                real_width *= 1 - gap
 
             if "hue" in sub_vars:
                 main_color = self._hue_map(sub_vars["hue"])
@@ -582,10 +597,10 @@ class _CategoricalPlotterNew(_RelationalPlotter):
                     prop_dict.setdefault("linewidth", linewidth)
 
             ax = self._get_axes(sub_vars)
-            ax.bxp(
+            artists = ax.bxp(
                 bxpstats=stats.to_dict("records"),
                 positions=positions,
-                widths=real_width,
+                widths=0 if self._log_scaled(self.orient) else real_width,
                 patch_artist=fill,
                 vert=self.orient == "x",
                 manage_ticks=False,
@@ -596,6 +611,40 @@ class _CategoricalPlotterNew(_RelationalPlotter):
                 capprops=capprops,
                 **plot_kws,
             )
+
+            ori_idx = ["x", "y"].index(self.orient)
+            if self._log_scaled(self.orient):
+                for i, pos in enumerate(positions):
+                    p0 = 10 ** (np.log10(pos) - real_width / 2)
+                    p1 = 10 ** (np.log10(pos) + real_width / 2)
+                    if artists["boxes"]:
+                        box_artist = artists["boxes"][i]
+                        if fill:
+                            box_verts = box_artist.get_path().vertices.T
+                        else:
+                            box_verts = box_artist.get_data()
+                        box_verts[ori_idx][0] = p0
+                        box_verts[ori_idx][3:] = p0
+                        box_verts[ori_idx][1:3] = p1
+                        if not fill:
+                            box_artist.set_data(box_verts)
+                        ax.update_datalim(np.transpose(box_verts))
+
+                    if artists["medians"]:
+                        verts = artists["medians"][i].get_xydata().T
+                        verts[ori_idx][:] = p0, p1
+                        artists["medians"][i].set_data(verts)
+
+                    if artists["caps"]:
+                        capwidth = plot_kws.get("capwidths", 0.5 * real_width)
+                        for line in artists["caps"][2 * i:2 * i + 2]:
+                            p0 = 10 ** (np.log10(pos) - capwidth / 2)
+                            p1 = 10 ** (np.log10(pos) + capwidth / 2)
+                            verts = line.get_xydata().T
+                            verts[ori_idx][:] = p0, p1
+                            line.set_data(verts)
+
+            # TODO Wrap artists in a container and attach to the axes
 
     def plot_points(
         self,
@@ -2323,8 +2372,10 @@ _categorical_docs.update(_facet_docs)
 def boxplot(
     data=None, *, x=None, y=None, hue=None, order=None, hue_order=None,
     orient=None, color=None, palette=None, saturation=.75, width=.8,
+    gap=0,  # TODO new, document, place next to dodge and width, add to bar?
     fill=True,  # TODO new, document
-    linecolor=None, linewidth=None, fliersize=None,
+    linecolor=None,  # TODO new, document
+    linewidth=None, fliersize=None,
     dodge="auto", hue_norm=None, whis=1.5,
     native_scale=False, formatter=None, legend="auto",
     ax=None,
@@ -2369,8 +2420,10 @@ def boxplot(
 
     p.plot_boxes(
         width=width,
-        whis=whis,
+        dodge=dodge,
+        gap=gap,
         fill=fill,
+        whis=whis,
         color=color,
         linecolor=linecolor,
         linewidth=linewidth,
