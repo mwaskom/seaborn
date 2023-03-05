@@ -1969,6 +1969,90 @@ class TestBoxPlot(SharedAxesLevelTests):
         assert len(unique_colors) == 1
         return to_rgba(unique_colors.squeeze())
 
+    def orient_indices(self, orient):
+
+        pos_idx = ["x", "y"].index(orient)
+        val_idx = ["y", "x"].index(orient)
+        return pos_idx, val_idx
+
+    def check_box(self, bxp, data, orient, idx, pos=None, width=0.8):
+
+        pos = idx if pos is None else pos
+        pos_idx, val_idx = self.orient_indices(orient)
+
+        p25, p50, p75 = np.percentile(data, [25, 50, 75])
+
+        box = bxp.boxes[idx].get_path().vertices.T
+        assert box[val_idx].min() == p25
+        assert box[val_idx].max() == p75
+        assert box[pos_idx].min() == pos - width / 2
+        assert box[pos_idx].max() == pos + width / 2
+
+        med = bxp.medians[idx].get_xydata().T
+        assert tuple(med[pos_idx]) == (pos - width / 2, pos + width / 2)
+        assert tuple(med[val_idx]) == (p50, p50)
+
+    def check_whiskers(self, bxp, data, orient, idx, pos=None, whis=1.5, capsize=0.4):
+
+        pos = idx if pos is None else pos
+        pos_idx, val_idx = self.orient_indices(orient)
+
+        whis_lo = bxp.whiskers[idx * 2].get_xydata().T
+        whis_hi = bxp.whiskers[idx * 2 + 1].get_xydata().T
+        caps_lo = bxp.caps[idx * 2].get_xydata().T
+        caps_hi = bxp.caps[idx * 2 + 1].get_xydata().T
+        fliers = bxp.fliers[idx].get_xydata().T
+
+        p25, p75 = np.percentile(data, [25, 75])
+        iqr = p75 - p25
+
+        adj_lo = data[data >= (p25 - iqr * whis)].min()
+        adj_hi = data[data <= (p75 + iqr * whis)].max()
+
+        assert whis_lo[val_idx].min() == adj_lo
+        assert whis_lo[val_idx].max() == p25
+        assert tuple(whis_lo[pos_idx]) == (pos, pos)
+        assert tuple(caps_lo[val_idx]) == (adj_lo, adj_lo)
+        assert tuple(caps_lo[pos_idx]) == (pos - capsize / 2, pos + capsize / 2)
+
+        assert whis_hi[val_idx].min() == p75
+        assert whis_hi[val_idx].max() == adj_hi
+        assert tuple(whis_hi[pos_idx]) == (pos, pos)
+        assert tuple(caps_hi[val_idx]) == (adj_hi, adj_hi)
+        assert tuple(caps_hi[pos_idx]) == (pos - capsize / 2, pos + capsize / 2)
+
+        flier_data = data[(data < adj_lo) | (data > adj_hi)]
+        assert sorted(fliers[val_idx]) == sorted(flier_data)
+        assert np.allclose(fliers[pos_idx], pos)
+
+    @pytest.mark.parametrize("orient,col", [("x", "y"), ("y", "z")])
+    def test_single_var(self, long_df, orient, col):
+
+        var = {"x": "y", "y": "x"}[orient]
+        ax = boxplot(long_df, **{var: col})
+        bxp, = ax.containers
+        self.check_box(bxp, long_df[col], orient, 0)
+        self.check_whiskers(bxp, long_df[col], orient, 0)
+
+    @pytest.mark.parametrize("orient,col", [(None, "x"), ("x", "y"), ("y", "z")])
+    def test_vector_data(self, long_df, orient, col):
+
+        ax = boxplot(long_df[col], orient=orient)
+        orient = "x" if orient is None else orient
+        bxp, = ax.containers
+        self.check_box(bxp, long_df[col], orient, 0)
+        self.check_whiskers(bxp, long_df[col], orient, 0)
+
+    @pytest.mark.parametrize("orient", ["h", "v"])
+    def test_wide_data(self, wide_df, orient):
+
+        orient = {"h": "y", "v": "x"}[orient]
+        ax = boxplot(wide_df, orient=orient)
+        for i, bxp in enumerate(ax.containers):
+            col = wide_df.columns[i]
+            self.check_box(bxp, wide_df[col], orient, i)
+            self.check_whiskers(bxp, wide_df[col], orient, i)
+
 
 class TestBarPlot(SharedAggTests):
 

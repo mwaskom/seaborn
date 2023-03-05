@@ -487,6 +487,7 @@ class _CategoricalPlotterNew(_RelationalPlotter):
                     # the autoscale flag in its original setting. It may be better
                     # to disable autoscaling there to avoid needing to do this.
                     fixed_scale = self.var_types[self.orient] == "categorical"
+                    # TODO don't update value dimension; don't shrink orient dimension?
                     ax.update_datalim(points.get_datalim(ax.transData))
                     if not fixed_scale and (scalex or scaley):
                         ax.autoscale_view(scalex=scalex, scaley=scaley)
