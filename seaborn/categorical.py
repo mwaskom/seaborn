@@ -2266,9 +2266,9 @@ _categorical_docs = dict(
     """),
     saturation=dedent("""\
     saturation : float
-        Proportion of the original saturation to draw colors at. Large patches
-        often look better with slightly desaturated colors, but set this to
-        `1` if you want the plot colors to perfectly match the input color.\
+        Proportion of the original saturation to draw fill colors in. Large
+        patches often look better with desaturated colors, but set this to
+        `1` if you want the colors to perfectly match the input values.\
     """),
     capsize=dedent("""\
     capsize : float
@@ -2424,7 +2424,7 @@ def boxplot(
         ax.fill_between, hue, color,
         {k: v for k, v in kwargs.items() if k in ["c", "color", "fc", "facecolor"]},
     )
-    if color is not None and saturation < 1:
+    if fill and color is not None and saturation < 1:
         color = desaturate(color, saturation)
 
     p.plot_boxes(

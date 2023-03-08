@@ -20,7 +20,7 @@ from numpy.testing import (
 from seaborn import categorical as cat
 from seaborn import palettes
 
-from seaborn.utils import _version_predates
+from seaborn.utils import _version_predates, desaturate
 from seaborn._oldcore import categorical_order
 from seaborn.categorical import (
     _CategoricalPlotterNew,
@@ -1985,14 +1985,14 @@ class TestBoxPlot(SharedAxesLevelTests):
         box = bxp.boxes[idx].get_path().vertices.T
         assert box[val_idx].min() == p25
         assert box[val_idx].max() == p75
-        assert box[pos_idx].min() == pos - width / 2
-        assert box[pos_idx].max() == pos + width / 2
+        assert box[pos_idx].min() == approx(pos - width / 2)
+        assert box[pos_idx].max() == approx(pos + width / 2)
 
         med = bxp.medians[idx].get_xydata().T
-        assert tuple(med[pos_idx]) == (pos - width / 2, pos + width / 2)
         assert tuple(med[val_idx]) == (p50, p50)
+        assert np.allclose(med[pos_idx], (pos - width / 2, pos + width / 2))
 
-    def check_whiskers(self, bxp, data, orient, idx, pos=None, whis=1.5, capsize=0.4):
+    def check_whiskers(self, bxp, data, orient, idx, pos=None, capsize=0.4, whis=1.5):
 
         pos = idx if pos is None else pos
         pos_idx, val_idx = self.orient_indices(orient)
@@ -2009,17 +2009,17 @@ class TestBoxPlot(SharedAxesLevelTests):
         adj_lo = data[data >= (p25 - iqr * whis)].min()
         adj_hi = data[data <= (p75 + iqr * whis)].max()
 
-        assert whis_lo[val_idx].min() == adj_lo
         assert whis_lo[val_idx].max() == p25
-        assert tuple(whis_lo[pos_idx]) == (pos, pos)
-        assert tuple(caps_lo[val_idx]) == (adj_lo, adj_lo)
-        assert tuple(caps_lo[pos_idx]) == (pos - capsize / 2, pos + capsize / 2)
+        assert whis_lo[val_idx].min() == approx(adj_lo)
+        assert np.allclose(whis_lo[pos_idx], (pos, pos))
+        assert np.allclose(caps_lo[val_idx], (adj_lo, adj_lo))
+        assert np.allclose(caps_lo[pos_idx], (pos - capsize / 2, pos + capsize / 2))
 
         assert whis_hi[val_idx].min() == p75
-        assert whis_hi[val_idx].max() == adj_hi
-        assert tuple(whis_hi[pos_idx]) == (pos, pos)
-        assert tuple(caps_hi[val_idx]) == (adj_hi, adj_hi)
-        assert tuple(caps_hi[pos_idx]) == (pos - capsize / 2, pos + capsize / 2)
+        assert whis_hi[val_idx].max() == approx(adj_hi)
+        assert np.allclose(whis_hi[pos_idx], (pos, pos))
+        assert np.allclose(caps_hi[val_idx], (adj_hi, adj_hi))
+        assert np.allclose(caps_hi[pos_idx], (pos - capsize / 2, pos + capsize / 2))
 
         flier_data = data[(data < adj_lo) | (data > adj_hi)]
         assert sorted(fliers[val_idx]) == sorted(flier_data)
@@ -2052,6 +2052,110 @@ class TestBoxPlot(SharedAxesLevelTests):
             col = wide_df.columns[i]
             self.check_box(bxp, wide_df[col], orient, i)
             self.check_whiskers(bxp, wide_df[col], orient, i)
+
+    @pytest.mark.parametrize("orient", ["x", "y"])
+    def test_grouped(self, long_df, orient):
+
+        value = {"x": "y", "y": "x"}[orient]
+        ax = boxplot(long_df, **{orient: "a", value: "z"})
+        bxp, = ax.containers
+        levels = categorical_order(long_df["a"])
+        for i, level in enumerate(levels):
+            data = long_df.loc[long_df["a"] == level, "z"]
+            self.check_box(bxp, data, orient, i)
+            self.check_whiskers(bxp, data, orient, i)
+
+    @pytest.mark.parametrize("orient", ["x", "y"])
+    def test_hue_grouped(self, long_df, orient):
+
+        value = {"x": "y", "y": "x"}[orient]
+        ax = boxplot(long_df, hue="c", **{orient: "a", value: "z"})
+        levels = categorical_order(long_df["a"])
+        hue_levels = categorical_order(long_df["c"])
+        for i, hue_level in enumerate(hue_levels):
+            bxp = ax.containers[i]
+            for j, level in enumerate(levels):
+                rows = (long_df["a"] == level) & (long_df["c"] == hue_level)
+                data = long_df.loc[rows, "z"]
+                pos = j + [-.2, +.2][i]
+                width, capsize = 0.4, 0.2
+                self.check_box(bxp, data, orient, j, pos, width)
+                self.check_whiskers(bxp, data, orient, j, pos, capsize)
+
+    def test_hue_not_dodged(self, long_df):
+
+        levels = categorical_order(long_df["b"])
+        hue = long_df["b"].isin(levels[:2])
+        ax = boxplot(long_df, x="b", y="z", hue=hue)
+        bxps = ax.containers
+        for i, level in enumerate(levels):
+            idx = int(i < 2)
+            data = long_df.loc[long_df["b"] == level, "z"]
+            self.check_box(bxps[idx], data, "x", i % 2, i)
+            self.check_whiskers(bxps[idx], data, "x", i % 2, i)
+
+    def test_color(self, long_df):
+
+        color = "#123456"
+        ax = boxplot(long_df, x="a", y="y", color=color, saturation=1)
+        for box in ax.containers[0].boxes:
+            assert same_color(box.get_facecolor(), color)
+
+    def test_hue_colors(self, long_df):
+
+        ax = boxplot(long_df, x="a", y="y", hue="b", saturation=1)
+        for i, bxp in enumerate(ax.containers):
+            for box in bxp.boxes:
+                assert same_color(box.get_facecolor(), f"C{i}")
+
+    def test_linecolor(self, long_df):
+
+        color = "#778815"
+        ax = boxplot(long_df, x="a", y="y", linecolor=color)
+        bxp = ax.containers[0]
+        for line in [*bxp.medians, *bxp.whiskers, *bxp.caps]:
+            assert same_color(line.get_color(), color)
+        for box in bxp.boxes:
+            assert same_color(box.get_edgecolor(), color)
+        for flier in bxp.fliers:
+            assert same_color(flier.get_markeredgecolor(), color)
+
+    def test_saturation(self, long_df):
+
+        color = "#8912b0"
+        ax = boxplot(long_df["x"], color=color, saturation=.5)
+        box = ax.containers[0].boxes[0]
+        assert np.allclose(box.get_facecolor()[:3], desaturate(color, 0.5))
+
+    def test_linewidth(self, long_df):
+
+        width = 5
+        ax = boxplot(long_df, x="a", y="y", linewidth=width)
+        bxp = ax.containers[0]
+        for line in [*bxp.boxes, *bxp.medians, *bxp.whiskers, *bxp.caps]:
+            assert line.get_linewidth() == width
+
+    def test_fill(self, long_df):
+
+        color = "#459900"
+        ax = boxplot(x=long_df["z"], fill=False, color=color)
+        bxp = ax.containers[0]
+        assert isinstance(bxp.boxes[0], mpl.lines.Line2D)
+        for line in [*bxp.boxes, *bxp.medians, *bxp.whiskers, *bxp.caps]:
+            assert same_color(line.get_color(), color)
+
+    def test_notch(self, long_df):
+
+        ax = boxplot(x=long_df["z"], shownotches=True)
+        verts = ax.containers[0].boxes[0].get_path().vertices
+        assert len(verts) == 12
+
+    def test_whis(self, long_df):
+
+        data = long_df["z"]
+        ax = boxplot(x=data, whis=2)
+        bxp = ax.containers[0]
+        self.check_whiskers(bxp, data, "y", 0, whis=2)
 
 
 class TestBarPlot(SharedAggTests):
