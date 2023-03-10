@@ -2289,6 +2289,14 @@ _categorical_docs = dict(
         .. deprecated:: 0.13.0
             Use `err_kws={'linewidth': ...}`.\
     """),
+    fill=dedent("""\
+    fill : bool
+        If True, use a solid patch. Otherwise, draw as line art.\
+    """),
+    gap=dedent("""\
+    gap : float
+        Shrink on the orient axis by this factor after dodging to add a gap.\
+    """),
     width=dedent("""\
     width : float
         Width of a full element when not using hue nesting, or width of all the
@@ -2301,7 +2309,11 @@ _categorical_docs = dict(
     """),
     linewidth=dedent("""\
     linewidth : float
-        Width of the gray lines that frame the plot elements.\
+        Width of the lines that frame the plot elements.\
+    """),
+    linecolor=dedent("""\
+    linecolor : color
+        Color to use for all line elements in the plot when `fill` is True.\
     """),
     native_scale=dedent("""\
     native_scale : bool
@@ -2381,14 +2393,10 @@ _categorical_docs.update(_facet_docs)
 
 def boxplot(
     data=None, *, x=None, y=None, hue=None, order=None, hue_order=None,
-    orient=None, color=None, palette=None, saturation=.75, width=.8,
-    gap=0,  # TODO new, document, place next to dodge and width, add to bar?
-    fill=True,  # TODO new, document
-    linecolor=None,  # TODO new, document
-    linewidth=None, fliersize=None,
-    dodge="auto", hue_norm=None, whis=1.5,
-    native_scale=False, formatter=None, legend="auto",
-    ax=None,
+    orient=None, color=None, palette=None, saturation=.75, fill=True,
+    dodge="auto", width=.8, gap=0, linecolor=None, linewidth=None,
+    fliersize=None, whis=1.5, hue_norm=None, native_scale=False, formatter=None,
+    legend="auto", ax=None,
     **kwargs
 ):
 
@@ -2458,7 +2466,7 @@ boxplot.__doc__ = dedent("""\
     except for points that are determined to be "outliers" using a method
     that is a function of the inter-quartile range.
 
-    {categorical_narrative}
+    {new_categorical_narrative}
 
     Parameters
     ----------
@@ -2469,15 +2477,18 @@ boxplot.__doc__ = dedent("""\
     {color}
     {palette}
     {saturation}
-    {width}
+    {fill}
     {dodge}
+    {width}
+    {gap}
+    {linecolor}
+    {linewidth}
     fliersize : float
         Size of the markers used to indicate outlier observations.
-    {linewidth}
-    whis : float
-        Maximum length of the plot whiskers as proportion of the
-        interquartile range. Whiskers extend to the furthest datapoint
-        within that range. More extreme points are marked as outliers.
+    whis : float or pair of floats
+        Paramater that controls whisker length. If scalar, whiskers are drawn
+        to the farthest datapoint within `whis * IQR` from the nearest hinge.
+        If a tuple, it is interpreted as percentiles that whiskers represent.
     {ax_in}
     kwargs : key, value mappings
         Other keyword arguments are passed through to
