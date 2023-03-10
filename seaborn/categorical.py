@@ -1,3 +1,4 @@
+from collections import namedtuple
 from textwrap import dedent
 from numbers import Number
 import warnings
@@ -2246,7 +2247,7 @@ _categorical_docs = dict(
         plotting wide-form data.
 
         .. versionchanged:: v0.13.0
-            Added 'x'/'y' as options, equivalent to 'v'/'h'.
+            Added 'x'/'y' as options, equivalent to 'v'/'h'.\
     """),
     color=dedent("""\
     color : matplotlib color
@@ -2291,11 +2292,15 @@ _categorical_docs = dict(
     """),
     fill=dedent("""\
     fill : bool
-        If True, use a solid patch. Otherwise, draw as line art.\
+        If True, use a solid patch. Otherwise, draw as line art.
+
+        .. versionadded:: v0.13.0\
     """),
     gap=dedent("""\
     gap : float
-        Shrink on the orient axis by this factor after dodging to add a gap.\
+        Shrink on the orient axis by this factor after dodging to add a gap.
+
+        .. versionadded:: 0.13.0\
     """),
     width=dedent("""\
     width : float
@@ -2313,7 +2318,9 @@ _categorical_docs = dict(
     """),
     linecolor=dedent("""\
     linecolor : color
-        Color to use for all line elements in the plot when `fill` is True.\
+        Color to use for all line elements in the plot when `fill` is True.
+
+        .. versionadded:: v0.13.0\
     """),
     native_scale=dedent("""\
     native_scale : bool
@@ -2394,8 +2401,8 @@ _categorical_docs.update(_facet_docs)
 def boxplot(
     data=None, *, x=None, y=None, hue=None, order=None, hue_order=None,
     orient=None, color=None, palette=None, saturation=.75, fill=True,
-    dodge="auto", width=.8, gap=0, linecolor=None, linewidth=None,
-    fliersize=None, whis=1.5, hue_norm=None, native_scale=False, formatter=None,
+    dodge="auto", width=.8, gap=0, whis=1.5, linecolor=None, linewidth=None,
+    fliersize=None, hue_norm=None, native_scale=False, formatter=None,
     legend="auto", ax=None,
     **kwargs
 ):
@@ -2481,14 +2488,18 @@ boxplot.__doc__ = dedent("""\
     {dodge}
     {width}
     {gap}
-    {linecolor}
-    {linewidth}
-    fliersize : float
-        Size of the markers used to indicate outlier observations.
     whis : float or pair of floats
         Paramater that controls whisker length. If scalar, whiskers are drawn
         to the farthest datapoint within `whis * IQR` from the nearest hinge.
         If a tuple, it is interpreted as percentiles that whiskers represent.
+    {linecolor}
+    {linewidth}
+    fliersize : float
+        Size of the markers used to indicate outlier observations.
+    {hue_norm}
+    {native_scale}
+    {formatter}
+    {legend}
     {ax_in}
     kwargs : key, value mappings
         Other keyword arguments are passed through to
@@ -4012,6 +4023,9 @@ class Beeswarm:
         return points
 
 
+BoxPlotArtists = namedtuple("BoxPlotArtists", "box median whiskers caps fliers mean")
+
+
 class BoxPlotContainer:
 
     def __init__(self, artist_dict):
@@ -4038,14 +4052,14 @@ class BoxPlotContainer:
 
     def __getitem__(self, idx):
         pair_slice = slice(2 * idx, 2 * idx + 2)
-        return {
-            "box": self.boxes[idx] if self.boxes else [],
-            "median": self.medians[idx] if self.medians else [],
-            "whiskers": self.whiskers[pair_slice] if self.whiskers else [],
-            "caps": self.caps[pair_slice] if self.caps else [],
-            "fliers": self.fliers[idx] if self.fliers else [],
-            "means": self.means[idx]if self.means else [],
-        }
+        return BoxPlotArtists(
+            self.boxes[idx] if self.boxes else [],
+            self.medians[idx] if self.medians else [],
+            self.whiskers[pair_slice] if self.whiskers else [],
+            self.caps[pair_slice] if self.caps else [],
+            self.fliers[idx] if self.fliers else [],
+            self.means[idx]if self.means else [],
+        )
 
     def __iter__(self):
         yield from [self[i] for i in range(self.boxes)]

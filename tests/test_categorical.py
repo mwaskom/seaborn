@@ -1975,33 +1975,31 @@ class TestBoxPlot(SharedAxesLevelTests):
         val_idx = ["y", "x"].index(orient)
         return pos_idx, val_idx
 
-    def check_box(self, bxp, data, orient, idx, pos=None, width=0.8):
+    def check_box(self, bxp, data, orient, pos=None, width=0.8):
 
-        pos = idx if pos is None else pos
         pos_idx, val_idx = self.orient_indices(orient)
 
         p25, p50, p75 = np.percentile(data, [25, 50, 75])
 
-        box = bxp.boxes[idx].get_path().vertices.T
+        box = bxp.box.get_path().vertices.T
         assert box[val_idx].min() == p25
         assert box[val_idx].max() == p75
         assert box[pos_idx].min() == approx(pos - width / 2)
         assert box[pos_idx].max() == approx(pos + width / 2)
 
-        med = bxp.medians[idx].get_xydata().T
+        med = bxp.median.get_xydata().T
         assert tuple(med[val_idx]) == (p50, p50)
         assert np.allclose(med[pos_idx], (pos - width / 2, pos + width / 2))
 
-    def check_whiskers(self, bxp, data, orient, idx, pos=None, capsize=0.4, whis=1.5):
+    def check_whiskers(self, bxp, data, orient, pos=None, capsize=0.4, whis=1.5):
 
-        pos = idx if pos is None else pos
         pos_idx, val_idx = self.orient_indices(orient)
 
-        whis_lo = bxp.whiskers[idx * 2].get_xydata().T
-        whis_hi = bxp.whiskers[idx * 2 + 1].get_xydata().T
-        caps_lo = bxp.caps[idx * 2].get_xydata().T
-        caps_hi = bxp.caps[idx * 2 + 1].get_xydata().T
-        fliers = bxp.fliers[idx].get_xydata().T
+        whis_lo = bxp.whiskers[0].get_xydata().T
+        whis_hi = bxp.whiskers[1].get_xydata().T
+        caps_lo = bxp.caps[0].get_xydata().T
+        caps_hi = bxp.caps[1].get_xydata().T
+        fliers = bxp.fliers.get_xydata().T
 
         p25, p75 = np.percentile(data, [25, 75])
         iqr = p75 - p25
@@ -2030,7 +2028,7 @@ class TestBoxPlot(SharedAxesLevelTests):
 
         var = {"x": "y", "y": "x"}[orient]
         ax = boxplot(long_df, **{var: col})
-        bxp, = ax.containers
+        bxp = ax.containers[0][0]
         self.check_box(bxp, long_df[col], orient, 0)
         self.check_whiskers(bxp, long_df[col], orient, 0)
 
@@ -2039,7 +2037,7 @@ class TestBoxPlot(SharedAxesLevelTests):
 
         ax = boxplot(long_df[col], orient=orient)
         orient = "x" if orient is None else orient
-        bxp, = ax.containers
+        bxp = ax.containers[0][0]
         self.check_box(bxp, long_df[col], orient, 0)
         self.check_whiskers(bxp, long_df[col], orient, 0)
 
@@ -2050,8 +2048,8 @@ class TestBoxPlot(SharedAxesLevelTests):
         ax = boxplot(wide_df, orient=orient)
         for i, bxp in enumerate(ax.containers):
             col = wide_df.columns[i]
-            self.check_box(bxp, wide_df[col], orient, i)
-            self.check_whiskers(bxp, wide_df[col], orient, i)
+            self.check_box(bxp[i], wide_df[col], orient, i)
+            self.check_whiskers(bxp[i], wide_df[col], orient, i)
 
     @pytest.mark.parametrize("orient", ["x", "y"])
     def test_grouped(self, long_df, orient):
@@ -2062,8 +2060,8 @@ class TestBoxPlot(SharedAxesLevelTests):
         levels = categorical_order(long_df["a"])
         for i, level in enumerate(levels):
             data = long_df.loc[long_df["a"] == level, "z"]
-            self.check_box(bxp, data, orient, i)
-            self.check_whiskers(bxp, data, orient, i)
+            self.check_box(bxp[i], data, orient, i)
+            self.check_whiskers(bxp[i], data, orient, i)
 
     @pytest.mark.parametrize("orient", ["x", "y"])
     def test_hue_grouped(self, long_df, orient):
@@ -2077,8 +2075,8 @@ class TestBoxPlot(SharedAxesLevelTests):
                 data = long_df.loc[rows, "z"]
                 pos = j + [-.2, +.2][i]
                 width, capsize = 0.4, 0.2
-                self.check_box(bxp, data, orient, j, pos, width)
-                self.check_whiskers(bxp, data, orient, j, pos, capsize)
+                self.check_box(bxp[j], data, orient, pos, width)
+                self.check_whiskers(bxp[j], data, orient, pos, capsize)
 
     def test_hue_not_dodged(self, long_df):
 
@@ -2089,8 +2087,8 @@ class TestBoxPlot(SharedAxesLevelTests):
         for i, level in enumerate(levels):
             idx = int(i < 2)
             data = long_df.loc[long_df["b"] == level, "z"]
-            self.check_box(bxps[idx], data, "x", i % 2, i)
-            self.check_whiskers(bxps[idx], data, "x", i % 2, i)
+            self.check_box(bxps[idx][i % 2], data, "x", i)
+            self.check_whiskers(bxps[idx][i % 2], data, "x", i)
 
     def test_dodge_native_scale(self, long_df):
 
@@ -2106,8 +2104,8 @@ class TestBoxPlot(SharedAxesLevelTests):
                 rows = (long_df["s"] == center) & (long_df["c"] == hue_level)
                 data = long_df.loc[rows, "z"]
                 pos = center + [-offset, +offset][i]
-                self.check_box(bxp, data, "x", j, pos, width)
-                self.check_whiskers(bxp, data, "x", j, pos, width / 2)
+                self.check_box(bxp[j], data, "x", pos, width)
+                self.check_whiskers(bxp[j], data, "x", pos, width / 2)
 
     def test_dodge_native_scale_log(self, long_df):
 
@@ -2182,7 +2180,7 @@ class TestBoxPlot(SharedAxesLevelTests):
 
         data = long_df["z"]
         ax = boxplot(x=data, whis=2)
-        bxp = ax.containers[0]
+        bxp = ax.containers[0][0]
         self.check_whiskers(bxp, data, "y", 0, whis=2)
 
     def test_gap(self, long_df):
@@ -2195,7 +2193,7 @@ class TestBoxPlot(SharedAxesLevelTests):
                 data = long_df.loc[rows, "z"]
                 pos = j + [-.2, +.2][i]
                 width = 0.9 * 0.4
-                self.check_box(bxp, data, "x", j, pos, width)
+                self.check_box(bxp[j], data, "x", pos, width)
 
     def test_prop_dicts(self, long_df):
 
