@@ -487,7 +487,6 @@ class _CategoricalPlotterNew(_RelationalPlotter):
                     # the autoscale flag in its original setting. It may be better
                     # to disable autoscaling there to avoid needing to do this.
                     fixed_scale = self.var_types[self.orient] == "categorical"
-                    # TODO don't update value dimension; don't shrink orient dimension?
                     ax.update_datalim(points.get_datalim(ax.transData))
                     if not fixed_scale and (scalex or scaley):
                         ax.autoscale_view(scalex=scalex, scaley=scaley)
@@ -511,7 +510,7 @@ class _CategoricalPlotterNew(_RelationalPlotter):
         linewidth,
         fliersize,
         saturation,
-        plot_kws,
+        plot_kws,  # TODO rename user_kws?
     ):
 
         iter_vars = ["hue"]
@@ -599,7 +598,7 @@ class _CategoricalPlotterNew(_RelationalPlotter):
                     prop_dict.setdefault("linewidth", linewidth)
 
             ax = self._get_axes(sub_vars)
-            artists = ax.bxp(
+            default_kws = dict(
                 bxpstats=stats.to_dict("records"),
                 positions=positions,
                 widths=0 if self._log_scaled(self.orient) else real_width,
@@ -611,8 +610,9 @@ class _CategoricalPlotterNew(_RelationalPlotter):
                 whiskerprops=whiskerprops,
                 flierprops=flierprops,
                 capprops=capprops,
-                **plot_kws,
             )
+            boxplot_kws = {**default_kws, **plot_kws}
+            artists = ax.bxp(**boxplot_kws)
 
             ori_idx = ["x", "y"].index(self.orient)
             if self._log_scaled(self.orient):
@@ -630,6 +630,7 @@ class _CategoricalPlotterNew(_RelationalPlotter):
                         box_verts[ori_idx][1:3] = p1
                         if not fill:
                             box_artist.set_data(box_verts)
+                        # TODO XXX don't update value dimension; don't shrink orient dim
                         ax.update_datalim(np.transpose(box_verts))
 
                     if artists["medians"]:
@@ -3809,8 +3810,6 @@ catplot.__doc__ = dedent("""\
 class Beeswarm:
     """Modifies a scatterplot artist to show a beeswarm plot."""
     def __init__(self, orient="x", width=0.8, warn_thresh=.05):
-
-        # XXX should we keep the orient parameterization or specify the swarm axis?
 
         self.orient = orient
         self.width = width

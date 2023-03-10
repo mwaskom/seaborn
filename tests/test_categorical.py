@@ -2070,11 +2070,9 @@ class TestBoxPlot(SharedAxesLevelTests):
 
         value = {"x": "y", "y": "x"}[orient]
         ax = boxplot(long_df, hue="c", **{orient: "a", value: "z"})
-        levels = categorical_order(long_df["a"])
-        hue_levels = categorical_order(long_df["c"])
-        for i, hue_level in enumerate(hue_levels):
+        for i, hue_level in enumerate(categorical_order(long_df["c"])):
             bxp = ax.containers[i]
-            for j, level in enumerate(levels):
+            for j, level in enumerate(categorical_order(long_df["a"])):
                 rows = (long_df["a"] == level) & (long_df["c"] == hue_level)
                 data = long_df.loc[rows, "z"]
                 pos = j + [-.2, +.2][i]
@@ -2093,6 +2091,36 @@ class TestBoxPlot(SharedAxesLevelTests):
             data = long_df.loc[long_df["b"] == level, "z"]
             self.check_box(bxps[idx], data, "x", i % 2, i)
             self.check_whiskers(bxps[idx], data, "x", i % 2, i)
+
+    def test_dodge_native_scale(self, long_df):
+
+        centers = categorical_order(long_df["s"])
+        hue_levels = categorical_order(long_df["c"])
+        spacing = min(np.diff(centers))
+        width = 0.8 * spacing / len(hue_levels)
+        offset = width / len(hue_levels)
+        ax = boxplot(long_df, x="s", y="z", hue="c", native_scale=True)
+        for i, hue_level in enumerate(hue_levels):
+            bxp = ax.containers[i]
+            for j, center in enumerate(centers):
+                rows = (long_df["s"] == center) & (long_df["c"] == hue_level)
+                data = long_df.loc[rows, "z"]
+                pos = center + [-offset, +offset][i]
+                self.check_box(bxp, data, "x", j, pos, width)
+                self.check_whiskers(bxp, data, "x", j, pos, width / 2)
+
+    def test_dodge_native_scale_log(self, long_df):
+
+        pos = 10 ** long_df["s"]
+        ax = mpl.figure.Figure().subplots()
+        ax.set_xscale("log")
+        boxplot(long_df, x=pos, y="z", hue="c", native_scale=True, ax=ax)
+        widths = []
+        for bxp in ax.containers:
+            for box in bxp.boxes:
+                coords = np.log10(box.get_path().vertices.T[0])
+                widths.append(np.ptp(coords))
+        assert np.std(widths) == approx(0)
 
     def test_color(self, long_df):
 
@@ -2156,6 +2184,41 @@ class TestBoxPlot(SharedAxesLevelTests):
         ax = boxplot(x=data, whis=2)
         bxp = ax.containers[0]
         self.check_whiskers(bxp, data, "y", 0, whis=2)
+
+    def test_gap(self, long_df):
+
+        ax = boxplot(long_df, x="a", y="z", hue="c", gap=.1)
+        for i, hue_level in enumerate(categorical_order(long_df["c"])):
+            bxp = ax.containers[i]
+            for j, level in enumerate(categorical_order(long_df["a"])):
+                rows = (long_df["a"] == level) & (long_df["c"] == hue_level)
+                data = long_df.loc[rows, "z"]
+                pos = j + [-.2, +.2][i]
+                width = 0.9 * 0.4
+                self.check_box(bxp, data, "x", j, pos, width)
+
+    def test_prop_dicts(self, long_df):
+
+        prop_dicts = dict(
+            boxprops=dict(linewidth=3),
+            medianprops=dict(color=".1"),
+            whiskerprops=dict(linestyle="--"),
+            capprops=dict(solid_capstyle="butt"),
+            flierprops=dict(marker="s"),
+        )
+        attr_map = dict(box="boxes", flier="fliers")
+        ax = boxplot(long_df, x="a", y="z", hue="c", **prop_dicts)
+        for bxp in ax.containers:
+            for element in ["box", "median", "whisker", "cap", "flier"]:
+                attr = attr_map.get(element, f"{element}s")
+                for artist in getattr(bxp, attr):
+                    for k, v in prop_dicts[f"{element}props"].items():
+                        assert plt.getp(artist, k) == v
+
+    def test_showfliers(self, long_df):
+
+        ax = boxplot(long_df["x"], showfliers=False)
+        assert not ax.containers[0].fliers
 
 
 class TestBarPlot(SharedAggTests):
