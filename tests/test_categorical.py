@@ -1811,13 +1811,20 @@ class TestBoxPlot(SharedAxesLevelTests):
         val_idx = ["y", "x"].index(orient)
         return pos_idx, val_idx
 
+    def get_box_verts(self, box):
+
+        path = box.get_path()
+        visible_codes = [mpl.path.Path.MOVETO, mpl.path.Path.LINETO]
+        visible = np.isin(path.codes, visible_codes)
+        return path.vertices[visible].T
+
     def check_box(self, bxp, data, orient, pos=None, width=0.8):
 
         pos_idx, val_idx = self.orient_indices(orient)
 
         p25, p50, p75 = np.percentile(data, [25, 50, 75])
 
-        box = bxp.box.get_path().vertices.T
+        box = self.get_box_verts(bxp.box)
         assert box[val_idx].min() == p25
         assert box[val_idx].max() == p75
         assert box[pos_idx].min() == approx(pos - width / 2)
