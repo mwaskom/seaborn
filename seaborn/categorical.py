@@ -1218,121 +1218,6 @@ class _CategoricalPlotter:
         ax.add_patch(rect)
 
 
-class _BoxPlotter(_CategoricalPlotter):
-
-    def __init__(self, x, y, hue, data, order, hue_order,
-                 orient, color, palette, saturation,
-                 width, dodge, fliersize, linewidth):
-
-        self.establish_variables(x, y, hue, data, orient, order, hue_order)
-        self.establish_colors(color, palette, saturation)
-
-        self.dodge = dodge
-        self.width = width
-        self.fliersize = fliersize
-
-        if linewidth is None:
-            linewidth = mpl.rcParams["lines.linewidth"]
-        self.linewidth = linewidth
-
-    def draw_boxplot(self, ax, kws):
-        """Use matplotlib to draw a boxplot on an Axes."""
-        vert = self.orient == "x"
-
-        props = {}
-        for obj in ["box", "whisker", "cap", "median", "flier"]:
-            props[obj] = kws.pop(obj + "props", {})
-
-        for i, group_data in enumerate(self.plot_data):
-
-            if self.plot_hues is None:
-
-                # Handle case where there is data at this level
-                if group_data.size == 0:
-                    continue
-
-                # Draw a single box or a set of boxes
-                # with a single level of grouping
-                box_data = np.asarray(remove_na(group_data))
-
-                # Handle case where there is no non-null data
-                if box_data.size == 0:
-                    continue
-
-                artist_dict = ax.boxplot(box_data,
-                                         vert=vert,
-                                         patch_artist=True,
-                                         positions=[i],
-                                         widths=self.width,
-                                         **kws)
-                color = self.colors[i]
-                self.restyle_boxplot(artist_dict, color, props)
-            else:
-                # Draw nested groups of boxes
-                offsets = self.hue_offsets
-                for j, hue_level in enumerate(self.hue_names):
-
-                    # Add a legend for this hue level
-                    if not i:
-                        self.add_legend_data(ax, self.colors[j], hue_level)
-
-                    # Handle case where there is data at this level
-                    if group_data.size == 0:
-                        continue
-
-                    hue_mask = self.plot_hues[i] == hue_level
-                    box_data = np.asarray(remove_na(group_data[hue_mask]))
-
-                    # Handle case where there is no non-null data
-                    if box_data.size == 0:
-                        continue
-
-                    center = i + offsets[j]
-                    artist_dict = ax.boxplot(box_data,
-                                             vert=vert,
-                                             patch_artist=True,
-                                             positions=[center],
-                                             widths=self.nested_width,
-                                             **kws)
-                    self.restyle_boxplot(artist_dict, self.colors[j], props)
-                    # Add legend data, but just for one set of boxes
-
-    def restyle_boxplot(self, artist_dict, color, props):
-        """Take a drawn matplotlib boxplot and make it look nice."""
-        for box in artist_dict["boxes"]:
-            box.update(dict(facecolor=color,
-                            zorder=.9,
-                            edgecolor=self.gray,
-                            linewidth=self.linewidth))
-            box.update(props["box"])
-        for whisk in artist_dict["whiskers"]:
-            whisk.update(dict(color=self.gray,
-                              linewidth=self.linewidth,
-                              linestyle="-"))
-            whisk.update(props["whisker"])
-        for cap in artist_dict["caps"]:
-            cap.update(dict(color=self.gray,
-                            linewidth=self.linewidth))
-            cap.update(props["cap"])
-        for med in artist_dict["medians"]:
-            med.update(dict(color=self.gray,
-                            linewidth=self.linewidth))
-            med.update(props["median"])
-        for fly in artist_dict["fliers"]:
-            fly.update(dict(markerfacecolor=self.gray,
-                            marker="d",
-                            markeredgecolor=self.gray,
-                            markersize=self.fliersize))
-            fly.update(props["flier"])
-
-    def plot(self, ax, boxplot_kws):
-        """Make the plot."""
-        self.draw_boxplot(ax, boxplot_kws)
-        self.annotate_axes(ax)
-        if self.orient == "y":
-            ax.invert_yaxis()
-
-
 class _ViolinPlotter(_CategoricalPlotter):
 
     def __init__(self, x, y, hue, data, order, hue_order,
@@ -3694,7 +3579,6 @@ def catplot(
     # Determine the order for the whole dataset, which will be used in all
     # facets to ensure representation of all data in the final plot
     plotter_class = {
-        "box": _BoxPlotter,
         "violin": _ViolinPlotter,
         "boxen": _LVPlotter,
     }[kind]
