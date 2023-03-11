@@ -533,6 +533,8 @@ class _CategoricalPlotterNew(_RelationalPlotter):
         if not fill and linewidth is None:
             linewidth = mpl.rcParams["lines.linewidth"]
 
+        plot_kws.setdefault("shownotches", plot_kws.pop("notch", False))
+
         box_artist = mpl.patches.Rectangle if fill else mpl.lines.Line2D
         props = {
             "box": get_props("box", box_artist),
@@ -542,8 +544,8 @@ class _CategoricalPlotterNew(_RelationalPlotter):
             "cap": get_props("cap"),
         }
 
-        ax = self.ax
         props["flier"].setdefault("markersize", fliersize)
+        ax = self.ax
 
         for sub_vars, sub_data in self.iter_data(iter_vars,
                                                  from_comp_data=True,

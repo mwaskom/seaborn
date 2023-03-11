@@ -2006,9 +2006,10 @@ class TestBoxPlot(SharedAxesLevelTests):
         for line in [*bxp.boxes, *bxp.medians, *bxp.whiskers, *bxp.caps]:
             assert same_color(line.get_color(), color)
 
-    def test_notch(self, long_df):
+    @pytest.mark.parametrize("notch_param", ["notch", "shownotches"])
+    def test_notch(self, long_df, notch_param):
 
-        ax = boxplot(x=long_df["z"], shownotches=True)
+        ax = boxplot(x=long_df["z"], **{notch_param: True})
         verts = ax.containers[0].boxes[0].get_path().vertices
         assert len(verts) == 12
 
