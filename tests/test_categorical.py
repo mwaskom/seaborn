@@ -25,6 +25,7 @@ from seaborn._oldcore import categorical_order
 from seaborn.categorical import (
     _CategoricalPlotterNew,
     Beeswarm,
+    BoxPlotContainer,
     catplot,
     barplot,
     boxplot,
@@ -3790,3 +3791,35 @@ class TestBeeswarm:
         with pytest.warns(UserWarning, match=msg):
             new_points = p.add_gutters(points, 0)
         assert_array_equal(new_points, np.array([0, -.5, .4, .5]))
+
+
+class TestBoxPlotContainer:
+
+    @pytest.fixture
+    def container(self, wide_array):
+
+        ax = mpl.figure.Figure().subplots()
+        artist_dict = ax.boxplot(wide_array)
+        return BoxPlotContainer(artist_dict)
+
+    def test_repr(self, container, wide_array):
+
+        n = wide_array.shape[1]
+        assert str(container) == f"<BoxPlotContainer object with {n} boxes>"
+
+    def test_iteration(self, container):
+        for artist_tuple in container:
+            for attr in ["box", "median", "whiskers", "caps", "fliers", "mean"]:
+                assert hasattr(artist_tuple, attr)
+
+    def test_label(self, container):
+
+        label = "a box plot"
+        container.set_label(label)
+        assert container.get_label() == label
+
+    def test_children(self, container):
+
+        children = container.get_children()
+        for child in children:
+            assert isinstance(child, mpl.artist.Artist)

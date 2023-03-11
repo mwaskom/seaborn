@@ -3975,7 +3975,7 @@ class BoxPlotContainer:
         )
 
     def __iter__(self):
-        yield from [self[i] for i in range(self.boxes)]
+        yield from (self[i] for i in range(len(self.boxes)))
 
     def get_label(self):
         return self._label
