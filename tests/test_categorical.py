@@ -1206,6 +1206,15 @@ class SharedAxesLevelTests:
         self.func(x=["e", "f"], y=[4, 5], ax=ax)
         assert ax.get_xlim() == (-.5, 4.5)
 
+    def test_redundant_hue_legend(self, long_df):
+
+        ax = self.func(long_df, x="a", y="y", hue="a")
+        assert ax.get_legend() is None
+        ax.clear()
+
+        self.func(long_df, x="a", y="y", hue="a", legend=True)
+        assert ax.get_legend() is not None
+
 
 class SharedScatterTests(SharedAxesLevelTests):
     """Tests functionality common to stripplot and swarmplot."""
@@ -2064,6 +2073,7 @@ class TestBoxPlot(SharedAxesLevelTests):
             dict(data="null", x="a", y="y", hue="b", fill=False, gap=.2),
             dict(data="null", x="a", y="y", whis=1, showfliers=False),
             dict(data="null", x="a", y="y", linecolor="r", linewidth=5),
+            dict(data="null", x="a", y="y", shownotches=True, showcaps=False),
         ]
     )
     def test_vs_catplot(self, long_df, wide_df, null_df, flat_series, kwargs):

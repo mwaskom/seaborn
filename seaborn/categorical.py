@@ -158,7 +158,11 @@ class _CategoricalPlotterNew(_RelationalPlotter):
                 palette = {str(k): v for k, v in palette.items()}
 
         else:
-            self._redundant_hue = False
+            if "hue" in self.variables:
+                redundant = (self.plot_data["hue"] == self.plot_data[self.orient]).all()
+            else:
+                redundant = False
+            self._redundant_hue = redundant
 
         # Previously, categorical plots had a trick where color= could seed the palette.
         # Because that's an explicit parameterization, we are going to give it one
@@ -2288,8 +2292,7 @@ def boxplot(
     orient=None, color=None, palette=None, saturation=.75, fill=True,
     dodge="auto", width=.8, gap=0, whis=1.5, linecolor=None, linewidth=None,
     fliersize=None, hue_norm=None, native_scale=False, formatter=None,
-    legend="auto", ax=None,
-    **kwargs
+    legend="auto", ax=None, **kwargs
 ):
 
     p = _CategoricalPlotterNew(
