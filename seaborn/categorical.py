@@ -3416,8 +3416,8 @@ def catplot(
         warnings.warn(msg, UserWarning)
         kwargs.pop("ax")
 
-    refactored_kinds = ["strip", "swarm", "point", "bar", "count"]
-    desaturated_kinds = ["bar", "count"]
+    refactored_kinds = ["strip", "swarm", "point", "bar", "count", "box"]
+    desaturated_kinds = ["bar", "count", "box"]
     undodged_kinds = ["strip", "swarm", "point"]
 
     if kind in refactored_kinds:
@@ -3543,6 +3543,30 @@ def catplot(
                 color=color,
                 edgecolor=edgecolor,
                 warn_thresh=warn_thresh,
+                plot_kws=plot_kws,
+            )
+
+        elif kind == "box":
+
+            plot_kws = kwargs.copy()
+            gap = plot_kws.pop("gap", 0)
+            fill = plot_kws.pop("fill", True)
+            whis = plot_kws.pop("whis", 1.5)
+            linecolor = plot_kws.pop("linecolor", None)
+            linewidth = plot_kws.pop("linewidth", None)
+            fliersize = plot_kws.pop("fliersize", 5)
+
+            p.plot_boxes(
+                width=width,
+                dodge=dodge,
+                gap=gap,
+                fill=fill,
+                whis=whis,
+                color=color,
+                linecolor=linecolor,
+                linewidth=linewidth,
+                fliersize=fliersize,
+                saturation=saturation,
                 plot_kws=plot_kws,
             )
 
