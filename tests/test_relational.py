@@ -95,7 +95,7 @@ class TestRelationalPlotter(Helpers):
         p.assign_variables(data=wide_df)
         assert p.input_format == "wide"
         assert list(p.variables) == ["x", "y", "hue", "style"]
-        assert len(p.plot_data) == np.product(wide_df.shape)
+        assert len(p.plot_data) == np.prod(wide_df.shape)
 
         x = p.plot_data["x"]
         expected_x = np.tile(wide_df.index, wide_df.shape[1])
@@ -127,7 +127,7 @@ class TestRelationalPlotter(Helpers):
 
         numeric_df = long_df.select_dtypes("number")
 
-        assert len(p.plot_data) == np.product(numeric_df.shape)
+        assert len(p.plot_data) == np.prod(numeric_df.shape)
 
         x = p.plot_data["x"]
         expected_x = np.tile(numeric_df.index, numeric_df.shape[1])
@@ -158,7 +158,7 @@ class TestRelationalPlotter(Helpers):
         p.assign_variables(data=wide_array)
         assert p.input_format == "wide"
         assert list(p.variables) == ["x", "y", "hue", "style"]
-        assert len(p.plot_data) == np.product(wide_array.shape)
+        assert len(p.plot_data) == np.prod(wide_array.shape)
 
         nrow, ncol = wide_array.shape
 
@@ -189,7 +189,7 @@ class TestRelationalPlotter(Helpers):
         p.assign_variables(data=flat_array)
         assert p.input_format == "wide"
         assert list(p.variables) == ["x", "y"]
-        assert len(p.plot_data) == np.product(flat_array.shape)
+        assert len(p.plot_data) == np.prod(flat_array.shape)
 
         x = p.plot_data["x"]
         expected_x = np.arange(flat_array.shape[0])
