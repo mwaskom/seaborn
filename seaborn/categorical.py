@@ -544,7 +544,10 @@ class _CategoricalPlotterNew(_RelationalPlotter):
             "cap": get_props("cap"),
         }
 
+        props["median"].setdefault("solid_capstyle", "butt")
+        props["whisker"].setdefault("solid_capstyle", "butt")
         props["flier"].setdefault("markersize", fliersize)
+
         ax = self.ax
 
         for sub_vars, sub_data in self.iter_data(iter_vars,
