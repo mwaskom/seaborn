@@ -20,13 +20,15 @@ from numpy.testing import (
 from seaborn import categorical as cat
 from seaborn import palettes
 
-from seaborn.utils import _version_predates
+from seaborn.utils import _version_predates, desaturate
 from seaborn._oldcore import categorical_order
 from seaborn.categorical import (
     _CategoricalPlotterNew,
     Beeswarm,
+    BoxPlotContainer,
     catplot,
     barplot,
+    boxplot,
     countplot,
     pointplot,
     stripplot,
@@ -41,6 +43,7 @@ from seaborn._testing import assert_plots_equal
 PLOT_FUNCS = [
     catplot,
     barplot,
+    boxplot,
     pointplot,
     stripplot,
     swarmplot,
@@ -517,180 +520,6 @@ class TestCategoricalPlotter(CategoricalFixture):
 
         p.establish_colors(None, [(0, 0, 1), (1, 0, 0), "w"], .5)
         assert p.colors == [(.25, .25, .75), (.75, .25, .25), (1, 1, 1)]
-
-
-class TestBoxPlotter(CategoricalFixture):
-
-    default_kws = dict(x=None, y=None, hue=None, data=None,
-                       order=None, hue_order=None,
-                       orient=None, color=None, palette=None,
-                       saturation=.75, width=.8, dodge=True,
-                       fliersize=5, linewidth=None)
-
-    def test_nested_width(self):
-
-        kws = self.default_kws.copy()
-        p = cat._BoxPlotter(**kws)
-        p.establish_variables("g", "y", hue="h", data=self.df)
-        assert p.nested_width == .4 * .98
-
-        kws = self.default_kws.copy()
-        kws["width"] = .6
-        p = cat._BoxPlotter(**kws)
-        p.establish_variables("g", "y", hue="h", data=self.df)
-        assert p.nested_width == .3 * .98
-
-        kws = self.default_kws.copy()
-        kws["dodge"] = False
-        p = cat._BoxPlotter(**kws)
-        p.establish_variables("g", "y", hue="h", data=self.df)
-        assert p.nested_width == .8
-
-    def test_hue_offsets(self):
-
-        p = cat._BoxPlotter(**self.default_kws)
-        p.establish_variables("g", "y", hue="h", data=self.df)
-        npt.assert_array_equal(p.hue_offsets, [-.2, .2])
-
-        kws = self.default_kws.copy()
-        kws["width"] = .6
-        p = cat._BoxPlotter(**kws)
-        p.establish_variables("g", "y", hue="h", data=self.df)
-        npt.assert_array_equal(p.hue_offsets, [-.15, .15])
-
-        p = cat._BoxPlotter(**kws)
-        p.establish_variables("h", "y", "g", data=self.df)
-        npt.assert_array_almost_equal(p.hue_offsets, [-.2, 0, .2])
-
-    def test_axes_data(self):
-
-        ax = cat.boxplot(x="g", y="y", data=self.df)
-        assert len(self.get_box_artists(ax)) == 3
-
-        plt.close("all")
-
-        ax = cat.boxplot(x="g", y="y", hue="h", data=self.df)
-        assert len(self.get_box_artists(ax)) == 6
-
-        plt.close("all")
-
-    def test_box_colors(self):
-
-        ax = cat.boxplot(x="g", y="y", data=self.df, saturation=1)
-        pal = palettes.color_palette(n_colors=3)
-        assert same_color([patch.get_facecolor() for patch in self.get_box_artists(ax)],
-                          pal)
-
-        plt.close("all")
-
-        ax = cat.boxplot(x="g", y="y", hue="h", data=self.df, saturation=1)
-        pal = palettes.color_palette(n_colors=2)
-        assert same_color([patch.get_facecolor() for patch in self.get_box_artists(ax)],
-                          pal * 3)
-
-        plt.close("all")
-
-    def test_draw_missing_boxes(self):
-
-        ax = cat.boxplot(x="g", y="y", data=self.df,
-                         order=["a", "b", "c", "d"])
-        assert len(self.get_box_artists(ax)) == 3
-
-    def test_missing_data(self):
-
-        x = ["a", "a", "b", "b", "c", "c", "d", "d"]
-        h = ["x", "y", "x", "y", "x", "y", "x", "y"]
-        y = self.rs.randn(8)
-        y[-2:] = np.nan
-
-        ax = cat.boxplot(x=x, y=y)
-        assert len(self.get_box_artists(ax)) == 3
-
-        plt.close("all")
-
-        y[-1] = 0
-        ax = cat.boxplot(x=x, y=y, hue=h)
-        assert len(self.get_box_artists(ax)) == 7
-
-        plt.close("all")
-
-    def test_unaligned_index(self):
-
-        f, (ax1, ax2) = plt.subplots(2)
-        cat.boxplot(x=self.g, y=self.y, ax=ax1)
-        cat.boxplot(x=self.g, y=self.y_perm, ax=ax2)
-        for l1, l2 in zip(ax1.lines, ax2.lines):
-            assert np.array_equal(l1.get_xydata(), l2.get_xydata())
-
-        f, (ax1, ax2) = plt.subplots(2)
-        hue_order = self.h.unique()
-        cat.boxplot(x=self.g, y=self.y, hue=self.h,
-                    hue_order=hue_order, ax=ax1)
-        cat.boxplot(x=self.g, y=self.y_perm, hue=self.h,
-                    hue_order=hue_order, ax=ax2)
-        for l1, l2 in zip(ax1.lines, ax2.lines):
-            assert np.array_equal(l1.get_xydata(), l2.get_xydata())
-
-    def test_boxplots(self):
-
-        # Smoke test the high level boxplot options
-
-        cat.boxplot(x="y", data=self.df)
-        plt.close("all")
-
-        cat.boxplot(y="y", data=self.df)
-        plt.close("all")
-
-        cat.boxplot(x="g", y="y", data=self.df)
-        plt.close("all")
-
-        cat.boxplot(x="y", y="g", data=self.df, orient="h")
-        plt.close("all")
-
-        cat.boxplot(x="g", y="y", hue="h", data=self.df)
-        plt.close("all")
-
-        cat.boxplot(x="g", y="y", hue="h", order=list("nabc"), data=self.df)
-        plt.close("all")
-
-        cat.boxplot(x="g", y="y", hue="h", hue_order=list("omn"), data=self.df)
-        plt.close("all")
-
-        cat.boxplot(x="y", y="g", hue="h", data=self.df, orient="h")
-        plt.close("all")
-
-    def test_axes_annotation(self):
-
-        ax = cat.boxplot(x="g", y="y", data=self.df)
-        assert ax.get_xlabel() == "g"
-        assert ax.get_ylabel() == "y"
-        assert ax.get_xlim() == (-.5, 2.5)
-        npt.assert_array_equal(ax.get_xticks(), [0, 1, 2])
-        npt.assert_array_equal([l.get_text() for l in ax.get_xticklabels()],
-                               ["a", "b", "c"])
-
-        plt.close("all")
-
-        ax = cat.boxplot(x="g", y="y", hue="h", data=self.df)
-        assert ax.get_xlabel() == "g"
-        assert ax.get_ylabel() == "y"
-        npt.assert_array_equal(ax.get_xticks(), [0, 1, 2])
-        npt.assert_array_equal([l.get_text() for l in ax.get_xticklabels()],
-                               ["a", "b", "c"])
-        npt.assert_array_equal([l.get_text() for l in ax.legend_.get_texts()],
-                               ["m", "n"])
-
-        plt.close("all")
-
-        ax = cat.boxplot(x="y", y="g", data=self.df, orient="h")
-        assert ax.get_xlabel() == "y"
-        assert ax.get_ylabel() == "g"
-        assert ax.get_ylim() == (2.5, -.5)
-        npt.assert_array_equal(ax.get_yticks(), [0, 1, 2])
-        npt.assert_array_equal([l.get_text() for l in ax.get_yticklabels()],
-                               ["a", "b", "c"])
-
-        plt.close("all")
 
 
 class TestViolinPlotter(CategoricalFixture):
@@ -1378,6 +1207,15 @@ class SharedAxesLevelTests:
         self.func(x=["e", "f"], y=[4, 5], ax=ax)
         assert ax.get_xlim() == (-.5, 4.5)
 
+    def test_redundant_hue_legend(self, long_df):
+
+        ax = self.func(long_df, x="a", y="y", hue="a")
+        assert ax.get_legend() is None
+        ax.clear()
+
+        self.func(long_df, x="a", y="y", hue="a", legend=True)
+        assert ax.get_legend() is not None
+
 
 class SharedScatterTests(SharedAxesLevelTests):
     """Tests functionality common to stripplot and swarmplot."""
@@ -1872,6 +1710,25 @@ class SharedScatterTests(SharedAxesLevelTests):
         self.func(x=[], y=[], hue=[], palette=[])
 
 
+class SharedAggTests(SharedAxesLevelTests):
+
+    def test_labels_flat(self):
+
+        ind = pd.Index(["a", "b", "c"], name="x")
+        ser = pd.Series([1, 2, 3], ind, name="y")
+
+        ax = self.func(ser)
+
+        # To populate texts; only needed on older matplotlibs
+        _draw_figure(ax.figure)
+
+        assert ax.get_xlabel() == ind.name
+        assert ax.get_ylabel() == ser.name
+        labels = [t.get_text() for t in ax.get_xticklabels()]
+        for label, level in zip(labels, ind):
+            assert label == level
+
+
 class TestStripPlot(SharedScatterTests):
 
     func = staticmethod(stripplot)
@@ -1934,23 +1791,319 @@ class TestSwarmPlot(SharedScatterTests):
     func = staticmethod(partial(swarmplot, warn_thresh=1))
 
 
-class SharedAggTests(SharedAxesLevelTests):
+class TestBoxPlot(SharedAxesLevelTests):
 
-    def test_labels_flat(self):
+    func = staticmethod(boxplot)
 
-        ind = pd.Index(["a", "b", "c"], name="x")
-        ser = pd.Series([1, 2, 3], ind, name="y")
+    @pytest.fixture
+    def common_kws(self):
+        return {"saturation": 1}
 
-        ax = self.func(ser)
+    def get_last_color(self, ax):
 
-        # To populate texts; only needed on older matplotlibs
-        _draw_figure(ax.figure)
+        colors = [b.get_facecolor() for b in ax.containers[-1].boxes]
+        unique_colors = np.unique(colors, axis=0)
+        assert len(unique_colors) == 1
+        return to_rgba(unique_colors.squeeze())
 
-        assert ax.get_xlabel() == ind.name
-        assert ax.get_ylabel() == ser.name
-        labels = [t.get_text() for t in ax.get_xticklabels()]
-        for label, level in zip(labels, ind):
-            assert label == level
+    def orient_indices(self, orient):
+
+        pos_idx = ["x", "y"].index(orient)
+        val_idx = ["y", "x"].index(orient)
+        return pos_idx, val_idx
+
+    def get_box_verts(self, box):
+
+        path = box.get_path()
+        visible_codes = [mpl.path.Path.MOVETO, mpl.path.Path.LINETO]
+        visible = np.isin(path.codes, visible_codes)
+        return path.vertices[visible].T
+
+    def check_box(self, bxp, data, orient, pos=None, width=0.8):
+
+        pos_idx, val_idx = self.orient_indices(orient)
+
+        p25, p50, p75 = np.percentile(data, [25, 50, 75])
+
+        box = self.get_box_verts(bxp.box)
+        assert box[val_idx].min() == p25
+        assert box[val_idx].max() == p75
+        assert box[pos_idx].min() == approx(pos - width / 2)
+        assert box[pos_idx].max() == approx(pos + width / 2)
+
+        med = bxp.median.get_xydata().T
+        assert tuple(med[val_idx]) == (p50, p50)
+        assert np.allclose(med[pos_idx], (pos - width / 2, pos + width / 2))
+
+    def check_whiskers(self, bxp, data, orient, pos=None, capsize=0.4, whis=1.5):
+
+        pos_idx, val_idx = self.orient_indices(orient)
+
+        whis_lo = bxp.whiskers[0].get_xydata().T
+        whis_hi = bxp.whiskers[1].get_xydata().T
+        caps_lo = bxp.caps[0].get_xydata().T
+        caps_hi = bxp.caps[1].get_xydata().T
+        fliers = bxp.fliers.get_xydata().T
+
+        p25, p75 = np.percentile(data, [25, 75])
+        iqr = p75 - p25
+
+        adj_lo = data[data >= (p25 - iqr * whis)].min()
+        adj_hi = data[data <= (p75 + iqr * whis)].max()
+
+        assert whis_lo[val_idx].max() == p25
+        assert whis_lo[val_idx].min() == approx(adj_lo)
+        assert np.allclose(whis_lo[pos_idx], (pos, pos))
+        assert np.allclose(caps_lo[val_idx], (adj_lo, adj_lo))
+        assert np.allclose(caps_lo[pos_idx], (pos - capsize / 2, pos + capsize / 2))
+
+        assert whis_hi[val_idx].min() == p75
+        assert whis_hi[val_idx].max() == approx(adj_hi)
+        assert np.allclose(whis_hi[pos_idx], (pos, pos))
+        assert np.allclose(caps_hi[val_idx], (adj_hi, adj_hi))
+        assert np.allclose(caps_hi[pos_idx], (pos - capsize / 2, pos + capsize / 2))
+
+        flier_data = data[(data < adj_lo) | (data > adj_hi)]
+        assert sorted(fliers[val_idx]) == sorted(flier_data)
+        assert np.allclose(fliers[pos_idx], pos)
+
+    @pytest.mark.parametrize("orient,col", [("x", "y"), ("y", "z")])
+    def test_single_var(self, long_df, orient, col):
+
+        var = {"x": "y", "y": "x"}[orient]
+        ax = boxplot(long_df, **{var: col})
+        bxp = ax.containers[0][0]
+        self.check_box(bxp, long_df[col], orient, 0)
+        self.check_whiskers(bxp, long_df[col], orient, 0)
+
+    @pytest.mark.parametrize("orient,col", [(None, "x"), ("x", "y"), ("y", "z")])
+    def test_vector_data(self, long_df, orient, col):
+
+        ax = boxplot(long_df[col], orient=orient)
+        orient = "x" if orient is None else orient
+        bxp = ax.containers[0][0]
+        self.check_box(bxp, long_df[col], orient, 0)
+        self.check_whiskers(bxp, long_df[col], orient, 0)
+
+    @pytest.mark.parametrize("orient", ["h", "v"])
+    def test_wide_data(self, wide_df, orient):
+
+        orient = {"h": "y", "v": "x"}[orient]
+        ax = boxplot(wide_df, orient=orient)
+        for i, bxp in enumerate(ax.containers):
+            col = wide_df.columns[i]
+            self.check_box(bxp[i], wide_df[col], orient, i)
+            self.check_whiskers(bxp[i], wide_df[col], orient, i)
+
+    @pytest.mark.parametrize("orient", ["x", "y"])
+    def test_grouped(self, long_df, orient):
+
+        value = {"x": "y", "y": "x"}[orient]
+        ax = boxplot(long_df, **{orient: "a", value: "z"})
+        bxp, = ax.containers
+        levels = categorical_order(long_df["a"])
+        for i, level in enumerate(levels):
+            data = long_df.loc[long_df["a"] == level, "z"]
+            self.check_box(bxp[i], data, orient, i)
+            self.check_whiskers(bxp[i], data, orient, i)
+
+    @pytest.mark.parametrize("orient", ["x", "y"])
+    def test_hue_grouped(self, long_df, orient):
+
+        value = {"x": "y", "y": "x"}[orient]
+        ax = boxplot(long_df, hue="c", **{orient: "a", value: "z"})
+        for i, hue_level in enumerate(categorical_order(long_df["c"])):
+            bxp = ax.containers[i]
+            for j, level in enumerate(categorical_order(long_df["a"])):
+                rows = (long_df["a"] == level) & (long_df["c"] == hue_level)
+                data = long_df.loc[rows, "z"]
+                pos = j + [-.2, +.2][i]
+                width, capsize = 0.4, 0.2
+                self.check_box(bxp[j], data, orient, pos, width)
+                self.check_whiskers(bxp[j], data, orient, pos, capsize)
+
+    def test_hue_not_dodged(self, long_df):
+
+        levels = categorical_order(long_df["b"])
+        hue = long_df["b"].isin(levels[:2])
+        ax = boxplot(long_df, x="b", y="z", hue=hue)
+        bxps = ax.containers
+        for i, level in enumerate(levels):
+            idx = int(i < 2)
+            data = long_df.loc[long_df["b"] == level, "z"]
+            self.check_box(bxps[idx][i % 2], data, "x", i)
+            self.check_whiskers(bxps[idx][i % 2], data, "x", i)
+
+    def test_dodge_native_scale(self, long_df):
+
+        centers = categorical_order(long_df["s"])
+        hue_levels = categorical_order(long_df["c"])
+        spacing = min(np.diff(centers))
+        width = 0.8 * spacing / len(hue_levels)
+        offset = width / len(hue_levels)
+        ax = boxplot(long_df, x="s", y="z", hue="c", native_scale=True)
+        for i, hue_level in enumerate(hue_levels):
+            bxp = ax.containers[i]
+            for j, center in enumerate(centers):
+                rows = (long_df["s"] == center) & (long_df["c"] == hue_level)
+                data = long_df.loc[rows, "z"]
+                pos = center + [-offset, +offset][i]
+                self.check_box(bxp[j], data, "x", pos, width)
+                self.check_whiskers(bxp[j], data, "x", pos, width / 2)
+
+    def test_dodge_native_scale_log(self, long_df):
+
+        pos = 10 ** long_df["s"]
+        ax = mpl.figure.Figure().subplots()
+        ax.set_xscale("log")
+        boxplot(long_df, x=pos, y="z", hue="c", native_scale=True, ax=ax)
+        widths = []
+        for bxp in ax.containers:
+            for box in bxp.boxes:
+                coords = np.log10(box.get_path().vertices.T[0])
+                widths.append(np.ptp(coords))
+        assert np.std(widths) == approx(0)
+
+    def test_color(self, long_df):
+
+        color = "#123456"
+        ax = boxplot(long_df, x="a", y="y", color=color, saturation=1)
+        for box in ax.containers[0].boxes:
+            assert same_color(box.get_facecolor(), color)
+
+    def test_hue_colors(self, long_df):
+
+        ax = boxplot(long_df, x="a", y="y", hue="b", saturation=1)
+        for i, bxp in enumerate(ax.containers):
+            for box in bxp.boxes:
+                assert same_color(box.get_facecolor(), f"C{i}")
+
+    def test_linecolor(self, long_df):
+
+        color = "#778815"
+        ax = boxplot(long_df, x="a", y="y", linecolor=color)
+        bxp = ax.containers[0]
+        for line in [*bxp.medians, *bxp.whiskers, *bxp.caps]:
+            assert same_color(line.get_color(), color)
+        for box in bxp.boxes:
+            assert same_color(box.get_edgecolor(), color)
+        for flier in bxp.fliers:
+            assert same_color(flier.get_markeredgecolor(), color)
+
+    def test_saturation(self, long_df):
+
+        color = "#8912b0"
+        ax = boxplot(long_df["x"], color=color, saturation=.5)
+        box = ax.containers[0].boxes[0]
+        assert np.allclose(box.get_facecolor()[:3], desaturate(color, 0.5))
+
+    def test_linewidth(self, long_df):
+
+        width = 5
+        ax = boxplot(long_df, x="a", y="y", linewidth=width)
+        bxp = ax.containers[0]
+        for line in [*bxp.boxes, *bxp.medians, *bxp.whiskers, *bxp.caps]:
+            assert line.get_linewidth() == width
+
+    def test_fill(self, long_df):
+
+        color = "#459900"
+        ax = boxplot(x=long_df["z"], fill=False, color=color)
+        bxp = ax.containers[0]
+        assert isinstance(bxp.boxes[0], mpl.lines.Line2D)
+        for line in [*bxp.boxes, *bxp.medians, *bxp.whiskers, *bxp.caps]:
+            assert same_color(line.get_color(), color)
+
+    @pytest.mark.parametrize("notch_param", ["notch", "shownotches"])
+    def test_notch(self, long_df, notch_param):
+
+        ax = boxplot(x=long_df["z"], **{notch_param: True})
+        verts = ax.containers[0].boxes[0].get_path().vertices
+        assert len(verts) == 12
+
+    def test_whis(self, long_df):
+
+        data = long_df["z"]
+        ax = boxplot(x=data, whis=2)
+        bxp = ax.containers[0][0]
+        self.check_whiskers(bxp, data, "y", 0, whis=2)
+
+    def test_gap(self, long_df):
+
+        ax = boxplot(long_df, x="a", y="z", hue="c", gap=.1)
+        for i, hue_level in enumerate(categorical_order(long_df["c"])):
+            bxp = ax.containers[i]
+            for j, level in enumerate(categorical_order(long_df["a"])):
+                rows = (long_df["a"] == level) & (long_df["c"] == hue_level)
+                data = long_df.loc[rows, "z"]
+                pos = j + [-.2, +.2][i]
+                width = 0.9 * 0.4
+                self.check_box(bxp[j], data, "x", pos, width)
+
+    def test_prop_dicts(self, long_df):
+
+        prop_dicts = dict(
+            boxprops=dict(linewidth=3),
+            medianprops=dict(color=".1"),
+            whiskerprops=dict(linestyle="--"),
+            capprops=dict(solid_capstyle="butt"),
+            flierprops=dict(marker="s"),
+        )
+        attr_map = dict(box="boxes", flier="fliers")
+        ax = boxplot(long_df, x="a", y="z", hue="c", **prop_dicts)
+        for bxp in ax.containers:
+            for element in ["box", "median", "whisker", "cap", "flier"]:
+                attr = attr_map.get(element, f"{element}s")
+                for artist in getattr(bxp, attr):
+                    for k, v in prop_dicts[f"{element}props"].items():
+                        assert plt.getp(artist, k) == v
+
+    def test_showfliers(self, long_df):
+
+        ax = boxplot(long_df["x"], showfliers=False)
+        assert not ax.containers[0].fliers
+
+    @pytest.mark.parametrize(
+        "kwargs",
+        [
+            dict(data="wide"),
+            dict(data="wide", orient="h"),
+            dict(data="flat"),
+            dict(data="long", x="a", y="y"),
+            dict(data=None, x="a", y="y"),
+            dict(data="long", x="a", y="y", hue="a"),
+            dict(data=None, x="a", y="y", hue="a"),
+            dict(data="long", x="a", y="y", hue="b"),
+            dict(data=None, x="s", y="y", hue="a"),
+            dict(data="long", x="a", y="y", hue="s"),
+            dict(data="null", x="a", y="y", hue="a"),
+            dict(data="long", x="s", y="y", hue="a", native_scale=True),
+            dict(data="long", x="d", y="y", hue="a", native_scale=True),
+            dict(data="null", x="a", y="y", hue="b", fill=False, gap=.2),
+            dict(data="null", x="a", y="y", whis=1, showfliers=False),
+            dict(data="null", x="a", y="y", linecolor="r", linewidth=5),
+            dict(data="null", x="a", y="y", shownotches=True, showcaps=False),
+        ]
+    )
+    def test_vs_catplot(self, long_df, wide_df, null_df, flat_series, kwargs):
+
+        if kwargs["data"] == "long":
+            kwargs["data"] = long_df
+        elif kwargs["data"] == "wide":
+            kwargs["data"] = wide_df
+        elif kwargs["data"] == "flat":
+            kwargs["data"] = flat_series
+        elif kwargs["data"] == "null":
+            kwargs["data"] = null_df
+        elif kwargs["data"] is None:
+            for var in ["x", "y", "hue"]:
+                if var in kwargs:
+                    kwargs[var] = long_df[kwargs[var]]
+
+        ax = boxplot(**kwargs)
+        g = catplot(**kwargs, kind="box")
+
+        assert_plots_equal(ax, g.ax)
 
 
 class TestBarPlot(SharedAggTests):
@@ -3638,3 +3791,35 @@ class TestBeeswarm:
         with pytest.warns(UserWarning, match=msg):
             new_points = p.add_gutters(points, 0)
         assert_array_equal(new_points, np.array([0, -.5, .4, .5]))
+
+
+class TestBoxPlotContainer:
+
+    @pytest.fixture
+    def container(self, wide_array):
+
+        ax = mpl.figure.Figure().subplots()
+        artist_dict = ax.boxplot(wide_array)
+        return BoxPlotContainer(artist_dict)
+
+    def test_repr(self, container, wide_array):
+
+        n = wide_array.shape[1]
+        assert str(container) == f"<BoxPlotContainer object with {n} boxes>"
+
+    def test_iteration(self, container):
+        for artist_tuple in container:
+            for attr in ["box", "median", "whiskers", "caps", "fliers", "mean"]:
+                assert hasattr(artist_tuple, attr)
+
+    def test_label(self, container):
+
+        label = "a box plot"
+        container.set_label(label)
+        assert container.get_label() == label
+
+    def test_children(self, container):
+
+        children = container.get_children()
+        for child in children:
+            assert isinstance(child, mpl.artist.Artist)
