@@ -6,10 +6,7 @@ import matplotlib.pyplot as plt
 import pytest
 import numpy.testing as npt
 from numpy.testing import assert_array_equal, assert_array_almost_equal
-try:
-    import pandas.testing as tm
-except ImportError:
-    import pandas.util.testing as tm
+import pandas.testing as tm
 
 from seaborn._oldcore import categorical_order
 from seaborn import rcmod

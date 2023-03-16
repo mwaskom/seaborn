@@ -21,10 +21,7 @@ except ImportError:
     _no_fastcluster = True
 
 import numpy.testing as npt
-try:
-    import pandas.testing as pdt
-except ImportError:
-    import pandas.util.testing as pdt
+import pandas.testing as pdt
 import pytest
 
 from seaborn import matrix as mat
