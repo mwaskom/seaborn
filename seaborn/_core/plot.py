@@ -4,7 +4,6 @@ from __future__ import annotations
 import io
 import os
 import re
-import sys
 import inspect
 import itertools
 import textwrap
