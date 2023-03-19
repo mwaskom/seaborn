@@ -45,15 +45,9 @@ from seaborn.rcmod import axes_style, plotting_context
 from seaborn.palettes import color_palette
 from seaborn.utils import _version_predates
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, TypedDict
 if TYPE_CHECKING:
     from matplotlib.figure import SubFigure
-
-
-if sys.version_info >= (3, 8):
-    from typing import TypedDict
-else:
-    from typing_extensions import TypedDict
 
 
 default = Default()
