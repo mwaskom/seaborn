@@ -6,10 +6,7 @@ import matplotlib.pyplot as plt
 import pytest
 import numpy.testing as npt
 from numpy.testing import assert_array_equal, assert_array_almost_equal
-try:
-    import pandas.testing as tm
-except ImportError:
-    import pandas.util.testing as tm
+import pandas.testing as tm
 
 from seaborn._oldcore import categorical_order
 from seaborn import rcmod
@@ -22,6 +19,7 @@ from seaborn._testing import (
     assert_plots_equal,
     assert_colors_equal,
 )
+from seaborn._compat import get_legend_handles
 
 rs = np.random.RandomState(0)
 
@@ -1280,7 +1278,7 @@ class TestPairGrid:
         g.map_offdiag(histplot)
         g.add_legend()
 
-        assert len(g._legend.legendHandles) == len(self.df["a"].unique())
+        assert len(get_legend_handles(g._legend)) == len(self.df["a"].unique())
 
     def test_pairplot(self):
 
@@ -1417,8 +1415,8 @@ class TestPairGrid:
         vars = ["x", "y", "z"]
         markers = ["o", "X", "s"]
         g = ag.pairplot(self.df, hue="a", vars=vars, markers=markers)
-        m1 = g._legend.legendHandles[0].get_paths()[0]
-        m2 = g._legend.legendHandles[1].get_paths()[0]
+        m1 = get_legend_handles(g._legend)[0].get_paths()[0]
+        m2 = get_legend_handles(g._legend)[1].get_paths()[0]
         assert m1 != m2
 
         with pytest.warns(UserWarning):

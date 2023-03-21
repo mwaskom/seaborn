@@ -166,3 +166,11 @@ def share_axis(ax0, ax1, which):
         group.join(ax1, ax0)
     else:
         getattr(ax1, f"share{which}")(ax0)
+
+
+def get_legend_handles(legend):
+    """Handle legendHandles attribute rename."""
+    if _version_predates(mpl, "3.7"):
+        return legend.legendHandles
+    else:
+        return legend.legend_handles

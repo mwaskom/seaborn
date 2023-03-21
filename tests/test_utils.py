@@ -31,6 +31,7 @@ from seaborn.utils import (
     _deprecate_ci,
     _version_predates, DATASET_NAMES_URL,
 )
+from seaborn._compat import get_legend_handles
 
 
 a_norm = np.random.randn(100)
@@ -407,8 +408,8 @@ def test_move_legend_grid_object(long_df):
     assert g.legend.get_title().get_text() == hue_var
     assert g.legend.get_title().get_size() == fontsize
 
-    assert g.legend.legendHandles
-    for i, h in enumerate(g.legend.legendHandles):
+    assert get_legend_handles(g.legend)
+    for i, h in enumerate(get_legend_handles(g.legend)):
         assert mpl.colors.to_rgb(h.get_color()) == mpl.colors.to_rgb(f"C{i}")
 
 

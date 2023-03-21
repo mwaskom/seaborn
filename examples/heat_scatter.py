@@ -6,6 +6,7 @@ _thumb: .5, .5
 
 """
 import seaborn as sns
+from seaborn._compat import get_legend_handles
 sns.set_theme(style="whitegrid")
 
 # Load the brain networks dataset, select subset, and collapse the multi-index
@@ -37,5 +38,5 @@ g.despine(left=True, bottom=True)
 g.ax.margins(.02)
 for label in g.ax.get_xticklabels():
     label.set_rotation(90)
-for artist in g.legend.legendHandles:
+for artist in get_legend_handles(g.legend):
     artist.set_edgecolor(".7")
