@@ -12,6 +12,7 @@ from numpy import ndarray
 from pandas import DataFrame
 from matplotlib.artist import Artist
 
+from seaborn._compat import MarkerStyle
 from seaborn._core.scales import Scale
 from seaborn._core.properties import (
     PROPERTIES,
@@ -182,6 +183,8 @@ class Mark:
 
             if return_array:
                 feature = np.asarray(feature)
+                if name == "marker":
+                    feature = [MarkerStyle(f) for f in feature]
             return feature
 
         if feature.depend is not None:

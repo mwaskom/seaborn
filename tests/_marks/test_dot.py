@@ -63,6 +63,24 @@ class TestDot(DotBase):
         expected = [mark.edgewidth, mark.stroke]
         assert_array_equal(points.get_linewidths(), expected)
 
+    def test_none_marker(self):
+
+        x = [1, 2]
+        y = [4, 5]
+        marker = ["o", "s"]
+
+        mark = Dot(edgecolor="w", stroke=2, edgewidth=1)
+        p = Plot(x=x, y=y).add(mark, marker=marker).scale(marker=None).plot()
+        ax = p._figure.axes[0]
+        points, = ax.collections
+        C0, *_ = p._theme["axes.prop_cycle"].by_key()["color"]
+        self.check_offsets(points, x, y)
+        self.check_colors("face", points, [C0, to_rgba(C0, 0)], 1)
+        self.check_colors("edge", points, ["w", C0], 1)
+
+        expected = [mark.edgewidth, mark.stroke]
+        assert_array_equal(points.get_linewidths(), expected)
+
     def test_missing_coordinate_data(self):
 
         x = [1, float("nan"), 3]
