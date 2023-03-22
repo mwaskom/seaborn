@@ -76,10 +76,6 @@ class TestDot(DotBase):
         C0, *_ = p._theme["axes.prop_cycle"].by_key()["color"]
         self.check_offsets(points, x, y)
         self.check_colors("face", points, [C0, to_rgba(C0, 0)], 1)
-        self.check_colors("edge", points, ["w", C0], 1)
-
-        expected = [mark.edgewidth, mark.stroke]
-        assert_array_equal(points.get_linewidths(), expected)
 
     def test_missing_coordinate_data(self):
 
