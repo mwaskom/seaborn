@@ -25,6 +25,7 @@ from seaborn._oldcore import (
     infer_orient,
     categorical_order,
 )
+from seaborn._stats.density import KDE
 from seaborn.relational import _RelationalPlotter
 from seaborn import utils
 from seaborn.utils import (
@@ -675,6 +676,64 @@ class _CategoricalPlotterNew(_RelationalPlotter):
         else:
             patch_kws["edgecolor"] = linecolor
         self._configure_legend(ax, ax.fill_between, patch_kws)
+
+    def plot_violins(
+        self,
+        width,
+        dodge,
+        gap,
+        color,
+        linecolor,
+        linewidth,
+        saturation,
+        plot_kws,
+    ):
+
+        iter_vars = [self.orient, "hue"]
+        value_var = {"x": "y", "y": "x"}[self.orient]
+
+        if linecolor is None:
+            if "hue" in self.variables:
+                linecolor = self._get_gray(list(self._hue_map.lookup_table.values()))
+            else:
+                linecolor = self._get_gray([color])
+
+        kde = KDE()
+
+        ax = self.ax
+
+        for sub_vars, sub_data in self.iter_data(iter_vars,
+                                                 from_comp_data=True,
+                                                 allow_empty=False):
+
+            sub_data["weight"] = sub_data.get("weights", 1)
+
+            stat_data = kde._transform(sub_data, value_var, [])
+            stat_data["density"] /= stat_data["density"].max()
+
+            if "hue" in sub_vars:
+                facecolor = self._hue_map(sub_vars["hue"])
+                if saturation != 1:
+                    facecolor = desaturate(facecolor, saturation)
+            else:
+                facecolor = color
+
+            default_kws = dict(
+                facecolor=facecolor,
+                edgecolor=linecolor,
+                linewidth=linewidth,
+            )
+            violin_kws = {**default_kws, **plot_kws}
+
+            func = {"x": ax.fill_betweenx, "y": ax.fill_between}[self.orient]
+            func(
+                stat_data[value_var],
+                sub_vars[self.orient] - stat_data["density"] * (width / 2),
+                sub_vars[self.orient] + stat_data["density"] * (width / 2),
+                **violin_kws,
+            )
+
+        self._configure_legend(ax, ax.fill_between)  # TODO, patch_kws)
 
     def plot_points(
         self,
@@ -2424,8 +2483,23 @@ def violinplot(
     bw="scott", cut=2, scale="area", scale_hue=True, gridsize=100,
     width=.8, inner="box", split=False, dodge=True, orient=None,
     linewidth=None, color=None, palette=None, saturation=.75,
+    linecolor=None,  # TODO new
+    gap=0,  # TODO new
+    hue_norm=None,  # TODO new
+    formatter=None,  # TODO new
+    native_scale=False,  # TODO new
+    legend="auto",  # TODO new
     ax=None, **kwargs,
 ):
+
+    p = _CategoricalPlotterNew(
+        data=data,
+        variables=_CategoricalPlotterNew.get_semantics(locals()),
+        order=order,
+        orient=orient,
+        require_numeric=False,
+        legend=legend,
+    )
 
     plotter = _ViolinPlotter(x, y, hue, data, order, hue_order,
                              bw, cut, scale, scale_hue, gridsize,
@@ -2435,7 +2509,45 @@ def violinplot(
     if ax is None:
         ax = plt.gca()
 
-    plotter.plot(ax)
+    if p.plot_data.empty:
+        return ax
+
+    if dodge == "auto":
+        # Needs to be before scale_categorical changes the coordinate series dtype
+        dodge = p._dodge_needed()
+
+    if p.var_types.get(p.orient) == "categorical" or not native_scale:
+        p.scale_categorical(p.orient, order=order, formatter=formatter)
+
+    p._attach(ax)
+
+    # Deprecations to remove in v0.14.0.
+    hue_order = p._palette_without_hue_backcompat(palette, hue_order)
+    palette, hue_order = p._hue_backcompat(color, palette, hue_order)
+
+    p.map_hue(palette=palette, order=hue_order, norm=hue_norm)
+    color = _default_color(
+        ax.fill_between, hue, color,
+        {k: v for k, v in kwargs.items() if k in ["c", "color", "fc", "facecolor"]},
+    )
+    # TODO? if fill and color is not None and saturation < 1:
+    if color is not None and saturation < 1:
+        color = desaturate(color, saturation)
+
+    p.plot_violins(
+        width=width,
+        dodge=dodge,
+        gap=gap,
+        color=color,
+        linecolor=linecolor,
+        linewidth=linewidth,
+        saturation=saturation,
+        plot_kws=kwargs,
+    )
+
+    p._add_axis_labels(ax)
+    p._adjust_cat_axis(ax, axis=p.orient)
+
     return ax
 
 
