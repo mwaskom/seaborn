@@ -686,6 +686,9 @@ class _CategoricalPlotterNew(_RelationalPlotter):
         linecolor,
         linewidth,
         saturation,
+        scale,
+        scale_hue,
+        kde_kws,
         plot_kws,
     ):
 
@@ -698,18 +701,20 @@ class _CategoricalPlotterNew(_RelationalPlotter):
             else:
                 linecolor = self._get_gray([color])
 
-        kde = KDE()
+        kde = KDE(**kde_kws)
 
         ax = self.ax
+
+        violin_data = []
 
         for sub_vars, sub_data in self.iter_data(iter_vars,
                                                  from_comp_data=True,
                                                  allow_empty=False):
 
             sub_data["weight"] = sub_data.get("weights", 1)
-
             stat_data = kde._transform(sub_data, value_var, [])
-            stat_data["density"] /= stat_data["density"].max()
+
+            # TODO handle single observation / no variance
 
             if "hue" in sub_vars:
                 facecolor = self._hue_map(sub_vars["hue"])
@@ -723,15 +728,52 @@ class _CategoricalPlotterNew(_RelationalPlotter):
                 edgecolor=linecolor,
                 linewidth=linewidth,
             )
-            violin_kws = {**default_kws, **plot_kws}
 
+            violin_data.append({
+                "position": sub_vars[self.orient],
+                "observations": sub_data[value_var],
+                "density": stat_data["density"],
+                "support": stat_data[value_var],
+                "kwargs": {**default_kws, **plot_kws},
+                "sub_vars": sub_vars,
+                "ax": self._get_axes(sub_vars),
+            })
+
+        # TODO other width_norm options
+
+        for violin in violin_data:
+
+            ax = violin["ax"]
             func = {"x": ax.fill_betweenx, "y": ax.fill_between}[self.orient]
-            func(
-                stat_data[value_var],
-                sub_vars[self.orient] - stat_data["density"] * (width / 2),
-                sub_vars[self.orient] + stat_data["density"] * (width / 2),
-                **violin_kws,
-            )
+
+            position = violin["position"]
+            density = violin["density"]
+            support = violin["support"]
+
+            real_width = width * self._native_width
+            if dodge:
+                hue_idx = self._hue_map.levels.index(violin["sub_vars"]["hue"])
+                real_width /= len(self._hue_map.levels)
+
+                full_width = real_width * len(self._hue_map.levels)
+                offset = real_width * hue_idx + real_width / 2 - full_width / 2
+                position += offset
+
+            if scale == "area":
+                density_norm = max(violin["density"].max() for violin in violin_data)
+            elif scale == "count":
+                density_norm = (
+                    max(violin["density"].max() for violin in violin_data)
+                    * (len(violin["observations"])
+                       / max(len(v["observations"]) for v in violin_data))
+                )
+            else:
+                # TODO input check on value
+                density_norm = violin["density"].max()
+
+            density = density / density_norm * (real_width / 2)
+
+            func(support, position - density, position + density, **violin["kwargs"])
 
         self._configure_legend(ax, ax.fill_between)  # TODO, patch_kws)
 
@@ -2501,11 +2543,6 @@ def violinplot(
         legend=legend,
     )
 
-    plotter = _ViolinPlotter(x, y, hue, data, order, hue_order,
-                             bw, cut, scale, scale_hue, gridsize,
-                             width, inner, split, dodge, orient, linewidth,
-                             color, palette, saturation)
-
     if ax is None:
         ax = plt.gca()
 
@@ -2534,6 +2571,8 @@ def violinplot(
     if color is not None and saturation < 1:
         color = desaturate(color, saturation)
 
+    kde_kws = dict(cut=cut)
+
     p.plot_violins(
         width=width,
         dodge=dodge,
@@ -2542,6 +2581,9 @@ def violinplot(
         linecolor=linecolor,
         linewidth=linewidth,
         saturation=saturation,
+        scale=scale,  # TODO rename ... width_norm?
+        scale_hue=scale_hue,
+        kde_kws=kde_kws,
         plot_kws=kwargs,
     )
 
