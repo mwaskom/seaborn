@@ -185,6 +185,10 @@ def desaturate(color, prop):
     # Get rgb tuple rep
     rgb = to_rgb(color)
 
+    # Short circuit to avoid floating point issues
+    if prop == 1:
+        return rgb
+
     # Convert to hls
     h, l, s = colorsys.rgb_to_hls(*rgb)
 
