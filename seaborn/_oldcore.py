@@ -160,13 +160,13 @@ class HueMapping(SemanticMapping):
                     list(data), palette, order,
                 )
 
+            self.saturation = saturation
             self.map_type = map_type
             self.lookup_table = lookup_table
             self.palette = palette
             self.levels = levels
             self.norm = norm
             self.cmap = cmap
-            self.saturation = saturation
 
     def _lookup_single(self, key):
         """Get the color for a single value, using colormap to interpolate."""
@@ -194,6 +194,7 @@ class HueMapping(SemanticMapping):
                 if np.ma.is_masked(normed):
                     normed = np.nan
                 value = self.cmap(normed)
+
         if self.saturation < 1:
             value = desaturate(value, self.saturation)
 
