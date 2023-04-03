@@ -3366,7 +3366,6 @@ def catplot(
             "saturation",
             0.75 if kind in desaturated_kinds and kwargs.get("fill", True) else 1
         )
-        print(saturation)
         p.map_hue(
             palette=palette, order=hue_order, norm=hue_norm, saturation=saturation
         )
