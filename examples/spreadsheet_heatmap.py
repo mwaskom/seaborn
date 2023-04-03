@@ -9,7 +9,10 @@ sns.set_theme()
 
 # Load the example flights dataset and convert to long-form
 flights_long = sns.load_dataset("flights")
-flights = flights_long.pivot("month", "year", "passengers")
+flights = (
+    flights_long
+    .pivot(index="month", columns="year", values="passengers")
+)
 
 # Draw a heatmap with the numeric values in each cell
 f, ax = plt.subplots(figsize=(9, 6))
