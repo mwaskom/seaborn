@@ -89,7 +89,7 @@ def _draw_figure(fig):
             pass
 
 
-def _default_color(method, hue, color, kws):
+def _default_color(method, hue, color, kws, saturation=1):
     """If needed, get a default color by using the matplotlib property cycle."""
 
     if hue is not None:
@@ -104,6 +104,8 @@ def _default_color(method, hue, color, kws):
     kws.pop("label", None)
 
     if color is not None:
+        if saturation < 1:
+            color = desaturate(color, saturation)
         return color
 
     elif method.__name__ == "plot":
@@ -158,6 +160,9 @@ def _default_color(method, hue, color, kws):
         facecolor = scout.get_facecolor()
         color = to_rgb(facecolor[0])
         scout.remove()
+
+    if saturation < 1:
+        color = desaturate(color, saturation)
 
     return color
 
