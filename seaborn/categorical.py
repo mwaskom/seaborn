@@ -800,9 +800,13 @@ class _CategoricalPlotterNew(_RelationalPlotter):
                 kws = dict(y=agg_data["edge"], width=agg_data["x"], height=real_width)
 
             if "hue" in self.variables:
-                kws["facecolor"] = self._hue_map(sub_vars["hue"])
+                maincolor = self._hue_map(sub_vars["hue"])
             else:
-                kws["facecolor"] = color
+                maincolor = color
+
+            # Set both color and facecolor for property cycle logic
+            kws["color"] = maincolor
+            kws["facecolor"] = maincolor
             kws["align"] = "edge"
 
             bar_func(**{**kws, **plot_kws})
