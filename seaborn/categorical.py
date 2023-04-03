@@ -514,7 +514,6 @@ class _CategoricalPlotterNew(_RelationalPlotter):
         linecolor,
         linewidth,
         fliersize,
-        saturation,
         plot_kws,  # TODO rename user_kws?
     ):
 
@@ -579,12 +578,7 @@ class _CategoricalPlotterNew(_RelationalPlotter):
             if gap:
                 real_width *= 1 - gap
 
-            if "hue" in sub_vars:
-                maincolor = self._hue_map(sub_vars["hue"])
-                if saturation != 1:
-                    maincolor = desaturate(maincolor, saturation)
-            else:
-                maincolor = color
+            maincolor = self._hue_map(sub_vars["hue"]) if "hue" in sub_vars else color
 
             # TODO how to handle solid / empty fliers?
 
@@ -750,7 +744,6 @@ class _CategoricalPlotterNew(_RelationalPlotter):
         dodge,
         width,
         color,
-        saturation,
         capsize,
         err_kws,
         plot_kws,
@@ -806,18 +799,17 @@ class _CategoricalPlotterNew(_RelationalPlotter):
                 bar_func = ax.barh
                 kws = dict(y=agg_data["edge"], width=agg_data["x"], height=real_width)
 
-            container = bar_func(
-                **kws,
-                color=color,
-                align="edge",
-                **plot_kws,
-            )
-
             if "hue" in self.variables:
-                mapped_color = self._hue_map(sub_vars["hue"])
-                if saturation < 1:
-                    mapped_color = desaturate(mapped_color, saturation)
-                plt.setp(container, facecolor=mapped_color)
+                maincolor = self._hue_map(sub_vars["hue"])
+            else:
+                maincolor = color
+
+            # Set both color and facecolor for property cycle logic
+            kws["color"] = maincolor
+            kws["facecolor"] = maincolor
+            kws["align"] = "edge"
+
+            bar_func(**{**kws, **plot_kws})
 
             if aggregator.error_method is not None:
                 self.plot_errorbars(ax, agg_data, capsize, err_kws.copy())
@@ -2328,13 +2320,13 @@ def boxplot(
     hue_order = p._palette_without_hue_backcompat(palette, hue_order)
     palette, hue_order = p._hue_backcompat(color, palette, hue_order)
 
-    p.map_hue(palette=palette, order=hue_order, norm=hue_norm)
+    saturation = saturation if fill else 1
+    p.map_hue(palette=palette, order=hue_order, norm=hue_norm, saturation=saturation)
     color = _default_color(
         ax.fill_between, hue, color,
         {k: v for k, v in kwargs.items() if k in ["c", "color", "fc", "facecolor"]},
+        saturation=saturation,
     )
-    if fill and color is not None and saturation < 1:
-        color = desaturate(color, saturation)
 
     p.plot_boxes(
         width=width,
@@ -2346,7 +2338,6 @@ def boxplot(
         linecolor=linecolor,
         linewidth=linewidth,
         fliersize=fliersize,
-        saturation=saturation,
         plot_kws=kwargs,
     )
 
@@ -2912,10 +2903,8 @@ def barplot(
     hue_order = p._palette_without_hue_backcompat(palette, hue_order)
     palette, hue_order = p._hue_backcompat(color, palette, hue_order)
 
-    p.map_hue(palette=palette, order=hue_order, norm=hue_norm)
-    color = _default_color(ax.bar, hue, color, kwargs)
-    if color is not None and saturation < 1:
-        color = desaturate(color, saturation)
+    p.map_hue(palette=palette, order=hue_order, norm=hue_norm, saturation=saturation)
+    color = _default_color(ax.bar, hue, color, kwargs, saturation=saturation)
 
     aggregator = EstimateAggregator(estimator, errorbar, n_boot=n_boot, seed=seed)
     err_kws = {} if err_kws is None else _normalize_kwargs(err_kws, mpl.lines.Line2D)
@@ -2928,7 +2917,6 @@ def barplot(
         dodge=dodge,
         width=width,
         color=color,
-        saturation=saturation,
         capsize=capsize,
         err_kws=err_kws,
         plot_kws=kwargs,
@@ -3196,11 +3184,8 @@ def countplot(
     hue_order = p._palette_without_hue_backcompat(palette, hue_order)
     palette, hue_order = p._hue_backcompat(color, palette, hue_order)
 
-    p.map_hue(palette=palette, order=hue_order, norm=hue_norm)
-
-    color = _default_color(ax.bar, hue, color, kwargs)
-    if color is not None and saturation < 1:
-        color = desaturate(color, saturation)
+    p.map_hue(palette=palette, order=hue_order, norm=hue_norm, saturation=saturation)
+    color = _default_color(ax.bar, hue, color, kwargs, saturation)
 
     count_axis = {"x": "y", "y": "x"}[p.orient]
     if p.input_format == "wide":
@@ -3219,7 +3204,6 @@ def countplot(
         dodge=dodge,
         width=width,
         color=color,
-        saturation=saturation,
         capsize=0,
         err_kws={},
         plot_kws=kwargs,
@@ -3382,15 +3366,19 @@ def catplot(
         hue_order = p._palette_without_hue_backcompat(palette, hue_order)
         palette, hue_order = p._hue_backcompat(color, palette, hue_order)
 
-        p.map_hue(palette=palette, order=hue_order, norm=hue_norm)
+        saturation = kwargs.pop(
+            "saturation",
+            0.75 if kind in desaturated_kinds and kwargs.get("fill", True) else 1
+        )
+        p.map_hue(
+            palette=palette, order=hue_order, norm=hue_norm, saturation=saturation
+        )
 
         # Set a default color
         # Otherwise each artist will be plotted separately and trip the color cycle
-        saturation = kwargs.pop("saturation", 0.75)
         if hue is None:
-            if color is None:
-                color = "C0"
-            if kind in desaturated_kinds and saturation < 1:
+            color = "C0" if color is None else color
+            if saturation < 1:
                 color = desaturate(color, saturation)
         edgecolor = kwargs.pop("edgecolor", "gray")  # XXX TODO default
 
@@ -3459,7 +3447,6 @@ def catplot(
                 linecolor=linecolor,
                 linewidth=linewidth,
                 fliersize=fliersize,
-                saturation=saturation,
                 plot_kws=plot_kws,
             )
 
@@ -3517,7 +3504,6 @@ def catplot(
                 dodge=dodge,
                 width=width,
                 color=color,
-                saturation=saturation,
                 capsize=capsize,
                 err_kws=err_kws,
                 plot_kws=kwargs,
@@ -3542,7 +3528,6 @@ def catplot(
                 dodge=dodge,
                 width=width,
                 color=color,
-                saturation=saturation,
                 capsize=0,
                 err_kws={},
                 plot_kws=kwargs,
