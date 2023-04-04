@@ -685,7 +685,6 @@ class _CategoricalPlotterNew(_RelationalPlotter):
         color,
         linecolor,
         linewidth,
-        saturation,
         scale,
         scale_hue,
         kde_kws,
@@ -716,15 +715,10 @@ class _CategoricalPlotterNew(_RelationalPlotter):
 
             # TODO handle single observation / no variance
 
-            if "hue" in sub_vars:
-                facecolor = self._hue_map(sub_vars["hue"])
-                if saturation != 1:
-                    facecolor = desaturate(facecolor, saturation)
-            else:
-                facecolor = color
+            maincolor = self._hue_map(sub_vars["hue"]) if "hue" in sub_vars else color
 
             default_kws = dict(
-                facecolor=facecolor,
+                facecolor=maincolor,
                 edgecolor=linecolor,
                 linewidth=linewidth,
             )
@@ -2562,10 +2556,12 @@ def violinplot(
     hue_order = p._palette_without_hue_backcompat(palette, hue_order)
     palette, hue_order = p._hue_backcompat(color, palette, hue_order)
 
-    p.map_hue(palette=palette, order=hue_order, norm=hue_norm)
+    # TODO saturation fill
+    p.map_hue(palette=palette, order=hue_order, norm=hue_norm, saturation=saturation)
     color = _default_color(
         ax.fill_between, hue, color,
         {k: v for k, v in kwargs.items() if k in ["c", "color", "fc", "facecolor"]},
+        saturation=saturation,
     )
     # TODO? if fill and color is not None and saturation < 1:
     if color is not None and saturation < 1:
@@ -2580,7 +2576,6 @@ def violinplot(
         color=color,
         linecolor=linecolor,
         linewidth=linewidth,
-        saturation=saturation,
         scale=scale,  # TODO rename ... width_norm?
         scale_hue=scale_hue,
         kde_kws=kde_kws,
