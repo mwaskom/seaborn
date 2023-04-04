@@ -776,35 +776,31 @@ class _CategoricalPlotterNew(_RelationalPlotter):
                 .reset_index()
             )
 
-            real_width = width * self._native_width
+            agg_data["width"] = width * self._native_width
             if dodge:
-                hue_idx = self._hue_map.levels.index(sub_vars["hue"])
-                real_width /= len(self._hue_map.levels)
+                self.dodge(sub_vars, agg_data)
 
-                full_width = real_width * len(self._hue_map.levels)
-                offset = real_width * hue_idx + real_width / 2 - full_width / 2
-                agg_data[self.orient] += offset
-
-            agg_data["edge"] = agg_data[self.orient] - real_width / 2
+            agg_data["edge"] = agg_data[self.orient] - agg_data["width"] / 2
             if self._log_scaled(self.orient):
                 agg_data["edge"] = 10 ** agg_data["edge"]
-                right_edge = 10 ** (agg_data[self.orient] + real_width / 2)
-                real_width = right_edge - agg_data["edge"]
+                right_edge = 10 ** (agg_data[self.orient] + agg_data["width"] / 2)
+                agg_data["width"] = right_edge - agg_data["edge"]
             self._invert_scale(agg_data)
 
             ax = self._get_axes(sub_vars)
 
             if self.orient == "x":
                 bar_func = ax.bar
-                kws = dict(x=agg_data["edge"], height=agg_data["y"], width=real_width)
+                kws = dict(
+                    x=agg_data["edge"], height=agg_data["y"], width=agg_data["width"]
+                )
             else:
                 bar_func = ax.barh
-                kws = dict(y=agg_data["edge"], width=agg_data["x"], height=real_width)
+                kws = dict(
+                    y=agg_data["edge"], width=agg_data["x"], height=agg_data["width"]
+                )
 
-            if "hue" in self.variables:
-                maincolor = self._hue_map(sub_vars["hue"])
-            else:
-                maincolor = color
+            maincolor = self._hue_map(sub_vars["hue"]) if "hue" in sub_vars else color
 
             # Set both color and facecolor for property cycle logic
             kws["color"] = maincolor
@@ -847,6 +843,15 @@ class _CategoricalPlotterNew(_RelationalPlotter):
             else:
                 args = val, pos
             ax.plot(*args, **err_kws)
+
+    def dodge(self, keys, data):
+        """Apply a dodge transform to coordinates in place."""
+        hue_idx = self._hue_map.levels.index(keys["hue"])
+        data["width"] /= len(self._hue_map.levels)
+
+        full_width = data["width"] * len(self._hue_map.levels)
+        offset = data["width"] * hue_idx + data["width"] / 2 - full_width / 2
+        data[self.orient] += offset
 
 
 class _CategoricalAggPlotter(_CategoricalPlotterNew):
