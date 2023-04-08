@@ -687,8 +687,9 @@ class _CategoricalPlotterNew(_RelationalPlotter):
 
         positions = self.var_levels[self.orient]
         if self.var_types[self.orient] == "categorical":
-            existing_labels = ax._axis_map[self.orient].units._mapping
-            positions = [existing_labels[p] for p in positions]
+            min_cat_val = int(self.comp_data[self.orient].min())
+            max_cat_val = int(self.comp_data[self.orient].max())
+            positions = [i for i in range(min_cat_val, max_cat_val + 1)]
         else:
             if self._log_scaled(self.orient):
                 positions = np.log10(positions)
