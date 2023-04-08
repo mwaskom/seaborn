@@ -683,11 +683,12 @@ class _CategoricalPlotterNew(_RelationalPlotter):
         markers = self._map_prop_with_hue("marker", markers, "o", plot_kws)
         linestyles = self._map_prop_with_hue("linestyle", linestyles, "-", plot_kws)
 
+        ax = self.ax
+
         positions = self.var_levels[self.orient]
         if self.var_types[self.orient] == "categorical":
-            min_cat_val = int(self.comp_data[self.orient].min())
-            max_cat_val = int(self.comp_data[self.orient].max())
-            positions = [i for i in range(min_cat_val, max_cat_val + 1)]
+            existing_labels = ax._axis_map[self.orient].units._mapping
+            positions = [existing_labels[p] for p in positions]
         else:
             if self._log_scaled(self.orient):
                 positions = np.log10(positions)
@@ -698,8 +699,6 @@ class _CategoricalPlotterNew(_RelationalPlotter):
         n_hue_levels = 0 if self._hue_map.levels is None else len(self._hue_map.levels)
         if dodge is True:
             dodge = .025 * n_hue_levels
-
-        ax = self.ax
 
         for sub_vars, sub_data in self.iter_data(iter_vars,
                                                  from_comp_data=True,
