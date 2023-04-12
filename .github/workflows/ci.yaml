@@ -9,6 +9,9 @@ on:
     - cron:  '0 6 * * 1,4' # Each Monday and Thursday at 06:00 UTC
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 env:
   NB_KERNEL: python
   MPLBACKEND: Agg
