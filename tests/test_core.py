@@ -22,6 +22,7 @@ from seaborn._oldcore import (
     unique_markers,
     categorical_order,
 )
+from seaborn.utils import desaturate
 
 from seaborn.palettes import color_palette
 
@@ -324,6 +325,17 @@ class TestHueMapping:
         p = VectorPlotter(data=long_df, variables=dict(x="x", y="y"))
         with pytest.warns(UserWarning, match="Ignoring `palette`"):
             HueMapping(p, palette="viridis")
+
+    def test_saturation(self, long_df):
+
+        p = VectorPlotter(data=long_df, variables=dict(x="x", y="y", hue="a"))
+        levels = categorical_order(long_df["a"])
+        palette = color_palette("viridis", len(levels))
+        saturation = 0.8
+
+        m = HueMapping(p, palette=palette, saturation=saturation)
+        for i, color in enumerate(m(levels)):
+            assert mpl.colors.same_color(color, desaturate(palette[i], saturation))
 
 
 class TestSizeMapping:

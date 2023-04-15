@@ -90,6 +90,9 @@ def test_desaturate():
     out4 = utils.desaturate("red", .5)
     assert out4 == (.75, .25, .25)
 
+    out5 = utils.desaturate("lightblue", 1)
+    assert out5 == mpl.colors.to_rgb("lightblue")
+
 
 def test_desaturation_prop():
     """Test that pct outside of [0, 1] raises exception."""
