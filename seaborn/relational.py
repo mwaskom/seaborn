@@ -417,22 +417,6 @@ class _LinePlotter(_RelationalPlotter):
                         sub_data[col] = np.power(10, sub_data[col])
 
             # --- Draw the main line(s)
-            if "hue" in sub_vars:
-                kws["color"] = self._hue_map(sub_vars["hue"])
-            if "size" in sub_vars:
-                kws["linewidth"] = self._size_map(sub_vars["size"])
-            if "style" in sub_vars:
-                attributes = self._style_map(sub_vars["style"])
-                if "dashes" in attributes:
-                    kws["dashes"] = attributes["dashes"]
-                if "marker" in attributes:
-                    kws["marker"] = attributes["marker"]
-
-            (line,) = ax.plot([], [], **kws)
-            line_color = line.get_color()
-            line_alpha = line.get_alpha()
-            line_capstyle = line.get_solid_capstyle()
-            line.remove()
 
             if "units" in self.variables:   # XXX why not add to grouping variables?
                 lines = []
@@ -440,6 +424,25 @@ class _LinePlotter(_RelationalPlotter):
                     lines.extend(ax.plot(unit_data["x"], unit_data["y"], **kws))
             else:
                 lines = ax.plot(sub_data["x"], sub_data["y"], **kws)
+
+            for line in lines:
+
+                if "hue" in sub_vars:
+                    line.set_color(self._hue_map(sub_vars["hue"]))
+
+                if "size" in sub_vars:
+                    line.set_linewidth(self._size_map(sub_vars["size"]))
+
+                if "style" in sub_vars:
+                    attributes = self._style_map(sub_vars["style"])
+                    if "dashes" in attributes:
+                        line.set_dashes(attributes["dashes"])
+                    if "marker" in attributes:
+                        line.set_marker(attributes["marker"])
+
+            line_color = line.get_color()
+            line_alpha = line.get_alpha()
+            line_capstyle = line.get_solid_capstyle()
 
             # --- Draw the confidence intervals
 
@@ -593,7 +596,7 @@ def lineplot(
     if ax is None:
         ax = plt.gca()
 
-    if style is None and not {"ls", "linestyle"} & set(kwargs):  # XXX
+    if "style" not in p.variables and not {"ls", "linestyle"} & set(kwargs):  # XXX
         kwargs["dashes"] = "" if dashes is None or isinstance(dashes, bool) else dashes
 
     if not p.has_xy_data:
