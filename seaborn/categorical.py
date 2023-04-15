@@ -563,20 +563,19 @@ class _CategoricalPlotterNew(_RelationalPlotter):
             if self._log_scaled(value_var):
                 stats = stats.apply(lambda x: 10 ** x)
 
-            real_width = width * self._native_width
+            data = pd.DataFrame(
+                {self.orient: positions, "width": width * self._native_width}
+            )
             if dodge:
-                hue_idx = self._hue_map.levels.index(sub_vars["hue"])
-                real_width /= len(self._hue_map.levels)
+                self.dodge(sub_vars, data)
 
-                full_width = real_width * len(self._hue_map.levels)
-                offset = real_width * hue_idx + real_width / 2 - full_width / 2
-                if self._log_scaled(self.orient):
-                    positions = 10 ** (np.log10(positions) + offset)
-                else:
-                    positions += offset
+            # if self._log_scaled(self.orient):
+            #     positions = 10 ** (np.log10(positions) + offset)
+            # else:
+            #     positions += offset
 
             if gap:
-                real_width *= 1 - gap
+                data["width"] *= 1 - gap
 
             maincolor = self._hue_map(sub_vars["hue"]) if "hue" in sub_vars else color
 
@@ -604,8 +603,8 @@ class _CategoricalPlotterNew(_RelationalPlotter):
             ax = self._get_axes(sub_vars)
             default_kws = dict(
                 bxpstats=stats.to_dict("records"),
-                positions=positions,
-                widths=0 if self._log_scaled(self.orient) else real_width,
+                positions=data[self.orient],
+                widths=0 if self._log_scaled(self.orient) else data["width"],
                 patch_artist=fill,
                 vert=self.orient == "x",
                 manage_ticks=False,
@@ -620,9 +619,10 @@ class _CategoricalPlotterNew(_RelationalPlotter):
 
             ori_idx = ["x", "y"].index(self.orient)
             if self._log_scaled(self.orient):
-                for i, pos in enumerate(positions):
-                    p0 = 10 ** (np.log10(pos) - real_width / 2)
-                    p1 = 10 ** (np.log10(pos) + real_width / 2)
+                for i, pos in enumerate(data[self.orient]):
+                    half_width = data["width"][i] / 2
+                    p0 = 10 ** (np.log10(pos) - half_width)
+                    p1 = 10 ** (np.log10(pos) + half_width)
                     if artists["boxes"]:
                         box_artist = artists["boxes"][i]
                         if fill:
@@ -643,7 +643,7 @@ class _CategoricalPlotterNew(_RelationalPlotter):
                         artists["medians"][i].set_data(verts)
 
                     if artists["caps"]:
-                        capwidth = plot_kws.get("capwidths", 0.5 * real_width)
+                        capwidth = plot_kws.get("capwidths", 0.5 * data["width"][i])
                         for line in artists["caps"][2 * i:2 * i + 2]:
                             p0 = 10 ** (np.log10(pos) - capwidth / 2)
                             p1 = 10 ** (np.log10(pos) + capwidth / 2)
@@ -851,7 +851,11 @@ class _CategoricalPlotterNew(_RelationalPlotter):
 
         full_width = data["width"] * len(self._hue_map.levels)
         offset = data["width"] * hue_idx + data["width"] / 2 - full_width / 2
-        data[self.orient] += offset
+
+        if self._log_scaled(self.orient):
+            data[self.orient] = 10 ** (np.log10(data[self.orient]) + offset)
+        else:
+            data[self.orient] += offset
 
 
 class _CategoricalAggPlotter(_CategoricalPlotterNew):
