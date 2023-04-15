@@ -298,7 +298,7 @@ class _HeatMapper:
 
         # setting vmin/vmax in addition to norm is deprecated
         # so avoid setting if norm is set
-        if "norm" not in kws:
+        if kws.get("norm") is None:
             kws.setdefault("vmin", self.vmin)
             kws.setdefault("vmax", self.vmax)
 
@@ -554,7 +554,7 @@ class _DendrogramPlotter:
         try:
             return self._calculate_linkage_fastcluster()
         except ImportError:
-            if np.product(self.shape) >= 10000:
+            if np.prod(self.shape) >= 10000:
                 msg = ("Clustering large matrix with scipy. Installing "
                        "`fastcluster` may give better performance.")
                 warnings.warn(msg)

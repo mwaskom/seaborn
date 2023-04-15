@@ -7,10 +7,7 @@ import pandas as pd
 
 import pytest
 import numpy.testing as npt
-try:
-    import pandas.testing as pdt
-except ImportError:
-    import pandas.util.testing as pdt
+import pandas.testing as pdt
 
 try:
     import statsmodels.regression.linear_model as smlm

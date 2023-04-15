@@ -89,7 +89,7 @@ def _draw_figure(fig):
             pass
 
 
-def _default_color(method, hue, color, kws):
+def _default_color(method, hue, color, kws, saturation=1):
     """If needed, get a default color by using the matplotlib property cycle."""
 
     if hue is not None:
@@ -104,6 +104,8 @@ def _default_color(method, hue, color, kws):
     kws.pop("label", None)
 
     if color is not None:
+        if saturation < 1:
+            color = desaturate(color, saturation)
         return color
 
     elif method.__name__ == "plot":
@@ -159,6 +161,9 @@ def _default_color(method, hue, color, kws):
         color = to_rgb(facecolor[0])
         scout.remove()
 
+    if saturation < 1:
+        color = desaturate(color, saturation)
+
     return color
 
 
@@ -184,6 +189,10 @@ def desaturate(color, prop):
 
     # Get rgb tuple rep
     rgb = to_rgb(color)
+
+    # Short circuit to avoid floating point issues
+    if prop == 1:
+        return rgb
 
     # Convert to hls
     h, l, s = colorsys.rgb_to_hls(*rgb)
@@ -446,7 +455,9 @@ def move_legend(obj, loc, **kwargs):
         raise ValueError(err)
 
     # Extract the components of the legend we need to reuse
-    handles = old_legend.legendHandles
+    # Import here to avoid a circular import
+    from seaborn._compat import get_legend_handles
+    handles = get_legend_handles(old_legend)
     labels = [t.get_text() for t in old_legend.get_texts()]
 
     # Extract legend properties that can be passed to the recreation method

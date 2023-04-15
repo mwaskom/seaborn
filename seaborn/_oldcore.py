@@ -20,6 +20,7 @@ from .palettes import (
 )
 from .utils import (
     _check_argument,
+    desaturate,
     get_color_cycle,
     remove_na,
 )
@@ -103,7 +104,7 @@ class HueMapping(SemanticMapping):
     cmap = None
 
     def __init__(
-        self, plotter, palette=None, order=None, norm=None,
+        self, plotter, palette=None, order=None, norm=None, saturation=1,
     ):
         """Map the levels of the `hue` variable to distinct colors.
 
@@ -159,6 +160,7 @@ class HueMapping(SemanticMapping):
                     list(data), palette, order,
                 )
 
+            self.saturation = saturation
             self.map_type = map_type
             self.lookup_table = lookup_table
             self.palette = palette
@@ -192,6 +194,10 @@ class HueMapping(SemanticMapping):
                 if np.ma.is_masked(normed):
                     normed = np.nan
                 value = self.cmap(normed)
+
+        if self.saturation < 1:
+            value = desaturate(value, self.saturation)
+
         return value
 
     def infer_map_type(self, palette, norm, input_format, var_type):
