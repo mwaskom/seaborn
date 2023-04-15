@@ -47,6 +47,7 @@ docs = [
     "numpydoc",
     "nbconvert",
     "ipykernel",
+    "sphinx<6.0.0",
     "sphinx-copybutton",
     "sphinx-issues",
     "sphinx-design",
