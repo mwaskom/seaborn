@@ -47,12 +47,12 @@ docs = [
     "numpydoc",
     "nbconvert",
     "ipykernel",
-    "sphinx<6.0.0",
+    "sphinx",
     "sphinx-copybutton",
     "sphinx-issues",
     "sphinx-design",
     "pyyaml",
-    "pydata_sphinx_theme==0.10.0rc2",
+    "pydata_sphinx_theme==0.13.3",
 ]
 
 [project.urls]
