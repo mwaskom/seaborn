@@ -321,13 +321,25 @@ class _CategoricalPlotterNew(_RelationalPlotter):
             return orient.size != paired.size
         return False
 
-    def _invert_scale(self, data, vars=("x", "y")):
-        """Undo log scaling after computation so data are plotted correctly."""
+    def _dodge(self, keys, data):
+        """Apply a dodge transform to coordinates in place."""
+        hue_idx = self._hue_map.levels.index(keys["hue"])
+        data["width"] /= len(self._hue_map.levels)
+
+        full_width = data["width"] * len(self._hue_map.levels)
+        offset = data["width"] * hue_idx + data["width"] / 2 - full_width / 2
+        data[self.orient] += offset
+
+    def _invert_scale(self, ax, data, vars=("x", "y")):
+        """Undo scaling after computation so data are plotted correctly."""
         for var in vars:
-            if self._log_scaled(var):
-                for suf in ["", "min", "max"]:
-                    if (col := f"{var}{suf}") in data:
-                        data[col] = np.power(10, data[col])
+            _, inv = utils._get_transform_functions(ax, var[0])
+            if var == self.orient and "width" in data:
+                data["edge"] = inv(data[var] - data["width"] / 2)
+                data["width"] = inv(data[var] + data["width"] / 2) - data["edge"]
+            for suf in ["", "min", "max"]:
+                if (col := f"{var}{suf}") in data:
+                    data[col] = inv(data[col])
 
     def _configure_legend(self, ax, func, common_kws=None, semantic_kws=None):
 
@@ -403,6 +415,8 @@ class _CategoricalPlotterNew(_RelationalPlotter):
                                                  from_comp_data=True,
                                                  allow_empty=True):
 
+            ax = self._get_axes(sub_vars)
+
             if offsets is not None and (offsets != 0).any():
                 dodge_move = offsets[sub_data["hue"].map(self._hue_map.levels.index)]
 
@@ -410,9 +424,8 @@ class _CategoricalPlotterNew(_RelationalPlotter):
 
             adjusted_data = sub_data[self.orient] + dodge_move + jitter_move
             sub_data[self.orient] = adjusted_data
-            self._invert_scale(sub_data)
+            self._invert_scale(ax, sub_data)
 
-            ax = self._get_axes(sub_vars)
             points = ax.scatter(sub_data["x"], sub_data["y"], color=color, **plot_kws)
 
             if "hue" in self.variables:
@@ -449,14 +462,15 @@ class _CategoricalPlotterNew(_RelationalPlotter):
                                                  from_comp_data=True,
                                                  allow_empty=True):
 
+            ax = self._get_axes(sub_vars)
+
             if offsets is not None:
                 dodge_move = offsets[sub_data["hue"].map(self._hue_map.levels.index)]
 
             if not sub_data.empty:
                 sub_data[self.orient] = sub_data[self.orient] + dodge_move
 
-            self._invert_scale(sub_data)
-            ax = self._get_axes(sub_vars)
+            self._invert_scale(ax, sub_data)
             points = ax.scatter(sub_data["x"], sub_data["y"], color=color, **plot_kws)
 
             if "hue" in self.variables:
@@ -553,29 +567,22 @@ class _CategoricalPlotterNew(_RelationalPlotter):
                                                  from_comp_data=True,
                                                  allow_empty=False):
 
+            ax = self._get_axes(sub_vars)
+
             grouped = sub_data.groupby(self.orient)[value_var]
             value_data = [x.to_numpy() for _, x in grouped]
             stats = pd.DataFrame(mpl.cbook.boxplot_stats(value_data, whis=whis))
             positions = grouped.grouper.result_index.to_numpy(dtype=float)
 
-            if self._log_scaled(self.orient):
-                positions = 10 ** positions
-            if self._log_scaled(value_var):
-                stats = stats.apply(lambda x: 10 ** x)
-
-            data = pd.DataFrame(
-                {self.orient: positions, "width": width * self._native_width}
-            )
+            orig_width = width * self._native_width
+            data = pd.DataFrame({self.orient: positions, "width": orig_width})
             if dodge:
-                self.dodge(sub_vars, data)
-
-            # if self._log_scaled(self.orient):
-            #     positions = 10 ** (np.log10(positions) + offset)
-            # else:
-            #     positions += offset
-
+                self._dodge(sub_vars, data)
             if gap:
                 data["width"] *= 1 - gap
+            capwidth = plot_kws.get("capwidths", 0.5 * data["width"])
+
+            self._invert_scale(ax, data)
 
             maincolor = self._hue_map(sub_vars["hue"]) if "hue" in sub_vars else color
 
@@ -600,10 +607,10 @@ class _CategoricalPlotterNew(_RelationalPlotter):
                 for prop_dict in [boxprops, medianprops, whiskerprops, capprops]:
                     prop_dict.setdefault("linewidth", linewidth)
 
-            ax = self._get_axes(sub_vars)
             default_kws = dict(
                 bxpstats=stats.to_dict("records"),
                 positions=data[self.orient],
+                # Set width to 0 with log scaled orient axis to avoid going < 0
                 widths=0 if self._log_scaled(self.orient) else data["width"],
                 patch_artist=fill,
                 vert=self.orient == "x",
@@ -613,16 +620,18 @@ class _CategoricalPlotterNew(_RelationalPlotter):
                 whiskerprops=whiskerprops,
                 flierprops=flierprops,
                 capprops=capprops,
+                capwidths=capwidth,
             )
             boxplot_kws = {**default_kws, **plot_kws}
             artists = ax.bxp(**boxplot_kws)
 
+            # Reset artist widths after adding so everything stays positive
             ori_idx = ["x", "y"].index(self.orient)
             if self._log_scaled(self.orient):
-                for i, pos in enumerate(data[self.orient]):
-                    half_width = data["width"][i] / 2
-                    p0 = 10 ** (np.log10(pos) - half_width)
-                    p1 = 10 ** (np.log10(pos) + half_width)
+                for i, box in enumerate(data.to_dict("records")):
+                    p0 = box["edge"]
+                    p1 = box["edge"] + box["width"]
+
                     if artists["boxes"]:
                         box_artist = artists["boxes"][i]
                         if fill:
@@ -633,6 +642,7 @@ class _CategoricalPlotterNew(_RelationalPlotter):
                         box_verts[ori_idx][3:] = p0
                         box_verts[ori_idx][1:3] = p1
                         if not fill:
+                            # When fill is True, the data get changed in place
                             box_artist.set_data(box_verts)
                         # TODO XXX don't update value dimension; don't shrink orient dim
                         ax.update_datalim(np.transpose(box_verts))
@@ -643,10 +653,9 @@ class _CategoricalPlotterNew(_RelationalPlotter):
                         artists["medians"][i].set_data(verts)
 
                     if artists["caps"]:
-                        capwidth = plot_kws.get("capwidths", 0.5 * data["width"][i])
                         for line in artists["caps"][2 * i:2 * i + 2]:
-                            p0 = 10 ** (np.log10(pos) - capwidth / 2)
-                            p1 = 10 ** (np.log10(pos) + capwidth / 2)
+                            p0 = 10 ** (np.log10(box[self.orient]) - capwidth[i] / 2)
+                            p1 = 10 ** (np.log10(box[self.orient]) + capwidth[i] / 2)
                             verts = line.get_xydata().T
                             verts[ori_idx][:] = p0, p1
                             line.set_data(verts)
@@ -705,6 +714,8 @@ class _CategoricalPlotterNew(_RelationalPlotter):
                                                  from_comp_data=True,
                                                  allow_empty=True):
 
+            ax = self._get_axes(sub_vars)
+
             agg_data = sub_data if sub_data.empty else (
                 sub_data
                 .groupby(self.orient)
@@ -718,7 +729,7 @@ class _CategoricalPlotterNew(_RelationalPlotter):
                 offset = -dodge * (n_hue_levels - 1) / 2 + dodge * hue_idx
                 agg_data[self.orient] += offset * self._native_width
 
-            self._invert_scale(agg_data)
+            self._invert_scale(ax, agg_data)
 
             sub_kws = plot_kws.copy()
             sub_kws.update(
@@ -727,7 +738,6 @@ class _CategoricalPlotterNew(_RelationalPlotter):
                 color=self._hue_map(sub_vars["hue"]) if "hue" in sub_vars else color,
             )
 
-            ax = self._get_axes(sub_vars)
             line, = ax.plot(agg_data["x"], agg_data["y"], **sub_kws)
 
             sub_err_kws = err_kws.copy()
@@ -769,6 +779,8 @@ class _CategoricalPlotterNew(_RelationalPlotter):
                                                  from_comp_data=True,
                                                  allow_empty=True):
 
+            ax = self._get_axes(sub_vars)
+
             agg_data = sub_data if sub_data.empty else (
                 sub_data
                 .groupby(self.orient)
@@ -778,16 +790,10 @@ class _CategoricalPlotterNew(_RelationalPlotter):
 
             agg_data["width"] = width * self._native_width
             if dodge:
-                self.dodge(sub_vars, agg_data)
+                self._dodge(sub_vars, agg_data)
 
             agg_data["edge"] = agg_data[self.orient] - agg_data["width"] / 2
-            if self._log_scaled(self.orient):
-                agg_data["edge"] = 10 ** agg_data["edge"]
-                right_edge = 10 ** (agg_data[self.orient] + agg_data["width"] / 2)
-                agg_data["width"] = right_edge - agg_data["edge"]
-            self._invert_scale(agg_data)
-
-            ax = self._get_axes(sub_vars)
+            self._invert_scale(ax, agg_data)
 
             if self.orient == "x":
                 bar_func = ax.bar
@@ -843,19 +849,6 @@ class _CategoricalPlotterNew(_RelationalPlotter):
             else:
                 args = val, pos
             ax.plot(*args, **err_kws)
-
-    def dodge(self, keys, data):
-        """Apply a dodge transform to coordinates in place."""
-        hue_idx = self._hue_map.levels.index(keys["hue"])
-        data["width"] /= len(self._hue_map.levels)
-
-        full_width = data["width"] * len(self._hue_map.levels)
-        offset = data["width"] * hue_idx + data["width"] / 2 - full_width / 2
-
-        if self._log_scaled(self.orient):
-            data[self.orient] = 10 ** (np.log10(data[self.orient]) + offset)
-        else:
-            data[self.orient] += offset
 
 
 class _CategoricalAggPlotter(_CategoricalPlotterNew):

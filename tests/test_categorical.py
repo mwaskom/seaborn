@@ -2157,10 +2157,10 @@ class TestBarPlot(SharedAggTests):
 
         ax = barplot(x=x, y=y)
         for i, bar in enumerate(ax.patches):
-            assert bar.get_x() + bar.get_width() / 2 == i
-            assert bar.get_y() == 0
-            assert bar.get_height() == y[i]
-            assert bar.get_width() == 0.8
+            assert bar.get_x() + bar.get_width() / 2 == approx(i)
+            assert bar.get_y() == approx(0)
+            assert bar.get_height() == approx(y[i])
+            assert bar.get_width() == approx(0.8)
 
     def test_xy_horizontal(self):
 
@@ -2168,10 +2168,10 @@ class TestBarPlot(SharedAggTests):
 
         ax = barplot(x=x, y=y)
         for i, bar in enumerate(ax.patches):
-            assert bar.get_x() == 0
-            assert bar.get_y() + bar.get_height() / 2 == i
-            assert bar.get_height() == 0.8
-            assert bar.get_width() == x[i]
+            assert bar.get_x() == approx(0)
+            assert bar.get_y() + bar.get_height() / 2 == approx(i)
+            assert bar.get_height() == approx(0.8)
+            assert bar.get_width() == approx(x[i])
 
     def test_xy_with_na_grouper(self):
 
@@ -2917,14 +2917,14 @@ class TestPointPlot(SharedAggTests):
         assert l2.get_linewidth() == 2 * l1.get_linewidth()
         assert l2.get_markersize() > l1.get_markersize()
 
-    def test_clipping(self):
+    def test_layered_plot_clipping(self):
 
-            x, y = ['a'], [4]
-            pointplot(x=x, y=y)
-            x, y = ['b'], [5]
-            ax = pointplot(x=x, y=y)
-            y_range = ax.viewLim.intervaly
-            assert y_range[0] < 4 and y_range[1] > 5
+        x, y = ['a'], [4]
+        pointplot(x=x, y=y)
+        x, y = ['b'], [5]
+        ax = pointplot(x=x, y=y)
+        y_range = ax.viewLim.intervaly
+        assert y_range[0] < 4 and y_range[1] > 5
 
 
 class TestCountPlot:
@@ -2957,10 +2957,10 @@ class TestCountPlot:
         ax = countplot(wide_df)
         assert len(ax.patches) == len(wide_df.columns)
         for i, bar in enumerate(ax.patches):
-            assert bar.get_x() + bar.get_width() / 2 == i
+            assert bar.get_x() + bar.get_width() / 2 == approx(i)
             assert bar.get_y() == 0
             assert bar.get_height() == len(wide_df)
-            assert bar.get_width() == 0.8
+            assert bar.get_width() == approx(0.8)
 
     def test_flat_series(self):
 
@@ -2970,8 +2970,8 @@ class TestCountPlot:
         ax = countplot(vals)
         for i, bar in enumerate(ax.patches):
             assert bar.get_x() == 0
-            assert bar.get_y() + bar.get_height() / 2 == i
-            assert bar.get_height() == 0.8
+            assert bar.get_y() + bar.get_height() / 2 == approx(i)
+            assert bar.get_height() == approx(0.8)
             assert bar.get_width() == counts[i]
 
     def test_x_series(self):
@@ -2981,10 +2981,10 @@ class TestCountPlot:
         vals = pd.Series([x for x, n in zip(vals, counts) for _ in range(n)])
         ax = countplot(x=vals)
         for i, bar in enumerate(ax.patches):
-            assert bar.get_x() + bar.get_width() / 2 == i
+            assert bar.get_x() + bar.get_width() / 2 == approx(i)
             assert bar.get_y() == 0
             assert bar.get_height() == counts[i]
-            assert bar.get_width() == 0.8
+            assert bar.get_width() == approx(0.8)
 
     def test_y_series(self):
 
@@ -2994,8 +2994,8 @@ class TestCountPlot:
         ax = countplot(y=vals)
         for i, bar in enumerate(ax.patches):
             assert bar.get_x() == 0
-            assert bar.get_y() + bar.get_height() / 2 == i
-            assert bar.get_height() == 0.8
+            assert bar.get_y() + bar.get_height() / 2 == approx(i)
+            assert bar.get_height() == approx(0.8)
             assert bar.get_width() == counts[i]
 
     def test_hue_redundant(self):
