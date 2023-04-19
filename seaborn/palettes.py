@@ -839,4 +839,3 @@ def set_color_codes(palette="deep"):
     for code, color in zip("bgrmyck", colors):
         rgb = mpl.colors.colorConverter.to_rgb(color)
         mpl.colors.colorConverter.colors[code] = rgb
-        mpl.colors.colorConverter.cache[code] = rgb
