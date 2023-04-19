@@ -3289,6 +3289,7 @@ def catplot(
     margin_titles=False, facet_kws=None, ci="deprecated",
     **kwargs
 ):
+    data = utils.try_convert_to_pandas(data)
 
     # Determine the plotting function
     try:

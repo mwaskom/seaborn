@@ -33,6 +33,7 @@ from .utils import (
     _check_argument,
     _assign_default_kwargs,
     _default_color,
+    try_convert_to_pandas,
 )
 from .palettes import color_palette
 from .external import husl
@@ -1392,6 +1393,7 @@ def histplot(
     # Other appearance keywords
     **kwargs,
 ):
+    data = try_convert_to_pandas(data)
 
     p = _DistributionPlotter(
         data=data,

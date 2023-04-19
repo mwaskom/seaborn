@@ -372,6 +372,7 @@ class FacetGrid(Grid):
         margin_titles=False, xlim=None, ylim=None, subplot_kws=None,
         gridspec_kws=None,
     ):
+        data = utils.try_convert_to_pandas(data)
 
         super().__init__()
 
@@ -1239,6 +1240,8 @@ class PairGrid(Grid):
 
         """
 
+        data = utils.try_convert_to_pandas(data)
+
         super().__init__()
 
         # Sort out the variables that define the grid
@@ -2086,6 +2089,8 @@ def pairplot(
     """
     # Avoid circular import
     from .distributions import histplot, kdeplot
+
+    data = utils.try_convert_to_pandas(data)
 
     # Handle deprecations
     if size is not None:
