@@ -596,7 +596,7 @@ def lineplot(
     if ax is None:
         ax = plt.gca()
 
-    if style is None and not {"ls", "linestyle"} & set(kwargs):  # XXX
+    if "style" not in p.variables and not {"ls", "linestyle"} & set(kwargs):  # XXX
         kwargs["dashes"] = "" if dashes is None or isinstance(dashes, bool) else dashes
 
     if not p.has_xy_data:
