@@ -680,6 +680,11 @@ class TestRelationalPlotter(Helpers):
         for text in g.legend.texts:
             assert float(text.get_text()) > 1e7
 
+    def test_lineplot_2d_dashes(self, long_df):
+        ax = lineplot(data=long_df[["x", "y"]], dashes=[(5, 5), (10, 10)])
+        for line in ax.get_lines():
+            assert line.is_dashed()
+
 
 class TestLinePlotter(SharedAxesLevelTests, Helpers):
 

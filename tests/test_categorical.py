@@ -2917,6 +2917,15 @@ class TestPointPlot(SharedAggTests):
         assert l2.get_linewidth() == 2 * l1.get_linewidth()
         assert l2.get_markersize() > l1.get_markersize()
 
+    def test_clipping(self):
+
+            x, y = ['a'], [4]
+            pointplot(x=x, y=y)
+            x, y = ['b'], [5]
+            ax = pointplot(x=x, y=y)
+            y_range = ax.viewLim.intervaly
+            assert y_range[0] < 4 and y_range[1] > 5
+
 
 class TestCountPlot:
 
