@@ -405,7 +405,7 @@ class ECDF:
 
         Parameters
         ----------
-        stat : {{"percent", "proportion", "count"}}
+        stat : {{"proportion", "percent", "count"}}
             Distribution statistic to compute.
         complementary : bool
             If True, use the complementary CDF (1 - CDF)
