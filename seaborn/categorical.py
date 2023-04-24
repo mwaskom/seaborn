@@ -35,6 +35,7 @@ from seaborn.utils import (
     _default_color,
     _normal_quantile_func,
     _normalize_kwargs,
+    _version_predates,
 )
 from seaborn._statistics import EstimateAggregator
 from seaborn.palettes import color_palette, husl_palette, light_palette, dark_palette
@@ -335,8 +336,9 @@ class _CategoricalPlotterNew(_RelationalPlotter):
         for var in vars:
             _, inv = utils._get_transform_functions(ax, var[0])
             if var == self.orient and "width" in data:
-                data["edge"] = inv(data[var] - data["width"] / 2)
-                data["width"] = inv(data[var] + data["width"] / 2) - data["edge"]
+                hw = data["width"] / 2
+                data["edge"] = inv(data[var] - hw)
+                data["width"] = inv(data[var] + hw) - data["edge"].to_numpy()
             for suf in ["", "min", "max"]:
                 if (col := f"{var}{suf}") in data:
                     data[col] = inv(data[col])
@@ -620,7 +622,12 @@ class _CategoricalPlotterNew(_RelationalPlotter):
                 whiskerprops=whiskerprops,
                 flierprops=flierprops,
                 capprops=capprops,
-                capwidths=capwidth,
+                # Added in matplotlib 3.6.0; see below
+                # capwidths=capwidth,
+                **(
+                    {} if _version_predates(mpl, "3.6.0")
+                    else {"capwidths": capwidth}
+                )
             )
             boxplot_kws = {**default_kws, **plot_kws}
             artists = ax.bxp(**boxplot_kws)
