@@ -27,7 +27,7 @@ class DistributionFixtures:
 
     @pytest.fixture
     def x2(self, rng):
-        return rng.normal(0, 1, 742) # random value to avoid edge cases
+        return rng.normal(0, 1, 742)  # random value to avoid edge cases
 
     @pytest.fixture
     def y(self, rng):
@@ -450,7 +450,7 @@ class TestECDF(DistributionFixtures):
         stat, vals = ecdf(x2)
 
         assert_array_equal(vals[1:], np.sort(x2))
-        assert_array_almost_equal(stat[1:], (np.arange(len(x2)) + 1)/len(x2)*100)
+        assert_array_almost_equal(stat[1:], (np.arange(len(x2))+1)/len(x2)*100)
         assert stat[0] == 0
 
     def test_univariate_proportion_weights(self, x, weights):
