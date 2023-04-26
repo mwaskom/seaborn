@@ -441,7 +441,7 @@ class TestECDF(DistributionFixtures):
         stat, vals = ecdf(x)
 
         assert_array_equal(vals[1:], np.sort(x))
-        assert_array_almost_equal(stat[1:], np.linspace(0, 100, len(x) + 1)[1:])
+        assert_array_almost_equal(stat[1:], np.arange(len(x)) + 1)
         assert stat[0] == 0
 
     def test_univariate_percent(self, x2):
