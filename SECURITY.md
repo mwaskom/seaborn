@@ -5,10 +5,8 @@ privately. **Do not disclose it as a public issue.** This gives me time to work 
 to fix the issue before public exposure, reducing the chance that the exploit will be
 used before a patch is released.
 
-You may submit the report in the following ways:
-
-- send an email to mwaskom@gmail.com; and/or
-- send me a [private vulnerability report](https://github.com/mwaskom/seaborn/security/advisories/new)
+You may submit the report by filling out
+[this form](https://github.com/mwaskom/seaborn/security/advisories/new).
 
 Please provide the following information in your report:
 
