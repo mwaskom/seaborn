@@ -737,37 +737,40 @@ class _CategoricalPlotterNew(_RelationalPlotter):
 
         for violin in violin_data:
 
-            ax = violin["ax"]
-            func = {"x": ax.fill_betweenx, "y": ax.fill_between}[self.orient]
+            data = pd.DataFrame({
+                self.orient: violin["position"],
+                value_var: violin["support"],
+                "width": width * self._native_width,
+                "density": violin["density"],
+            })
 
-            position = violin["position"]
-            density = violin["density"]
-            support = violin["support"]
-
-            real_width = width * self._native_width
             if dodge:
-                hue_idx = self._hue_map.levels.index(violin["sub_vars"]["hue"])
-                real_width /= len(self._hue_map.levels)
-
-                full_width = real_width * len(self._hue_map.levels)
-                offset = real_width * hue_idx + real_width / 2 - full_width / 2
-                position += offset
+                self._dodge(violin["sub_vars"], data)
+            if gap:
+                data["width"] *= 1 - gap
 
             if scale == "area":
-                density_norm = max(violin["density"].max() for violin in violin_data)
+                density_norm = max(data["density"].max() for violin in violin_data)
             elif scale == "count":
                 density_norm = (
-                    max(violin["density"].max() for violin in violin_data)
-                    * (len(violin["observations"])
+                    max(data["density"].max() for violin in violin_data)
+                    * (len(data["observations"])
                        / max(len(v["observations"]) for v in violin_data))
                 )
             else:
                 # TODO input check on value
                 density_norm = violin["density"].max()
 
-            density = density / density_norm * (real_width / 2)
-
-            func(support, position - density, position + density, **violin["kwargs"])
+            ax = violin["ax"]
+            _, inv = utils._get_transform_functions(ax, self.orient)
+            func = {"x": ax.fill_betweenx, "y": ax.fill_between}[self.orient]
+            density = data["density"] / density_norm * (data["width"] / 2)
+            func(
+                data[value_var],
+                inv(data[self.orient] - density),
+                inv(data[self.orient] + density),
+                **violin["kwargs"]
+            )
 
         self._configure_legend(ax, ax.fill_between)  # TODO, patch_kws)
 
@@ -2517,7 +2520,7 @@ boxplot.__doc__ = dedent("""\
 def violinplot(
     data=None, *, x=None, y=None, hue=None, order=None, hue_order=None,
     bw="scott", cut=2, scale="area", scale_hue=True, gridsize=100,
-    width=.8, inner="box", split=False, dodge=True, orient=None,
+    width=.8, inner="box", split=False, dodge="auto", orient=None,
     linewidth=None, color=None, palette=None, saturation=.75,
     linecolor=None,  # TODO new
     gap=0,  # TODO new
