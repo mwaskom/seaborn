@@ -326,9 +326,10 @@ class _CategoricalPlotterNew(_RelationalPlotter):
     def _dodge(self, keys, data):
         """Apply a dodge transform to coordinates in place."""
         hue_idx = self._hue_map.levels.index(keys["hue"])
-        data["width"] /= len(self._hue_map.levels)
+        n = len(self._hue_map.levels)
+        data["width"] /= n
 
-        full_width = data["width"] * len(self._hue_map.levels)
+        full_width = data["width"] * n
         offset = data["width"] * hue_idx + data["width"] / 2 - full_width / 2
         data[self.orient] += offset
 
@@ -682,6 +683,7 @@ class _CategoricalPlotterNew(_RelationalPlotter):
         width,
         dodge,
         gap,
+        split,
         color,
         linecolor,
         linewidth,
@@ -701,9 +703,7 @@ class _CategoricalPlotterNew(_RelationalPlotter):
                 linecolor = self._get_gray([color])
 
         kde = KDE(**kde_kws)
-
         ax = self.ax
-
         violin_data = []
 
         for sub_vars, sub_data in self.iter_data(iter_vars,
@@ -712,8 +712,6 @@ class _CategoricalPlotterNew(_RelationalPlotter):
 
             sub_data["weight"] = sub_data.get("weights", 1)
             stat_data = kde._transform(sub_data, value_var, [])
-
-            # TODO handle single observation / no variance
 
             maincolor = self._hue_map(sub_vars["hue"]) if "hue" in sub_vars else color
 
@@ -733,40 +731,64 @@ class _CategoricalPlotterNew(_RelationalPlotter):
                 "ax": self._get_axes(sub_vars),
             })
 
-        max_density = max(v["density"].max() for v in violin_data)
-        max_count = max(len(v["observations"]) for v in violin_data)
+        max_density = np.nanmax([v["density"].max() for v in violin_data])
+        max_count = np.nanmax([len(v["observations"]) for v in violin_data])
 
         for violin in violin_data:
 
+            index = pd.RangeIndex(0, max(len(violin["support"]), 1))
             data = pd.DataFrame({
                 self.orient: violin["position"],
                 value_var: violin["support"],
-                "width": width * self._native_width,
                 "density": violin["density"],
-            })
+                "width": width * self._native_width,
+            }, index=index)
 
             if dodge:
                 self._dodge(violin["sub_vars"], data)
             if gap:
                 data["width"] *= 1 - gap
 
+            hw = data["width"] / 2
             peak_density = violin["density"].max()
             count = len(violin["observations"])
-            if scale == "area":
-                density = data["density"] / max_density
+            if np.isnan(peak_density):
+                span = 1
+            elif scale == "area":
+                span = data["density"] / max_density
             elif scale == "count":
-                density = data["density"] / peak_density * (count / max_count)
+                span = data["density"] / peak_density * (count / max_count)
             elif scale == "width":
-                density = data["density"] / peak_density
-            density = density * (data["width"] / 2)
+                span = data["density"] / peak_density
+            span = span * hw * (2 if split else 1)
+
+            if split:
+                right = (
+                    0 if "hue" not in self.variables
+                    else self._hue_map.levels.index(violin["sub_vars"]["hue"]) % 2
+                )
+                offsets = (hw, span - hw) if right else (span - hw, hw)
+            else:
+                offsets = span, span
 
             ax = violin["ax"]
             _, inv = utils._get_transform_functions(ax, self.orient)
+
+            if np.isnan(peak_density):
+                pos = data[self.orient].iloc[0]
+                val = violin["observations"].mean()
+                if self.orient == "x":
+                    x, y = [pos - offsets[0], pos + offsets[1]], [val, val]
+                else:
+                    x, y = [val, val], [pos - offsets[0], pos + offsets[1]]
+                ax.plot(x, y, color=linecolor)
+                continue
+
             func = {"x": ax.fill_betweenx, "y": ax.fill_between}[self.orient]
             func(
                 data[value_var],
-                inv(data[self.orient] - density),
-                inv(data[self.orient] + density),
+                inv(data[self.orient] - offsets[0]),
+                inv(data[self.orient] + offsets[1]),
                 **violin["kwargs"]
             )
 
@@ -2574,6 +2596,7 @@ def violinplot(
         width=width,
         dodge=dodge,
         gap=gap,
+        split=split,
         color=color,
         linecolor=linecolor,
         linewidth=linewidth,
