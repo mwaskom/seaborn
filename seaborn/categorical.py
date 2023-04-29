@@ -733,7 +733,8 @@ class _CategoricalPlotterNew(_RelationalPlotter):
                 "ax": self._get_axes(sub_vars),
             })
 
-        # TODO other width_norm options
+        max_density = max(v["density"].max() for v in violin_data)
+        max_count = max(len(v["observations"]) for v in violin_data)
 
         for violin in violin_data:
 
@@ -749,22 +750,19 @@ class _CategoricalPlotterNew(_RelationalPlotter):
             if gap:
                 data["width"] *= 1 - gap
 
+            peak_density = violin["density"].max()
+            count = len(violin["observations"])
             if scale == "area":
-                density_norm = max(data["density"].max() for violin in violin_data)
+                density = data["density"] / max_density
             elif scale == "count":
-                density_norm = (
-                    max(data["density"].max() for violin in violin_data)
-                    * (len(data["observations"])
-                       / max(len(v["observations"]) for v in violin_data))
-                )
-            else:
-                # TODO input check on value
-                density_norm = violin["density"].max()
+                density = data["density"] / peak_density * (count / max_count)
+            elif scale == "width":
+                density = data["density"] / peak_density
+            density = density * (data["width"] / 2)
 
             ax = violin["ax"]
             _, inv = utils._get_transform_functions(ax, self.orient)
             func = {"x": ax.fill_betweenx, "y": ax.fill_between}[self.orient]
-            density = data["density"] / density_norm * (data["width"] / 2)
             func(
                 data[value_var],
                 inv(data[self.orient] - density),
