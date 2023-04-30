@@ -706,6 +706,7 @@ class _CategoricalPlotterNew(_RelationalPlotter):
         ax = self.ax
         violin_data = []
 
+        # Iterate through all the data splits once to compute the KDEs
         for sub_vars, sub_data in self.iter_data(iter_vars,
                                                  from_comp_data=True,
                                                  allow_empty=False):
@@ -714,7 +715,6 @@ class _CategoricalPlotterNew(_RelationalPlotter):
             stat_data = kde._transform(sub_data, value_var, [])
 
             maincolor = self._hue_map(sub_vars["hue"]) if "hue" in sub_vars else color
-
             default_kws = dict(
                 facecolor=maincolor,
                 edgecolor=linecolor,
@@ -731,9 +731,11 @@ class _CategoricalPlotterNew(_RelationalPlotter):
                 "ax": self._get_axes(sub_vars),
             })
 
+        # Once we've computed all the KDEs, get statistics for normalization
         max_density = np.nanmax([v["density"].max() for v in violin_data])
         max_count = np.nanmax([len(v["observations"]) for v in violin_data])
 
+        # Now iterate through the violins again to apply the normalization and plot
         for violin in violin_data:
 
             index = pd.RangeIndex(0, max(len(violin["support"]), 1))
@@ -749,19 +751,21 @@ class _CategoricalPlotterNew(_RelationalPlotter):
             if gap:
                 data["width"] *= 1 - gap
 
+            # Normalize the density across the distribution(s) and relative to the width
             hw = data["width"] / 2
             peak_density = violin["density"].max()
-            count = len(violin["observations"])
             if np.isnan(peak_density):
                 span = 1
             elif scale == "area":
                 span = data["density"] / max_density
             elif scale == "count":
+                count = len(violin["observations"])
                 span = data["density"] / peak_density * (count / max_count)
             elif scale == "width":
                 span = data["density"] / peak_density
             span = span * hw * (2 if split else 1)
 
+            # Handle split violins (i.e. asymmetric spans)
             if split:
                 right = (
                     0 if "hue" not in self.variables
@@ -774,6 +778,7 @@ class _CategoricalPlotterNew(_RelationalPlotter):
             ax = violin["ax"]
             _, inv = utils._get_transform_functions(ax, self.orient)
 
+            # Handle singular datasets (one or more observations with no variance
             if np.isnan(peak_density):
                 pos = data[self.orient].iloc[0]
                 val = violin["observations"].mean()
@@ -784,6 +789,7 @@ class _CategoricalPlotterNew(_RelationalPlotter):
                 ax.plot(x, y, color=linecolor)
                 continue
 
+            # Plot the main violin body
             func = {"x": ax.fill_betweenx, "y": ax.fill_between}[self.orient]
             func(
                 data[value_var],
@@ -2539,15 +2545,20 @@ boxplot.__doc__ = dedent("""\
 
 def violinplot(
     data=None, *, x=None, y=None, hue=None, order=None, hue_order=None,
-    bw="scott", cut=2, scale="area", scale_hue=True, gridsize=100,
+    cut=2, gridsize=100,
     width=.8, inner="box", split=False, dodge="auto", orient=None,
     linewidth=None, color=None, palette=None, saturation=.75,
+    bw_method="scott",  # TODO new (replaces bw)
+    bw_adjust=1,  # TODO new
     linecolor=None,  # TODO new
     gap=0,  # TODO new
     hue_norm=None,  # TODO new
     formatter=None,  # TODO new
     native_scale=False,  # TODO new
     legend="auto",  # TODO new
+    # DEPRECATED kwargs
+    scale="area", scale_hue=True, bw=deprecated,
+    # ---
     ax=None, **kwargs,
 ):
 
@@ -2590,7 +2601,17 @@ def violinplot(
     if color is not None and saturation < 1:
         color = desaturate(color, saturation)
 
-    kde_kws = dict(cut=cut)
+    # TODO handle KDE keyword migration / deprecation
+    if bw is not deprecated:
+        msg = dedent(f"""\n
+        The `bw` parameter is deprecated in favor of `bw_method` and `bw_adjust`.
+        Setting `bw_method={bw}`, but please see the docs for the new parameters
+        and update your code. This will become an error in seaborn v0.15.0.
+        """)
+        warnings.warn(msg, UserWarning, stacklevel=2)
+        bw_method = bw
+
+    kde_kws = dict(cut=cut, gridsize=gridsize, bw_method=bw_method, bw_adjust=bw_adjust)
 
     p.plot_violins(
         width=width,
@@ -2600,8 +2621,8 @@ def violinplot(
         color=color,
         linecolor=linecolor,
         linewidth=linewidth,
-        scale=scale,  # TODO rename ... width_norm?
-        scale_hue=scale_hue,
+        scale=scale,  # TODO rename ... width_norm? density_norm?
+        scale_hue=scale_hue,  # TODO rename to common_norm?
         kde_kws=kde_kws,
         plot_kws=kwargs,
     )
