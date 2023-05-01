@@ -687,6 +687,7 @@ class _CategoricalPlotterNew(_RelationalPlotter):
         color,
         linecolor,
         linewidth,
+        inner,
         scale,
         scale_hue,
         kde_kws,
@@ -701,6 +702,10 @@ class _CategoricalPlotterNew(_RelationalPlotter):
                 linecolor = self._get_gray(list(self._hue_map.lookup_table.values()))
             else:
                 linecolor = self._get_gray([color])
+
+        # TODO if not fill and linewidth is None:
+        if linewidth is None:
+            linewidth = mpl.rcParams["patch.linewidth"]
 
         kde = KDE(**kde_kws)
         ax = self.ax
@@ -735,6 +740,8 @@ class _CategoricalPlotterNew(_RelationalPlotter):
         max_density = np.nanmax([v["density"].max() for v in violin_data])
         max_count = np.nanmax([len(v["observations"]) for v in violin_data])
 
+        real_width = width * self._native_width
+
         # Now iterate through the violins again to apply the normalization and plot
         for violin in violin_data:
 
@@ -743,7 +750,7 @@ class _CategoricalPlotterNew(_RelationalPlotter):
                 self.orient: violin["position"],
                 value_var: violin["support"],
                 "density": violin["density"],
-                "width": width * self._native_width,
+                "width": real_width,
             }, index=index)
 
             if dodge:
@@ -766,17 +773,20 @@ class _CategoricalPlotterNew(_RelationalPlotter):
             span = span * hw * (2 if split else 1)
 
             # Handle split violins (i.e. asymmetric spans)
+            right_side = (
+                0 if "hue" not in self.variables
+                else self._hue_map.levels.index(violin["sub_vars"]["hue"]) % 2
+            )
             if split:
-                right = (
-                    0 if "hue" not in self.variables
-                    else self._hue_map.levels.index(violin["sub_vars"]["hue"]) % 2
-                )
-                offsets = (hw, span - hw) if right else (span - hw, hw)
+                offsets = (hw, span - hw) if right_side else (span - hw, hw)
             else:
                 offsets = span, span
 
             ax = violin["ax"]
-            _, inv = utils._get_transform_functions(ax, self.orient)
+            _, invx = utils._get_transform_functions(ax, "x")
+            _, invy = utils._get_transform_functions(ax, "y")
+            inv_pos = {"x": invx, "y": invy}[self.orient]
+            inv_val = {"x": invx, "y": invy}[value_var]
 
             # Handle singular datasets (one or more observations with no variance
             if np.isnan(peak_density):
@@ -786,17 +796,54 @@ class _CategoricalPlotterNew(_RelationalPlotter):
                     x, y = [pos - offsets[0], pos + offsets[1]], [val, val]
                 else:
                     x, y = [val, val], [pos - offsets[0], pos + offsets[1]]
-                ax.plot(x, y, color=linecolor)
+                ax.plot(invx(x), invy(y), color=linecolor, linewidth=linewidth)
                 continue
 
             # Plot the main violin body
-            func = {"x": ax.fill_betweenx, "y": ax.fill_between}[self.orient]
-            func(
-                data[value_var],
-                inv(data[self.orient] - offsets[0]),
-                inv(data[self.orient] + offsets[1]),
+            plot_func = {"x": ax.fill_betweenx, "y": ax.fill_between}[self.orient]
+            plot_func(
+                inv_val(data[value_var]),
+                inv_pos(data[self.orient] - offsets[0]),
+                inv_pos(data[self.orient] + offsets[1]),
                 **violin["kwargs"]
             )
+
+            # Adjust the observation data
+            obs = violin["observations"]
+            pos_dict = {self.orient: violin["position"], "width": real_width}
+            if dodge:
+                self._dodge(violin["sub_vars"], pos_dict)
+            if gap:
+                pos_dict["width"] *= (1 - gap)
+
+            # Plot the inner components
+            # TODO inner_kws
+            if inner.startswith("point"):
+                pos = [pos_dict[self.orient]] * len(obs)
+                if split:
+                    pos += (-1 if right_side else 1) * pos_dict["width"] / 2
+                x, y = (pos, obs) if self.orient == "x" else (obs, pos)
+                kws = {
+                    "color": linecolor,
+                    "edgecolor": linecolor,
+                    "s": (linewidth * 2) ** 2,
+                    "zorder": violin["kwargs"].get("zorder", 2) + 1,
+                }
+                ax.scatter(invx(x), invy(y), **kws)
+            elif inner.startswith("stick"):
+                pos0 = np.interp(obs, data[value_var], data[self.orient] - offsets[0])
+                pos1 = np.interp(obs, data[value_var], data[self.orient] + offsets[1])
+                pos_pts = np.stack([inv_pos(pos0), inv_pos(pos1)])
+                val_pts = np.stack([inv_val(obs), inv_val(obs)])
+                segments = np.stack([pos_pts, val_pts]).transpose(2, 1, 0)
+                if self.orient == "y":
+                    segments = segments[:, :, ::-1]
+                kws = {
+                    "color": linecolor,
+                    "linewidth": linewidth * .5,
+                }
+                lines = mpl.collections.LineCollection(segments, **kws)
+                ax.add_collection(lines, autolim=False)
 
         self._configure_legend(ax, ax.fill_between)  # TODO, patch_kws)
 
@@ -2590,6 +2637,8 @@ def violinplot(
     hue_order = p._palette_without_hue_backcompat(palette, hue_order)
     palette, hue_order = p._hue_backcompat(color, palette, hue_order)
 
+    # TODO value check on inner
+
     # TODO saturation fill
     p.map_hue(palette=palette, order=hue_order, norm=hue_norm, saturation=saturation)
     color = _default_color(
@@ -2621,6 +2670,7 @@ def violinplot(
         color=color,
         linecolor=linecolor,
         linewidth=linewidth,
+        inner=inner,
         scale=scale,  # TODO rename ... width_norm? density_norm?
         scale_hue=scale_hue,  # TODO rename to common_norm?
         kde_kws=kde_kws,
