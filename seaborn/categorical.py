@@ -816,8 +816,10 @@ class _CategoricalPlotterNew(_RelationalPlotter):
             if gap:
                 pos_dict["width"] *= (1 - gap)
 
-            # Plot the inner components
+            # --- Plot the inner components
+
             # TODO inner_kws
+
             if inner.startswith("point"):
                 pos = [pos_dict[self.orient]] * len(obs)
                 if split:
@@ -830,6 +832,7 @@ class _CategoricalPlotterNew(_RelationalPlotter):
                     "zorder": violin["kwargs"].get("zorder", 2) + 1,
                 }
                 ax.scatter(invx(x), invy(y), **kws)
+
             elif inner.startswith("stick"):
                 pos0 = np.interp(obs, data[value_var], data[self.orient] - offsets[0])
                 pos1 = np.interp(obs, data[value_var], data[self.orient] + offsets[1])
@@ -844,6 +847,63 @@ class _CategoricalPlotterNew(_RelationalPlotter):
                 }
                 lines = mpl.collections.LineCollection(segments, **kws)
                 ax.add_collection(lines, autolim=False)
+
+            elif inner.startswith("quart"):
+                stats = np.percentile(obs, [25, 50, 75])
+                pos0 = np.interp(stats, data[value_var], data[self.orient] - offsets[0])
+                pos1 = np.interp(stats, data[value_var], data[self.orient] + offsets[1])
+                pos_pts = np.stack([inv_pos(pos0), inv_pos(pos1)])
+                val_pts = np.stack([inv_val(stats), inv_val(stats)])
+                segments = np.stack([pos_pts, val_pts]).transpose(2, 0, 1)
+                if self.orient == "y":
+                    segments = segments[:, ::-1, :]
+                dashes = [(2, .75), (3, 1), (2, .75)]
+                for i, segment in enumerate(segments):
+                    kws = {
+                        "color": linecolor,
+                        "linewidth": linewidth,
+                        "dashes": dashes[i],
+                    }
+                    ax.plot(*segment, **kws)
+
+            elif inner.startswith("box"):
+                stats = mpl.cbook.boxplot_stats(obs)[0]
+                pos = pos_dict[self.orient]
+                if split:
+                    pos += (-1 if right_side else 1) * pos_dict["width"] / 2
+                pos = [pos, pos], [pos, pos], [pos]
+                val = (
+                    [stats["whislo"], stats["whishi"]],
+                    [stats["q1"], stats["q3"]],
+                    [stats["med"]]
+                )
+                if self.orient == "x":
+                    (x0, x1, x2), (y0, y1, y2) = pos, val
+                else:
+                    (x0, x1, x2), (y0, y1, y2) = val, pos
+                stroke = mpl.rcParams["lines.linewidth"]
+                if split:
+                    offset = (1 if right_side else -1) * stroke * 3 / 72 / 2
+                    dx, dy = (offset, 0) if self.orient == "x" else (0, -offset)
+                    trans = ax.transData + mpl.transforms.ScaledTranslation(
+                        dx, dy, ax.figure.dpi_scale_trans,
+                    )
+                else:
+                    trans = ax.transData
+                line_kws = {
+                    "color": linecolor,
+                    "linewidth": stroke,
+                    "transform": trans
+                }
+                ax.plot(invx(x0), invy(y0), **line_kws)
+                line_kws["linewidth"] *= 3
+                ax.plot(invx(x1), invy(y1), **line_kws)
+                dot_kws = {
+                    "color": "w",
+                    "s": stroke ** 2,
+                    "zorder": line_kws.get("zorder", 2) + 1,
+                }
+                ax.scatter(invx(x2), invy(y2), transform=trans, **dot_kws)
 
         self._configure_legend(ax, ax.fill_between)  # TODO, patch_kws)
 
