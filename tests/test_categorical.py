@@ -3169,7 +3169,7 @@ class TestCatPlot(CategoricalFixture):
         g = cat.catplot(x="g", y="y", hue="h", data=self.df,
                         kind="violin", inner=None)
         want_elements = self.g.unique().size * self.h.unique().size
-        assert len(g.ax.collections) == want_elements
+        assert len(g.ax.collections) == want_elements + self.h.unique().size
 
         g = cat.catplot(x="g", y="y", data=self.df, kind="strip")
         want_elements = self.g.unique().size

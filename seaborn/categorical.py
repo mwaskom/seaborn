@@ -737,8 +737,28 @@ class _CategoricalPlotterNew(_RelationalPlotter):
             })
 
         # Once we've computed all the KDEs, get statistics for normalization
-        max_density = np.nanmax([v["density"].max() for v in violin_data])
-        max_count = np.nanmax([len(v["observations"]) for v in violin_data])
+        def vars_to_key(sub_vars):
+            return tuple((k, v) for k, v in sub_vars.items() if k != self.orient)
+
+        norm_keys = [vars_to_key(violin["sub_vars"]) for violin in violin_data]
+        if scale_hue:
+            max_density = {
+                key: np.nanmax([
+                    v["density"].max() for v in violin_data
+                    if vars_to_key(v["sub_vars"]) == key
+                ]) for key in norm_keys
+            }
+            max_count = {
+                key: np.nanmax([
+                    len(v["observations"]) for v in violin_data
+                    if vars_to_key(v["sub_vars"]) == key
+                ]) for key in norm_keys
+            }
+        else:
+            global_max_density = np.nanmax([v["density"].max() for v in violin_data])
+            global_max_count = np.nanmax([len(v["observations"]) for v in violin_data])
+            max_density = {key: global_max_density for key in norm_keys}
+            max_count = {key: global_max_count for key in norm_keys}
 
         real_width = width * self._native_width
 
@@ -759,15 +779,16 @@ class _CategoricalPlotterNew(_RelationalPlotter):
                 data["width"] *= 1 - gap
 
             # Normalize the density across the distribution(s) and relative to the width
+            norm_key = vars_to_key(violin["sub_vars"])
             hw = data["width"] / 2
             peak_density = violin["density"].max()
             if np.isnan(peak_density):
                 span = 1
             elif scale == "area":
-                span = data["density"] / max_density
+                span = data["density"] / max_density[norm_key]
             elif scale == "count":
                 count = len(violin["observations"])
-                span = data["density"] / peak_density * (count / max_count)
+                span = data["density"] / peak_density * (count / max_count[norm_key])
             elif scale == "width":
                 span = data["density"] / peak_density
             span = span * hw * (2 if split else 1)
@@ -820,7 +841,10 @@ class _CategoricalPlotterNew(_RelationalPlotter):
 
             # TODO inner_kws
 
-            if inner.startswith("point"):
+            if inner is None:
+                continue
+
+            elif inner.startswith("point"):
                 pos = [pos_dict[self.orient]] * len(obs)
                 if split:
                     pos += (-1 if right_side else 1) * pos_dict["width"] / 2
@@ -881,7 +905,7 @@ class _CategoricalPlotterNew(_RelationalPlotter):
                     (x0, x1, x2), (y0, y1, y2) = pos, val
                 else:
                     (x0, x1, x2), (y0, y1, y2) = val, pos
-                stroke = mpl.rcParams["lines.linewidth"]
+                stroke = linewidth * 1.5
                 if split:
                     offset = (1 if right_side else -1) * stroke * 3 / 72 / 2
                     dx, dy = (offset, 0) if self.orient == "x" else (0, -offset)
@@ -900,7 +924,8 @@ class _CategoricalPlotterNew(_RelationalPlotter):
                 ax.plot(invx(x1), invy(y1), **line_kws)
                 dot_kws = {
                     "color": "w",
-                    "s": stroke ** 2,
+                    "s": (stroke * 2) ** 2,
+                    "edgecolor": line_kws["color"],
                     "zorder": line_kws.get("zorder", 2) + 1,
                 }
                 ax.scatter(invx(x2), invy(y2), transform=trans, **dot_kws)
