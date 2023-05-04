@@ -2716,7 +2716,7 @@ def violinplot(
     linewidth=None, color=None, palette=None, saturation=.75,
     bw_method="scott",  # TODO new (replaces bw)
     bw_adjust=1,  # TODO new
-    density_norm="area", common_norm=False,  # TODO new
+    density_norm="area", common_norm=False,  # TODO new (replace scale / scale_hue)
     linecolor=None,  # TODO new
     gap=0,  # TODO new
     fill=True,  # TODO new
@@ -2760,7 +2760,8 @@ def violinplot(
     palette, hue_order = p._hue_backcompat(color, palette, hue_order)
 
     # TODO input validation on density_norm / inner?
-    _check_argument("inner", ["box", "quart", "stick", "point", None], inner)
+    inner_options = ["box", "quart", "stick", "point", None]
+    _check_argument("inner", inner_options, inner, prefix=True)
     _check_argument("density_norm", ["area", "count", "width"], density_norm)
 
     saturation = saturation if fill else 1
