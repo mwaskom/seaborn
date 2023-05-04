@@ -258,6 +258,26 @@ class _CategoricalPlotterNew(_RelationalPlotter):
 
         return err_kws, capsize
 
+    def _scale_backcompat(self, scale, scale_hue, density_norm, common_norm):
+        """Provide two cycles of backcompat for scale kwargs"""
+        if scale is not deprecated:
+            density_norm = scale
+            msg = (
+                "\n\nThe `scale` parameter has been renamed and will be removed "
+                f"in v0.15.0. Pass `density_norm={scale!r} for the same effect."
+            )
+            warnings.warn(msg, FutureWarning, stacklevel=3)
+
+        if scale_hue is not deprecated:
+            common_norm = scale_hue
+            msg = (
+                "\n\nThe `scale_hue` parameter has been replaced and will be removed "
+                f"in v0.15.0. Pass `common_norm={not scale_hue} for the same effect."
+            )
+            warnings.warn(msg, FutureWarning, stacklevel=3)
+
+        return density_norm, common_norm
+
     def _get_gray(self, colors):
         """Get a grayscale value that looks good with color."""
         if not len(colors):
@@ -685,12 +705,14 @@ class _CategoricalPlotterNew(_RelationalPlotter):
         gap,
         split,
         color,
+        fill,
         linecolor,
         linewidth,
         inner,
-        scale,
-        scale_hue,
+        density_norm,
+        common_norm,
         kde_kws,
+        inner_kws,
         plot_kws,
     ):
 
@@ -705,7 +727,10 @@ class _CategoricalPlotterNew(_RelationalPlotter):
 
         # TODO if not fill and linewidth is None:
         if linewidth is None:
-            linewidth = mpl.rcParams["patch.linewidth"]
+            if fill:
+                linewidth = 1.25 * mpl.rcParams["patch.linewidth"]
+            else:
+                linewidth = mpl.rcParams["lines.linewidth"]
 
         kde = KDE(**kde_kws)
         ax = self.ax
@@ -720,6 +745,9 @@ class _CategoricalPlotterNew(_RelationalPlotter):
             stat_data = kde._transform(sub_data, value_var, [])
 
             maincolor = self._hue_map(sub_vars["hue"]) if "hue" in sub_vars else color
+            if not fill:
+                linecolor = maincolor
+                maincolor = "none"
             default_kws = dict(
                 facecolor=maincolor,
                 edgecolor=linecolor,
@@ -741,7 +769,12 @@ class _CategoricalPlotterNew(_RelationalPlotter):
             return tuple((k, v) for k, v in sub_vars.items() if k != self.orient)
 
         norm_keys = [vars_to_key(violin["sub_vars"]) for violin in violin_data]
-        if scale_hue:
+        if common_norm:
+            common_max_density = np.nanmax([v["density"].max() for v in violin_data])
+            common_max_count = np.nanmax([len(v["observations"]) for v in violin_data])
+            max_density = {key: common_max_density for key in norm_keys}
+            max_count = {key: common_max_count for key in norm_keys}
+        else:
             max_density = {
                 key: np.nanmax([
                     v["density"].max() for v in violin_data
@@ -754,11 +787,6 @@ class _CategoricalPlotterNew(_RelationalPlotter):
                     if vars_to_key(v["sub_vars"]) == key
                 ]) for key in norm_keys
             }
-        else:
-            global_max_density = np.nanmax([v["density"].max() for v in violin_data])
-            global_max_count = np.nanmax([len(v["observations"]) for v in violin_data])
-            max_density = {key: global_max_density for key in norm_keys}
-            max_count = {key: global_max_count for key in norm_keys}
 
         real_width = width * self._native_width
 
@@ -784,12 +812,12 @@ class _CategoricalPlotterNew(_RelationalPlotter):
             peak_density = violin["density"].max()
             if np.isnan(peak_density):
                 span = 1
-            elif scale == "area":
+            elif density_norm == "area":
                 span = data["density"] / max_density[norm_key]
-            elif scale == "count":
+            elif density_norm == "count":
                 count = len(violin["observations"])
                 span = data["density"] / peak_density * (count / max_count[norm_key])
-            elif scale == "width":
+            elif density_norm == "width":
                 span = data["density"] / peak_density
             span = span * hw * (2 if split else 1)
 
@@ -808,6 +836,8 @@ class _CategoricalPlotterNew(_RelationalPlotter):
             _, invy = utils._get_transform_functions(ax, "y")
             inv_pos = {"x": invx, "y": invy}[self.orient]
             inv_val = {"x": invx, "y": invy}[value_var]
+
+            linecolor = violin["kwargs"]["edgecolor"]
 
             # Handle singular datasets (one or more observations with no variance
             if np.isnan(peak_density):
@@ -854,6 +884,7 @@ class _CategoricalPlotterNew(_RelationalPlotter):
                     "edgecolor": linecolor,
                     "s": (linewidth * 2) ** 2,
                     "zorder": violin["kwargs"].get("zorder", 2) + 1,
+                    **inner_kws,
                 }
                 ax.scatter(invx(x), invy(y), **kws)
 
@@ -867,7 +898,8 @@ class _CategoricalPlotterNew(_RelationalPlotter):
                     segments = segments[:, :, ::-1]
                 kws = {
                     "color": linecolor,
-                    "linewidth": linewidth * .5,
+                    "linewidth": linewidth / 2,
+                    **inner_kws,
                 }
                 lines = mpl.collections.LineCollection(segments, **kws)
                 ax.add_collection(lines, autolim=False)
@@ -887,6 +919,7 @@ class _CategoricalPlotterNew(_RelationalPlotter):
                         "color": linecolor,
                         "linewidth": linewidth,
                         "dashes": dashes[i],
+                        **inner_kws,
                     }
                     ax.plot(*segment, **kws)
 
@@ -917,18 +950,19 @@ class _CategoricalPlotterNew(_RelationalPlotter):
                 line_kws = {
                     "color": linecolor,
                     "linewidth": stroke,
-                    "transform": trans
+                    "transform": trans,
+                    **inner_kws,
                 }
                 ax.plot(invx(x0), invy(y0), **line_kws)
                 line_kws["linewidth"] *= 3
                 ax.plot(invx(x1), invy(y1), **line_kws)
                 dot_kws = {
                     "color": "w",
-                    "s": (stroke * 2) ** 2,
-                    "edgecolor": line_kws["color"],
-                    "zorder": line_kws.get("zorder", 2) + 1,
+                    "marker": "o",
+                    "markersize": line_kws["linewidth"] / 3,
+                    "transform": trans,
                 }
-                ax.scatter(invx(x2), invy(y2), transform=trans, **dot_kws)
+                ax.plot(invx(x2), invy(y2), **dot_kws)
 
         self._configure_legend(ax, ax.fill_between)  # TODO, patch_kws)
 
@@ -2682,14 +2716,17 @@ def violinplot(
     linewidth=None, color=None, palette=None, saturation=.75,
     bw_method="scott",  # TODO new (replaces bw)
     bw_adjust=1,  # TODO new
+    density_norm="area", common_norm=False,  # TODO new
     linecolor=None,  # TODO new
     gap=0,  # TODO new
+    fill=True,  # TODO new
     hue_norm=None,  # TODO new
     formatter=None,  # TODO new
     native_scale=False,  # TODO new
     legend="auto",  # TODO new
+    inner_kws=None,  # TODO new
     # DEPRECATED kwargs
-    scale="area", scale_hue=True, bw=deprecated,
+    scale=deprecated, scale_hue=deprecated, bw=deprecated,
     # ---
     ax=None, **kwargs,
 ):
@@ -2722,20 +2759,22 @@ def violinplot(
     hue_order = p._palette_without_hue_backcompat(palette, hue_order)
     palette, hue_order = p._hue_backcompat(color, palette, hue_order)
 
-    # TODO value check on inner
+    # TODO input validation on density_norm / inner?
+    _check_argument("inner", ["box", "quart", "stick", "point", None], inner)
+    _check_argument("density_norm", ["area", "count", "width"], density_norm)
 
-    # TODO saturation fill
+    saturation = saturation if fill else 1
     p.map_hue(palette=palette, order=hue_order, norm=hue_norm, saturation=saturation)
     color = _default_color(
         ax.fill_between, hue, color,
         {k: v for k, v in kwargs.items() if k in ["c", "color", "fc", "facecolor"]},
         saturation=saturation,
     )
-    # TODO? if fill and color is not None and saturation < 1:
-    if color is not None and saturation < 1:
-        color = desaturate(color, saturation)
 
-    # TODO handle KDE keyword migration / deprecation
+    density_norm, common_norm = p._scale_backcompat(
+        scale, scale_hue, density_norm, common_norm,
+    )
+
     if bw is not deprecated:
         msg = dedent(f"""\n
         The `bw` parameter is deprecated in favor of `bw_method` and `bw_adjust`.
@@ -2746,6 +2785,7 @@ def violinplot(
         bw_method = bw
 
     kde_kws = dict(cut=cut, gridsize=gridsize, bw_method=bw_method, bw_adjust=bw_adjust)
+    inner_kws = {} if inner_kws is None else inner_kws
 
     p.plot_violins(
         width=width,
@@ -2753,12 +2793,14 @@ def violinplot(
         gap=gap,
         split=split,
         color=color,
+        fill=fill,
         linecolor=linecolor,
         linewidth=linewidth,
         inner=inner,
-        scale=scale,  # TODO rename ... width_norm? density_norm?
-        scale_hue=scale_hue,  # TODO rename to common_norm?
+        density_norm=density_norm,
+        common_norm=common_norm,
         kde_kws=kde_kws,
+        inner_kws=inner_kws,
         plot_kws=kwargs,
     )
 

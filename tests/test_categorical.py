@@ -1128,7 +1128,7 @@ class TestViolinPlotter(CategoricalFixture):
         x = np.repeat([0, 1], 5)
         y = rng.normal(0, 1, 10)
         ax = cat.violinplot(x=x, y=y, hue=x, split=True, inner="box")
-        assert len(ax.lines) == 4
+        assert len(ax.lines) == 6
 
 
 # ====================================================================================
