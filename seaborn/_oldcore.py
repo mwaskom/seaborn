@@ -1497,7 +1497,7 @@ def variable_type(vector, boolean_type="numeric"):
     """
 
     # If a categorical dtype is set, infer categorical
-    if pd.api.types.is_categorical_dtype(vector):
+    if isinstance(getattr(vector, 'dtype', None), pd.CategoricalDtype):
         return VariableType("categorical")
 
     # Special-case all-na data, which is always "numeric"
