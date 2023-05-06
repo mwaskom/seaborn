@@ -264,14 +264,20 @@ class _RegressionPlotter(_LinearPlotter):
 
     def fit_statsmodels(self, grid, model, **kwargs):
         """More general regression function using statsmodels objects."""
-        import statsmodels.genmod.generalized_linear_model as glm
+        import statsmodels.tools.sm_exceptions as sme
         X, y = np.c_[np.ones(len(self.x)), self.x], self.y
         grid = np.c_[np.ones(len(grid)), grid]
 
         def reg_func(_x, _y):
+            err_classes = (sme.PerfectSeparationError,)
             try:
-                yhat = model(_y, _x, **kwargs).fit().predict(grid)
-            except glm.PerfectSeparationError:
+                with warnings.catch_warnings():
+                    if hasattr(sme, "PerfectSeparationWarning"):
+                        # statsmodels>=0.14.0
+                        warnings.simplefilter("error", sme.PerfectSeparationWarning)
+                        err_classes = (*err_classes, sme.PerfectSeparationWarning)
+                    yhat = model(_y, _x, **kwargs).fit().predict(grid)
+            except err_classes:
                 yhat = np.empty(len(grid))
                 yhat.fill(np.nan)
             return yhat
