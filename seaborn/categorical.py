@@ -719,13 +719,16 @@ class _CategoricalPlotterNew(_RelationalPlotter):
         iter_vars = [self.orient, "hue"]
         value_var = {"x": "y", "y": "x"}[self.orient]
 
+        inner_options = ["box", "quart", "stick", "point", None]
+        _check_argument("inner", inner_options, inner, prefix=True)
+        _check_argument("density_norm", ["area", "count", "width"], density_norm)
+
         if linecolor is None:
             if "hue" in self.variables:
                 linecolor = self._get_gray(list(self._hue_map.lookup_table.values()))
             else:
                 linecolor = self._get_gray([color])
 
-        # TODO if not fill and linewidth is None:
         if linewidth is None:
             if fill:
                 linewidth = 1.25 * mpl.rcParams["patch.linewidth"]
@@ -2763,11 +2766,6 @@ def violinplot(
     hue_order = p._palette_without_hue_backcompat(palette, hue_order)
     palette, hue_order = p._hue_backcompat(color, palette, hue_order)
 
-    # TODO input validation on density_norm / inner?
-    inner_options = ["box", "quart", "stick", "point", None]
-    _check_argument("inner", inner_options, inner, prefix=True)
-    _check_argument("density_norm", ["area", "count", "width"], density_norm)
-
     saturation = saturation if fill else 1
     p.map_hue(palette=palette, order=hue_order, norm=hue_norm, saturation=saturation)
     color = _default_color(
@@ -3680,8 +3678,8 @@ def catplot(
         warnings.warn(msg, UserWarning)
         kwargs.pop("ax")
 
-    refactored_kinds = ["strip", "swarm", "point", "bar", "count", "box"]
-    desaturated_kinds = ["bar", "count", "box"]
+    refactored_kinds = ["strip", "swarm", "point", "bar", "count", "box", "violin"]
+    desaturated_kinds = ["bar", "count", "box", "violin"]
     undodged_kinds = ["strip", "swarm", "point"]
 
     if kind in refactored_kinds:
@@ -3837,6 +3835,59 @@ def catplot(
                 plot_kws=plot_kws,
             )
 
+        elif kind == "violin":
+
+            plot_kws = kwargs.copy()
+            gap = plot_kws.pop("gap", 0)
+            fill = plot_kws.pop("fill", True)
+            split = plot_kws.pop("split", False)
+            inner = plot_kws.pop("inner", "box")
+            density_norm = plot_kws.pop("density_norm", "area")
+            common_norm = plot_kws.pop("common_norm", False)
+
+            scale = plot_kws.pop("scale", deprecated)
+            scale_hue = plot_kws.pop("scale_hue", deprecated)
+            density_norm, common_norm = p._scale_backcompat(
+                scale, scale_hue, density_norm, common_norm,
+            )
+
+            kde_kws = dict(
+                cut=plot_kws.pop("cut", 2),
+                gridsize=plot_kws.pop("gridsize", 100),
+                bw_method=plot_kws.pop("bw_method", "scott"),
+                bw_adjust=plot_kws.pop("bw_adjust", 1),
+            )
+            bw = plot_kws.pop("bw", deprecated)
+            msg = dedent(f"""\n
+            The `bw` parameter is deprecated in favor of `bw_method` and `bw_adjust`.
+            Setting `bw_method={bw}`, but please see the docs for the new parameters
+            and update your code. This will become an error in seaborn v0.15.0.
+            """)
+            if bw is not deprecated:
+                warnings.warn(msg, UserWarning, stacklevel=2)
+                kde_kws["bw_method"] = bw
+
+            inner_kws = plot_kws.pop("inner_kws", {}).copy()
+            linecolor = plot_kws.pop("linecolor", None)
+            linewidth = plot_kws.pop("linewidth", None)
+
+            p.plot_violins(
+                width=width,
+                dodge=dodge,
+                gap=gap,
+                split=split,
+                color=color,
+                fill=fill,
+                linecolor=linecolor,
+                linewidth=linewidth,
+                inner=inner,
+                density_norm=density_norm,
+                common_norm=common_norm,
+                kde_kws=kde_kws,
+                inner_kws=inner_kws,
+                plot_kws=plot_kws,
+            )
+
         elif kind == "point":
 
             aggregator = EstimateAggregator(
@@ -3845,11 +3896,11 @@ def catplot(
 
             markers = kwargs.pop("markers", default)
             linestyles = kwargs.pop("linestyles", default)
-            # Uncomment when removing deprecation backcompat
-            # capsize = kwargs.pop("capsize", 0)
-            # err_kws = _normalize_kwargs(kwargs.pop("err_kws", {}), mpl.lines.Line2D)
 
             # Deprecations to remove in v0.15.0.
+            # TODO Uncomment when removing deprecation backcompat
+            # capsize = kwargs.pop("capsize", 0)
+            # err_kws = _normalize_kwargs(kwargs.pop("err_kws", {}), mpl.lines.Line2D)
             p._point_kwargs_backcompat(
                 kwargs.pop("scale", deprecated),
                 kwargs.pop("join", deprecated),
