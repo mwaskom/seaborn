@@ -732,6 +732,11 @@ class _CategoricalPlotterNew(_RelationalPlotter):
             else:
                 linewidth = mpl.rcParams["lines.linewidth"]
 
+        if inner is not None and inner.startswith("box"):
+            box_width = inner_kws.pop("box_width", linewidth * 4.5)
+            whis_width = inner_kws.pop("whis_width", box_width / 3)
+            marker = inner_kws.pop("marker", "_" if self.orient == "x" else "|")
+
         kde = KDE(**kde_kws)
         ax = self.ax
         violin_data = []
@@ -868,14 +873,11 @@ class _CategoricalPlotterNew(_RelationalPlotter):
                 pos_dict["width"] *= (1 - gap)
 
             # --- Plot the inner components
-
-            # TODO inner_kws
-
             if inner is None:
                 continue
 
             elif inner.startswith("point"):
-                pos = [pos_dict[self.orient]] * len(obs)
+                pos = np.array([pos_dict[self.orient]] * len(obs))
                 if split:
                     pos += (-1 if right_side else 1) * pos_dict["width"] / 2
                 x, y = (pos, obs) if self.orient == "x" else (obs, pos)
@@ -913,7 +915,7 @@ class _CategoricalPlotterNew(_RelationalPlotter):
                 segments = np.stack([pos_pts, val_pts]).transpose(2, 0, 1)
                 if self.orient == "y":
                     segments = segments[:, ::-1, :]
-                dashes = [(2, .75), (3, 1), (2, .75)]
+                dashes = [(1.25, .75), (2.5, 1), (1.25, .75)]
                 for i, segment in enumerate(segments):
                     kws = {
                         "color": linecolor,
@@ -925,7 +927,7 @@ class _CategoricalPlotterNew(_RelationalPlotter):
 
             elif inner.startswith("box"):
                 stats = mpl.cbook.boxplot_stats(obs)[0]
-                pos = pos_dict[self.orient]
+                pos = np.array(pos_dict[self.orient])
                 if split:
                     pos += (-1 if right_side else 1) * pos_dict["width"] / 2
                 pos = [pos, pos], [pos, pos], [pos]
@@ -938,9 +940,9 @@ class _CategoricalPlotterNew(_RelationalPlotter):
                     (x0, x1, x2), (y0, y1, y2) = pos, val
                 else:
                     (x0, x1, x2), (y0, y1, y2) = val, pos
-                stroke = linewidth * 1.5
+
                 if split:
-                    offset = (1 if right_side else -1) * stroke * 3 / 72 / 2
+                    offset = (1 if right_side else -1) * box_width / 72 / 2
                     dx, dy = (offset, 0) if self.orient == "x" else (0, -offset)
                     trans = ax.transData + mpl.transforms.ScaledTranslation(
                         dx, dy, ax.figure.dpi_scale_trans,
@@ -949,18 +951,20 @@ class _CategoricalPlotterNew(_RelationalPlotter):
                     trans = ax.transData
                 line_kws = {
                     "color": linecolor,
-                    "linewidth": stroke,
                     "transform": trans,
                     **inner_kws,
+                    "linewidth": whis_width,
                 }
                 ax.plot(invx(x0), invy(y0), **line_kws)
-                line_kws["linewidth"] *= 3
+                line_kws["linewidth"] = box_width
                 ax.plot(invx(x1), invy(y1), **line_kws)
                 dot_kws = {
-                    "color": "w",
-                    "marker": "o",
-                    "markersize": line_kws["linewidth"] / 3,
+                    "marker": marker,
+                    "markersize": box_width / 1.2,
+                    "markeredgewidth": box_width / 5,
                     "transform": trans,
+                    **inner_kws,
+                    "color": "w",
                 }
                 ax.plot(invx(x2), invy(y2), **dot_kws)
 
@@ -2786,7 +2790,7 @@ def violinplot(
         bw_method = bw
 
     kde_kws = dict(cut=cut, gridsize=gridsize, bw_method=bw_method, bw_adjust=bw_adjust)
-    inner_kws = {} if inner_kws is None else inner_kws
+    inner_kws = {} if inner_kws is None else inner_kws.copy()
 
     p.plot_violins(
         width=width,
