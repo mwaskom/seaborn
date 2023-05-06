@@ -961,7 +961,9 @@ class _CategoricalPlotterNew(_RelationalPlotter):
                     "markeredgewidth": box_width / 5,
                     "transform": trans,
                     **inner_kws,
-                    "color": "w",
+                    "markeredgecolor": "w",
+                    "markerfacecolor": "w",
+                    "color": linecolor,  # simplify tests
                 }
                 ax.plot(invx(x2), invy(y2), **dot_kws)
 

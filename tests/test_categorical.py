@@ -1613,6 +1613,59 @@ class TestViolinPlot(SharedAxesLevelTests):
             widths.append(np.ptp(coords))
         assert np.std(widths) == approx(0)
 
+    def test_color(self, long_df):
+
+        color = "#123456"
+        ax = violinplot(long_df, x="a", y="y", color=color, saturation=1)
+        for poly in ax.collections:
+            assert same_color(poly.get_facecolor(), color)
+
+    def test_hue_colors(self, long_df):
+
+        ax = violinplot(long_df, x="a", y="y", hue="b", saturation=1)
+        n_levels = long_df["b"].nunique()
+        for i, poly in enumerate(ax.collections):
+            assert same_color(poly.get_facecolor(), f"C{i % n_levels}")
+
+    @pytest.mark.parametrize("inner", ["box", "quart", "stick", "point"])
+    def test_linecolor(self, long_df, inner):
+
+        color = "#669913"
+        ax = violinplot(long_df, x="a", y="y", linecolor=color, inner=inner)
+        for poly in ax.findobj(mpl.collections.PolyCollection):
+            assert same_color(poly.get_edgecolor(), color)
+        for lines in ax.findobj(mpl.collections.LineCollection):
+            assert same_color(lines.get_color(), color)
+        for line in ax.lines:
+            assert same_color(line.get_color(), color)
+
+    def test_linewidth(self, long_df):
+
+        width = 5
+        ax = violinplot(long_df, x="a", y="y", linewidth=width)
+        poly = ax.collections[0]
+        assert poly.get_linewidth() == width
+
+    def test_saturation(self, long_df):
+
+        color = "#8912b0"
+        ax = violinplot(long_df["x"], color=color, saturation=.5)
+        poly = ax.collections[0]
+        assert np.allclose(poly.get_facecolors()[0, :3], desaturate(color, 0.5))
+
+    @pytest.mark.parametrize("inner", ["box", "quart", "stick", "point"])
+    def test_fill(self, long_df, inner):
+
+        color = "#459900"
+        ax = violinplot(x=long_df["z"], fill=False, color=color)
+        for poly in ax.findobj(mpl.collections.PolyCollection):
+            assert poly.get_facecolor().size == 0
+            assert same_color(poly.get_edgecolor(), color)
+        for lines in ax.findobj(mpl.collections.LineCollection):
+            assert same_color(lines.get_color(), color)
+        for line in ax.lines:
+            assert same_color(line.get_color(), color)
+
 
 class TestBarPlot(SharedAggTests):
 
