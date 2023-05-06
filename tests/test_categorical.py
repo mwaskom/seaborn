@@ -33,6 +33,7 @@ from seaborn.categorical import (
     pointplot,
     stripplot,
     swarmplot,
+    violinplot,
 )
 from seaborn.palettes import color_palette
 from seaborn.utils import _draw_figure
@@ -47,6 +48,7 @@ PLOT_FUNCS = [
     pointplot,
     stripplot,
     swarmplot,
+    violinplot,
 ]
 
 
@@ -527,6 +529,11 @@ class TestCategoricalPlotter(CategoricalFixture):
 
 
 class SharedAxesLevelTests:
+
+    def orient_indices(self, orient):
+        pos_idx = ["x", "y"].index(orient)
+        val_idx = ["y", "x"].index(orient)
+        return pos_idx, val_idx
 
     @pytest.fixture
     def common_kws(self):
@@ -1197,12 +1204,6 @@ class TestBoxPlot(SharedAxesLevelTests):
         assert len(unique_colors) == 1
         return to_rgba(unique_colors.squeeze())
 
-    def orient_indices(self, orient):
-
-        pos_idx = ["x", "y"].index(orient)
-        val_idx = ["y", "x"].index(orient)
-        return pos_idx, val_idx
-
     def get_box_verts(self, box):
 
         path = box.get_path()
@@ -1210,7 +1211,7 @@ class TestBoxPlot(SharedAxesLevelTests):
         visible = np.isin(path.codes, visible_codes)
         return path.vertices[visible].T
 
-    def check_box(self, bxp, data, orient, pos=None, width=0.8):
+    def check_box(self, bxp, data, orient, pos, width=0.8):
 
         pos_idx, val_idx = self.orient_indices(orient)
 
@@ -1226,7 +1227,7 @@ class TestBoxPlot(SharedAxesLevelTests):
         assert tuple(med[val_idx]) == (p50, p50)
         assert np.allclose(med[pos_idx], (pos - width / 2, pos + width / 2))
 
-    def check_whiskers(self, bxp, data, orient, pos=None, capsize=0.4, whis=1.5):
+    def check_whiskers(self, bxp, data, orient, pos, capsize=0.4, whis=1.5):
 
         pos_idx, val_idx = self.orient_indices(orient)
 
@@ -1495,6 +1496,122 @@ class TestBoxPlot(SharedAxesLevelTests):
         g = catplot(**kwargs, kind="box")
 
         assert_plots_equal(ax, g.ax)
+
+
+class TestViolinPlot(SharedAxesLevelTests):
+
+    func = staticmethod(violinplot)
+
+    @pytest.fixture
+    def common_kws(self):
+        return {"saturation": 1}
+
+    def get_last_color(self, ax):
+
+        color = ax.collections[-1].get_facecolor()
+        return to_rgba(color)
+
+    def check_violin(self, poly, data, orient, pos, width=0.8):
+
+        pos_idx, val_idx = self.orient_indices(orient)
+        verts = poly.get_paths()[0].vertices.T
+
+        assert verts[pos_idx].min() >= (pos - width / 2)
+        assert verts[pos_idx].max() <= (pos + width / 2)
+        # Assumes violin was computed with cut=0
+        assert verts[val_idx].min() == approx(data.min())
+        assert verts[val_idx].max() == approx(data.max())
+
+    @pytest.mark.parametrize("orient,col", [("x", "y"), ("y", "z")])
+    def test_single_var(self, long_df, orient, col):
+
+        var = {"x": "y", "y": "x"}[orient]
+        ax = violinplot(long_df, **{var: col}, cut=0)
+        poly = ax.collections[0]
+        self.check_violin(poly, long_df[col], orient, 0)
+
+    @pytest.mark.parametrize("orient,col", [(None, "x"), ("x", "y"), ("y", "z")])
+    def test_vector_data(self, long_df, orient, col):
+
+        orient = "x" if orient is None else orient
+        ax = violinplot(long_df[col], cut=0, orient=orient)
+        poly = ax.collections[0]
+        self.check_violin(poly, long_df[col], orient, 0)
+
+    @pytest.mark.parametrize("orient", ["h", "v"])
+    def test_wide_data(self, wide_df, orient):
+
+        orient = {"h": "y", "v": "x"}[orient]
+        ax = violinplot(wide_df, cut=0, orient=orient)
+        for i, poly in enumerate(ax.collections):
+            col = wide_df.columns[i]
+            self.check_violin(poly, wide_df[col], orient, i)
+
+    @pytest.mark.parametrize("orient", ["x", "y"])
+    def test_grouped(self, long_df, orient):
+
+        value = {"x": "y", "y": "x"}[orient]
+        ax = violinplot(long_df, **{orient: "a", value: "z"}, cut=0)
+        levels = categorical_order(long_df["a"])
+        for i, level in enumerate(levels):
+            data = long_df.loc[long_df["a"] == level, "z"]
+            self.check_violin(ax.collections[i], data, orient, i)
+
+    @pytest.mark.parametrize("orient", ["x", "y"])
+    def test_hue_grouped(self, long_df, orient):
+
+        value = {"x": "y", "y": "x"}[orient]
+        ax = violinplot(long_df, hue="c", **{orient: "a", value: "z"}, cut=0)
+        polys = iter(ax.collections)
+        for i, level in enumerate(categorical_order(long_df["a"])):
+            for j, hue_level in enumerate(categorical_order(long_df["c"])):
+                rows = (long_df["a"] == level) & (long_df["c"] == hue_level)
+                data = long_df.loc[rows, "z"]
+                pos = i + [-.2, +.2][j]
+                width = 0.4
+                self.check_violin(next(polys), data, orient, pos, width)
+
+    def test_hue_not_dodged(self, long_df):
+
+        levels = categorical_order(long_df["b"])
+        hue = long_df["b"].isin(levels[:2])
+        ax = violinplot(long_df, x="b", y="z", hue=hue, cut=0)
+        for i, level in enumerate(levels):
+            poly = ax.collections[i]
+            data = long_df.loc[long_df["b"] == level, "z"]
+            self.check_violin(poly, data, "x", i)
+
+    def test_dodge_native_scale(self, long_df):
+
+        centers = categorical_order(long_df["s"])
+        hue_levels = categorical_order(long_df["c"])
+        spacing = min(np.diff(centers))
+        width = 0.8 * spacing / len(hue_levels)
+        offset = width / len(hue_levels)
+        ax = violinplot(long_df, x="s", y="z", hue="c", native_scale=True, cut=0)
+        violins = iter(ax.collections)
+        for center in centers:
+            for i, hue_level in enumerate(hue_levels):
+                rows = (long_df["s"] == center) & (long_df["c"] == hue_level)
+                data = long_df.loc[rows, "z"]
+                pos = center + [-offset, +offset][i]
+                poly = next(violins)
+                self.check_violin(poly, data, "x", pos, width)
+
+    def test_dodge_native_scale_log(self, long_df):
+
+        pos = 10 ** long_df["s"]
+        ax = mpl.figure.Figure().subplots()
+        ax.set_xscale("log")
+        variables = dict(x=pos, y="z", hue="c")
+        violinplot(long_df, **variables, native_scale=True, density_norm="width", ax=ax)
+        widths = []
+        n_violins = long_df["s"].nunique() * long_df["c"].nunique()
+        for poly in ax.collections[:n_violins]:
+            verts = poly.get_paths()[0].vertices[:, 0]
+            coords = np.log10(verts)
+            widths.append(np.ptp(coords))
+        assert np.std(widths) == approx(0)
 
 
 class TestBarPlot(SharedAggTests):
