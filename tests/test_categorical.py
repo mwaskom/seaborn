@@ -1700,19 +1700,20 @@ class TestViolinPlot(SharedAxesLevelTests):
         quartiles = np.percentile(long_df["y"], [25, 50, 75])
 
         for q, line in zip(quartiles, ax.lines):
-            for pt in line.get_xydata():
+            pts = line.get_xydata()
+            for pt in pts:
                 assert pt[val_idx] == q
-            assert pt[0, pos_idx] == -pt[1, pos_idx]
+            assert pts[0, pos_idx] == -pts[1, pos_idx]
 
     @pytest.mark.parametrize("orient", ["x", "y"])
     def test_inner_stick(self, long_df, orient):
 
         pos_idx, val_idx = self.orient_indices(orient)
         ax = violinplot(long_df["y"], orient=orient, inner="stick")
-        for i, line in enumerate(ax.lines):
-            for pt in line.get_xydata():
+        for i, pts in enumerate(ax.collections[1].get_segments()):
+            for pt in pts:
                 assert pt[val_idx] == long_df["y"].iloc[i]
-            assert pt[0, pos_idx] == -pt[1, pos_idx]
+            assert pts[0, pos_idx] == -pts[1, pos_idx]
 
     @pytest.mark.parametrize("orient", ["x", "y"])
     def test_inner_points(self, long_df, orient):
