@@ -1657,7 +1657,7 @@ class TestViolinPlot(SharedAxesLevelTests):
     def test_fill(self, long_df, inner):
 
         color = "#459900"
-        ax = violinplot(x=long_df["z"], fill=False, color=color)
+        ax = violinplot(x=long_df["z"], fill=False, color=color, inner=inner)
         for poly in ax.findobj(mpl.collections.PolyCollection):
             assert poly.get_facecolor().size == 0
             assert same_color(poly.get_edgecolor(), color)
@@ -1665,6 +1665,53 @@ class TestViolinPlot(SharedAxesLevelTests):
             assert same_color(lines.get_color(), color)
         for line in ax.lines:
             assert same_color(line.get_color(), color)
+
+    @pytest.mark.parametrize("orient", ["x", "y"])
+    def test_inner_box(self, long_df, orient):
+
+        _, val_idx = self.orient_indices(orient)
+        ax = violinplot(long_df["y"], orient=orient)
+        stats = mpl.cbook.boxplot_stats(long_df["y"])[0]
+
+        whiskers = ax.lines[0].get_xydata()
+        assert whiskers[0, val_idx] == stats["whislo"]
+        assert whiskers[1, val_idx] == stats["whishi"]
+
+        box = ax.lines[1].get_xydata()
+        assert box[0, val_idx] == stats["q1"]
+        assert box[1, val_idx] == stats["q3"]
+
+        median = ax.lines[2].get_xydata()
+        assert median[0, val_idx] == stats["med"]
+
+    @pytest.mark.parametrize("orient", ["x", "y"])
+    def test_inner_quartiles(self, long_df, orient):
+
+        _, val_idx = self.orient_indices(orient)
+        ax = violinplot(long_df["y"], orient=orient, inner="quart")
+        quartiles = np.percentile(long_df["y"], [25, 50, 75])
+
+        for q, line in zip(quartiles, ax.lines):
+            for pt in line.get_xydata():
+                assert pt[val_idx] == q
+
+    @pytest.mark.parametrize("orient", ["x", "y"])
+    def test_inner_stick(self, long_df, orient):
+
+        _, val_idx = self.orient_indices(orient)
+        ax = violinplot(long_df["y"], orient=orient, inner="stick")
+        for i, line in enumerate(ax.lines):
+            for pt in line.get_xydata():
+                assert pt[val_idx] == long_df["y"].iloc[i]
+
+    @pytest.mark.parametrize("orient", ["x", "y"])
+    def test_inner_points(self, long_df, orient):
+
+        _, val_idx = self.orient_indices(orient)
+        ax = violinplot(long_df["y"], orient=orient, inner="points")
+        points = ax.collections[1]
+        for i, pt in enumerate(points.get_offsets()):
+            assert pt[val_idx] == long_df["y"].iloc[i]
 
 
 class TestBarPlot(SharedAggTests):
