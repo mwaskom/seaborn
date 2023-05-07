@@ -896,6 +896,8 @@ def _version_predates(lib: ModuleType, version: str) -> bool:
 def try_convert_to_pandas(data: object | None) -> pd.DataFrame:
     if data is None:
         return None
+    elif isinstance(data, pd.DataFrame):
+        return data
     elif hasattr(data, "__dataframe__"):
         if _version_predates(pd, "2.0.2"):
             raise RuntimeError(
