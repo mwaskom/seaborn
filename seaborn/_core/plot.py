@@ -97,13 +97,11 @@ def theme_context(params: dict[str, Any]) -> Generator:
         mpl.rcParams.update(params)
         for (code, color) in zip(color_codes, nice_colors):
             mpl.colors.colorConverter.colors[code] = color
-            mpl.colors.colorConverter.cache[code] = color
         yield
     finally:
         mpl.rcParams.update(orig_params)
         for (code, color) in zip(color_codes, orig_colors):
             mpl.colors.colorConverter.colors[code] = color
-            mpl.colors.colorConverter.cache[code] = color
 
 
 def build_plot_signature(cls):
