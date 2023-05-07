@@ -1845,7 +1845,7 @@ _categorical_docs = dict(
     .. note::
         By default, this function treats one of the variables as categorical
         and draws data at ordinal positions (0, 1, ... n) on the relevant axis.
-        As of v0.13, this can be disabled by setting `native_scale=True`.
+        As of version 0.13.0, this can be disabled by setting `native_scale=True`.
 
     See the :ref:`tutorial <categorical_tutorial>` for more information.\
     """),
@@ -1896,7 +1896,7 @@ _categorical_docs = dict(
         Level of the confidence interval to show, in [0, 100].
 
         .. deprecated:: v0.12.0
-            Use `errorbar=("ci", ...) `.
+            Use `errorbar=("ci", ...)`.\
     """),
     orient=dedent("""\
     orient : "v" | "h" | "x" | "y"
@@ -1957,7 +1957,7 @@ _categorical_docs = dict(
     """),
     gap=dedent("""\
     gap : float
-        Shrink on the orient axis by this factor after dodging to add a gap.
+        Shrink on the orient axis by this factor to add a gap between dodged elements.
 
         .. versionadded:: 0.13.0\
     """),
@@ -1977,7 +1977,7 @@ _categorical_docs = dict(
     """),
     linecolor=dedent("""\
     linecolor : color
-        Color to use for all line elements in the plot when `fill` is True.
+        Color to use for line elements, when `fill` is True.
 
         .. versionadded:: v0.13.0\
     """),
@@ -2175,7 +2175,6 @@ boxplot.__doc__ = dedent("""\
 
     Examples
     --------
-
     .. include:: ../docstrings/boxplot.rst
 
     """).format(**_categorical_docs)
@@ -2183,24 +2182,13 @@ boxplot.__doc__ = dedent("""\
 
 def violinplot(
     data=None, *, x=None, y=None, hue=None, order=None, hue_order=None,
-    cut=2, gridsize=100,
-    width=.8, inner="box", split=False, dodge="auto", orient=None,
-    linewidth=None, color=None, palette=None, saturation=.75,
-    bw_method="scott",  # TODO new (replaces bw)
-    bw_adjust=1,  # TODO new
-    density_norm="area", common_norm=False,  # TODO new (replace scale / scale_hue)
-    linecolor=None,  # TODO new
-    gap=0,  # TODO new
-    fill=True,  # TODO new
-    hue_norm=None,  # TODO new
-    formatter=None,  # TODO new
-    native_scale=False,  # TODO new
-    legend="auto",  # TODO new
-    inner_kws=None,  # TODO new
-    # DEPRECATED kwargs
+    orient=None, color=None, palette=None, saturation=.75, fill=True,
+    inner="box", split=False, width=.8, dodge="auto", gap=0,
+    linewidth=None, linecolor=None, cut=2, gridsize=100,
+    bw_method="scott", bw_adjust=1, density_norm="area", common_norm=False,
+    hue_norm=None, formatter=None, native_scale=False, legend="auto",
     scale=deprecated, scale_hue=deprecated, bw=deprecated,
-    # ---
-    ax=None, **kwargs,
+    inner_kws=None, ax=None, **kwargs,
 ):
 
     p = _CategoricalPlotterNew(
@@ -2279,67 +2267,96 @@ def violinplot(
 
 
 violinplot.__doc__ = dedent("""\
-    Draw a combination of boxplot and kernel density estimate.
+    Draw a patch representing a KDE and add observations or box plot statistics.
 
-    A violin plot plays a similar role as a box and whisker plot. It shows the
-    distribution of quantitative data across several levels of one (or more)
-    categorical variables such that those distributions can be compared. Unlike
-    a box plot, in which all of the plot components correspond to actual
-    datapoints, the violin plot features a kernel density estimation of the
-    underlying distribution.
+    A violin plot plays a similar role as a box-and-whisker plot. It shows the
+    distribution of data points after grouping by one (or more) variables.
+    Unlike a box plot, each violin is drawn using a kernel density estimate
+    of the underlying distribution.
 
-    This can be an effective and attractive way to show multiple distributions
-    of data at once, but keep in mind that the estimation procedure is
-    influenced by the sample size, and violins for relatively small samples
-    might look misleadingly smooth.
-
-    {categorical_narrative}
+    {new_categorical_narrative}
 
     Parameters
     ----------
     {categorical_data}
     {input_params}
     {order_vars}
-    bw : {{'scott', 'silverman', float}}
-        Either the name of a reference rule or the scale factor to use when
-        computing the kernel bandwidth. The actual kernel size will be
-        determined by multiplying the scale factor by the standard deviation of
-        the data within each bin.
-    cut : float
-        Distance, in units of bandwidth size, to extend the density past the
-        extreme datapoints. Set to 0 to limit the violin range within the range
-        of the observed data (i.e., to have the same effect as ``trim=True`` in
-        ``ggplot``.
-    scale : {{"area", "count", "width"}}
-        The method used to scale the width of each violin. If ``area``, each
-        violin will have the same area. If ``count``, the width of the violins
-        will be scaled by the number of observations in that bin. If ``width``,
-        each violin will have the same width.
-    scale_hue : bool
-        When nesting violins using a ``hue`` variable, this parameter
-        determines whether the scaling is computed within each level of the
-        major grouping variable (``scale_hue=True``) or across all the violins
-        on the plot (``scale_hue=False``).
-    gridsize : int
-        Number of points in the discrete grid used to compute the kernel
-        density estimate.
-    {width}
-    inner : {{"box", "quartile", "point", "stick", None}}
-        Representation of the datapoints in the violin interior. If ``box``,
-        draw a miniature boxplot. If ``quartiles``, draw the quartiles of the
-        distribution.  If ``point`` or ``stick``, show each underlying
-        datapoint. Using ``None`` will draw unadorned violins.
-    split : bool
-        When using hue nesting with a variable that takes two levels, setting
-        ``split`` to True will draw half of a violin for each level. This can
-        make it easier to directly compare the distributions.
-    {dodge}
     {orient}
-    {linewidth}
     {color}
     {palette}
     {saturation}
+    {fill}
+    inner : {{"box", "quart", "point", "stick", None}}
+        Representation of the data in the violin interior. One of the following:
+
+        - `box`: draw a miniature box-and-whisker plot
+        - `quart`: show the quartiles of the data
+        - `point` or `stick`: show each observation
+    split : bool
+        Show an un-mirrored distribution, alternating sides when using `hue`.
+
+        .. versionchanged:: v0.13.0
+            Previously, this option required a `hue` variable with exactly two levels.
+    {width}
+    {dodge}
+    {gap}
+    {linewidth}
+    {linecolor}
+    cut : float
+        Distance, in units of bandwidth, to extend the density past extreme
+        datapoints. Set to 0 to limit the violin within the data range.
+    gridsize : int
+        Number of points in the discrete grid used to evaluate the KDE.
+    bw_method : {{"scott", "silverman", float}}
+        Either the name of a reference rule or the scale factor to use when
+        computing the kernel bandwidth. The actual kernel size will be
+        determined by multiplying the scale factor by the standard deviation of
+        the data within each group.
+
+        .. versionadded:: v0.13.0
+    bw_adjust: float
+        Factor that scales the bandwidth to use more or less smoothing.
+
+        .. versionadded:: v0.13.0
+    density_norm : {{"area", "count", "width"}}
+        Method that normalizes each density to determine the violin's width.
+        If `area`, each violin will have the same area. If `count`, the width
+        will be proportional to the number of observations. If `width`, each
+        violin will have the same width.
+
+        .. versionadded:: v0.13.0
+    common_norm : bool
+        When `True`, normalize the density across all violins.
+
+        .. versionadded:: v0.13.0
+    {hue_norm}
+    {formatter}
+    {native_scale}
+    {legend}
+    scale : {{"area", "count", "width"}}
+        .. deprecated:: v0.13.0
+            See `density_norm`.
+    scale_hue : bool
+        .. deprecated:: v0.13.0
+            See `common_norm`.
+    bw : {{'scott', 'silverman', float}}
+        .. deprecated:: v0.13.0
+            See `bw_method` and `bw_adjust`.
+    inner_kws : dict of key, value mappings
+        Keyword arguments for the "inner" plot, passed to one of:
+
+        - :class:`matplotlib.collections.LineCollection` (with `inner="stick"`)
+        - :meth:`matplotlib.axes.Axes.scatter` (with `inner="point"`)
+        - :meth:`matplotlib.axes.Axes.plot` (with `inner="quart"` or `kind="box"`)
+
+        Additionally, with `inner="box"`, the keywords `box_width`, `whis_width`,
+        and `marker` receive special handling for the components of the "box" plot.
+
+        .. versionadded:: v0.13.0
     {ax_in}
+    kwargs : key, value mappings
+        Keyword arguments for the violin patches, passsed through to
+        :meth:`matplotlib.axes.Axes.fill_between`.
 
     Returns
     -------
@@ -2354,7 +2371,6 @@ violinplot.__doc__ = dedent("""\
 
     Examples
     --------
-
     .. include:: ../docstrings/violinplot.rst
 
     """).format(**_categorical_docs)
@@ -2840,7 +2856,6 @@ barplot.__doc__ = dedent("""\
     Examples
     --------
     .. include:: ../docstrings/barplot.rst
-
 
     """).format(**_categorical_docs)
 
