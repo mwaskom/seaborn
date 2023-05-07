@@ -258,7 +258,7 @@ class _CategoricalPlotterNew(_RelationalPlotter):
             density_norm = scale
             msg = (
                 "\n\nThe `scale` parameter has been renamed and will be removed "
-                f"in v0.15.0. Pass `density_norm={scale!r} for the same effect."
+                f"in v0.15.0. Pass `density_norm={scale!r}` for the same effect."
             )
             warnings.warn(msg, FutureWarning, stacklevel=3)
 
@@ -266,7 +266,7 @@ class _CategoricalPlotterNew(_RelationalPlotter):
             common_norm = scale_hue
             msg = (
                 "\n\nThe `scale_hue` parameter has been replaced and will be removed "
-                f"in v0.15.0. Pass `common_norm={not scale_hue} for the same effect."
+                f"in v0.15.0. Pass `common_norm={not scale_hue}` for the same effect."
             )
             warnings.warn(msg, FutureWarning, stacklevel=3)
 
@@ -2246,10 +2246,10 @@ def violinplot(
     if bw is not deprecated:
         msg = dedent(f"""\n
         The `bw` parameter is deprecated in favor of `bw_method` and `bw_adjust`.
-        Setting `bw_method={bw}`, but please see the docs for the new parameters
+        Setting `bw_method={bw!r}`, but please see the docs for the new parameters
         and update your code. This will become an error in seaborn v0.15.0.
         """)
-        warnings.warn(msg, UserWarning, stacklevel=2)
+        warnings.warn(msg, FutureWarning, stacklevel=2)
         bw_method = bw
 
     kde_kws = dict(cut=cut, gridsize=gridsize, bw_method=bw_method, bw_adjust=bw_adjust)
@@ -3325,11 +3325,11 @@ def catplot(
             bw = plot_kws.pop("bw", deprecated)
             msg = dedent(f"""\n
             The `bw` parameter is deprecated in favor of `bw_method` and `bw_adjust`.
-            Setting `bw_method={bw}`, but please see the docs for the new parameters
+            Setting `bw_method={bw!r}`, but please see the docs for the new parameters
             and update your code. This will become an error in seaborn v0.15.0.
             """)
             if bw is not deprecated:
-                warnings.warn(msg, UserWarning, stacklevel=2)
+                warnings.warn(msg, FutureWarning, stacklevel=2)
                 kde_kws["bw_method"] = bw
 
             inner_kws = plot_kws.pop("inner_kws", {}).copy()

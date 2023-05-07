@@ -1511,6 +1511,11 @@ class TestViolinPlot(SharedAxesLevelTests):
         color = ax.collections[-1].get_facecolor()
         return to_rgba(color)
 
+    def violin_width(self, poly, orient="x"):
+
+        idx, _ = self.orient_indices(orient)
+        return np.ptp(poly.get_paths()[0].vertices[:, idx])
+
     def check_violin(self, poly, data, orient, pos, width=0.8):
 
         pos_idx, val_idx = self.orient_indices(orient)
@@ -1669,49 +1674,205 @@ class TestViolinPlot(SharedAxesLevelTests):
     @pytest.mark.parametrize("orient", ["x", "y"])
     def test_inner_box(self, long_df, orient):
 
-        _, val_idx = self.orient_indices(orient)
+        pos_idx, val_idx = self.orient_indices(orient)
         ax = violinplot(long_df["y"], orient=orient)
         stats = mpl.cbook.boxplot_stats(long_df["y"])[0]
 
         whiskers = ax.lines[0].get_xydata()
         assert whiskers[0, val_idx] == stats["whislo"]
         assert whiskers[1, val_idx] == stats["whishi"]
+        assert whiskers[:, pos_idx].tolist() == [0, 0]
 
         box = ax.lines[1].get_xydata()
         assert box[0, val_idx] == stats["q1"]
         assert box[1, val_idx] == stats["q3"]
+        assert box[:, pos_idx].tolist() == [0, 0]
 
         median = ax.lines[2].get_xydata()
         assert median[0, val_idx] == stats["med"]
+        assert median[0, pos_idx] == 0
 
     @pytest.mark.parametrize("orient", ["x", "y"])
     def test_inner_quartiles(self, long_df, orient):
 
-        _, val_idx = self.orient_indices(orient)
+        pos_idx, val_idx = self.orient_indices(orient)
         ax = violinplot(long_df["y"], orient=orient, inner="quart")
         quartiles = np.percentile(long_df["y"], [25, 50, 75])
 
         for q, line in zip(quartiles, ax.lines):
             for pt in line.get_xydata():
                 assert pt[val_idx] == q
+            assert pt[0, pos_idx] == -pt[1, pos_idx]
 
     @pytest.mark.parametrize("orient", ["x", "y"])
     def test_inner_stick(self, long_df, orient):
 
-        _, val_idx = self.orient_indices(orient)
+        pos_idx, val_idx = self.orient_indices(orient)
         ax = violinplot(long_df["y"], orient=orient, inner="stick")
         for i, line in enumerate(ax.lines):
             for pt in line.get_xydata():
                 assert pt[val_idx] == long_df["y"].iloc[i]
+            assert pt[0, pos_idx] == -pt[1, pos_idx]
 
     @pytest.mark.parametrize("orient", ["x", "y"])
     def test_inner_points(self, long_df, orient):
 
-        _, val_idx = self.orient_indices(orient)
+        pos_idx, val_idx = self.orient_indices(orient)
         ax = violinplot(long_df["y"], orient=orient, inner="points")
         points = ax.collections[1]
         for i, pt in enumerate(points.get_offsets()):
             assert pt[val_idx] == long_df["y"].iloc[i]
+            assert pt[pos_idx] == 0
+
+    def test_split_single(self, long_df):
+
+        ax = violinplot(long_df, x="a", y="z", split=True, cut=0)
+        levels = categorical_order(long_df["a"])
+        for i, level in enumerate(levels):
+            data = long_df.loc[long_df["a"] == level, "z"]
+            self.check_violin(ax.collections[i], data, "x", i)
+            verts = ax.collections[i].get_paths()[0].vertices
+            assert np.isclose(verts[:, 0], i + .4).sum() >= 100
+
+    def test_split_multi(self, long_df):
+
+        ax = violinplot(long_df, x="a", y="z", hue="c", split=True, cut=0)
+        polys = iter(ax.collections)
+        for i, level in enumerate(categorical_order(long_df["a"])):
+            for j, hue_level in enumerate(categorical_order(long_df["c"])):
+                rows = (long_df["a"] == level) & (long_df["c"] == hue_level)
+                data = long_df.loc[rows, "z"]
+                pos = i + [-.2, +.2][j]
+                poly = next(polys)
+                self.check_violin(poly, data, "x", pos, width=0.4)
+                verts = poly.get_paths()[0].vertices
+                assert np.isclose(verts[:, 0], i).sum() >= 100
+
+    def test_density_norm_area(self, long_df):
+
+        y = long_df["y"].to_numpy()
+        ax = violinplot([y, y * 5])
+        widths = []
+        for poly in ax.collections:
+            widths.append(self.violin_width(poly))
+        assert widths[0] / widths[1] == approx(5)
+
+    def test_density_norm_count(self, long_df):
+
+        y = long_df["y"].to_numpy()
+        ax = violinplot([np.repeat(y, 3), y], density_norm="count")
+        widths = []
+        for poly in ax.collections:
+            widths.append(self.violin_width(poly))
+        assert widths[0] / widths[1] == approx(3)
+
+    def test_density_norm_width(self, long_df):
+
+        ax = violinplot(long_df, x="a", y="y", density_norm="width")
+        for poly in ax.collections:
+            assert self.violin_width(poly) == approx(0.8)
+
+    def test_common_norm(self, long_df):
+
+        ax = violinplot(long_df, x="a", y="y", hue="c", common_norm=True, legend=False)
+        widths = []
+        for poly in ax.collections:
+            widths.append(self.violin_width(poly))
+        assert sum(w > 0.3999 for w in widths) == 1
+
+    def test_scale_deprecation(self, long_df):
+
+        with pytest.warns(FutureWarning, match=r".+Pass `density_norm='count'`"):
+            violinplot(long_df, x="a", y="y", hue="b", scale="count")
+
+    def test_scale_hue_deprecation(self, long_df):
+
+        with pytest.warns(FutureWarning, match=r".+Pass `common_norm=True`"):
+            violinplot(long_df, x="a", y="y", hue="b", scale_hue=False)
+
+    def test_bw_adjust(self, long_df):
+
+        ax = violinplot(long_df["y"], bw_adjust=.2)
+        violinplot(long_df["y"], bw_adjust=2)
+        kde1 = ax.collections[0].get_paths()[0].vertices[:100, 0]
+        kde2 = ax.collections[1].get_paths()[0].vertices[:100, 0]
+        assert np.std(np.diff(kde1)) > np.std(np.diff(kde2))
+
+    def test_bw_deprecation(self, long_df):
+
+        with pytest.warns(FutureWarning, match=r".*Setting `bw_method='silverman'`"):
+            violinplot(long_df["y"], bw="silverman")
+
+    def test_gap(self, long_df):
+
+        ax = violinplot(long_df, y="y", hue="c", gap=.2)
+        a = ax.collections[0].get_paths()[0].vertices[:, 0].max()
+        b = ax.collections[1].get_paths()[0].vertices[:, 0].min()
+        assert (b - a) == approx(0.2 * 0.8 / 2)
+
+    def test_inner_kws(self, long_df):
+
+        kws = {"linewidth": 3}
+        ax = violinplot(long_df, x="a", y="y", inner="stick", inner_kws=kws)
+        for line in ax.lines:
+            assert line.get_linewidth() == kws["linewidth"]
+
+    def test_box_inner_kws(self, long_df):
+
+        kws = {"box_width": 10, "whis_width": 2, "marker": "x"}
+        ax = violinplot(long_df, x="a", y="y", inner_kws=kws)
+        for line in ax.lines[::3]:
+            assert line.get_linewidth() == kws["whis_width"]
+        for line in ax.lines[1::3]:
+            assert line.get_linewidth() == kws["box_width"]
+        for line in ax.lines[2::3]:
+            assert line.get_marker() == kws["marker"]
+
+    @pytest.mark.parametrize(
+        "kwargs",
+        [
+            dict(data="wide"),
+            dict(data="wide", orient="h"),
+            dict(data="flat"),
+            dict(data="long", x="a", y="y"),
+            dict(data=None, x="a", y="y", split=True),
+            dict(data="long", x="a", y="y", hue="a"),
+            dict(data=None, x="a", y="y", hue="a"),
+            dict(data="long", x="a", y="y", hue="b"),
+            dict(data=None, x="s", y="y", hue="a"),
+            dict(data="long", x="a", y="y", hue="s", split=True),
+            dict(data="null", x="a", y="y", hue="a"),
+            dict(data="long", x="s", y="y", hue="a", native_scale=True),
+            dict(data="long", x="d", y="y", hue="a", native_scale=True),
+            dict(data="null", x="a", y="y", hue="b", fill=False, gap=.2),
+            dict(data="null", x="a", y="y", linecolor="r", linewidth=5),
+            dict(data="long", x="a", y="y", inner="stick"),
+            dict(data="long", x="a", y="y", inner="points"),
+            dict(data="long", x="a", y="y", hue="b", inner="quartiles", split=True),
+            dict(data="long", x="a", y="y", density_norm="count", common_norm=True),
+            dict(data="long", x="a", y="y", bw=2),
+            dict(data="long", x="a", y="y", bw_adjust=2),
+        ]
+    )
+    def test_vs_catplot(self, long_df, wide_df, null_df, flat_series, kwargs):
+
+        if kwargs["data"] == "long":
+            kwargs["data"] = long_df
+        elif kwargs["data"] == "wide":
+            kwargs["data"] = wide_df
+        elif kwargs["data"] == "flat":
+            kwargs["data"] = flat_series
+        elif kwargs["data"] == "null":
+            kwargs["data"] = null_df
+        elif kwargs["data"] is None:
+            for var in ["x", "y", "hue"]:
+                if var in kwargs:
+                    kwargs[var] = long_df[kwargs[var]]
+
+        ax = violinplot(**kwargs)
+        g = catplot(**kwargs, kind="violin")
+
+        assert_plots_equal(ax, g.ax)
 
 
 class TestBarPlot(SharedAggTests):
