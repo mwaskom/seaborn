@@ -644,8 +644,7 @@ def load_dataset(name, cache=True, data_home=None, **kws):
     elif name == "dowjones":
         df["Date"] = pd.to_datetime(df["Date"])
 
-    import polars
-    return polars.from_pandas(df)
+    return df
 
 
 def axis_ticklabels_overlap(labels):
