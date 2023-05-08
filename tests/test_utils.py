@@ -27,6 +27,7 @@ from seaborn.utils import (
     remove_na,
     load_dataset,
     _assign_default_kwargs,
+    _check_argument,
     _draw_figure,
     _deprecate_ci,
     _version_predates, DATASET_NAMES_URL,
@@ -550,6 +551,23 @@ def test_assign_default_kwargs():
 
     kws = _assign_default_kwargs(kws, f, g)
     assert kws == {"c": 3, "d": 2}
+
+
+def test_check_argument():
+
+    opts = ["a", "b", None]
+    assert _check_argument("arg", opts, "a") == "a"
+    assert _check_argument("arg", opts, None) is None
+    assert _check_argument("arg", opts, "aa", prefix=True) == "aa"
+    assert _check_argument("arg", opts, None, prefix=True) is None
+    with pytest.raises(ValueError, match="The value for `arg`"):
+        _check_argument("arg", opts, "c")
+    with pytest.raises(ValueError, match="The value for `arg`"):
+        _check_argument("arg", opts, "c", prefix=True)
+    with pytest.raises(ValueError, match="The value for `arg`"):
+        _check_argument("arg", opts[:-1], None)
+    with pytest.raises(ValueError, match="The value for `arg`"):
+        _check_argument("arg", opts[:-1], None, prefix=True)
 
 
 def test_draw_figure():
