@@ -331,6 +331,12 @@ class FontSize(IntervalProperty):
         return base * .5, base * 2
 
 
+class Width(IntervalProperty):
+    """Width for bar and dash marks as relative value."""
+    legend = False
+    normed = False
+
+
 # =================================================================================== #
 # Properties defined by arbitrary objects with inherently nominal scaling
 # =================================================================================== #
@@ -832,6 +838,8 @@ PROPERTY_CLASSES = {
     "ymin": Coordinate,
     "ymax": Coordinate,
     "group": Property,
+    "baseline": Coordinate,
+    "width": Width,
     # TODO pattern?
     # TODO gradient?
 }
