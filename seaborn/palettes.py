@@ -388,7 +388,7 @@ def mpl_palette(name, n_colors=6, as_cmap=False):
 
     Examples
     --------
-    .. include: ../docstrings/mpl_palette.rst
+    .. include:: ../docstrings/mpl_palette.rst
 
     """
     if name.endswith("_d"):
