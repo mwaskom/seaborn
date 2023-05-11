@@ -3023,8 +3023,8 @@ pointplot.__doc__ = dedent("""\
 
 def countplot(
     data=None, *, x=None, y=None, hue=None, order=None, hue_order=None,
-    orient=None, color=None, palette=None, saturation=.75, hue_norm=None,
-    stat="count", width=.8, dodge="auto", native_scale=False, formatter=None,
+    orient=None, color=None, palette=None, saturation=.75, fill=True, hue_norm=None,
+    stat="count", width=.8, dodge="auto", gap=0, native_scale=False, formatter=None,
     legend="auto", ax=None, **kwargs
 ):
 
@@ -3065,6 +3065,7 @@ def countplot(
     hue_order = p._palette_without_hue_backcompat(palette, hue_order)
     palette, hue_order = p._hue_backcompat(color, palette, hue_order)
 
+    saturation = saturation if fill else 1
     p.map_hue(palette=palette, order=hue_order, norm=hue_norm, saturation=saturation)
     color = _default_color(ax.bar, hue, color, kwargs, saturation)
 
@@ -3084,7 +3085,9 @@ def countplot(
         aggregator=aggregator,
         dodge=dodge,
         width=width,
+        gap=gap,
         color=color,
+        fill=fill,
         capsize=0,
         err_kws={},
         plot_kws=kwargs,
@@ -3460,11 +3463,16 @@ def catplot(
                 denom = 100 if stat == "percent" else 1
                 p.plot_data[count_axis] /= len(p.plot_data) / denom
 
+            gap = kwargs.pop("gap", 0)
+            fill = kwargs.pop("fill", True)
+
             p.plot_bars(
                 aggregator=aggregator,
                 dodge=dodge,
                 width=width,
+                gap=gap,
                 color=color,
+                fill=fill,
                 capsize=0,
                 err_kws={},
                 plot_kws=kwargs,
