@@ -2829,13 +2829,15 @@ barplot.__doc__ = dedent("""\
     {color}
     {palette}
     {saturation}
+    {fill}
     {hue_norm}
     {width}
-    {capsize}
     {dodge}
+    {gap}
     {native_scale}
     {formatter}
     {legend}
+    {capsize}
     {err_kws}
     {ci}
     {errcolor}
