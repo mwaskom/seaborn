@@ -1075,7 +1075,7 @@ class _CategoricalPlotterNew(_RelationalPlotter):
             capsize = capsize / len(self._hue_map.levels)
 
         if not fill:
-            plot_kws.setdefault("linewidth", mpl.rcParams["lines.linewidth"])
+            plot_kws.setdefault("linewidth", 1.5 * mpl.rcParams["lines.linewidth"])
 
         err_color = err_kws.pop("color", ".26")
         err_kws.setdefault("linewidth", 1.5 * mpl.rcParams["lines.linewidth"])
