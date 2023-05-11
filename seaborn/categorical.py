@@ -3425,19 +3425,22 @@ def catplot(
             aggregator = EstimateAggregator(
                 estimator, errorbar, n_boot=n_boot, seed=seed
             )
-
             err_kws, capsize = p._err_kws_backcompat(
                 _normalize_kwargs(kwargs.pop("err_kws", {}), mpl.lines.Line2D),
                 errcolor=kwargs.pop("errcolor", deprecated),
                 errwidth=kwargs.pop("errwidth", deprecated),
                 capsize=kwargs.pop("capsize", 0),
             )
+            gap = kwargs.pop("gap", 0)
+            fill = kwargs.pop("fill", True)
 
             p.plot_bars(
                 aggregator=aggregator,
                 dodge=dodge,
                 width=width,
+                gap=gap,
                 color=color,
+                fill=fill,
                 capsize=capsize,
                 err_kws=err_kws,
                 plot_kws=kwargs,
