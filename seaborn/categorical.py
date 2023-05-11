@@ -1054,7 +1054,9 @@ class _CategoricalPlotterNew(_RelationalPlotter):
         self,
         aggregator,
         dodge,
+        gap,
         width,
+        fill,
         color,
         capsize,
         err_kws,
@@ -1072,7 +1074,10 @@ class _CategoricalPlotterNew(_RelationalPlotter):
         if dodge and capsize is not None:
             capsize = capsize / len(self._hue_map.levels)
 
-        err_kws.setdefault("color", ".26")
+        if not fill:
+            plot_kws.setdefault("linewidth", mpl.rcParams["lines.linewidth"])
+
+        err_color = err_kws.pop("color", ".26")
         err_kws.setdefault("linewidth", 1.5 * mpl.rcParams["lines.linewidth"])
 
         for sub_vars, sub_data in self.iter_data(iter_vars,
@@ -1091,6 +1096,8 @@ class _CategoricalPlotterNew(_RelationalPlotter):
             agg_data["width"] = width * self._native_width
             if dodge:
                 self._dodge(sub_vars, agg_data)
+            if gap:
+                agg_data["width"] *= 1 - gap
 
             agg_data["edge"] = agg_data[self.orient] - agg_data["width"] / 2
             self._invert_scale(ax, agg_data)
@@ -1109,9 +1116,13 @@ class _CategoricalPlotterNew(_RelationalPlotter):
             maincolor = self._hue_map(sub_vars["hue"]) if "hue" in sub_vars else color
 
             # Set both color and facecolor for property cycle logic
-            kws["color"] = maincolor
-            kws["facecolor"] = maincolor
             kws["align"] = "edge"
+            if fill:
+                kws.update(color=maincolor, facecolor=maincolor)
+                err_kws.update(color=err_color)
+            else:
+                kws.update(color=maincolor, edgecolor=maincolor, facecolor="none")
+                err_kws.update(color=maincolor)
 
             bar_func(**{**kws, **plot_kws})
 
@@ -2728,9 +2739,9 @@ swarmplot.__doc__ = dedent("""\
 def barplot(
     data=None, *, x=None, y=None, hue=None, order=None, hue_order=None,
     estimator="mean", errorbar=("ci", 95), n_boot=1000, units=None, seed=None,
-    orient=None, color=None, palette=None, saturation=.75, hue_norm=None, width=.8,
-    dodge="auto", native_scale=False, formatter=None, legend="auto", capsize=0,
-    err_kws=None, ci=deprecated, errcolor=deprecated, errwidth=deprecated,
+    orient=None, color=None, palette=None, saturation=.75, fill=True, hue_norm=None,
+    width=.8, dodge="auto", gap=0, native_scale=False, formatter=None, legend="auto",
+    capsize=0, err_kws=None, ci=deprecated, errcolor=deprecated, errwidth=deprecated,
     ax=None, **kwargs,
 ):
 
@@ -2769,6 +2780,7 @@ def barplot(
     hue_order = p._palette_without_hue_backcompat(palette, hue_order)
     palette, hue_order = p._hue_backcompat(color, palette, hue_order)
 
+    saturation = saturation if fill else 1
     p.map_hue(palette=palette, order=hue_order, norm=hue_norm, saturation=saturation)
     color = _default_color(ax.bar, hue, color, kwargs, saturation=saturation)
 
@@ -2782,7 +2794,9 @@ def barplot(
         aggregator=aggregator,
         dodge=dodge,
         width=width,
+        gap=gap,
         color=color,
+        fill=fill,
         capsize=capsize,
         err_kws=err_kws,
         plot_kws=kwargs,
