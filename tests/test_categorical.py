@@ -2282,11 +2282,12 @@ class TestBarPlot(SharedAggTests):
             assert bar.get_facecolor() == kwargs["facecolor"]
             assert bar.get_rasterized() == kwargs["rasterized"]
 
-    def test_err_kws(self):
+    @pytest.mark.parametrize("fill", [True, False])
+    def test_err_kws(self, fill):
 
         x, y = ["a", "b", "c"], [1, 2, 3]
         err_kws = dict(color=(1, 1, .5, .5), linewidth=5)
-        ax = barplot(x=x, y=y, err_kws=err_kws)
+        ax = barplot(x=x, y=y, fill=fill, err_kws=err_kws)
         for line in ax.lines:
             assert line.get_color() == err_kws["color"]
             assert line.get_linewidth() == err_kws["linewidth"]

@@ -1077,7 +1077,6 @@ class _CategoricalPlotterNew(_RelationalPlotter):
         if not fill:
             plot_kws.setdefault("linewidth", 1.5 * mpl.rcParams["lines.linewidth"])
 
-        err_color = err_kws.pop("color", ".26")
         err_kws.setdefault("linewidth", 1.5 * mpl.rcParams["lines.linewidth"])
 
         for sub_vars, sub_data in self.iter_data(iter_vars,
@@ -1113,21 +1112,22 @@ class _CategoricalPlotterNew(_RelationalPlotter):
                     y=agg_data["edge"], width=agg_data["x"], height=agg_data["width"]
                 )
 
-            maincolor = self._hue_map(sub_vars["hue"]) if "hue" in sub_vars else color
+            main_color = self._hue_map(sub_vars["hue"]) if "hue" in sub_vars else color
 
             # Set both color and facecolor for property cycle logic
             kws["align"] = "edge"
             if fill:
-                kws.update(color=maincolor, facecolor=maincolor)
-                err_kws.update(color=err_color)
+                kws.update(color=main_color, facecolor=main_color)
             else:
-                kws.update(color=maincolor, edgecolor=maincolor, facecolor="none")
-                err_kws.update(color=maincolor)
+                kws.update(color=main_color, edgecolor=main_color, facecolor="none")
 
             bar_func(**{**kws, **plot_kws})
 
             if aggregator.error_method is not None:
-                self.plot_errorbars(ax, agg_data, capsize, err_kws.copy())
+                self.plot_errorbars(
+                    ax, agg_data, capsize,
+                    {"color": ".26" if fill else main_color, **err_kws}
+                )
 
         self._configure_legend(ax, ax.fill_between)
 
