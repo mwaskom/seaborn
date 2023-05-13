@@ -2017,6 +2017,16 @@ class TestBarPlot(SharedAggTests):
             assert bar.get_width() == approx(0.8 / 2)
             assert same_color(bar.get_facecolor(), f"C{i // 2}")
 
+    def test_gap(self):
+
+        x = ["a", "b", "a", "b"]
+        y = [1, 2, 3, 4]
+        hue = ["x", "x", "y", "y"]
+
+        ax = barplot(x=x, y=y, hue=hue, gap=.25)
+        for i, bar in enumerate(ax.patches):
+            assert bar.get_width() == approx(0.8 / 2 * .75)
+
     def test_hue_undodged(self):
 
         x = ["a", "b", "a", "b"]
@@ -2050,6 +2060,17 @@ class TestBarPlot(SharedAggTests):
         assert colors[0] == colors[1]
         assert colors[1] != colors[2]
         assert colors[2] == colors[3]
+
+    def test_fill(self):
+
+        x = ["a", "b", "a", "b"]
+        y = [1, 2, 3, 4]
+        hue = ["x", "x", "y", "y"]
+
+        ax = barplot(x=x, y=y, hue=hue, fill=False)
+        for i, bar in enumerate(ax.patches):
+            assert same_color(bar.get_edgecolor(), f"C{i // 2}")
+            assert same_color(bar.get_facecolor(), (0, 0, 0, 0))
 
     def test_xy_native_scale(self):
 
@@ -2261,11 +2282,12 @@ class TestBarPlot(SharedAggTests):
             assert bar.get_facecolor() == kwargs["facecolor"]
             assert bar.get_rasterized() == kwargs["rasterized"]
 
-    def test_err_kws(self):
+    @pytest.mark.parametrize("fill", [True, False])
+    def test_err_kws(self, fill):
 
         x, y = ["a", "b", "c"], [1, 2, 3]
         err_kws = dict(color=(1, 1, .5, .5), linewidth=5)
-        ax = barplot(x=x, y=y, err_kws=err_kws)
+        ax = barplot(x=x, y=y, fill=fill, err_kws=err_kws)
         for line in ax.lines:
             assert line.get_color() == err_kws["color"]
             assert line.get_linewidth() == err_kws["linewidth"]
@@ -2284,7 +2306,7 @@ class TestBarPlot(SharedAggTests):
             dict(data=None, x="s", y="y", hue="a"),
             dict(data="long", x="a", y="y", hue="s"),
             dict(data="long", x="a", y="y", units="c"),
-            dict(data="null", x="a", y="y", hue="a"),
+            dict(data="null", x="a", y="y", hue="a", gap=.1, fill=False),
             dict(data="long", x="s", y="y", hue="a", native_scale=True),
             dict(data="long", x="d", y="y", hue="a", native_scale=True),
             dict(data="long", x="a", y="y", errorbar=("pi", 50)),

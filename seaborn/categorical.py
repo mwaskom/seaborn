@@ -1054,7 +1054,9 @@ class _CategoricalPlotterNew(_RelationalPlotter):
         self,
         aggregator,
         dodge,
+        gap,
         width,
+        fill,
         color,
         capsize,
         err_kws,
@@ -1072,7 +1074,9 @@ class _CategoricalPlotterNew(_RelationalPlotter):
         if dodge and capsize is not None:
             capsize = capsize / len(self._hue_map.levels)
 
-        err_kws.setdefault("color", ".26")
+        if not fill:
+            plot_kws.setdefault("linewidth", 1.5 * mpl.rcParams["lines.linewidth"])
+
         err_kws.setdefault("linewidth", 1.5 * mpl.rcParams["lines.linewidth"])
 
         for sub_vars, sub_data in self.iter_data(iter_vars,
@@ -1091,6 +1095,8 @@ class _CategoricalPlotterNew(_RelationalPlotter):
             agg_data["width"] = width * self._native_width
             if dodge:
                 self._dodge(sub_vars, agg_data)
+            if gap:
+                agg_data["width"] *= 1 - gap
 
             agg_data["edge"] = agg_data[self.orient] - agg_data["width"] / 2
             self._invert_scale(ax, agg_data)
@@ -1106,17 +1112,22 @@ class _CategoricalPlotterNew(_RelationalPlotter):
                     y=agg_data["edge"], width=agg_data["x"], height=agg_data["width"]
                 )
 
-            maincolor = self._hue_map(sub_vars["hue"]) if "hue" in sub_vars else color
+            main_color = self._hue_map(sub_vars["hue"]) if "hue" in sub_vars else color
 
             # Set both color and facecolor for property cycle logic
-            kws["color"] = maincolor
-            kws["facecolor"] = maincolor
             kws["align"] = "edge"
+            if fill:
+                kws.update(color=main_color, facecolor=main_color)
+            else:
+                kws.update(color=main_color, edgecolor=main_color, facecolor="none")
 
             bar_func(**{**kws, **plot_kws})
 
             if aggregator.error_method is not None:
-                self.plot_errorbars(ax, agg_data, capsize, err_kws.copy())
+                self.plot_errorbars(
+                    ax, agg_data, capsize,
+                    {"color": ".26" if fill else main_color, **err_kws}
+                )
 
         self._configure_legend(ax, ax.fill_between)
 
@@ -2728,9 +2739,9 @@ swarmplot.__doc__ = dedent("""\
 def barplot(
     data=None, *, x=None, y=None, hue=None, order=None, hue_order=None,
     estimator="mean", errorbar=("ci", 95), n_boot=1000, units=None, seed=None,
-    orient=None, color=None, palette=None, saturation=.75, hue_norm=None, width=.8,
-    dodge="auto", native_scale=False, formatter=None, legend="auto", capsize=0,
-    err_kws=None, ci=deprecated, errcolor=deprecated, errwidth=deprecated,
+    orient=None, color=None, palette=None, saturation=.75, fill=True, hue_norm=None,
+    width=.8, dodge="auto", gap=0, native_scale=False, formatter=None, legend="auto",
+    capsize=0, err_kws=None, ci=deprecated, errcolor=deprecated, errwidth=deprecated,
     ax=None, **kwargs,
 ):
 
@@ -2769,6 +2780,7 @@ def barplot(
     hue_order = p._palette_without_hue_backcompat(palette, hue_order)
     palette, hue_order = p._hue_backcompat(color, palette, hue_order)
 
+    saturation = saturation if fill else 1
     p.map_hue(palette=palette, order=hue_order, norm=hue_norm, saturation=saturation)
     color = _default_color(ax.bar, hue, color, kwargs, saturation=saturation)
 
@@ -2782,7 +2794,9 @@ def barplot(
         aggregator=aggregator,
         dodge=dodge,
         width=width,
+        gap=gap,
         color=color,
+        fill=fill,
         capsize=capsize,
         err_kws=err_kws,
         plot_kws=kwargs,
@@ -2815,13 +2829,15 @@ barplot.__doc__ = dedent("""\
     {color}
     {palette}
     {saturation}
+    {fill}
     {hue_norm}
     {width}
-    {capsize}
     {dodge}
+    {gap}
     {native_scale}
     {formatter}
     {legend}
+    {capsize}
     {err_kws}
     {ci}
     {errcolor}
@@ -3007,8 +3023,8 @@ pointplot.__doc__ = dedent("""\
 
 def countplot(
     data=None, *, x=None, y=None, hue=None, order=None, hue_order=None,
-    orient=None, color=None, palette=None, saturation=.75, hue_norm=None,
-    stat="count", width=.8, dodge="auto", native_scale=False, formatter=None,
+    orient=None, color=None, palette=None, saturation=.75, fill=True, hue_norm=None,
+    stat="count", width=.8, dodge="auto", gap=0, native_scale=False, formatter=None,
     legend="auto", ax=None, **kwargs
 ):
 
@@ -3049,6 +3065,7 @@ def countplot(
     hue_order = p._palette_without_hue_backcompat(palette, hue_order)
     palette, hue_order = p._hue_backcompat(color, palette, hue_order)
 
+    saturation = saturation if fill else 1
     p.map_hue(palette=palette, order=hue_order, norm=hue_norm, saturation=saturation)
     color = _default_color(ax.bar, hue, color, kwargs, saturation)
 
@@ -3068,7 +3085,9 @@ def countplot(
         aggregator=aggregator,
         dodge=dodge,
         width=width,
+        gap=gap,
         color=color,
+        fill=fill,
         capsize=0,
         err_kws={},
         plot_kws=kwargs,
@@ -3409,19 +3428,22 @@ def catplot(
             aggregator = EstimateAggregator(
                 estimator, errorbar, n_boot=n_boot, seed=seed
             )
-
             err_kws, capsize = p._err_kws_backcompat(
                 _normalize_kwargs(kwargs.pop("err_kws", {}), mpl.lines.Line2D),
                 errcolor=kwargs.pop("errcolor", deprecated),
                 errwidth=kwargs.pop("errwidth", deprecated),
                 capsize=kwargs.pop("capsize", 0),
             )
+            gap = kwargs.pop("gap", 0)
+            fill = kwargs.pop("fill", True)
 
             p.plot_bars(
                 aggregator=aggregator,
                 dodge=dodge,
                 width=width,
+                gap=gap,
                 color=color,
+                fill=fill,
                 capsize=capsize,
                 err_kws=err_kws,
                 plot_kws=kwargs,
@@ -3441,11 +3463,16 @@ def catplot(
                 denom = 100 if stat == "percent" else 1
                 p.plot_data[count_axis] /= len(p.plot_data) / denom
 
+            gap = kwargs.pop("gap", 0)
+            fill = kwargs.pop("fill", True)
+
             p.plot_bars(
                 aggregator=aggregator,
                 dodge=dodge,
                 width=width,
+                gap=gap,
                 color=color,
+                fill=fill,
                 capsize=0,
                 err_kws={},
                 plot_kws=kwargs,
