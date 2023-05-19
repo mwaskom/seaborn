@@ -10,7 +10,7 @@ def maybe_convert_to_polars(df):
     # If the SEABORN_TEST_INTERCHANGE_PROTOCOL=1 environment variable
     # is set, then check tests work when starting with a non-pandas
     # DataFrame (here, polars).
-    if os.environ.get('SEABORN_TEST_INTERCHANGE_PROTOCOL') == '1':
+    if os.environ.get('SEABORN_TEST_INTERCHANGE_PROTOCOL', '0') == '1':
         import polars as pl
         return pl.from_pandas(df)
     return df

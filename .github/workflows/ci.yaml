@@ -115,7 +115,7 @@ jobs:
 
       - name: Install seaborn
         run: |
-          pip install .[dev,stats] -r ci/deps_pinned.txt
+          pip install .[dev]
 
       - name: Run tests
         run: make test
