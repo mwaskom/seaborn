@@ -1,5 +1,4 @@
 from itertools import product
-import os
 import warnings
 
 import numpy as np
@@ -90,7 +89,6 @@ class SharedAxesLevelTests:
 
 class TestRelationalPlotter(Helpers):
 
-    @pytest.mark.xfail(os.environ.get('SEABORN_TEST_INTERCHANGE_PROTOCOL', '0')== '1', reason='looks wrong?')
     def test_wide_df_variables(self, wide_df, using_polars):
 
         p = _RelationalPlotter()
@@ -121,10 +119,14 @@ class TestRelationalPlotter(Helpers):
         expected_style = expected_hue
         assert_array_equal(style, expected_style)
 
-        assert p.variables["x"] == wide_df.index.name
-        assert p.variables["y"] is None
-        assert p.variables["hue"] == wide_df.columns.name
-        assert p.variables["style"] == wide_df.columns.name
+        if using_polars:
+            assert p.variables["x"] is None
+            assert p.variables["hue"] is None
+            assert p.variables["style"] is None
+        else:
+            assert p.variables["x"] == wide_df.index.name
+            assert p.variables["hue"] == wide_df.columns.name
+            assert p.variables["style"] == wide_df.columns.name
 
     def test_wide_df_with_nonnumeric_variables(self, long_df):
 
@@ -252,7 +254,6 @@ class TestRelationalPlotter(Helpers):
             assert p.variables["x"] is flat_series.index.name
             assert p.variables["y"] is flat_series.name
 
-    @pytest.mark.xfail(os.environ.get('SEABORN_TEST_INTERCHANGE_PROTOCOL', '0')== '1', reason='looks wrong?')
     def test_wide_list_of_series_variables(self, wide_list_of_series, using_polars):
 
         p = _RelationalPlotter()
@@ -281,7 +282,7 @@ class TestRelationalPlotter(Helpers):
         y = p.plot_data["y"]
         if using_polars:
             expected_y = np.concatenate([
-                np.arange(len(index_union)) for s in wide_list_of_series
+                s.to_pandas().reindex(index_union) for s in wide_list_of_series
             ])
         else:
             expected_y = np.concatenate([

@@ -1,5 +1,4 @@
 import itertools
-import os
 from functools import partial
 import warnings
 
@@ -670,10 +669,13 @@ class SharedScatterTests(SharedAxesLevelTests):
             ("x", "dataframe"), ("x", "dict"),
         ]
     )
-    def test_wide(self, wide_df, orient, data_type):
+    def test_wide(self, wide_df, orient, data_type, using_polars):
 
         if data_type == "dict":
-            wide_df = {k: v.to_numpy() for k, v in wide_df.items()}
+            if using_polars:
+                wide_df = {col: wide_df[col].to_numpy() for col in wide_df.columns}
+            else:
+                wide_df = {k: v.to_numpy() for k, v in wide_df.items()}
 
         ax = self.func(data=wide_df, orient=orient)
         _draw_figure(ax.figure)
@@ -1230,7 +1232,7 @@ class TestBoxPlot(SharedAxesLevelTests):
         assert tuple(med[val_idx]) == (p50, p50)
         assert np.allclose(med[pos_idx], (pos - width / 2, pos + width / 2))
 
-    def check_whiskers(self, bxp, data, orient, pos, capsize=0.4, whis=1.5, using_polars=False):
+    def check_whiskers(self, bxp, data, orient, pos, capsize=0.4, whis=1.5):
 
         pos_idx, val_idx = self.orient_indices(orient)
 
@@ -1276,7 +1278,7 @@ class TestBoxPlot(SharedAxesLevelTests):
         ax = boxplot(long_df, **{var: col})
         bxp = ax.containers[0][0]
         self.check_box(bxp, long_df[col], orient, 0)
-        self.check_whiskers(bxp, long_df[col], orient, 0, using_polars=using_polars)
+        self.check_whiskers(bxp, long_df[col], orient, 0)
 
     @pytest.mark.parametrize("orient,col", [(None, "x"), ("x", "y"), ("y", "z")])
     def test_vector_data(self, long_df, orient, col):
@@ -1295,7 +1297,7 @@ class TestBoxPlot(SharedAxesLevelTests):
         for i, bxp in enumerate(ax.containers):
             col = wide_df.columns[i]
             self.check_box(bxp[i], wide_df[col], orient, i)
-            self.check_whiskers(bxp[i], wide_df[col], orient, i, using_polars=using_polars)
+            self.check_whiskers(bxp[i], wide_df[col], orient, i)
 
     @pytest.mark.parametrize("orient", ["x", "y"])
     def test_grouped(self, long_df, orient):
@@ -1918,9 +1920,10 @@ class TestBarPlot(SharedAggTests):
         prop = {"x": "height", "y": "width"}[orient]
         for i, bar in enumerate(ax.patches):
             if using_polars:
-                assert getattr(bar, f"get_{prop}")() == approx(wide_df[:, i].mean())
+                expected = approx(wide_df[:, i].mean())
             else:
-                assert getattr(bar, f"get_{prop}")() == approx(wide_df.iloc[:, i].mean())
+                expected = approx(wide_df.iloc[:, i].mean())
+            assert getattr(bar, f"get_{prop}")() == expected
 
     @pytest.mark.parametrize("orient", ["x", "y", "h", "v"])
     def test_vector_orient(self, orient):

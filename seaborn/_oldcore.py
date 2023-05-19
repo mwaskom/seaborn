@@ -776,7 +776,7 @@ class VectorPlotter:
             # (Could be accomplished with a more general to_series() interface)
             flat_data = pd.Series(data).copy()
             names = {
-                "@values": flat_data.name,
+                "@values": getattr(data, 'name', None),
                 "@index": flat_data.index.name
             }
 
@@ -924,7 +924,7 @@ class VectorPlotter:
                     val in data
                     or (isinstance(val, (str, bytes)) and val in index)
                 )
-            except (KeyError, TypeError):
+            except (KeyError, TypeError, ValueError):
                 val_as_data_key = False
 
             if val_as_data_key:

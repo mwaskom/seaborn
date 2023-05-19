@@ -106,7 +106,10 @@ class TestHueMapping:
         assert p._hue_map.palette == palette
         assert p._hue_map.levels == hue_order
 
-    @pytest.mark.xfail(os.environ.get('SEABORN_TEST_INTERCHANGE_PROTOCOL', '0')== '1', reason='tmp hopefully')
+    @pytest.mark.xfail(
+        os.environ.get('SEABORN_TEST_INTERCHANGE_PROTOCOL', '0') == '1',
+        reason='different-length inputs not yet supported for non-pandas'
+    )
     def test_hue_map_null(self, flat_series, null_series):
 
         p = VectorPlotter(variables=dict(x=flat_series, hue=null_series))
@@ -118,7 +121,6 @@ class TestHueMapping:
         assert m.norm is None
         assert m.lookup_table is None
 
-    # @pytest.mark.xfail(os.environ.get('SEABORN_TEST_INTERCHANGE_PROTOCOL', '0')== '1', reason='looks wrong?')
     def test_hue_map_categorical(self, wide_df, long_df, using_polars):
 
         p = VectorPlotter(data=wide_df)
@@ -388,7 +390,10 @@ class TestSizeMapping:
         assert p._size_map.lookup_table == dict(zip(size_order, sizes))
         assert p._size_map.levels == size_order
 
-    @pytest.mark.xfail(os.environ.get('SEABORN_TEST_INTERCHANGE_PROTOCOL', '0')== '1', reason='polars does not have rename_axis')
+    @pytest.mark.xfail(
+        os.environ.get('SEABORN_TEST_INTERCHANGE_PROTOCOL', '0') == '1',
+        reason='different-length inputs not yet supported for non-pandas'
+    )
     def test_size_map_null(self, flat_series, null_series):
 
         p = VectorPlotter(variables=dict(x=flat_series, size=null_series))
@@ -536,7 +541,10 @@ class TestStyleMapping:
         assert p._style_map.levels == style_order
         assert p._style_map(style_order, "marker") == markers
 
-    @pytest.mark.xfail(os.environ.get('SEABORN_TEST_INTERCHANGE_PROTOCOL', '0')== '1', reason='polars does not have rename_axis')
+    @pytest.mark.xfail(
+        os.environ.get('SEABORN_TEST_INTERCHANGE_PROTOCOL', '0') == '1',
+        reason='different-length inputs not yet supported for non-pandas'
+    )
     def test_style_map_null(self, flat_series, null_series):
 
         p = VectorPlotter(variables=dict(x=flat_series, style=null_series))
@@ -624,8 +632,7 @@ class TestStyleMapping:
 
 class TestVectorPlotter:
 
-    @pytest.mark.xfail(os.environ.get('SEABORN_TEST_INTERCHANGE_PROTOCOL', '0')== '1', reason='polars does not have rename_axis')
-    def test_flat_variables(self, flat_data):
+    def test_flat_variables(self, flat_data, using_polars):
 
         p = VectorPlotter()
         p.assign_variables(data=flat_data)
@@ -814,7 +821,6 @@ class TestVectorPlotter:
         with pytest.raises(ValueError, match=err):
             VectorPlotter(data=long_df, variables={"x": "x", "hue": flat_array})
 
-    @pytest.mark.xfail(os.environ.get('SEABORN_TEST_INTERCHANGE_PROTOCOL', '0')== '1', reason='polars does not have rename_axis')
     def test_wide_categorical_columns(self, wide_df):
 
         wide_df.columns = pd.CategoricalIndex(wide_df.columns)
