@@ -111,7 +111,7 @@ jobs:
       - name: Install polars
         run: |
           pip install --upgrade pip wheel
-          pip install --upgrade polars
+          pip install --upgrade polars pyarrow
 
       - name: Install seaborn
         run: |
