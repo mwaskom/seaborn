@@ -98,8 +98,7 @@ jobs:
 
     strategy:
       matrix:
-        python: ["3.11"]
-        install: [full]
+        python: ["3.10"]
 
     steps:
       - uses: actions/checkout@v3
