@@ -1,7 +1,19 @@
+import os
+
 import numpy as np
 import pandas as pd
 
 import pytest
+
+
+def maybe_convert_to_polars(df):
+    # If the SEABORN_TEST_INTERCHANGE_PROTOCOL=1 environment variable
+    # is set, then check tests work when starting with a non-pandas
+    # DataFrame (here, polars).
+    if os.environ.get('SEABORN_TEST_INTERCHANGE_PROTOCOL') == '1':
+        import polars as pl
+        return pl.from_pandas(df)
+    return df
 
 
 @pytest.fixture(autouse=True)
@@ -29,13 +41,13 @@ def wide_df(rng):
     columns = list("abc")
     index = pd.RangeIndex(10, 50, 2, name="wide_index")
     values = rng.normal(size=(len(index), len(columns)))
-    return pd.DataFrame(values, index=index, columns=columns)
+    return maybe_convert_to_polars(pd.DataFrame(values, index=index, columns=columns))
 
 
 @pytest.fixture
 def wide_array(wide_df):
 
-    return wide_df.to_numpy()
+    return maybe_convert_to_polars(wide_df.to_numpy())
 
 
 # TODO s/flat/thin?
@@ -43,7 +55,7 @@ def wide_array(wide_df):
 def flat_series(rng):
 
     index = pd.RangeIndex(10, 30, name="t")
-    return pd.Series(rng.normal(size=20), index, name="s")
+    return maybe_convert_to_polars(pd.Series(rng.normal(size=20), index, name="s"))
 
 
 @pytest.fixture
@@ -62,7 +74,7 @@ def flat_list(flat_series):
 def flat_data(rng, request):
 
     index = pd.RangeIndex(10, 30, name="t")
-    series = pd.Series(rng.normal(size=20), index, name="s")
+    series = maybe_convert_to_polars(pd.Series(rng.normal(size=20), index, name="s"))
     if request.param == "series":
         data = series
     elif request.param == "array":
@@ -75,8 +87,14 @@ def flat_data(rng, request):
 @pytest.fixture
 def wide_list_of_series(rng):
 
-    return [pd.Series(rng.normal(size=20), np.arange(20), name="a"),
-            pd.Series(rng.normal(size=10), np.arange(5, 15), name="b")]
+    return [
+        maybe_convert_to_polars(
+            pd.Series(rng.normal(size=20), np.arange(20), name="a")
+        ),
+        maybe_convert_to_polars(
+            pd.Series(rng.normal(size=10), np.arange(5, 15), name="b")
+        )
+    ]
 
 
 @pytest.fixture
@@ -133,7 +151,7 @@ def long_df(rng):
     df["s_cat"] = df["s"].astype("category")
     df["s_str"] = df["s"].astype(str)
 
-    return df
+    return maybe_convert_to_polars(df)
 
 
 @pytest.fixture
@@ -146,12 +164,12 @@ def long_dict(long_df):
 def repeated_df(rng):
 
     n = 100
-    return pd.DataFrame(dict(
+    return maybe_convert_to_polars(pd.DataFrame(dict(
         x=np.tile(np.arange(n // 2), 2),
         y=rng.normal(size=n),
         a=rng.choice(list("abc"), n),
         u=np.repeat(np.arange(2), n // 2),
-    ))
+    )))
 
 
 @pytest.fixture
@@ -161,7 +179,7 @@ def null_df(rng, long_df):
     for col in df:
         idx = rng.permutation(df.index)[:10]
         df.loc[idx, col] = np.nan
-    return df
+    return maybe_convert_to_polars(df)
 
 
 @pytest.fixture
@@ -171,10 +189,10 @@ def object_df(rng, long_df):
     # objectify numeric columns
     for col in ["c", "s", "f"]:
         df[col] = df[col].astype(object)
-    return df
+    return maybe_convert_to_polars(df)
 
 
 @pytest.fixture
 def null_series(flat_series):
 
-    return pd.Series(index=flat_series.index, dtype='float64')
+    return maybe_convert_to_polars(pd.Series(index=flat_series.index, dtype='float64'))

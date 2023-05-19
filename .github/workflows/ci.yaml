@@ -90,6 +90,41 @@ jobs:
         uses: codecov/codecov-action@v3
         if: ${{ success() }}
 
+  run-interchange-protocol-tests:
+    runs-on: ubuntu-latest
+
+    env:
+      SEABORN_TEST_INTERCHANGE_PROTOCOL: 1
+
+    strategy:
+      matrix:
+        python: ["3.11"]
+        install: [full]
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup Python ${{ matrix.python }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python }}
+
+      - name: Install polars
+        run: |
+          pip install --upgrade pip wheel
+          pip install --upgrade polars
+
+      - name: Install seaborn
+        run: |
+          pip install .[dev,stats] -r ci/deps_pinned.txt
+
+      - name: Run tests
+        run: make test
+
+      - name: Upload coverage
+        uses: codecov/codecov-action@v3
+        if: ${{ success() }}
+
   lint:
     runs-on: ubuntu-latest
     strategy:
