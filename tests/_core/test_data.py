@@ -187,8 +187,9 @@ class TestPlotData:
 
         p = PlotData(None, {"x": x, "y": y})
 
-        x_col_expected = pd.Series([10, 20, 30, np.nan, np.nan], np.arange(1, 6))
-        y_col_expected = pd.Series([np.nan, np.nan, 300, 400, 500], np.arange(1, 6))
+        idx_expected = [1, 2, 3, 4, 5]
+        x_col_expected = pd.Series([10, 20, 30, np.nan, np.nan], idx_expected)
+        y_col_expected = pd.Series([np.nan, np.nan, 300, 400, 500], idx_expected)
         assert_vector_equal(p.frame["x"], x_col_expected)
         assert_vector_equal(p.frame["y"], y_col_expected)
 

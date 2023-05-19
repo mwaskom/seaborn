@@ -836,7 +836,7 @@ regplot.__doc__ = dedent("""\
     Examples
     --------
 
-    .. include: ../docstrings/regplot.rst
+    .. include:: ../docstrings/regplot.rst
 
     """).format(**_regression_docs)
 
