@@ -904,9 +904,9 @@ def try_convert_to_pandas(data: object | None) -> pd.DataFrame:
     elif isinstance(data, pd.DataFrame):
         return data
     elif hasattr(data, "__dataframe__"):
-        if _version_predates(pd, "2.0.1"):
+        if _version_predates(pd, "2.0.2"):
             raise RuntimeError(
-                "Plotting non-pandas DataFrames requires at least pandas '2.0.1'. "
+                "Plotting non-pandas DataFrames requires at least pandas '2.0.2'. "
                 "Please upgrade pandas."
             )
         return pd.api.interchange.from_dataframe(data)
