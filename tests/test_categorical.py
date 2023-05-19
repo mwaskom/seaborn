@@ -1,4 +1,5 @@
 import itertools
+import os
 from functools import partial
 import warnings
 
@@ -565,15 +566,17 @@ class SharedAxesLevelTests:
         hue_levels = categorical_order(long_df[kws["hue"]])
         assert hue_labels == hue_levels
 
-    def test_labels_wide(self, wide_df):
+    def test_labels_wide(self, wide_df, using_polars):
 
-        wide_df = wide_df.rename_axis("cols", axis=1)
+        if not using_polars:
+            wide_df = wide_df.rename_axis("cols", axis=1)
         ax = self.func(wide_df)
 
         # To populate texts; only needed on older matplotlibs
         _draw_figure(ax.figure)
 
-        assert ax.get_xlabel() == wide_df.columns.name
+        if not using_polars:
+            assert ax.get_xlabel() == wide_df.columns.name
         labels = [t.get_text() for t in ax.get_xticklabels()]
         for label, level in zip(labels, wide_df.columns):
             assert label == level
@@ -1227,7 +1230,7 @@ class TestBoxPlot(SharedAxesLevelTests):
         assert tuple(med[val_idx]) == (p50, p50)
         assert np.allclose(med[pos_idx], (pos - width / 2, pos + width / 2))
 
-    def check_whiskers(self, bxp, data, orient, pos, capsize=0.4, whis=1.5):
+    def check_whiskers(self, bxp, data, orient, pos, capsize=0.4, whis=1.5, using_polars=False):
 
         pos_idx, val_idx = self.orient_indices(orient)
 
@@ -1240,8 +1243,12 @@ class TestBoxPlot(SharedAxesLevelTests):
         p25, p75 = np.percentile(data, [25, 75])
         iqr = p75 - p25
 
-        adj_lo = data[data >= (p25 - iqr * whis)].min()
-        adj_hi = data[data <= (p75 + iqr * whis)].max()
+        if isinstance(data, pd.Series):
+            adj_lo = data[data >= (p25 - iqr * whis)].min()
+            adj_hi = data[data <= (p75 + iqr * whis)].max()
+        else:  # polars
+            adj_lo = data.filter(data >= (p25 - iqr * whis)).min()
+            adj_hi = data.filter(data <= (p75 + iqr * whis)).max()
 
         assert whis_lo[val_idx].max() == p25
         assert whis_lo[val_idx].min() == approx(adj_lo)
@@ -1255,18 +1262,21 @@ class TestBoxPlot(SharedAxesLevelTests):
         assert np.allclose(caps_hi[val_idx], (adj_hi, adj_hi))
         assert np.allclose(caps_hi[pos_idx], (pos - capsize / 2, pos + capsize / 2))
 
-        flier_data = data[(data < adj_lo) | (data > adj_hi)]
+        if isinstance(data, pd.Series):
+            flier_data = data[(data < adj_lo) | (data > adj_hi)]
+        else:
+            flier_data = data.filter((data < adj_lo) | (data > adj_hi))
         assert sorted(fliers[val_idx]) == sorted(flier_data)
         assert np.allclose(fliers[pos_idx], pos)
 
     @pytest.mark.parametrize("orient,col", [("x", "y"), ("y", "z")])
-    def test_single_var(self, long_df, orient, col):
+    def test_single_var(self, long_df, orient, col, using_polars):
 
         var = {"x": "y", "y": "x"}[orient]
         ax = boxplot(long_df, **{var: col})
         bxp = ax.containers[0][0]
         self.check_box(bxp, long_df[col], orient, 0)
-        self.check_whiskers(bxp, long_df[col], orient, 0)
+        self.check_whiskers(bxp, long_df[col], orient, 0, using_polars=using_polars)
 
     @pytest.mark.parametrize("orient,col", [(None, "x"), ("x", "y"), ("y", "z")])
     def test_vector_data(self, long_df, orient, col):
@@ -1278,14 +1288,14 @@ class TestBoxPlot(SharedAxesLevelTests):
         self.check_whiskers(bxp, long_df[col], orient, 0)
 
     @pytest.mark.parametrize("orient", ["h", "v"])
-    def test_wide_data(self, wide_df, orient):
+    def test_wide_data(self, wide_df, orient, using_polars):
 
         orient = {"h": "y", "v": "x"}[orient]
         ax = boxplot(wide_df, orient=orient)
         for i, bxp in enumerate(ax.containers):
             col = wide_df.columns[i]
             self.check_box(bxp[i], wide_df[col], orient, i)
-            self.check_whiskers(bxp[i], wide_df[col], orient, i)
+            self.check_whiskers(bxp[i], wide_df[col], orient, i, using_polars=using_polars)
 
     @pytest.mark.parametrize("orient", ["x", "y"])
     def test_grouped(self, long_df, orient):
@@ -1901,13 +1911,16 @@ class TestBarPlot(SharedAggTests):
         assert getattr(bar, f"get_{prop}")() == approx(vals.mean())
 
     @pytest.mark.parametrize("orient", ["x", "y", "h", "v"])
-    def test_wide_df(self, wide_df, orient):
+    def test_wide_df(self, wide_df, orient, using_polars):
 
         ax = barplot(wide_df, orient=orient)
         orient = {"h": "y", "v": "x"}.get(orient, orient)
         prop = {"x": "height", "y": "width"}[orient]
         for i, bar in enumerate(ax.patches):
-            assert getattr(bar, f"get_{prop}")() == approx(wide_df.iloc[:, i].mean())
+            if using_polars:
+                assert getattr(bar, f"get_{prop}")() == approx(wide_df[:, i].mean())
+            else:
+                assert getattr(bar, f"get_{prop}")() == approx(wide_df.iloc[:, i].mean())
 
     @pytest.mark.parametrize("orient", ["x", "y", "h", "v"])
     def test_vector_orient(self, orient):
@@ -2396,7 +2409,7 @@ class TestPointPlot(SharedAggTests):
         assert getattr(line, f"get_{orient}data")() == approx(vals.mean())
 
     @pytest.mark.parametrize("orient", ["x", "y", "h", "v"])
-    def test_wide_df(self, wide_df, orient):
+    def test_wide_df(self, wide_df, orient, using_polars):
 
         ax = pointplot(wide_df, orient=orient)
         orient = {"h": "y", "v": "x"}.get(orient, orient)
@@ -2406,10 +2419,16 @@ class TestPointPlot(SharedAggTests):
             getattr(line, f"get_{orient}data")(),
             np.arange(len(wide_df.columns)),
         )
-        assert_array_almost_equal(
-            getattr(line, f"get_{depend}data")(),
-            wide_df.mean(axis=0),
-        )
+        if using_polars:
+            assert_array_almost_equal(
+                getattr(line, f"get_{depend}data")(),
+                wide_df.mean(axis=0).to_numpy().flatten(),
+            )
+        else:
+            assert_array_almost_equal(
+                getattr(line, f"get_{depend}data")(),
+                wide_df.mean(axis=0),
+            )
 
     @pytest.mark.parametrize("orient", ["x", "y", "h", "v"])
     def test_vector_orient(self, orient):

@@ -15,6 +15,9 @@ def maybe_convert_to_polars(df):
         return pl.from_pandas(df)
     return df
 
+@pytest.fixture()
+def using_polars() -> bool:
+    return os.environ.get('SEABORN_TEST_INTERCHANGE_PROTOCOL', '0') == '1'
 
 @pytest.fixture(autouse=True)
 def close_figs():
@@ -47,7 +50,7 @@ def wide_df(rng):
 @pytest.fixture
 def wide_array(wide_df):
 
-    return maybe_convert_to_polars(wide_df.to_numpy())
+    return wide_df.to_numpy()
 
 
 # TODO s/flat/thin?
@@ -151,7 +154,8 @@ def long_df(rng):
     df["s_cat"] = df["s"].astype("category")
     df["s_str"] = df["s"].astype(str)
 
-    return maybe_convert_to_polars(df)
+    # pl.from_pandas fails here
+    return df
 
 
 @pytest.fixture
@@ -179,7 +183,8 @@ def null_df(rng, long_df):
     for col in df:
         idx = rng.permutation(df.index)[:10]
         df.loc[idx, col] = np.nan
-    return maybe_convert_to_polars(df)
+    # polars.from_pandas fails here
+    return df
 
 
 @pytest.fixture
@@ -189,10 +194,13 @@ def object_df(rng, long_df):
     # objectify numeric columns
     for col in ["c", "s", "f"]:
         df[col] = df[col].astype(object)
-    return maybe_convert_to_polars(df)
+    # Can't convert to polars
+    return df
 
 
 @pytest.fixture
-def null_series(flat_series):
-
-    return maybe_convert_to_polars(pd.Series(index=flat_series.index, dtype='float64'))
+def null_series(flat_series, using_polars):
+    if using_polars:
+        import polars as pl
+        return pl.Series([], dtype=pl.Float64)
+    return pd.Series(index=flat_series.index, dtype='float64')

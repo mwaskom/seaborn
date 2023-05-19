@@ -1,4 +1,5 @@
 import itertools
+import os
 import warnings
 
 import numpy as np
@@ -196,6 +197,7 @@ class TestRugPlot(SharedAxesLevelTests):
         self.assert_rug_equal(ax1.collections[0], ax2.collections[0])
         self.assert_rug_equal(ax1.collections[1], ax2.collections[1])
 
+    @pytest.mark.xfail(os.environ.get('SEABORN_TEST_INTERCHANGE_PROTOCOL', '0')== '1', reason='polars does not have rename_axis')
     def test_wide_vs_long_data(self, wide_df):
 
         f, (ax1, ax2) = plt.subplots(ncols=2)
@@ -241,6 +243,7 @@ class TestRugPlot(SharedAxesLevelTests):
         self.assert_rug_equal(*ax.collections)
 
     @pytest.mark.parametrize("variable", ["x", "y"])
+    @pytest.mark.xfail(os.environ.get('SEABORN_TEST_INTERCHANGE_PROTOCOL', '0')== '1', reason='polars does not have rename_axis')
     def test_axis_deprecation(self, flat_series, variable):
 
         f, ax = plt.subplots()
@@ -390,6 +393,7 @@ class TestKDEPlotUnivariate(SharedAxesLevelTests):
         for a, b in itertools.product(ydata, ydata):
             assert_array_equal(a, b)
 
+    @pytest.mark.xfail(os.environ.get('SEABORN_TEST_INTERCHANGE_PROTOCOL', '0')== '1', reason='polars does not have rename_axis')
     def test_wide_vs_long_data(self, wide_df):
 
         f, (ax1, ax2) = plt.subplots(ncols=2)
