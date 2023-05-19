@@ -111,8 +111,7 @@ jobs:
       - name: Install polars
         run: |
           pip install --upgrade pip wheel
-          pip uninstall pandas -y
-          pip install --pre --extra-index https://pypi.anaconda.org/scipy-wheels-nightly/simple pandas
+          pip install pandas>=2.0.1
           pip install --upgrade polars pyarrow
 
       - name: Install seaborn
