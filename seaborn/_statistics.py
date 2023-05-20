@@ -35,7 +35,7 @@ except ImportError:
     _no_scipy = True
 
 from .algorithms import bootstrap
-from .utils import _check_argument
+from .utils import _check_argument, _normal_quantile_func
 
 
 class KDE:
@@ -516,6 +516,48 @@ class EstimateAggregator:
             err_min, err_max = _percentile_interval(boots, self.error_level)
 
         return pd.Series({var: estimate, f"{var}min": err_min, f"{var}max": err_max})
+
+
+class LetterValues:
+
+    def __init__(self, depth, outlier_prop, trust_alpha):
+        ...
+        self.depth = depth
+        self.outlier_prop = outlier_prop
+        self.trust_alpha = trust_alpha
+
+    def _compute_k_depth(self, n):
+
+        # Select the depth, i.e. number of boxes to draw, based on the method
+        if self.depth == "full":
+            # extend boxes to 100% of the data
+            k = int(np.log2(n)) + 1
+        elif self.depth == "tukey":
+            # This results with 5-8 points in each tail
+            k = int(np.log2(n)) - 3
+        elif self.depth == "proportion":
+            k = int(np.log2(n)) - int(np.log2(n * self.outlier_prop)) + 1
+        elif self.depth == "trustworthy":
+            point_conf = 2 * _normal_quantile_func(1 - self.trust_alpha / 2) ** 2
+            k = int(np.log2(n / point_conf)) + 1
+        else:
+            # allow having k directly specified as input
+            k = int(self.depth)
+
+        return max(k, 1)
+
+    def _compute_breaks(self, x):
+
+        k = self._compute_k_depth(len(x))
+        exp = np.arange(k + 1, 1, -1), np.arange(2, k + 2)
+        levels = k + 1 - np.concatenate(exp).astype(float)
+        percentiles = 100 * np.concatenate([0.5 ** exp[0], 1 - 0.5 ** exp[1]])
+        values = np.percentile(x, percentiles)
+        return levels, percentiles, values
+
+    def __call__(self, x):
+
+        ...
 
 
 def _percentile_interval(data, width):
