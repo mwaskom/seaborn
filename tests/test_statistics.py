@@ -499,14 +499,22 @@ class TestECDF(DistributionFixtures):
 
 class TestEstimateAggregator:
 
-    def test_func_estimator(self, long_df):
+    def test_func_estimator(self, long_df, using_polars):
+        if using_polars:
+            # Testing internal class which is reached when
+            # data has already been converted to pandas
+            return
 
         func = np.mean
         agg = EstimateAggregator(func)
         out = agg(long_df, "x")
         assert out["x"] == func(long_df["x"].to_numpy())
 
-    def test_name_estimator(self, long_df):
+    def test_name_estimator(self, long_df, using_polars):
+        if using_polars:
+            # Testing internal class which is reached when
+            # data has already been converted to pandas
+            return
 
         agg = EstimateAggregator("mean")
         out = agg(long_df, "x")
@@ -522,32 +530,28 @@ class TestEstimateAggregator:
         assert out["x"] == func(long_df["x"])
 
     def test_se_errorbars(self, long_df, using_polars):
+        if using_polars:
+            # Testing internal class which is reached when
+            # data has already been converted to pandas
+            return
 
         agg = EstimateAggregator("mean", "se")
         out = agg(long_df, "x")
         assert out["x"] == long_df["x"].mean()
-        if using_polars:
-            assert out["xmin"] == (long_df["x"].mean() - long_df.to_pandas()["x"].sem())
-            assert out["xmax"] == (long_df["x"].mean() + long_df.to_pandas()["x"].sem())
-        else:
-            assert out["xmin"] == (long_df["x"].mean() - long_df["x"].sem())
-            assert out["xmax"] == (long_df["x"].mean() + long_df["x"].sem())
+        assert out["xmin"] == (long_df["x"].mean() - long_df["x"].sem())
+        assert out["xmax"] == (long_df["x"].mean() + long_df["x"].sem())
 
         agg = EstimateAggregator("mean", ("se", 2))
         out = agg(long_df, "x")
         assert out["x"] == long_df["x"].mean()
-        if using_polars:
-            assert out["xmin"] == (
-                long_df["x"].mean() - 2 * long_df.to_pandas()["x"].sem()
-            )
-            assert out["xmax"] == (
-                long_df["x"].mean() + 2 * long_df.to_pandas()["x"].sem()
-            )
-        else:
-            assert out["xmin"] == (long_df["x"].mean() - 2 * long_df["x"].sem())
-            assert out["xmax"] == (long_df["x"].mean() + 2 * long_df["x"].sem())
+        assert out["xmin"] == (long_df["x"].mean() - 2 * long_df["x"].sem())
+        assert out["xmax"] == (long_df["x"].mean() + 2 * long_df["x"].sem())
 
-    def test_sd_errorbars(self, long_df):
+    def test_sd_errorbars(self, long_df, using_polars):
+        if using_polars:
+            # Testing internal class which is reached when
+            # data has already been converted to pandas
+            return
 
         agg = EstimateAggregator("mean", "sd")
         out = agg(long_df, "x")
@@ -561,7 +565,11 @@ class TestEstimateAggregator:
         assert out["xmin"] == (long_df["x"].mean() - 2 * long_df["x"].std())
         assert out["xmax"] == (long_df["x"].mean() + 2 * long_df["x"].std())
 
-    def test_pi_errorbars(self, long_df):
+    def test_pi_errorbars(self, long_df, using_polars):
+        if using_polars:
+            # Testing internal class which is reached when
+            # data has already been converted to pandas
+            return
 
         agg = EstimateAggregator("mean", "pi")
         out = agg(long_df, "y")
@@ -573,7 +581,11 @@ class TestEstimateAggregator:
         assert out["ymin"] == np.percentile(long_df["y"], 25)
         assert out["ymax"] == np.percentile(long_df["y"], 75)
 
-    def test_ci_errorbars(self, long_df):
+    def test_ci_errorbars(self, long_df, using_polars):
+        if using_polars:
+            # Testing internal class which is reached when
+            # data has already been converted to pandas
+            return
 
         agg = EstimateAggregator("mean", "ci", n_boot=100000, seed=0)
         out = agg(long_df, "y")
@@ -598,7 +610,11 @@ class TestEstimateAggregator:
         out_test = agg_ref(long_df, "y")
         assert_array_equal(out_orig, out_test)
 
-    def test_custom_errorbars(self, long_df):
+    def test_custom_errorbars(self, long_df, using_polars):
+        if using_polars:
+            # Testing internal class which is reached when
+            # data has already been converted to pandas
+            return
 
         f = lambda x: (x.min(), x.max())  # noqa: E731
         agg = EstimateAggregator("mean", f)
