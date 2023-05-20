@@ -850,7 +850,7 @@ class SharedScatterTests(SharedAxesLevelTests):
             kws["jitter"] = False
 
         ax = self.func(data=long_df, x=cat_var, y="y", native_scale=True, **kws)
-        
+
         if using_polars:
             long_df = long_df.to_pandas()
 
@@ -1203,7 +1203,6 @@ class TestStripPlot(SharedScatterTests):
         else:
             x_var, y_var = val_var, cat_var
             cat_idx, val_idx = 1, 0
-
 
         ax = stripplot(
             data=long_df, x=x_var, y=y_var, jitter=jitter,

@@ -1441,7 +1441,9 @@ class TestFacetInterface:
         else:
             order = reorder(categorical_order(long_df[key]))
         p = Plot(long_df).facet(**{dim: key, "order": order})
-        self.check_facet_results_1d(p, long_df, dim, key, order, using_polars=using_polars)
+        self.check_facet_results_1d(
+            p, long_df, dim, key, order, using_polars=using_polars
+        )
 
     def check_facet_results_2d(self, p, df, variables, order=None):
 

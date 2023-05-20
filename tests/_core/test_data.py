@@ -122,7 +122,9 @@ class TestPlotData:
         "vector_type",
         ["series", "numpy", "list"],
     )
-    def test_vectors_various_types(self, long_df, long_variables, vector_type, using_polars):
+    def test_vectors_various_types(
+        self, long_df, long_variables, vector_type, using_polars
+    ):
         if using_polars:
             # no s_cat
             return

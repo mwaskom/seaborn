@@ -537,8 +537,12 @@ class TestEstimateAggregator:
         out = agg(long_df, "x")
         assert out["x"] == long_df["x"].mean()
         if using_polars:
-            assert out["xmin"] == (long_df["x"].mean() - 2 * long_df.to_pandas()["x"].sem())
-            assert out["xmax"] == (long_df["x"].mean() + 2 * long_df.to_pandas()["x"].sem())
+            assert out["xmin"] == (
+                long_df["x"].mean() - 2 * long_df.to_pandas()["x"].sem()
+            )
+            assert out["xmax"] == (
+                long_df["x"].mean() + 2 * long_df.to_pandas()["x"].sem()
+            )
         else:
             assert out["xmin"] == (long_df["x"].mean() - 2 * long_df["x"].sem())
             assert out["xmax"] == (long_df["x"].mean() + 2 * long_df["x"].sem())

@@ -211,7 +211,7 @@ class TestHueMapping:
         for val in [0, 1]:
             if using_polars:
                 import polars as pl
-                data = long_df.filter(pl.col('c')==val)
+                data = long_df.filter(pl.col('c') == val)
             else:
                 data = long_df[long_df["c"]]
             p = VectorPlotter(
@@ -226,7 +226,9 @@ class TestHueMapping:
         p = VectorPlotter(data=long_df, variables=dict(x="x", y="y", hue="t"))
         m = HueMapping(p)
         if using_polars:
-            assert m.levels == [pd.Timestamp(t) for t in long_df.to_pandas()["t"].unique()]
+            assert m.levels == [
+                pd.Timestamp(t) for t in long_df.to_pandas()["t"].unique()
+            ]
         else:
             assert m.levels == [pd.Timestamp(t) for t in long_df["t"].unique()]
         assert m.map_type == "datetime"
@@ -1453,7 +1455,9 @@ class TestVectorPlotter:
         p.scale_categorical("x")
         assert not p._var_ordered["x"]
         if using_polars:
-            assert_array_equal(p.var_levels["x"], categorical_order(long_df.to_pandas()["a"]))
+            assert_array_equal(
+                p.var_levels["x"], categorical_order(long_df.to_pandas()["a"])
+            )
         else:
             assert_array_equal(p.var_levels["x"], categorical_order(long_df["a"]))
 

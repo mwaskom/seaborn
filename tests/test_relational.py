@@ -676,7 +676,9 @@ class TestRelationalPlotter(Helpers):
         a_like_b = dict(zip(long_df["a"].unique(), long_df["b"].unique()))
         if using_polars:
             import polars as pl
-            long_df = long_df.with_columns(pl.col('a').map_dict(a_like_b).alias("a_like_b"))
+            long_df = long_df.with_columns(
+                pl.col('a').map_dict(a_like_b).alias("a_like_b")
+            )
         else:
             long_df["a_like_b"] = long_df["a"].map(a_like_b)
         g = relplot(
@@ -1198,7 +1200,9 @@ class TestLinePlotter(SharedAxesLevelTests, Helpers):
         assert_array_almost_equal(line.get_ydata(), expected["y"])
         ribbon_y = ax1.collections[0].get_paths()[0].vertices[:, 1]
         if using_polars:
-            assert_array_equal(np.unique(ribbon_y), long_df.to_pandas()["y"].sort_values().unique())
+            assert_array_equal(
+                np.unique(ribbon_y), long_df.to_pandas()["y"].sort_values().unique()
+            )
         else:
             assert_array_equal(np.unique(ribbon_y), long_df["y"].sort_values().unique())
 

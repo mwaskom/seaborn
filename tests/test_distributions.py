@@ -2407,9 +2407,9 @@ class TestDisPlot:
         bins = np.linspace(0, 20, 5)
         if using_polars:
             import polars as pl
-            data = long_df.filter(pl.col('c')==0)
+            data = long_df.filter(pl.col('c') == 0)
         else:
-            data = long_df[long_df['c']==0]
+            data = long_df[long_df['c'] == 0]
         ax = histplot(
             data=data,
             x="x", hue="a", hue_order=["a", "b", "c"],
