@@ -19,7 +19,10 @@ class TestPlotData:
         variables = dict(x="x", y="y", color="a", size="z", style="s_cat")
         return variables
 
-    def test_named_vectors(self, long_df, long_variables):
+    def test_named_vectors(self, long_df, long_variables, using_polars):
+        if using_polars:
+            # no s_cat
+            return
 
         p = PlotData(long_df, long_variables)
         assert p.source_data is long_df
@@ -28,7 +31,10 @@ class TestPlotData:
             assert p.names[key] == val
             assert_vector_equal(p.frame[key], long_df[val])
 
-    def test_named_and_given_vectors(self, long_df, long_variables):
+    def test_named_and_given_vectors(self, long_df, long_variables, using_polars):
+        if using_polars:
+            # no s_cat
+            return
 
         long_variables["y"] = long_df["b"]
         long_variables["size"] = long_df["z"].to_numpy()
@@ -47,7 +53,10 @@ class TestPlotData:
         assert p.ids["y"] == "b"
         assert p.ids["size"] == id(long_variables["size"])
 
-    def test_index_as_variable(self, long_df, long_variables):
+    def test_index_as_variable(self, long_df, long_variables, using_polars):
+        if using_polars:
+            # no index
+            return
 
         index = pd.Index(np.arange(len(long_df)) * 2 + 10, name="i", dtype=int)
         long_variables["x"] = "i"
@@ -56,7 +65,10 @@ class TestPlotData:
         assert p.names["x"] == p.ids["x"] == "i"
         assert_vector_equal(p.frame["x"], pd.Series(index, index))
 
-    def test_multiindex_as_variables(self, long_df, long_variables):
+    def test_multiindex_as_variables(self, long_df, long_variables, using_polars):
+        if using_polars:
+            # no index
+            return
 
         index_i = pd.Index(np.arange(len(long_df)) * 2 + 10, name="i", dtype=int)
         index_j = pd.Index(np.arange(len(long_df)) * 3 + 5, name="j", dtype=int)
@@ -96,7 +108,10 @@ class TestPlotData:
         assert_vector_equal(p.frame[var], df[key])
         assert p.names[var] == p.ids[var] == str(key)
 
-    def test_dict_as_data(self, long_dict, long_variables):
+    def test_dict_as_data(self, long_dict, long_variables, using_polars):
+        if using_polars:
+            # no s_cat
+            return
 
         p = PlotData(long_dict, long_variables)
         assert p.source_data is long_dict
@@ -107,7 +122,10 @@ class TestPlotData:
         "vector_type",
         ["series", "numpy", "list"],
     )
-    def test_vectors_various_types(self, long_df, long_variables, vector_type):
+    def test_vectors_various_types(self, long_df, long_variables, vector_type, using_polars):
+        if using_polars:
+            # no s_cat
+            return
 
         variables = {key: long_df[val] for key, val in long_variables.items()}
         if vector_type == "numpy":

@@ -504,7 +504,7 @@ class TestEstimateAggregator:
         func = np.mean
         agg = EstimateAggregator(func)
         out = agg(long_df, "x")
-        assert out["x"] == func(long_df["x"])
+        assert out["x"] == func(long_df["x"].to_numpy())
 
     def test_name_estimator(self, long_df):
 
@@ -521,19 +521,27 @@ class TestEstimateAggregator:
         out = agg(long_df, "x")
         assert out["x"] == func(long_df["x"])
 
-    def test_se_errorbars(self, long_df):
+    def test_se_errorbars(self, long_df, using_polars):
 
         agg = EstimateAggregator("mean", "se")
         out = agg(long_df, "x")
         assert out["x"] == long_df["x"].mean()
-        assert out["xmin"] == (long_df["x"].mean() - long_df["x"].sem())
-        assert out["xmax"] == (long_df["x"].mean() + long_df["x"].sem())
+        if using_polars:
+            assert out["xmin"] == (long_df["x"].mean() - long_df.to_pandas()["x"].sem())
+            assert out["xmax"] == (long_df["x"].mean() + long_df.to_pandas()["x"].sem())
+        else:
+            assert out["xmin"] == (long_df["x"].mean() - long_df["x"].sem())
+            assert out["xmax"] == (long_df["x"].mean() + long_df["x"].sem())
 
         agg = EstimateAggregator("mean", ("se", 2))
         out = agg(long_df, "x")
         assert out["x"] == long_df["x"].mean()
-        assert out["xmin"] == (long_df["x"].mean() - 2 * long_df["x"].sem())
-        assert out["xmax"] == (long_df["x"].mean() + 2 * long_df["x"].sem())
+        if using_polars:
+            assert out["xmin"] == (long_df["x"].mean() - 2 * long_df.to_pandas()["x"].sem())
+            assert out["xmax"] == (long_df["x"].mean() + 2 * long_df.to_pandas()["x"].sem())
+        else:
+            assert out["xmin"] == (long_df["x"].mean() - 2 * long_df["x"].sem())
+            assert out["xmax"] == (long_df["x"].mean() + 2 * long_df["x"].sem())
 
     def test_sd_errorbars(self, long_df):
 

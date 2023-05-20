@@ -193,9 +193,11 @@ def null_df(rng, long_df, using_polars):
 
 
 @pytest.fixture
-def object_df(rng, long_df):
-
-    df = long_df.copy()
+def object_df(rng, long_df, using_polars):
+    if using_polars:
+        df = long_df.to_pandas().copy()
+    else:
+        df = long_df.copy()
     # objectify numeric columns
     for col in ["c", "s", "f"]:
         df[col] = df[col].astype(object)

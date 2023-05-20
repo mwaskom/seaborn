@@ -128,16 +128,22 @@ class TestRelationalPlotter(Helpers):
             assert p.variables["hue"] == wide_df.columns.name
             assert p.variables["style"] == wide_df.columns.name
 
-    def test_wide_df_with_nonnumeric_variables(self, long_df):
+    def test_wide_df_with_nonnumeric_variables(self, long_df, using_polars):
 
         p = _RelationalPlotter()
         p.assign_variables(data=long_df)
         assert p.input_format == "wide"
         assert list(p.variables) == ["x", "y", "hue", "style"]
 
-        numeric_df = long_df.select_dtypes("number")
+        if using_polars:
+            import polars as pl
+            numeric_df = long_df.select(pl.col(pl.NUMERIC_DTYPES))
+        else:
+            numeric_df = long_df.select_dtypes("number")
 
         assert len(p.plot_data) == np.prod(numeric_df.shape)
+        if using_polars:
+            numeric_df = numeric_df.to_pandas()
 
         x = p.plot_data["x"]
         expected_x = np.tile(numeric_df.index, numeric_df.shape[1])
@@ -469,7 +475,7 @@ class TestRelationalPlotter(Helpers):
         assert p.variables["hue"] is None
         assert p.variables["style"] is None
 
-    def test_relplot_simple(self, long_df):
+    def test_relplot_simple(self, long_df, using_polars):
 
         g = relplot(data=long_df, x="x", y="y", kind="scatter")
         x, y = g.ax.collections[0].get_offsets().T
@@ -477,6 +483,8 @@ class TestRelationalPlotter(Helpers):
         assert_array_equal(y, long_df["y"])
 
         g = relplot(data=long_df, x="x", y="y", kind="line")
+        if using_polars:
+            long_df = long_df.to_pandas()
         x, y = g.ax.lines[0].get_xydata().T
         expected = long_df.groupby("x").y.mean()
         assert_array_equal(x, expected.index)
@@ -485,7 +493,7 @@ class TestRelationalPlotter(Helpers):
         with pytest.raises(ValueError):
             g = relplot(data=long_df, x="x", y="y", kind="not_a_kind")
 
-    def test_relplot_complex(self, long_df):
+    def test_relplot_complex(self, long_df, using_polars):
 
         for sem in ["hue", "size", "style"]:
             g = relplot(data=long_df, x="x", y="y", **{sem: "a"})
@@ -497,7 +505,10 @@ class TestRelationalPlotter(Helpers):
             g = relplot(
                 data=long_df, x="x", y="y", col="c", **{sem: "a"}
             )
-            grouped = long_df.groupby("c")
+            if using_polars:
+                grouped = long_df.to_pandas().groupby("c")
+            else:
+                grouped = long_df.groupby("c")
             for (_, grp_df), ax in zip(grouped, g.axes.flat):
                 x, y = ax.collections[0].get_offsets().T
                 assert_array_equal(x, grp_df["x"])
@@ -507,25 +518,36 @@ class TestRelationalPlotter(Helpers):
             g = relplot(
                 data=long_df, x="x", y="y", hue="b", col="c", **{sem: "a"}
             )
-            grouped = long_df.groupby("c")
+            if using_polars:
+                grouped = long_df.to_pandas().groupby("c")
+            else:
+                grouped = long_df.groupby("c")
             for (_, grp_df), ax in zip(grouped, g.axes.flat):
                 x, y = ax.collections[0].get_offsets().T
                 assert_array_equal(x, grp_df["x"])
                 assert_array_equal(y, grp_df["y"])
 
         for sem in ["hue", "size", "style"]:
+            if using_polars:
+                data = long_df.sort(['c', 'b'])
+            else:
+                data = long_df.sort_values(["c", "b"])
+
             g = relplot(
-                data=long_df.sort_values(["c", "b"]),
+                data=data,
                 x="x", y="y", col="b", row="c", **{sem: "a"}
             )
-            grouped = long_df.groupby(["c", "b"])
+            if using_polars:
+                grouped = long_df.to_pandas().groupby(['c', 'b'])
+            else:
+                grouped = long_df.groupby(['c', 'b'])
             for (_, grp_df), ax in zip(grouped, g.axes.flat):
                 x, y = ax.collections[0].get_offsets().T
                 assert_array_equal(x, grp_df["x"])
                 assert_array_equal(y, grp_df["y"])
 
     @pytest.mark.parametrize("vector_type", ["series", "numpy", "list"])
-    def test_relplot_vectors(self, long_df, vector_type):
+    def test_relplot_vectors(self, long_df, vector_type, using_polars):
 
         semantics = dict(x="x", y="y", hue="f", col="c")
         kws = {key: long_df[val] for key, val in semantics.items()}
@@ -534,6 +556,8 @@ class TestRelationalPlotter(Helpers):
         elif vector_type == "list":
             kws = {k: v.to_list() for k, v in kws.items()}
         g = relplot(data=long_df, **kws)
+        if using_polars:
+            long_df = long_df.to_pandas()
         grouped = long_df.groupby("c")
         assert len(g.axes_dict) == len(grouped)
         for (_, grp_df), ax in zip(grouped, g.axes.flat):
@@ -548,13 +572,15 @@ class TestRelationalPlotter(Helpers):
         assert_array_equal(y, wide_df.to_numpy().T.ravel())
         assert not g.ax.get_ylabel()
 
-    def test_relplot_hues(self, long_df):
+    def test_relplot_hues(self, long_df, using_polars):
 
         palette = ["r", "b", "g"]
         g = relplot(
             x="x", y="y", hue="a", style="b", col="c",
             palette=palette, data=long_df
         )
+        if using_polars:
+            long_df = long_df.to_pandas()
 
         palette = dict(zip(long_df["a"].unique(), palette))
         grouped = long_df.groupby("c")
@@ -563,7 +589,7 @@ class TestRelationalPlotter(Helpers):
             expected_hues = [palette[val] for val in grp_df["a"]]
             assert same_color(points.get_facecolors(), expected_hues)
 
-    def test_relplot_sizes(self, long_df):
+    def test_relplot_sizes(self, long_df, using_polars):
 
         sizes = [5, 12, 7]
         g = relplot(
@@ -571,6 +597,8 @@ class TestRelationalPlotter(Helpers):
             x="x", y="y", size="a", hue="b", col="c",
             sizes=sizes,
         )
+        if using_polars:
+            long_df = long_df.to_pandas()
 
         sizes = dict(zip(long_df["a"].unique(), sizes))
         grouped = long_df.groupby("c")
@@ -579,7 +607,7 @@ class TestRelationalPlotter(Helpers):
             expected_sizes = [sizes[val] for val in grp_df["a"]]
             assert_array_equal(points.get_sizes(), expected_sizes)
 
-    def test_relplot_styles(self, long_df):
+    def test_relplot_styles(self, long_df, using_polars):
 
         markers = ["o", "d", "s"]
         g = relplot(
@@ -587,6 +615,8 @@ class TestRelationalPlotter(Helpers):
             x="x", y="y", style="a", hue="b", col="c",
             markers=markers,
         )
+        if using_polars:
+            long_df = long_df.to_pandas()
 
         paths = []
         for m in markers:
@@ -600,9 +630,13 @@ class TestRelationalPlotter(Helpers):
             expected_paths = [paths[val] for val in grp_df["a"]]
             assert self.paths_equal(points.get_paths(), expected_paths)
 
-    def test_relplot_stringy_numerics(self, long_df):
+    def test_relplot_stringy_numerics(self, long_df, using_polars):
 
-        long_df["x_str"] = long_df["x"].astype(str)
+        if using_polars:
+            import polars as pl
+            long_df = long_df.with_columns(pl.col('x').cast(pl.Utf8).alias('x_str'))
+        else:
+            long_df["x_str"] = long_df["x"].astype(str)
 
         g = relplot(data=long_df, x="x", y="y", hue="x_str")
         points = g.ax.collections[0]
@@ -618,14 +652,17 @@ class TestRelationalPlotter(Helpers):
         assert not mask.any()
         assert_array_equal(xys, long_df[["x", "y"]])
 
-    def test_relplot_legend(self, long_df):
+    def test_relplot_legend(self, long_df, using_polars):
 
         g = relplot(data=long_df, x="x", y="y")
         assert g._legend is None
 
         g = relplot(data=long_df, x="x", y="y", hue="a")
         texts = [t.get_text() for t in g._legend.texts]
-        expected_texts = long_df["a"].unique()
+        if using_polars:
+            expected_texts = long_df.to_pandas()["a"].unique()
+        else:
+            expected_texts = long_df["a"].unique()
         assert_array_equal(texts, expected_texts)
 
         g = relplot(data=long_df, x="x", y="y", hue="s", size="s")
@@ -637,7 +674,11 @@ class TestRelationalPlotter(Helpers):
 
         palette = color_palette("deep", len(long_df["b"].unique()))
         a_like_b = dict(zip(long_df["a"].unique(), long_df["b"].unique()))
-        long_df["a_like_b"] = long_df["a"].map(a_like_b)
+        if using_polars:
+            import polars as pl
+            long_df = long_df.with_columns(pl.col('a').map_dict(a_like_b).alias("a_like_b"))
+        else:
+            long_df["a_like_b"] = long_df["a"].map(a_like_b)
         g = relplot(
             data=long_df,
             x="x", y="y", hue="b", style="a_like_b",
@@ -664,7 +705,10 @@ class TestRelationalPlotter(Helpers):
         for ax in g.axes[:, 1:].flat:
             assert ax.get_ylabel() == ""
 
-    def test_relplot_data(self, long_df):
+    def test_relplot_data(self, long_df, using_polars):
+        if using_polars:
+            # Test doesn't pass DataFrame
+            return
 
         g = relplot(
             data=long_df.to_dict(orient="list"),
@@ -678,11 +722,14 @@ class TestRelationalPlotter(Helpers):
         assert_array_equal(g.data["y_var"], long_df["y"])
         assert_array_equal(g.data["_hue_"], long_df["a"])
 
-    def test_facet_variable_collision(self, long_df):
+    def test_facet_variable_collision(self, long_df, using_polars):
 
         # https://github.com/mwaskom/seaborn/issues/2488
         col_data = long_df["c"]
-        long_df = long_df.assign(size=col_data)
+        if using_polars:
+            long_df = long_df.with_columns(size=col_data)
+        else:
+            long_df = long_df.assign(size=col_data)
 
         g = relplot(
             data=long_df,
@@ -912,7 +959,7 @@ class TestLinePlotter(SharedAxesLevelTests, Helpers):
         handles, labels = ax.get_legend_handles_labels()
         assert labels == expected_levels
 
-    def test_plot(self, long_df, repeated_df):
+    def test_plot(self, long_df, repeated_df, using_polars):
 
         f, ax = plt.subplots()
 
@@ -922,6 +969,8 @@ class TestLinePlotter(SharedAxesLevelTests, Helpers):
             sort=False,
             estimator=None
         )
+        if using_polars:
+            long_df = long_df.to_pandas()
         p.plot(ax, {})
         line, = ax.lines
         assert_array_equal(line.get_xdata(), long_df.x.to_numpy())
@@ -1130,19 +1179,28 @@ class TestLinePlotter(SharedAxesLevelTests, Helpers):
         assert_array_equal(line.get_xdata(), x)
         assert_array_equal(line.get_ydata(), y)
 
-    def test_orient(self, long_df):
+    def test_orient(self, long_df, using_polars):
 
-        long_df = long_df.drop("x", axis=1).rename(columns={"s": "y", "y": "x"})
+        if using_polars:
+            long_df = long_df.drop("x").rename({"s": "y", "y": "x"})
+        else:
+            long_df = long_df.drop("x", axis=1).rename(columns={"s": "y", "y": "x"})
 
         ax1 = plt.figure().subplots()
         lineplot(data=long_df, x="x", y="y", orient="y", errorbar="sd")
         assert len(ax1.lines) == len(ax1.collections)
         line, = ax1.lines
-        expected = long_df.groupby("y").agg({"x": "mean"}).reset_index()
+        if using_polars:
+            expected = long_df.to_pandas().groupby("y").agg({"x": "mean"}).reset_index()
+        else:
+            expected = long_df.groupby("y").agg({"x": "mean"}).reset_index()
         assert_array_almost_equal(line.get_xdata(), expected["x"])
         assert_array_almost_equal(line.get_ydata(), expected["y"])
         ribbon_y = ax1.collections[0].get_paths()[0].vertices[:, 1]
-        assert_array_equal(np.unique(ribbon_y), long_df["y"].sort_values().unique())
+        if using_polars:
+            assert_array_equal(np.unique(ribbon_y), long_df.to_pandas()["y"].sort_values().unique())
+        else:
+            assert_array_equal(np.unique(ribbon_y), long_df["y"].sort_values().unique())
 
         ax2 = plt.figure().subplots()
         lineplot(
@@ -1289,13 +1347,13 @@ class TestLinePlotter(SharedAxesLevelTests, Helpers):
         lineplot(x="x", y="y", data=long_df)
         ax.clear()
 
-        lineplot(x=long_df.x, y=long_df.y)
+        lineplot(x=long_df['x'], y=long_df['y'])
         ax.clear()
 
-        lineplot(x=long_df.x, y="y", data=long_df)
+        lineplot(x=long_df['x'], y="y", data=long_df)
         ax.clear()
 
-        lineplot(x="x", y=long_df.y.to_numpy(), data=long_df)
+        lineplot(x="x", y=long_df['y'].to_numpy(), data=long_df)
         ax.clear()
 
         lineplot(x="x", y="t", data=long_df)
@@ -1555,7 +1613,7 @@ class TestScatterPlotter(SharedAxesLevelTests, Helpers):
         with pytest.raises(ValueError):
             p.add_legend_data(ax)
 
-    def test_plot(self, long_df, repeated_df):
+    def test_plot(self, long_df, repeated_df, using_polars):
 
         f, ax = plt.subplots()
 
@@ -1631,7 +1689,11 @@ class TestScatterPlotter(SharedAxesLevelTests, Helpers):
         assert same_color(points.get_facecolors(), expected_colors)
         assert self.paths_equal(points.get_paths(), expected_paths)
 
-        x_str = long_df["x"].astype(str)
+        if using_polars:
+            import polars as pl
+            x_str = long_df["x"].cast(pl.Utf8)
+        else:
+            x_str = long_df["x"].astype(str)
         p = _ScatterPlotter(
             data=long_df, variables=dict(x="x", y="y", hue=x_str),
         )
@@ -1846,13 +1908,13 @@ class TestScatterPlotter(SharedAxesLevelTests, Helpers):
         scatterplot(x="x", y="y", data=long_df)
         ax.clear()
 
-        scatterplot(x=long_df.x, y=long_df.y)
+        scatterplot(x=long_df['x'], y=long_df['y'])
         ax.clear()
 
-        scatterplot(x=long_df.x, y="y", data=long_df)
+        scatterplot(x=long_df['x'], y="y", data=long_df)
         ax.clear()
 
-        scatterplot(x="x", y=long_df.y.to_numpy(), data=long_df)
+        scatterplot(x="x", y=long_df['y'].to_numpy(), data=long_df)
         ax.clear()
 
         scatterplot(x="x", y="y", hue="a", data=long_df)

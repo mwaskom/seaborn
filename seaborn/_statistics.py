@@ -35,7 +35,7 @@ except ImportError:
     _no_scipy = True
 
 from .algorithms import bootstrap
-from .utils import _check_argument
+from .utils import _check_argument, try_convert_to_pandas
 
 
 class KDE:
@@ -481,6 +481,7 @@ class EstimateAggregator:
 
     def __call__(self, data, var):
         """Aggregate over `var` column of `data` with estimate and error interval."""
+        data = try_convert_to_pandas(data)
         vals = data[var]
         if callable(self.estimator):
             # You would think we could pass to vals.agg, and yet:
