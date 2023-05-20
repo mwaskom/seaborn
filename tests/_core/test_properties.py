@@ -25,7 +25,13 @@ from seaborn._compat import MarkerStyle, get_colormap
 from seaborn.palettes import color_palette
 
 import os
-pytest.skip(os.environ.get('SEABORN_TEST_INTERCHANGE_PROTOCOL', '0') == '1')
+if os.environ.get('SEABORN_TEST_INTERCHANGE_PROTOCOL', '0') == '1':
+    pytest.skip(
+        "Testing internal classes/methods, which are reached with non-pandas "
+        "dataframes already transformed to pandas",
+        allow_module_level=True
+    )
+
 
 class DataFixtures:
 
