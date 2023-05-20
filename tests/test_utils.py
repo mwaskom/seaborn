@@ -1,5 +1,4 @@
 """Tests for seaborn utility functions."""
-import polars as pl
 import re
 import tempfile
 from types import ModuleType
@@ -435,12 +434,17 @@ def check_load_dataset(name):
     ds = load_dataset(name, cache=False)
     assert isinstance(ds, pd.DataFrame)
     # Check that the example datasets can actually be interchanged.
-    if _version_predates(pd, '2.0.2'):
-        with pytest.raises(RuntimeError, match='Please upgrade pandas'):
-            utils.try_convert_to_pandas(pl.from_pandas(ds))
+    try:
+        import polars as pl
+    except ModuleNotFoundError:
+        pass
     else:
-        ds = utils.try_convert_to_pandas(pl.from_pandas(ds))
-        assert isinstance(ds, pd.DataFrame)
+        if _version_predates(pd, '2.0.2'):
+            with pytest.raises(RuntimeError, match='Please upgrade pandas'):
+                utils.try_convert_to_pandas(pl.from_pandas(ds))
+        else:
+            ds = utils.try_convert_to_pandas(pl.from_pandas(ds))
+            assert isinstance(ds, pd.DataFrame)
 
 
 def check_load_cached_dataset(name):
