@@ -227,7 +227,10 @@ class TestPlotData:
         with pytest.raises(ValueError, match=msg):
             PlotData(None, {var: key})
 
-    def test_data_vector_different_lengths_raises(self, long_df):
+    def test_data_vector_different_lengths_raises(self, long_df, using_polars):
+        if using_polars:
+            # Does not raise (error specifically checks for pandas.DataFrame)
+            return
 
         vector = np.arange(len(long_df) - 5)
         msg = "Length of ndarray vectors must match length of `data`"
@@ -252,12 +255,14 @@ class TestPlotData:
         assert "y" not in p
         assert "color" in p
 
-    def test_join_add_variable(self, long_df):
+    def test_join_add_variable(self, long_df, using_polars):
 
         v1 = {"x": "x", "y": "f"}
         v2 = {"color": "a"}
 
         p1 = PlotData(long_df, v1)
+        if using_polars:
+            long_df = long_df.to_pandas()
         p2 = p1.join(None, v2)
 
         for var, key in dict(**v1, **v2).items():
@@ -265,12 +270,14 @@ class TestPlotData:
             assert p2.names[var] == key
             assert_vector_equal(p2.frame[var], long_df[key])
 
-    def test_join_replace_variable(self, long_df):
+    def test_join_replace_variable(self, long_df, using_polars):
 
         v1 = {"x": "x", "y": "y"}
         v2 = {"y": "s"}
 
         p1 = PlotData(long_df, v1)
+        if using_polars:
+            long_df = long_df.to_pandas()
         p2 = p1.join(None, v2)
 
         variables = v1.copy()
@@ -294,12 +301,14 @@ class TestPlotData:
         assert drop_var not in p2.frame
         assert drop_var not in p2.names
 
-    def test_join_all_operations(self, long_df):
+    def test_join_all_operations(self, long_df, using_polars):
 
         v1 = {"x": "x", "y": "y", "color": "a"}
         v2 = {"y": "s", "size": "s", "color": None}
 
         p1 = PlotData(long_df, v1)
+        if using_polars:
+            long_df = long_df.to_pandas()
         p2 = p1.join(None, v2)
 
         for var, key in v2.items():
@@ -309,12 +318,14 @@ class TestPlotData:
                 assert p2.names[var] == key
                 assert_vector_equal(p2.frame[var], long_df[key])
 
-    def test_join_all_operations_same_data(self, long_df):
+    def test_join_all_operations_same_data(self, long_df, using_polars):
 
         v1 = {"x": "x", "y": "y", "color": "a"}
         v2 = {"y": "s", "size": "s", "color": None}
 
         p1 = PlotData(long_df, v1)
+        if using_polars:
+            long_df = long_df.to_pandas()
         p2 = p1.join(long_df, v2)
 
         for var, key in v2.items():
@@ -324,7 +335,7 @@ class TestPlotData:
                 assert p2.names[var] == key
                 assert_vector_equal(p2.frame[var], long_df[key])
 
-    def test_join_add_variable_new_data(self, long_df):
+    def test_join_add_variable_new_data(self, long_df, using_polars):
 
         d1 = long_df[["x", "y"]]
         d2 = long_df[["a", "s"]]
@@ -333,13 +344,15 @@ class TestPlotData:
         v2 = {"color": "a"}
 
         p1 = PlotData(d1, v1)
+        if using_polars:
+            long_df = long_df.to_pandas()
         p2 = p1.join(d2, v2)
 
         for var, key in dict(**v1, **v2).items():
             assert p2.names[var] == key
             assert_vector_equal(p2.frame[var], long_df[key])
 
-    def test_join_replace_variable_new_data(self, long_df):
+    def test_join_replace_variable_new_data(self, long_df, using_polars):
 
         d1 = long_df[["x", "y"]]
         d2 = long_df[["a", "s"]]
@@ -349,6 +362,8 @@ class TestPlotData:
 
         p1 = PlotData(d1, v1)
         p2 = p1.join(d2, v2)
+        if using_polars:
+            long_df = long_df.to_pandas()
 
         variables = v1.copy()
         variables.update(v2)
@@ -357,10 +372,14 @@ class TestPlotData:
             assert p2.names[var] == key
             assert_vector_equal(p2.frame[var], long_df[key])
 
-    def test_join_add_variable_different_index(self, long_df):
+    def test_join_add_variable_different_index(self, long_df, using_polars):
 
-        d1 = long_df.iloc[:70]
-        d2 = long_df.iloc[30:]
+        if using_polars:
+            d1 = long_df[:70]
+            d2 = long_df[30:]
+        else:
+            d1 = long_df.iloc[:70]
+            d2 = long_df.iloc[30:]
 
         v1 = {"x": "a"}
         v2 = {"y": "z"}
@@ -370,6 +389,9 @@ class TestPlotData:
 
         (var1, key1), = v1.items()
         (var2, key2), = v2.items()
+        if using_polars:
+            d1 = d1.to_pandas()
+            d2 = d2.to_pandas()
 
         assert_vector_equal(p2.frame.loc[d1.index, var1], d1[key1])
         assert_vector_equal(p2.frame.loc[d2.index, var2], d2[key2])
@@ -377,10 +399,14 @@ class TestPlotData:
         assert p2.frame.loc[d2.index.difference(d1.index), var1].isna().all()
         assert p2.frame.loc[d1.index.difference(d2.index), var2].isna().all()
 
-    def test_join_replace_variable_different_index(self, long_df):
+    def test_join_replace_variable_different_index(self, long_df, using_polars):
 
-        d1 = long_df.iloc[:70]
-        d2 = long_df.iloc[30:]
+        if using_polars:
+            d1 = long_df[:70]
+            d2 = long_df[30:]
+        else:
+            d1 = long_df.iloc[:70]
+            d2 = long_df.iloc[30:]
 
         var = "x"
         k1, k2 = "a", "z"
@@ -392,18 +418,27 @@ class TestPlotData:
 
         (var1, key1), = v1.items()
         (var2, key2), = v2.items()
+        if using_polars:
+            d1 = d1.to_pandas()
+            d2 = d2.to_pandas()
 
         assert_vector_equal(p2.frame.loc[d2.index, var], d2[k2])
         assert p2.frame.loc[d1.index.difference(d2.index), var].isna().all()
 
-    def test_join_subset_data_inherit_variables(self, long_df):
+    def test_join_subset_data_inherit_variables(self, long_df, using_polars):
 
-        sub_df = long_df[long_df["a"] == "b"]
+        if using_polars:
+            sub_df = long_df.filter(long_df["a"] == "b")
+        else:
+            sub_df = long_df[long_df["a"] == "b"]
 
         var = "y"
         p1 = PlotData(long_df, {var: var})
         p2 = p1.join(sub_df, None)
 
+        if using_polars:
+            sub_df = sub_df.to_pandas()
+            long_df = long_df.to_pandas()
         assert_vector_equal(p2.frame.loc[sub_df.index, var], sub_df[var])
         assert p2.frame.loc[long_df.index.difference(sub_df.index), var].isna().all()
 

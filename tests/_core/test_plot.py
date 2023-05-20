@@ -81,37 +81,50 @@ class TestInit:
         assert p._data.source_data is None
         assert p._data.source_vars == {}
 
-    def test_data_only(self, long_df):
+    def test_data_only(self, long_df, using_polars):
+        if using_polars:
+            # source_data was tranformed to pandas
+            return
 
         p = Plot(long_df)
         assert p._data.source_data is long_df
         assert p._data.source_vars == {}
 
-    def test_df_and_named_variables(self, long_df):
+    def test_df_and_named_variables(self, long_df, using_polars):
 
         variables = {"x": "a", "y": "z"}
         p = Plot(long_df, **variables)
+        if using_polars:
+            long_df = long_df.to_pandas()
         for var, col in variables.items():
             assert_vector_equal(p._data.frame[var], long_df[col])
-        assert p._data.source_data is long_df
+        if not using_polars:
+            assert p._data.source_data is long_df
         assert p._data.source_vars.keys() == variables.keys()
 
-    def test_df_and_mixed_variables(self, long_df):
+    def test_df_and_mixed_variables(self, long_df, using_polars):
 
         variables = {"x": "a", "y": long_df["z"]}
         p = Plot(long_df, **variables)
+        if using_polars:
+            long_df = long_df.to_pandas()
+        variables = {"x": "a", "y": long_df["z"]}
         for var, col in variables.items():
             if isinstance(col, str):
                 assert_vector_equal(p._data.frame[var], long_df[col])
             else:
                 assert_vector_equal(p._data.frame[var], col)
-        assert p._data.source_data is long_df
+        if not using_polars:
+            assert p._data.source_data is long_df
         assert p._data.source_vars.keys() == variables.keys()
 
-    def test_vector_variables_only(self, long_df):
+    def test_vector_variables_only(self, long_df, using_polars):
 
         variables = {"x": long_df["a"], "y": long_df["z"]}
         p = Plot(**variables)
+        if using_polars:
+            long_df = long_df.to_pandas()
+        variables = {"x": long_df["a"], "y": long_df["z"]}
         for var, col in variables.items():
             assert_vector_equal(p._data.frame[var], col)
         assert p._data.source_data is None
@@ -146,10 +159,11 @@ class TestInit:
         with pytest.raises(TypeError, match=err):
             Plot(long_df, "a", "b", **{var: "c"})
 
-    def test_positional_data_x_y(self, long_df):
+    def test_positional_data_x_y(self, long_df, using_polars):
 
         p = Plot(long_df, "a", "b")
-        assert p._data.source_data is long_df
+        if not using_polars:
+            assert p._data.source_data is long_df
         assert list(p._data.source_vars) == ["x", "y"]
 
     def test_positional_x_y(self, long_df):
@@ -158,10 +172,11 @@ class TestInit:
         assert p._data.source_data is None
         assert list(p._data.source_vars) == ["x", "y"]
 
-    def test_positional_data_x(self, long_df):
+    def test_positional_data_x(self, long_df, using_polars):
 
         p = Plot(long_df, "a")
-        assert p._data.source_data is long_df
+        if not using_polars:
+            assert p._data.source_data is long_df
         assert list(p._data.source_vars) == ["x"]
 
     def test_positional_x(self, long_df):
@@ -191,35 +206,44 @@ class TestLayerAddition:
         layer, = p._layers
         assert_frame_equal(p._data.frame, layer["data"].frame, check_dtype=False)
 
-    def test_with_new_variable_by_name(self, long_df):
+    def test_with_new_variable_by_name(self, long_df, using_polars):
 
         p = Plot(long_df, x="x").add(MockMark(), y="y").plot()
+        if using_polars:
+            long_df = long_df.to_pandas()
         layer, = p._layers
         assert layer["data"].frame.columns.to_list() == ["x", "y"]
         for var in "xy":
             assert_vector_equal(layer["data"].frame[var], long_df[var])
 
-    def test_with_new_variable_by_vector(self, long_df):
+    def test_with_new_variable_by_vector(self, long_df, using_polars):
 
         p = Plot(long_df, x="x").add(MockMark(), y=long_df["y"]).plot()
+        if using_polars:
+            long_df = long_df.to_pandas()
         layer, = p._layers
         assert layer["data"].frame.columns.to_list() == ["x", "y"]
         for var in "xy":
             assert_vector_equal(layer["data"].frame[var], long_df[var])
 
-    def test_with_late_data_definition(self, long_df):
+    def test_with_late_data_definition(self, long_df, using_polars):
 
         p = Plot().add(MockMark(), data=long_df, x="x", y="y").plot()
+        if using_polars:
+            long_df = long_df.to_pandas()
         layer, = p._layers
         assert layer["data"].frame.columns.to_list() == ["x", "y"]
         for var in "xy":
             assert_vector_equal(layer["data"].frame[var], long_df[var])
 
-    def test_with_new_data_definition(self, long_df):
+    def test_with_new_data_definition(self, long_df, using_polars):
 
         long_df_sub = long_df.sample(frac=.5)
 
         p = Plot(long_df, x="x", y="y").add(MockMark(), data=long_df_sub).plot()
+        if using_polars:
+            long_df = long_df.to_pandas()
+            long_df_sub = long_df_sub.to_pandas()
         layer, = p._layers
         assert layer["data"].frame.columns.to_list() == ["x", "y"]
         for var in "xy":
@@ -227,9 +251,11 @@ class TestLayerAddition:
                 layer["data"].frame[var], long_df_sub[var].reindex(long_df.index)
             )
 
-    def test_drop_variable(self, long_df):
+    def test_drop_variable(self, long_df, using_polars):
 
         p = Plot(long_df, x="x", y="y").add(MockMark(), y=None).plot()
+        if using_polars:
+            long_df = long_df.to_pandas()
         layer, = p._layers
         assert layer["data"].frame.columns.to_list() == ["x"]
         assert_vector_equal(layer["data"].frame["x"], long_df["x"], check_dtype=False)
@@ -396,14 +422,16 @@ class TestScaling:
         assert ax.get_xscale() == "log"
         assert ax.get_yscale() == "linear"
 
-    def test_mark_data_log_transform_is_inverted(self, long_df):
+    def test_mark_data_log_transform_is_inverted(self, long_df, using_polars):
 
         col = "z"
         m = MockMark()
         Plot(long_df, x=col).scale(x="log").add(m).plot()
+        if using_polars:
+            long_df = long_df.to_pandas()
         assert_vector_equal(m.passed_data[0]["x"], long_df[col])
 
-    def test_mark_data_log_transfrom_with_stat(self, long_df):
+    def test_mark_data_log_transfrom_with_stat(self, long_df, using_polars):
 
         class Mean(Stat):
             group_by_orient = True
@@ -418,6 +446,8 @@ class TestScaling:
         s = Mean()
 
         Plot(long_df, x=grouper, y=col).scale(y="log").add(m, s).plot()
+        if using_polars:
+            long_df = long_df.to_pandas()
 
         expected = (
             long_df[col]
@@ -429,21 +459,25 @@ class TestScaling:
         )
         assert_vector_equal(m.passed_data[0]["y"], expected)
 
-    def test_mark_data_from_categorical(self, long_df):
+    def test_mark_data_from_categorical(self, long_df, using_polars):
 
         col = "a"
         m = MockMark()
         Plot(long_df, x=col).add(m).plot()
+        if using_polars:
+            long_df = long_df.to_pandas()
 
         levels = categorical_order(long_df[col])
         level_map = {x: float(i) for i, x in enumerate(levels)}
         assert_vector_equal(m.passed_data[0]["x"], long_df[col].map(level_map))
 
-    def test_mark_data_from_datetime(self, long_df):
+    def test_mark_data_from_datetime(self, long_df, using_polars):
 
         col = "t"
         m = MockMark()
         Plot(long_df, x=col).add(m).plot()
+        if using_polars:
+            long_df = long_df.to_pandas()
 
         expected = long_df[col].map(mpl.dates.date2num)
         assert_vector_equal(m.passed_data[0]["x"], expected)
@@ -698,7 +732,7 @@ class TestPlotting:
         for col in p._data.frame:
             assert_series_equal(m.passed_data[0][col], p._data.frame[col])
 
-    def test_single_split_multi_layer(self, long_df):
+    def test_single_split_multi_layer(self, long_df, using_polars):
 
         vs = [{"color": "a", "linewidth": "z"}, {"color": "b", "pattern": "c"}]
 
@@ -707,6 +741,8 @@ class TestPlotting:
 
         ms = [NoGroupingMark(), NoGroupingMark()]
         Plot(long_df).add(ms[0], **vs[0]).add(ms[1], **vs[1]).plot()
+        if using_polars:
+            long_df = long_df.to_pandas()
 
         for m, v in zip(ms, vs):
             for var, col in v.items():
@@ -751,13 +787,15 @@ class TestPlotting:
             "color",  # explicitly declared on the Mark
             "group",  # implicitly used for all Mark classes
         ])
-    def test_one_grouping_variable(self, long_df, split_var):
+    def test_one_grouping_variable(self, long_df, split_var, using_polars):
 
         split_col = "a"
         data_vars = {"x": "f", "y": "z", split_var: split_col}
 
         m = MockMark()
         p = Plot(long_df, **data_vars).add(m).plot()
+        if using_polars:
+            long_df = long_df.to_pandas()
 
         split_keys = categorical_order(long_df[split_col])
         sub, *_ = p._subplots
@@ -766,7 +804,7 @@ class TestPlotting:
             long_df, m, data_vars, split_var, split_col, split_keys
         )
 
-    def test_two_grouping_variables(self, long_df):
+    def test_two_grouping_variables(self, long_df, using_polars):
 
         split_vars = ["color", "group"]
         split_cols = ["a", "b"]
@@ -774,6 +812,8 @@ class TestPlotting:
 
         m = MockMark()
         p = Plot(long_df, **data_vars).add(m).plot()
+        if using_polars:
+            long_df = long_df.to_pandas()
 
         split_keys = [categorical_order(long_df[col]) for col in split_cols]
         sub, *_ = p._subplots
@@ -790,7 +830,7 @@ class TestPlotting:
         Plot(long_df, x="x", y="y").add(m, width="z").plot()
         assert_array_almost_equal(m.passed_data[0]["width"], long_df["z"])
 
-    def test_facets_no_subgroups(self, long_df):
+    def test_facets_no_subgroups(self, long_df, using_polars):
 
         split_var = "col"
         split_col = "b"
@@ -798,6 +838,8 @@ class TestPlotting:
 
         m = MockMark()
         p = Plot(long_df, **data_vars).facet(**{split_var: split_col}).add(m).plot()
+        if using_polars:
+            long_df = long_df.to_pandas()
 
         split_keys = categorical_order(long_df[split_col])
         assert m.passed_axes == list(p._figure.axes)
@@ -805,7 +847,7 @@ class TestPlotting:
             long_df, m, data_vars, split_var, split_col, split_keys
         )
 
-    def test_facets_one_subgroup(self, long_df):
+    def test_facets_one_subgroup(self, long_df, using_polars):
 
         facet_var, facet_col = fx = "col", "a"
         group_var, group_col = gx = "group", "b"
@@ -819,6 +861,8 @@ class TestPlotting:
             .add(m)
             .plot()
         )
+        if using_polars:
+            long_df = long_df.to_pandas()
 
         split_keys = [categorical_order(long_df[col]) for col in [facet_col, group_col]]
         assert m.passed_axes == [
@@ -830,13 +874,15 @@ class TestPlotting:
             long_df, m, data_vars, split_vars, split_cols, split_keys
         )
 
-    def test_layer_specific_facet_disabling(self, long_df):
+    def test_layer_specific_facet_disabling(self, long_df, using_polars):
 
         axis_vars = {"x": "y", "y": "z"}
         row_var = "a"
 
         m = MockMark()
         p = Plot(long_df, **axis_vars).facet(row=row_var).add(m, row=None).plot()
+        if using_polars:
+            long_df = long_df.to_pandas()
 
         col_levels = categorical_order(long_df[row_var])
         assert len(p._figure.axes) == len(col_levels)
@@ -845,13 +891,15 @@ class TestPlotting:
             for var, col in axis_vars.items():
                 assert_vector_equal(data[var], long_df[col])
 
-    def test_paired_variables(self, long_df):
+    def test_paired_variables(self, long_df, using_polars):
 
         x = ["x", "y"]
         y = ["f", "z"]
 
         m = MockMark()
         Plot(long_df).pair(x, y).add(m).plot()
+        if using_polars:
+            long_df = long_df.to_pandas()
 
         var_product = itertools.product(x, y)
 
@@ -859,26 +907,34 @@ class TestPlotting:
             assert_vector_equal(data["x"], long_df[x_i].astype(float))
             assert_vector_equal(data["y"], long_df[y_i].astype(float))
 
-    def test_paired_one_dimension(self, long_df):
+    def test_paired_one_dimension(self, long_df, using_polars):
 
         x = ["y", "z"]
 
         m = MockMark()
         Plot(long_df).pair(x).add(m).plot()
+        if using_polars:
+            long_df = long_df.to_pandas()
 
         for data, x_i in zip(m.passed_data, x):
             assert_vector_equal(data["x"], long_df[x_i].astype(float))
 
-    def test_paired_variables_one_subset(self, long_df):
+    def test_paired_variables_one_subset(self, long_df, using_polars):
 
         x = ["x", "y"]
         y = ["f", "z"]
         group = "a"
 
-        long_df["x"] = long_df["x"].astype(float)  # simplify vector comparison
+        if using_polars:
+            import polars as pl
+            long_df = long_df.with_columns(pl.col('x').cast(pl.Float64))
+        else:
+            long_df["x"] = long_df["x"].astype(float)  # simplify vector comparison
 
         m = MockMark()
         Plot(long_df, group=group).pair(x, y).add(m).plot()
+        if using_polars:
+            long_df = long_df.to_pandas()
 
         groups = categorical_order(long_df[group])
         var_product = itertools.product(x, y, groups)
@@ -888,7 +944,7 @@ class TestPlotting:
             assert_vector_equal(data["x"], long_df.loc[rows, x_i])
             assert_vector_equal(data["y"], long_df.loc[rows, y_i])
 
-    def test_paired_and_faceted(self, long_df):
+    def test_paired_and_faceted(self, long_df, using_polars):
 
         x = ["y", "z"]
         y = "f"
@@ -896,6 +952,8 @@ class TestPlotting:
 
         m = MockMark()
         Plot(long_df, y=y).facet(row=row).pair(x).add(m).plot()
+        if using_polars:
+            long_df = long_df.to_pandas()
 
         facets = categorical_order(long_df[row])
         var_product = itertools.product(x, facets)
@@ -932,43 +990,60 @@ class TestPlotting:
         with pytest.raises(KeyError, match="not.a.key is not a valid rc"):
             p.theme({"not.a.key": True})
 
-    def test_stat(self, long_df):
+    def test_stat(self, long_df, using_polars):
 
-        orig_df = long_df.copy(deep=True)
+        if not using_polars:
+            orig_df = long_df.copy(deep=True)
+        else:
+            orig_df = long_df.to_pandas()
 
         m = MockMark()
         Plot(long_df, x="a", y="z").add(m, Agg()).plot()
+        if using_polars:
+            long_df = long_df.to_pandas()
 
         expected = long_df.groupby("a", sort=False)["z"].mean().reset_index(drop=True)
         assert_vector_equal(m.passed_data[0]["y"], expected)
 
         assert_frame_equal(long_df, orig_df)   # Test data was not mutated
 
-    def test_move(self, long_df):
+    def test_move(self, long_df, using_polars):
 
-        orig_df = long_df.copy(deep=True)
+        if not using_polars:
+            orig_df = long_df.copy(deep=True)
+        else:
+            orig_df = long_df.to_pandas()
 
         m = MockMark()
         Plot(long_df, x="z", y="z").add(m, Shift(x=1)).plot()
+        if using_polars:
+            long_df = long_df.to_pandas()
         assert_vector_equal(m.passed_data[0]["x"], long_df["z"] + 1)
         assert_vector_equal(m.passed_data[0]["y"], long_df["z"])
 
         assert_frame_equal(long_df, orig_df)   # Test data was not mutated
 
-    def test_stat_and_move(self, long_df):
+    def test_stat_and_move(self, long_df, using_polars):
 
         m = MockMark()
         Plot(long_df, x="a", y="z").add(m, Agg(), Shift(y=1)).plot()
+        if using_polars:
+            long_df = long_df.to_pandas()
 
         expected = long_df.groupby("a", sort=False)["z"].mean().reset_index(drop=True)
         assert_vector_equal(m.passed_data[0]["y"], expected + 1)
 
-    def test_stat_log_scale(self, long_df):
+    def test_stat_log_scale(self, long_df, using_polars):
 
-        orig_df = long_df.copy(deep=True)
+        if not using_polars:
+            orig_df = long_df.copy(deep=True)
+        else:
+            orig_df = long_df.to_pandas()
 
         m = MockMark()
         Plot(long_df, x="a", y="z").add(m, Agg()).scale(y="log").plot()
+        if using_polars:
+            long_df = long_df.to_pandas()
 
         x = long_df["a"]
         y = np.log10(long_df["z"])
@@ -977,25 +1052,31 @@ class TestPlotting:
 
         assert_frame_equal(long_df, orig_df)   # Test data was not mutated
 
-    def test_move_log_scale(self, long_df):
+    def test_move_log_scale(self, long_df, using_polars):
 
         m = MockMark()
         Plot(
             long_df, x="z", y="z"
         ).scale(x="log").add(m, Shift(x=-1)).plot()
+        if using_polars:
+            long_df = long_df.to_pandas()
         assert_vector_equal(m.passed_data[0]["x"], long_df["z"] / 10)
 
-    def test_multi_move(self, long_df):
+    def test_multi_move(self, long_df, using_polars):
 
         m = MockMark()
         move_stack = [Shift(1), Shift(2)]
         Plot(long_df, x="x", y="y").add(m, *move_stack).plot()
+        if using_polars:
+            long_df = long_df.to_pandas()
         assert_vector_equal(m.passed_data[0]["x"], long_df["x"] + 3)
 
-    def test_multi_move_with_pairing(self, long_df):
+    def test_multi_move_with_pairing(self, long_df, using_polars):
         m = MockMark()
         move_stack = [Shift(1), Shift(2)]
         Plot(long_df, x="x").pair(y=["y", "z"]).add(m, *move_stack).plot()
+        if using_polars:
+            long_df = long_df.to_pandas()
         for frame in m.passed_data:
             assert_vector_equal(frame["x"], long_df["x"] + 3)
 
@@ -1323,9 +1404,11 @@ class TestFacetInterface:
             "expand": lambda x: x + ["z"],
         }[request.param]
 
-    def check_facet_results_1d(self, p, df, dim, key, order=None):
+    def check_facet_results_1d(self, p, df, dim, key, order=None, using_polars=False):
 
         p = p.plot()
+        if using_polars:
+            df = df.to_pandas()
 
         order = categorical_order(df[key], order)
         assert len(p._figure.axes) == len(order)
@@ -1338,24 +1421,27 @@ class TestFacetInterface:
             assert subplot["ax"].get_title() == f"{level}"
             assert_gridspec_shape(subplot["ax"], **{f"n{dim}s": len(order)})
 
-    def test_1d(self, long_df, dim):
+    def test_1d(self, long_df, dim, using_polars):
 
         key = "a"
         p = Plot(long_df).facet(**{dim: key})
-        self.check_facet_results_1d(p, long_df, dim, key)
+        self.check_facet_results_1d(p, long_df, dim, key, using_polars=using_polars)
 
-    def test_1d_as_vector(self, long_df, dim):
+    def test_1d_as_vector(self, long_df, dim, using_polars):
 
         key = "a"
         p = Plot(long_df).facet(**{dim: long_df[key]})
-        self.check_facet_results_1d(p, long_df, dim, key)
+        self.check_facet_results_1d(p, long_df, dim, key, using_polars=using_polars)
 
-    def test_1d_with_order(self, long_df, dim, reorder):
+    def test_1d_with_order(self, long_df, dim, reorder, using_polars):
 
         key = "a"
-        order = reorder(categorical_order(long_df[key]))
+        if using_polars:
+            order = reorder(categorical_order(long_df.to_pandas()[key]))
+        else:
+            order = reorder(categorical_order(long_df[key]))
         p = Plot(long_df).facet(**{dim: key, "order": order})
-        self.check_facet_results_1d(p, long_df, dim, key, order)
+        self.check_facet_results_1d(p, long_df, dim, key, order, using_polars=using_polars)
 
     def check_facet_results_2d(self, p, df, variables, order=None):
 
@@ -1377,19 +1463,27 @@ class TestFacetInterface:
                 subplot["axes"], len(levels["row"]), len(levels["col"])
             )
 
-    def test_2d(self, long_df):
+    def test_2d(self, long_df, using_polars):
 
         variables = {"row": "a", "col": "c"}
         p = Plot(long_df).facet(**variables)
+        if using_polars:
+            long_df = long_df.to_pandas()
         self.check_facet_results_2d(p, long_df, variables)
 
-    def test_2d_with_order(self, long_df, reorder):
+    def test_2d_with_order(self, long_df, reorder, using_polars):
 
         variables = {"row": "a", "col": "c"}
-        order = {
-            dim: reorder(categorical_order(long_df[key]))
-            for dim, key in variables.items()
-        }
+        if using_polars:
+            order = {
+                dim: reorder(categorical_order(long_df.to_pandas()[key]))
+                for dim, key in variables.items()
+            }
+        else:
+            order = {
+                dim: reorder(categorical_order(long_df[key]))
+                for dim, key in variables.items()
+            }
 
         p = Plot(long_df).facet(**variables, order=order)
         self.check_facet_results_2d(p, long_df, variables, order)
@@ -1413,7 +1507,7 @@ class TestFacetInterface:
         sep2 = bb22.corners()[0, 0] - bb21.corners()[2, 0]
         assert sep1 <= sep2
 
-    def test_axis_sharing(self, long_df):
+    def test_axis_sharing(self, long_df, using_polars):
 
         variables = {"row": "a", "col": "c"}
 
@@ -1432,6 +1526,8 @@ class TestFacetInterface:
             assert not any(shareset.joined(root, ax) for ax in other)
 
         p3 = p.share(x="col", y="row").plot()
+        if using_polars:
+            long_df = long_df.to_pandas()
         shape = (
             len(categorical_order(long_df[variables["row"]])),
             len(categorical_order(long_df[variables["col"]])),
@@ -1549,13 +1645,15 @@ class TestPairInterface:
         p = Plot(long_df).pair().plot()
         assert len(p._figure.axes) == 1
 
-    def test_with_facets(self, long_df):
+    def test_with_facets(self, long_df, using_polars):
 
         x = "x"
         y = ["y", "z"]
         col = "a"
 
         p = Plot(long_df, x=x).facet(col).pair(y=y).plot()
+        if using_polars:
+            long_df = long_df.to_pandas()
 
         facet_levels = categorical_order(long_df[col])
         dims = itertools.product(y, facet_levels)
