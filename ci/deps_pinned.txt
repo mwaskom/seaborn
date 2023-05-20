@@ -1,5 +1,6 @@
 numpy~=1.20.0
 pandas~=1.2.0
+polars~=0.17.0
 matplotlib~=3.3.0
 scipy~=1.7.0
 statsmodels~=0.12.0

@@ -108,13 +108,13 @@ jobs:
         with:
           python-version: ${{ matrix.python }}
 
-      - name: Install polars
+      - name: Install pandas nightly and pyarrow
         run: |
           pip install --upgrade pip wheel
           # Install pandas nightly (necessary for interchanging - remove once pandas 2.0.2 is released)
           pip install --upgrade numpy
           pip install --pre --extra-index https://pypi.anaconda.org/scipy-wheels-nightly/simple pandas
-          pip install --upgrade polars pyarrow
+          pip install --upgrade pyarrow
 
       - name: Install seaborn
         run: |

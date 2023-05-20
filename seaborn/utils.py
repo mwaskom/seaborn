@@ -903,9 +903,12 @@ def try_convert_to_pandas(data: object | None) -> pd.DataFrame:
         return None
     elif isinstance(data, pd.DataFrame):
         return data
+    elif hasattr(data, "__dataframe__") and _version_predates(pd, "2.0.2"):
+        msg = (
+            "Interchanging to pandas requires at least pandas version '2.0.2'. "
+            "Please upgrade pandas to at least version '2.0.2'."
+        )
+        raise RuntimeError(msg)
     elif hasattr(data, "__dataframe__"):
-        if _version_predates(pd, "2.0.2"):
-            msg = "Interchanging to pandas requires at least pandas version '2.0.2'."
-            raise RuntimeError(msg)
         return pd.api.interchange.from_dataframe(data)
     return data

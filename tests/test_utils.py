@@ -1,5 +1,5 @@
 """Tests for seaborn utility functions."""
-import os
+import polars as pl
 import re
 import tempfile
 from types import ModuleType
@@ -433,11 +433,14 @@ def test_move_legend_input_checks():
 
 def check_load_dataset(name):
     ds = load_dataset(name, cache=False)
-    if os.environ.get('SEABORN_TEST_INTERCHANGE_PROTOCOL', '0') == '1':
-        # Check that the example datasets can actually be interchanged.
-        import polars as pl
-        ds = pd.api.interchange.from_dataframe(pl.from_pandas(ds))
     assert isinstance(ds, pd.DataFrame)
+    # Check that the example datasets can actually be interchanged.
+    if _version_predates(pd, '2.0.2'):
+        with pytest.raises(RuntimeError, match='Please upgrade pandas'):
+            utils.try_convert_to_pandas(pl.from_pandas(ds))
+    else:
+        ds = utils.try_convert_to_pandas(pl.from_pandas(ds))
+        assert isinstance(ds, pd.DataFrame)
 
 
 def check_load_cached_dataset(name):
