@@ -133,7 +133,7 @@ def wide_dict_of_lists(wide_list_of_series):
 
 
 @pytest.fixture
-def long_df(rng):
+def long_df(rng, using_polars):
 
     n = 100
     df = pd.DataFrame(dict(
@@ -156,6 +156,9 @@ def long_df(rng):
     df["s_cat"] = df["s"].astype("category")
     df["s_str"] = df["s"].astype(str)
 
+    if using_polars:
+        import polars as pl
+        return pl.from_pandas(df.drop('s_cat', axis=1))
     return df
 
 
@@ -178,13 +181,15 @@ def repeated_df(rng):
 
 
 @pytest.fixture
-def null_df(rng, long_df):
-
-    df = long_df.copy()
+def null_df(rng, long_df, using_polars):
+    if using_polars:
+        df = long_df.to_pandas().copy()
+    else:
+        df = long_df.copy()
     for col in df:
         idx = rng.permutation(df.index)[:10]
         df.loc[idx, col] = np.nan
-    return df
+    return maybe_convert_to_polars(df)
 
 
 @pytest.fixture
@@ -194,7 +199,7 @@ def object_df(rng, long_df):
     # objectify numeric columns
     for col in ["c", "s", "f"]:
         df[col] = df[col].astype(object)
-    return df
+    return maybe_convert_to_polars(df)
 
 
 @pytest.fixture

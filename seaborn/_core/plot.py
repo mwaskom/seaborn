@@ -42,7 +42,7 @@ from seaborn._core.rules import categorical_order
 from seaborn._compat import set_scale_obj, set_layout_engine
 from seaborn.rcmod import axes_style, plotting_context
 from seaborn.palettes import color_palette
-from seaborn.utils import _version_predates
+from seaborn.utils import _version_predates, try_convert_to_pandas
 
 from typing import TYPE_CHECKING, TypedDict
 if TYPE_CHECKING:
@@ -351,6 +351,10 @@ class Plot:
             if data is not None:
                 raise TypeError("`data` given by both name and position.")
             data, args = args[0], args[1:]
+        elif hasattr(args[0], '__dataframe__'):
+            if data is not None:
+                raise TypeError("`data` given by both name and position.")
+            data, args = try_convert_to_pandas(args[0]), args[1:]
 
         if len(args) == 2:
             x, y = args

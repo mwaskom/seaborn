@@ -172,13 +172,19 @@ class TestHueMapping:
         # Test long data
         p = VectorPlotter(data=long_df, variables=dict(x="x", y="y", hue="a"))
         m = HueMapping(p)
-        assert m.levels == categorical_order(long_df["a"])
+        if using_polars:
+            assert m.levels == categorical_order(long_df.to_pandas()["a"])
+        else:
+            assert m.levels == categorical_order(long_df["a"])
         assert m.map_type == "categorical"
         assert m.cmap is None
 
         # Test default palette
         m = HueMapping(p)
-        hue_levels = categorical_order(long_df["a"])
+        if using_polars:
+            hue_levels = categorical_order(long_df.to_pandas()["a"])
+        else:
+            hue_levels = categorical_order(long_df["a"])
         expected_colors = color_palette(n_colors=len(hue_levels))
         expected_lookup_table = dict(zip(hue_levels, expected_colors))
         assert m.lookup_table == expected_lookup_table
