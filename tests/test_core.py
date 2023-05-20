@@ -209,8 +209,13 @@ class TestHueMapping:
         assert m.map_type == "categorical"
 
         for val in [0, 1]:
+            if using_polars:
+                import polars as pl
+                data = long_df.filter(pl.col('c')==val)
+            else:
+                data = long_df[long_df["c"]]
             p = VectorPlotter(
-                data=long_df[long_df["c"] == val],
+                data=data,
                 variables=dict(x="x", y="y", hue="c"),
             )
             m = HueMapping(p)
