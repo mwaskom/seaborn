@@ -2125,6 +2125,7 @@ def displot(
     **kwargs,
 ):
 
+    data = try_convert_to_pandas(data)
     p = _DistributionFacetPlotter(
         data=data,
         variables=_DistributionFacetPlotter.get_semantics(locals())

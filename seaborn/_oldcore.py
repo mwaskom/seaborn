@@ -23,7 +23,6 @@ from .utils import (
     desaturate,
     get_color_cycle,
     remove_na,
-    try_convert_to_pandas,
 )
 
 
@@ -895,8 +894,6 @@ class VectorPlotter:
         # Data is optional; all variables can be defined as vectors
         if data is None:
             data = {}
-        else:
-            data = try_convert_to_pandas(data)
 
         # TODO should we try a data.to_dict() or similar here to more
         # generally accept objects with that interface?

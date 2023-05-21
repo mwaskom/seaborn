@@ -10,6 +10,7 @@ import pandas as pd
 from pandas import DataFrame
 
 from seaborn._core.typing import DataSource, VariableSpec, ColumnName
+from seaborn.utils import try_convert_to_pandas
 
 
 class PlotData:
@@ -51,7 +52,7 @@ class PlotData:
         data: DataSource,
         variables: dict[str, VariableSpec],
     ):
-
+        data = try_convert_to_pandas(data)
         frame, names, ids = self._assign_variables(data, variables)
 
         self.frame = frame

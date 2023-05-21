@@ -309,6 +309,7 @@ class Plot:
 
         if args:
             data, variables = self._resolve_positionals(args, data, variables)
+        data = try_convert_to_pandas(data)
 
         unknown = [x for x in variables if x not in PROPERTIES]
         if unknown:
@@ -347,14 +348,13 @@ class Plot:
 
         # TODO need some clearer way to differentiate data / vector here
         # (There might be an abstract DataFrame class to use here?)
-        if isinstance(args[0], (abc.Mapping, pd.DataFrame)):
+        if (
+            isinstance(args[0], (abc.Mapping, pd.DataFrame))
+            or hasattr(args[0], '__dataframe__')
+        ):
             if data is not None:
                 raise TypeError("`data` given by both name and position.")
             data, args = args[0], args[1:]
-        elif hasattr(args[0], '__dataframe__'):
-            if data is not None:
-                raise TypeError("`data` given by both name and position.")
-            data, args = try_convert_to_pandas(args[0]), args[1:]
 
         if len(args) == 2:
             x, y = args

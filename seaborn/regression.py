@@ -575,6 +575,7 @@ def lmplot(
     truncate=True, x_jitter=None, y_jitter=None, scatter_kws=None,
     line_kws=None, facet_kws=None,
 ):
+    data = utils.try_convert_to_pandas(data)
 
     if facet_kws is None:
         facet_kws = {}
