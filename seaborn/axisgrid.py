@@ -1238,7 +1238,7 @@ class PairGrid(Grid):
         .. include:: ../docstrings/PairGrid.rst
 
         """
-
+        data = utils.try_convert_to_pandas(data)
         super().__init__()
 
         # Sort out the variables that define the grid
