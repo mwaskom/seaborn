@@ -90,43 +90,6 @@ jobs:
         uses: codecov/codecov-action@v3
         if: ${{ success() }}
 
-  run-interchange-protocol-tests:
-    runs-on: ubuntu-latest
-
-    env:
-      SEABORN_TEST_INTERCHANGE_PROTOCOL: 1
-
-    strategy:
-      matrix:
-        python: ["3.10"]
-
-    steps:
-      - uses: actions/checkout@v3
-
-      - name: Setup Python ${{ matrix.python }}
-        uses: actions/setup-python@v4
-        with:
-          python-version: ${{ matrix.python }}
-
-      - name: Install polars and pandas nightly
-        run: |
-          pip install --upgrade pip wheel
-          # Install pandas nightly (necessary for interchanging - remove once pandas 2.0.2 is released)
-          pip install --upgrade numpy
-          pip install --pre --extra-index https://pypi.anaconda.org/scipy-wheels-nightly/simple pandas
-          pip install --upgrade polars pyarrow
-
-      - name: Install seaborn
-        run: |
-          pip install .[dev]
-
-      - name: Run tests
-        run: make test
-
-      - name: Upload coverage
-        uses: codecov/codecov-action@v3
-        if: ${{ success() }}
-
   lint:
     runs-on: ubuntu-latest
     strategy:
