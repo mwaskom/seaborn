@@ -52,6 +52,14 @@ class PlotData:
         variables: dict[str, VariableSpec],
     ):
 
+        if isinstance(data, pd.DataFrame) or hasattr(data, "__dataframe__"):
+            # Check for pd.DataFrame inheritance could be removed once
+            # minimal pandas version supports dataframe interchange (1.5.0).
+            data = convert_dataframe_to_pandas(data)
+        elif data is not None and not isinstance(data, Mapping):
+            err = f"Data source must be a DataFrame or Mapping, not {type(data)!r}."
+            raise TypeError(err)
+
         frame, names, ids = self._assign_variables(data, variables)
 
         self.frame = frame
@@ -75,7 +83,7 @@ class PlotData:
         variables: dict[str, VariableSpec] | None,
     ) -> PlotData:
         """Add, replace, or drop variables and return as a new dataset."""
-        # Inherit the original source of the upsteam data by default
+        # Inherit the original source of the upstream data by default
         if data is None:
             data = self.source_data
 
@@ -118,7 +126,7 @@ class PlotData:
 
     def _assign_variables(
         self,
-        data: DataSource,
+        data: DataFrame | Mapping | None,
         variables: dict[str, VariableSpec],
     ) -> tuple[DataFrame, dict[str, str | None], dict[str, str | int]]:
         """
@@ -147,6 +155,8 @@ class PlotData:
 
         Raises
         ------
+        TypeError
+            When data source is not a DataFrame or Mapping.
         ValueError
             When variables are strings that don't appear in `data`, or when they are
             non-indexed vector datatypes that have a different length from `data`.
@@ -162,15 +172,12 @@ class PlotData:
         ids = {}
 
         given_data = data is not None
-        if data is not None:
-            source_data = data
-        else:
+        if data is None:
             # Data is optional; all variables can be defined as vectors
             # But simplify downstream code by always having a usable source data object
             source_data = {}
-
-        # TODO Generally interested in accepting a generic DataFrame interface
-        # Track https://data-apis.org/ for development
+        else:
+            source_data = data
 
         # Variables can also be extracted from the index of a DataFrame
         if isinstance(source_data, pd.DataFrame):
@@ -258,3 +265,26 @@ class PlotData:
         frame = pd.DataFrame(plot_data)
 
         return frame, names, ids
+
+
+def convert_dataframe_to_pandas(data: object) -> pd.DataFrame:
+    """Use the DataFrame exchange protocol, or fail gracefully."""
+    if isinstance(data, pd.DataFrame):
+        return data
+    if not hasattr(pd.api, "interchange"):
+        msg = (
+            "Support for non-pandas DataFrame objects requires a version of pandas"
+            "that implements the DataFrame interchange protocol. Please upgrade "
+            "your pandas version or coerce your data to pandas before passing "
+            "it to seaborn."
+        )
+        raise TypeError(msg)
+
+    try:
+        return pd.api.interchange.from_dataframe(data)
+    except Exception as err:
+        msg = (
+            "Encountered an exception when converting data source "
+            "to a pandas DataFrame. See traceback above for details."
+        )
+        raise RuntimeError(msg) from err

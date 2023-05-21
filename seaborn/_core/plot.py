@@ -346,9 +346,10 @@ class Plot:
             err = "Plot() accepts no more than 3 positional arguments (data, x, y)."
             raise TypeError(err)
 
-        # TODO need some clearer way to differentiate data / vector here
-        # (There might be an abstract DataFrame class to use here?)
-        if isinstance(args[0], (abc.Mapping, pd.DataFrame)):
+        if (
+            isinstance(args[0], (abc.Mapping, pd.DataFrame))
+            or hasattr(args[0], "__dataframe__")
+        ):
             if data is not None:
                 raise TypeError("`data` given by both name and position.")
             data, args = args[0], args[1:]
