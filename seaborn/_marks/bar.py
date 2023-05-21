@@ -183,7 +183,7 @@ class Bar(BarBase):
 @dataclass
 class Bars(BarBase):
     """
-    A faster bar mark with defaults more suitable histograms.
+    A faster bar mark with defaults more suitable for histograms.
 
     See also
     --------
