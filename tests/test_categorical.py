@@ -540,7 +540,7 @@ class SharedAxesLevelTests:
         return {}
 
     @pytest.mark.parametrize("orient", ["x", "y"])
-    def test_labels_long(self, long_df, orient, using_polars):
+    def test_labels_long(self, long_df, orient):
 
         depend = {"x": "y", "y": "x"}[orient]
         kws = {orient: "a", depend: "y", "hue": "b"}
@@ -555,33 +555,25 @@ class SharedAxesLevelTests:
 
         get_ori_labels = getattr(ax, f"get_{orient}ticklabels")
         ori_labels = [t.get_text() for t in get_ori_labels()]
-        if using_polars:
-            ori_levels = categorical_order(long_df.to_pandas()[kws[orient]])
-        else:
-            ori_levels = categorical_order(long_df[kws[orient]])
+        ori_levels = categorical_order(long_df[kws[orient]])
         assert ori_labels == ori_levels
 
         legend = ax.get_legend()
         assert legend.get_title().get_text() == kws["hue"]
 
         hue_labels = [t.get_text() for t in legend.texts]
-        if using_polars:
-            hue_levels = categorical_order(long_df.to_pandas()[kws["hue"]])
-        else:
-            hue_levels = categorical_order(long_df[kws["hue"]])
+        hue_levels = categorical_order(long_df[kws["hue"]])
         assert hue_labels == hue_levels
 
-    def test_labels_wide(self, wide_df, using_polars):
+    def test_labels_wide(self, wide_df):
 
-        if not using_polars:
-            wide_df = wide_df.rename_axis("cols", axis=1)
+        wide_df = wide_df.rename_axis("cols", axis=1)
         ax = self.func(wide_df)
 
         # To populate texts; only needed on older matplotlibs
         _draw_figure(ax.figure)
 
-        if not using_polars:
-            assert ax.get_xlabel() == wide_df.columns.name
+        assert ax.get_xlabel() == wide_df.columns.name
         labels = [t.get_text() for t in ax.get_xticklabels()]
         for label, level in zip(labels, wide_df.columns):
             assert label == level
@@ -675,13 +667,10 @@ class SharedScatterTests(SharedAxesLevelTests):
             ("x", "dataframe"), ("x", "dict"),
         ]
     )
-    def test_wide(self, wide_df, orient, data_type, using_polars):
+    def test_wide(self, wide_df, orient, data_type):
 
         if data_type == "dict":
-            if using_polars:
-                wide_df = {col: wide_df[col].to_numpy() for col in wide_df.columns}
-            else:
-                wide_df = {k: v.to_numpy() for k, v in wide_df.items()}
+            wide_df = {k: v.to_numpy() for k, v in wide_df.items()}
 
         ax = self.func(data=wide_df, orient=orient)
         _draw_figure(ax.figure)
@@ -743,7 +732,7 @@ class SharedScatterTests(SharedAxesLevelTests):
             ({"val": "y", "cat": "s_cat", "hue": None}, None),
         ],
     )
-    def test_positions(self, long_df, variables, orient, using_polars):
+    def test_positions(self, long_df, variables, orient):
 
         cat_var = variables["cat"]
         val_var = variables["val"]
@@ -751,15 +740,9 @@ class SharedScatterTests(SharedAxesLevelTests):
         var_names = list(variables.values())
         x_var, y_var, *_ = var_names
 
-        if using_polars and y_var == 's_cat':
-            return
-
         ax = self.func(
             data=long_df, x=x_var, y=y_var, hue=hue_var, orient=orient,
         )
-
-        if using_polars:
-            long_df = long_df.to_pandas()
 
         _draw_figure(ax.figure)
 
@@ -797,7 +780,7 @@ class SharedScatterTests(SharedAxesLevelTests):
             {"cat": "a", "val": "y", "hue": "f"},
         ],
     )
-    def test_positions_dodged(self, long_df, variables, using_polars):
+    def test_positions_dodged(self, long_df, variables):
 
         cat_var = variables["cat"]
         val_var = variables["val"]
@@ -809,8 +792,6 @@ class SharedScatterTests(SharedAxesLevelTests):
             data=long_df, x=x_var, y=y_var, hue=hue_var, dodge=True,
         )
 
-        if using_polars:
-            long_df = long_df.to_pandas()
         cat_vals = categorical_order(long_df[cat_var])
         hue_vals = categorical_order(long_df[hue_var])
 
@@ -838,21 +819,15 @@ class SharedScatterTests(SharedAxesLevelTests):
                 assert 0 <= np.ptp(cat_pos) <= nest_width
 
     @pytest.mark.parametrize("cat_var", ["a", "s", "d"])
-    def test_positions_unfixed(self, long_df, cat_var, using_polars):
+    def test_positions_unfixed(self, long_df, cat_var):
 
-        if using_polars:
-            long_df = long_df.sort(cat_var)
-        else:
-            long_df = long_df.sort_values(cat_var)
+        long_df = long_df.sort_values(cat_var)
 
         kws = dict(size=.001)
         if "stripplot" in str(self.func):  # can't use __name__ with partial
             kws["jitter"] = False
 
         ax = self.func(data=long_df, x=cat_var, y="y", native_scale=True, **kws)
-
-        if using_polars:
-            long_df = long_df.to_pandas()
 
         for i, (cat_level, cat_data) in enumerate(long_df.groupby(cat_var)):
 
@@ -912,19 +887,16 @@ class SharedScatterTests(SharedAxesLevelTests):
                 assert not positions.size
 
     @pytest.mark.parametrize("hue_var", ["a", "b"])
-    def test_hue_categorical(self, long_df, hue_var, using_polars):
+    def test_hue_categorical(self, long_df, hue_var):
 
         cat_var = "b"
 
-        pal_name = "muted"
-        ax = self.func(data=long_df, x=cat_var, y="y", hue=hue_var, palette=pal_name)
-
-        if using_polars:
-            long_df = long_df.to_pandas()
-
         hue_levels = categorical_order(long_df[hue_var])
         cat_levels = categorical_order(long_df[cat_var])
+
+        pal_name = "muted"
         palette = dict(zip(hue_levels, color_palette(pal_name)))
+        ax = self.func(data=long_df, x=cat_var, y="y", hue=hue_var, palette=pal_name)
 
         for i, level in enumerate(cat_levels):
 
@@ -940,13 +912,9 @@ class SharedScatterTests(SharedAxesLevelTests):
                 assert tuple(color) == to_rgba(palette[hue])
 
     @pytest.mark.parametrize("hue_var", ["a", "b"])
-    def test_hue_dodged(self, long_df, hue_var, using_polars):
+    def test_hue_dodged(self, long_df, hue_var):
 
         ax = self.func(data=long_df, x="y", y="a", hue=hue_var, dodge=True)
-
-        if using_polars:
-            long_df = long_df.to_pandas()
-
         colors = color_palette(n_colors=long_df[hue_var].nunique())
         collections = iter(ax.collections)
 
@@ -964,14 +932,11 @@ class SharedScatterTests(SharedAxesLevelTests):
         "val_var,val_col,hue_col",
         list(itertools.product(["x", "y"], ["b", "y", "t"], [None, "a"])),
     )
-    def test_single(self, long_df, val_var, val_col, hue_col, using_polars):
+    def test_single(self, long_df, val_var, val_col, hue_col):
 
         var_kws = {val_var: val_col, "hue": hue_col}
         ax = self.func(data=long_df, **var_kws)
         _draw_figure(ax.figure)
-
-        if using_polars:
-            long_df = long_df.to_pandas()
 
         axis_vars = ["x", "y"]
         val_idx = axis_vars.index(val_var)
@@ -1033,13 +998,9 @@ class SharedScatterTests(SharedAxesLevelTests):
         for point_color in ax.collections[0].get_facecolor():
             assert tuple(point_color) == to_rgba("C0")
 
-    def test_legend_categorical(self, long_df, using_polars):
+    def test_legend_categorical(self, long_df):
 
         ax = self.func(data=long_df, x="y", y="a", hue="b")
-
-        if using_polars:
-            long_df = long_df.to_pandas()
-
         legend_texts = [t.get_text() for t in ax.legend_.texts]
         expected = categorical_order(long_df["b"])
         assert legend_texts == expected
@@ -1055,21 +1016,17 @@ class SharedScatterTests(SharedAxesLevelTests):
         ax = self.func(data=long_df, x="y", y="a", hue="b", legend=False)
         assert ax.legend_ is None
 
-    def test_palette_from_color_deprecation(self, long_df, using_polars):
+    def test_palette_from_color_deprecation(self, long_df):
 
         color = (.9, .4, .5)
         hex_color = mpl.colors.to_hex(color)
 
         hue_var = "a"
+        n_hue = long_df[hue_var].nunique()
+        palette = color_palette(f"dark:{hex_color}", n_hue)
 
         with pytest.warns(FutureWarning, match="Setting a gradient palette"):
             ax = self.func(data=long_df, x="z", hue=hue_var, color=color)
-
-        if using_polars:
-            long_df = long_df.to_pandas()
-
-        n_hue = long_df[hue_var].nunique()
-        palette = color_palette(f"dark:{hex_color}", n_hue)
 
         points = ax.collections[0]
         for point_color in points.get_facecolors():
@@ -1194,7 +1151,7 @@ class TestStripPlot(SharedScatterTests):
         "orient,jitter",
         itertools.product(["v", "h"], [True, .1]),
     )
-    def test_jitter(self, long_df, orient, jitter, using_polars):
+    def test_jitter(self, long_df, orient, jitter):
 
         cat_var, val_var = "a", "y"
         if orient == "x":
@@ -1204,13 +1161,11 @@ class TestStripPlot(SharedScatterTests):
             x_var, y_var = val_var, cat_var
             cat_idx, val_idx = 1, 0
 
+        cat_vals = categorical_order(long_df[cat_var])
+
         ax = stripplot(
             data=long_df, x=x_var, y=y_var, jitter=jitter,
         )
-
-        if using_polars:
-            long_df = long_df.to_pandas()
-        cat_vals = categorical_order(long_df[cat_var])
 
         if jitter is True:
             jitter_range = .4
@@ -1285,12 +1240,8 @@ class TestBoxPlot(SharedAxesLevelTests):
         p25, p75 = np.percentile(data, [25, 75])
         iqr = p75 - p25
 
-        if isinstance(data, pd.Series):
-            adj_lo = data[data >= (p25 - iqr * whis)].min()
-            adj_hi = data[data <= (p75 + iqr * whis)].max()
-        else:  # polars
-            adj_lo = data.filter(data >= (p25 - iqr * whis)).min()
-            adj_hi = data.filter(data <= (p75 + iqr * whis)).max()
+        adj_lo = data[data >= (p25 - iqr * whis)].min()
+        adj_hi = data[data <= (p75 + iqr * whis)].max()
 
         assert whis_lo[val_idx].max() == p25
         assert whis_lo[val_idx].min() == approx(adj_lo)
@@ -1304,15 +1255,12 @@ class TestBoxPlot(SharedAxesLevelTests):
         assert np.allclose(caps_hi[val_idx], (adj_hi, adj_hi))
         assert np.allclose(caps_hi[pos_idx], (pos - capsize / 2, pos + capsize / 2))
 
-        if isinstance(data, pd.Series):
-            flier_data = data[(data < adj_lo) | (data > adj_hi)]
-        else:
-            flier_data = data.filter((data < adj_lo) | (data > adj_hi))
+        flier_data = data[(data < adj_lo) | (data > adj_hi)]
         assert sorted(fliers[val_idx]) == sorted(flier_data)
         assert np.allclose(fliers[pos_idx], pos)
 
     @pytest.mark.parametrize("orient,col", [("x", "y"), ("y", "z")])
-    def test_single_var(self, long_df, orient, col, using_polars):
+    def test_single_var(self, long_df, orient, col):
 
         var = {"x": "y", "y": "x"}[orient]
         ax = boxplot(long_df, **{var: col})
@@ -1330,7 +1278,7 @@ class TestBoxPlot(SharedAxesLevelTests):
         self.check_whiskers(bxp, long_df[col], orient, 0)
 
     @pytest.mark.parametrize("orient", ["h", "v"])
-    def test_wide_data(self, wide_df, orient, using_polars):
+    def test_wide_data(self, wide_df, orient):
 
         orient = {"h": "y", "v": "x"}[orient]
         ax = boxplot(wide_df, orient=orient)
@@ -1340,12 +1288,10 @@ class TestBoxPlot(SharedAxesLevelTests):
             self.check_whiskers(bxp[i], wide_df[col], orient, i)
 
     @pytest.mark.parametrize("orient", ["x", "y"])
-    def test_grouped(self, long_df, orient, using_polars):
+    def test_grouped(self, long_df, orient):
 
         value = {"x": "y", "y": "x"}[orient]
         ax = boxplot(long_df, **{orient: "a", value: "z"})
-        if using_polars:
-            long_df = long_df.to_pandas()
         bxp, = ax.containers
         levels = categorical_order(long_df["a"])
         for i, level in enumerate(levels):
@@ -1354,12 +1300,10 @@ class TestBoxPlot(SharedAxesLevelTests):
             self.check_whiskers(bxp[i], data, orient, i)
 
     @pytest.mark.parametrize("orient", ["x", "y"])
-    def test_hue_grouped(self, long_df, orient, using_polars):
+    def test_hue_grouped(self, long_df, orient):
 
         value = {"x": "y", "y": "x"}[orient]
         ax = boxplot(long_df, hue="c", **{orient: "a", value: "z"})
-        if using_polars:
-            long_df = long_df.to_pandas()
         for i, hue_level in enumerate(categorical_order(long_df["c"])):
             bxp = ax.containers[i]
             for j, level in enumerate(categorical_order(long_df["a"])):
@@ -1370,17 +1314,11 @@ class TestBoxPlot(SharedAxesLevelTests):
                 self.check_box(bxp[j], data, orient, pos, width)
                 self.check_whiskers(bxp[j], data, orient, pos, capsize)
 
-    def test_hue_not_dodged(self, long_df, using_polars):
+    def test_hue_not_dodged(self, long_df):
 
-        if using_polars:
-            levels = categorical_order(long_df.to_pandas()["b"])
-            hue = long_df["b"].is_in(levels[:2])
-        else:
-            levels = categorical_order(long_df["b"])
-            hue = long_df["b"].isin(levels[:2])
+        levels = categorical_order(long_df["b"])
+        hue = long_df["b"].isin(levels[:2])
         ax = boxplot(long_df, x="b", y="z", hue=hue)
-        if using_polars:
-            long_df = long_df.to_pandas()
         bxps = ax.containers
         for i, level in enumerate(levels):
             idx = int(i < 2)
@@ -1388,7 +1326,7 @@ class TestBoxPlot(SharedAxesLevelTests):
             self.check_box(bxps[idx][i % 2], data, "x", i)
             self.check_whiskers(bxps[idx][i % 2], data, "x", i)
 
-    def test_dodge_native_scale(self, long_df, using_polars):
+    def test_dodge_native_scale(self, long_df):
 
         centers = categorical_order(long_df["s"])
         hue_levels = categorical_order(long_df["c"])
@@ -1396,8 +1334,6 @@ class TestBoxPlot(SharedAxesLevelTests):
         width = 0.8 * spacing / len(hue_levels)
         offset = width / len(hue_levels)
         ax = boxplot(long_df, x="s", y="z", hue="c", native_scale=True)
-        if using_polars:
-            long_df = long_df.to_pandas()
         for i, hue_level in enumerate(hue_levels):
             bxp = ax.containers[i]
             for j, center in enumerate(centers):
@@ -1484,11 +1420,9 @@ class TestBoxPlot(SharedAxesLevelTests):
         bxp = ax.containers[0][0]
         self.check_whiskers(bxp, data, "y", 0, whis=2)
 
-    def test_gap(self, long_df, using_polars):
+    def test_gap(self, long_df):
 
         ax = boxplot(long_df, x="a", y="z", hue="c", gap=.1)
-        if using_polars:
-            long_df = long_df.to_pandas()
         for i, hue_level in enumerate(categorical_order(long_df["c"])):
             bxp = ax.containers[i]
             for j, level in enumerate(categorical_order(long_df["a"])):
@@ -1619,24 +1553,20 @@ class TestViolinPlot(SharedAxesLevelTests):
             self.check_violin(poly, wide_df[col], orient, i)
 
     @pytest.mark.parametrize("orient", ["x", "y"])
-    def test_grouped(self, long_df, orient, using_polars):
+    def test_grouped(self, long_df, orient):
 
         value = {"x": "y", "y": "x"}[orient]
         ax = violinplot(long_df, **{orient: "a", value: "z"}, cut=0)
-        if using_polars:
-            long_df = long_df.to_pandas()
         levels = categorical_order(long_df["a"])
         for i, level in enumerate(levels):
             data = long_df.loc[long_df["a"] == level, "z"]
             self.check_violin(ax.collections[i], data, orient, i)
 
     @pytest.mark.parametrize("orient", ["x", "y"])
-    def test_hue_grouped(self, long_df, orient, using_polars):
+    def test_hue_grouped(self, long_df, orient):
 
         value = {"x": "y", "y": "x"}[orient]
         ax = violinplot(long_df, hue="c", **{orient: "a", value: "z"}, cut=0)
-        if using_polars:
-            long_df = long_df.to_pandas()
         polys = iter(ax.collections)
         for i, level in enumerate(categorical_order(long_df["a"])):
             for j, hue_level in enumerate(categorical_order(long_df["c"])):
@@ -1646,23 +1576,17 @@ class TestViolinPlot(SharedAxesLevelTests):
                 width = 0.4
                 self.check_violin(next(polys), data, orient, pos, width)
 
-    def test_hue_not_dodged(self, long_df, using_polars):
+    def test_hue_not_dodged(self, long_df):
 
-        if using_polars:
-            levels = categorical_order(long_df.to_pandas()["b"])
-            hue = long_df["b"].is_in(levels[:2])
-        else:
-            levels = categorical_order(long_df["b"])
-            hue = long_df["b"].isin(levels[:2])
+        levels = categorical_order(long_df["b"])
+        hue = long_df["b"].isin(levels[:2])
         ax = violinplot(long_df, x="b", y="z", hue=hue, cut=0)
-        if using_polars:
-            long_df = long_df.to_pandas()
         for i, level in enumerate(levels):
             poly = ax.collections[i]
             data = long_df.loc[long_df["b"] == level, "z"]
             self.check_violin(poly, data, "x", i)
 
-    def test_dodge_native_scale(self, long_df, using_polars):
+    def test_dodge_native_scale(self, long_df):
 
         centers = categorical_order(long_df["s"])
         hue_levels = categorical_order(long_df["c"])
@@ -1670,8 +1594,6 @@ class TestViolinPlot(SharedAxesLevelTests):
         width = 0.8 * spacing / len(hue_levels)
         offset = width / len(hue_levels)
         ax = violinplot(long_df, x="s", y="z", hue="c", native_scale=True, cut=0)
-        if using_polars:
-            long_df = long_df.to_pandas()
         violins = iter(ax.collections)
         for center in centers:
             for i, hue_level in enumerate(hue_levels):
@@ -1681,15 +1603,13 @@ class TestViolinPlot(SharedAxesLevelTests):
                 poly = next(violins)
                 self.check_violin(poly, data, "x", pos, width)
 
-    def test_dodge_native_scale_log(self, long_df, using_polars):
+    def test_dodge_native_scale_log(self, long_df):
 
         pos = 10 ** long_df["s"]
         ax = mpl.figure.Figure().subplots()
         ax.set_xscale("log")
         variables = dict(x=pos, y="z", hue="c")
         violinplot(long_df, **variables, native_scale=True, density_norm="width", ax=ax)
-        if using_polars:
-            long_df = long_df.to_pandas()
         widths = []
         n_violins = long_df["s"].nunique() * long_df["c"].nunique()
         for poly in ax.collections[:n_violins]:
@@ -1705,11 +1625,9 @@ class TestViolinPlot(SharedAxesLevelTests):
         for poly in ax.collections:
             assert same_color(poly.get_facecolor(), color)
 
-    def test_hue_colors(self, long_df, using_polars):
+    def test_hue_colors(self, long_df):
 
         ax = violinplot(long_df, x="a", y="y", hue="b", saturation=1)
-        if using_polars:
-            long_df = long_df.to_pandas()
         n_levels = long_df["b"].nunique()
         for i, poly in enumerate(ax.collections):
             assert same_color(poly.get_facecolor(), f"C{i % n_levels}")
@@ -1788,34 +1706,28 @@ class TestViolinPlot(SharedAxesLevelTests):
             assert pts[0, pos_idx] == -pts[1, pos_idx]
 
     @pytest.mark.parametrize("orient", ["x", "y"])
-    def test_inner_stick(self, long_df, orient, using_polars):
+    def test_inner_stick(self, long_df, orient):
 
         pos_idx, val_idx = self.orient_indices(orient)
         ax = violinplot(long_df["y"], orient=orient, inner="stick")
-        if using_polars:
-            long_df = long_df.to_pandas()
         for i, pts in enumerate(ax.collections[1].get_segments()):
             for pt in pts:
                 assert pt[val_idx] == long_df["y"].iloc[i]
             assert pts[0, pos_idx] == -pts[1, pos_idx]
 
     @pytest.mark.parametrize("orient", ["x", "y"])
-    def test_inner_points(self, long_df, orient, using_polars):
+    def test_inner_points(self, long_df, orient):
 
         pos_idx, val_idx = self.orient_indices(orient)
         ax = violinplot(long_df["y"], orient=orient, inner="points")
-        if using_polars:
-            long_df = long_df.to_pandas()
         points = ax.collections[1]
         for i, pt in enumerate(points.get_offsets()):
             assert pt[val_idx] == long_df["y"].iloc[i]
             assert pt[pos_idx] == 0
 
-    def test_split_single(self, long_df, using_polars):
+    def test_split_single(self, long_df):
 
         ax = violinplot(long_df, x="a", y="z", split=True, cut=0)
-        if using_polars:
-            long_df = long_df.to_pandas()
         levels = categorical_order(long_df["a"])
         for i, level in enumerate(levels):
             data = long_df.loc[long_df["a"] == level, "z"]
@@ -1823,11 +1735,9 @@ class TestViolinPlot(SharedAxesLevelTests):
             verts = ax.collections[i].get_paths()[0].vertices
             assert np.isclose(verts[:, 0], i + .4).sum() >= 100
 
-    def test_split_multi(self, long_df, using_polars):
+    def test_split_multi(self, long_df):
 
         ax = violinplot(long_df, x="a", y="z", hue="c", split=True, cut=0)
-        if using_polars:
-            long_df = long_df.to_pandas()
         polys = iter(ax.collections)
         for i, level in enumerate(categorical_order(long_df["a"])):
             for j, hue_level in enumerate(categorical_order(long_df["c"])):
@@ -1991,17 +1901,13 @@ class TestBarPlot(SharedAggTests):
         assert getattr(bar, f"get_{prop}")() == approx(vals.mean())
 
     @pytest.mark.parametrize("orient", ["x", "y", "h", "v"])
-    def test_wide_df(self, wide_df, orient, using_polars):
+    def test_wide_df(self, wide_df, orient):
 
         ax = barplot(wide_df, orient=orient)
         orient = {"h": "y", "v": "x"}.get(orient, orient)
         prop = {"x": "height", "y": "width"}[orient]
         for i, bar in enumerate(ax.patches):
-            if using_polars:
-                expected = approx(wide_df[:, i].mean())
-            else:
-                expected = approx(wide_df.iloc[:, i].mean())
-            assert getattr(bar, f"get_{prop}")() == expected
+            assert getattr(bar, f"get_{prop}")() == approx(wide_df.iloc[:, i].mean())
 
     @pytest.mark.parametrize("orient", ["x", "y", "h", "v"])
     def test_vector_orient(self, orient):
@@ -2227,38 +2133,32 @@ class TestBarPlot(SharedAggTests):
         for x_i, bar in zip(x[2:], ax.patches[2:]):
             assert bar.get_x() == approx(x_i)
 
-    def test_estimate_default(self, long_df, using_polars):
+    def test_estimate_default(self, long_df):
 
         agg_var, val_var = "a", "y"
+        agg_df = long_df.groupby(agg_var)[val_var].mean()
 
         ax = barplot(long_df, x=agg_var, y=val_var, errorbar=None)
-        if using_polars:
-            long_df = long_df.to_pandas()
-        agg_df = long_df.groupby(agg_var)[val_var].mean()
         order = categorical_order(long_df[agg_var])
         for i, bar in enumerate(ax.patches):
             assert bar.get_height() == approx(agg_df[order[i]])
 
-    def test_estimate_string(self, long_df, using_polars):
+    def test_estimate_string(self, long_df):
 
         agg_var, val_var = "a", "y"
+        agg_df = long_df.groupby(agg_var)[val_var].median()
 
         ax = barplot(long_df, x=agg_var, y=val_var, estimator="median", errorbar=None)
-        if using_polars:
-            long_df = long_df.to_pandas()
-        agg_df = long_df.groupby(agg_var)[val_var].median()
         order = categorical_order(long_df[agg_var])
         for i, bar in enumerate(ax.patches):
             assert bar.get_height() == approx(agg_df[order[i]])
 
-    def test_estimate_func(self, long_df, using_polars):
+    def test_estimate_func(self, long_df):
 
         agg_var, val_var = "a", "y"
+        agg_df = long_df.groupby(agg_var)[val_var].median()
 
         ax = barplot(long_df, x=agg_var, y=val_var, estimator=np.median, errorbar=None)
-        if using_polars:
-            long_df = long_df.to_pandas()
-        agg_df = long_df.groupby(agg_var)[val_var].median()
         order = categorical_order(long_df[agg_var])
         for i, bar in enumerate(ax.patches):
             assert bar.get_height() == approx(agg_df[order[i]])
@@ -2271,14 +2171,12 @@ class TestBarPlot(SharedAggTests):
         bar, = ax.patches
         assert bar.get_width() == 10 ** np.log10(long_df["z"]).mean()
 
-    def test_errorbars(self, long_df, using_polars):
+    def test_errorbars(self, long_df):
 
         agg_var, val_var = "a", "y"
+        agg_df = long_df.groupby(agg_var)[val_var].agg(["mean", "std"])
 
         ax = barplot(long_df, x=agg_var, y=val_var, errorbar="sd")
-        if using_polars:
-            long_df = long_df.to_pandas()
-        agg_df = long_df.groupby(agg_var)[val_var].agg(["mean", "std"])
         order = categorical_order(long_df[agg_var])
         for i, line in enumerate(ax.lines):
             row = agg_df.loc[order[i]]
@@ -2498,7 +2396,7 @@ class TestPointPlot(SharedAggTests):
         assert getattr(line, f"get_{orient}data")() == approx(vals.mean())
 
     @pytest.mark.parametrize("orient", ["x", "y", "h", "v"])
-    def test_wide_df(self, wide_df, orient, using_polars):
+    def test_wide_df(self, wide_df, orient):
 
         ax = pointplot(wide_df, orient=orient)
         orient = {"h": "y", "v": "x"}.get(orient, orient)
@@ -2508,16 +2406,10 @@ class TestPointPlot(SharedAggTests):
             getattr(line, f"get_{orient}data")(),
             np.arange(len(wide_df.columns)),
         )
-        if using_polars:
-            assert_array_almost_equal(
-                getattr(line, f"get_{depend}data")(),
-                wide_df.mean(axis=0).to_numpy().flatten(),
-            )
-        else:
-            assert_array_almost_equal(
-                getattr(line, f"get_{depend}data")(),
-                wide_df.mean(axis=0),
-            )
+        assert_array_almost_equal(
+            getattr(line, f"get_{depend}data")(),
+            wide_df.mean(axis=0),
+        )
 
     @pytest.mark.parametrize("orient", ["x", "y", "h", "v"])
     def test_vector_orient(self, orient):
@@ -2587,14 +2479,12 @@ class TestPointPlot(SharedAggTests):
         assert_array_equal(line.get_ydata(), y)
 
     @pytest.mark.parametrize("estimator", ["mean", np.mean])
-    def test_estimate(self, long_df, estimator, using_polars):
+    def test_estimate(self, long_df, estimator):
 
         agg_var, val_var = "a", "y"
+        agg_df = long_df.groupby(agg_var)[val_var].agg(estimator)
 
         ax = pointplot(long_df, x=agg_var, y=val_var, errorbar=None)
-        if using_polars:
-            long_df = long_df.to_pandas()
-        agg_df = long_df.groupby(agg_var)[val_var].agg(estimator)
         order = categorical_order(long_df[agg_var])
         for i, xy in enumerate(ax.lines[0].get_xydata()):
             assert tuple(xy) == approx((i, agg_df[order[i]]))
@@ -2607,14 +2497,12 @@ class TestPointPlot(SharedAggTests):
         val, = ax.lines[0].get_xdata()
         assert val == 10 ** np.log10(long_df["z"]).mean()
 
-    def test_errorbars(self, long_df, using_polars):
+    def test_errorbars(self, long_df):
 
         agg_var, val_var = "a", "y"
+        agg_df = long_df.groupby(agg_var)[val_var].agg(["mean", "std"])
 
         ax = pointplot(long_df, x=agg_var, y=val_var, errorbar="sd")
-        if using_polars:
-            long_df = long_df.to_pandas()
-        agg_df = long_df.groupby(agg_var)[val_var].agg(["mean", "std"])
         order = categorical_order(long_df[agg_var])
         for i, line in enumerate(ax.lines[1:]):
             row = agg_df.loc[order[i]]
@@ -2935,16 +2823,14 @@ class TestCountPlot:
             assert same_color(bar.get_facecolor(), f"C{i // 2}")
 
     @pytest.mark.parametrize("stat", ["percent", "probability", "proportion"])
-    def test_stat(self, long_df, stat, using_polars):
+    def test_stat(self, long_df, stat):
 
         col = "a"
-        ax = countplot(long_df, x=col, stat=stat)
-        if using_polars:
-            long_df = long_df.to_pandas()
         order = categorical_order(long_df[col])
         expected = long_df[col].value_counts(normalize=True)
         if stat == "percent":
             expected *= 100
+        ax = countplot(long_df, x=col, stat=stat)
         for i, bar in enumerate(ax.patches):
             assert bar.get_height() == approx(expected[order[i]])
 
@@ -3684,7 +3570,7 @@ class TestBeeswarm:
         p = Beeswarm()
         data = long_df["y"]
         d = data.diff().mean() * 1.5
-        x = np.zeros(len(data))
+        x = np.zeros(data.size)
         y = np.sort(data)
         r = np.full_like(y, d)
         orig_xyr = np.c_[x, y, r]

@@ -1,5 +1,4 @@
 import itertools
-import os
 import numpy as np
 import pandas as pd
 import matplotlib as mpl
@@ -106,10 +105,6 @@ class TestHueMapping:
         assert p._hue_map.palette == palette
         assert p._hue_map.levels == hue_order
 
-    @pytest.mark.xfail(
-        os.environ.get('SEABORN_TEST_INTERCHANGE_PROTOCOL', '0') == '1',
-        reason='different-length inputs not yet supported for non-pandas'
-    )
     def test_hue_map_null(self, flat_series, null_series):
 
         p = VectorPlotter(variables=dict(x=flat_series, hue=null_series))
@@ -121,14 +116,11 @@ class TestHueMapping:
         assert m.norm is None
         assert m.lookup_table is None
 
-    def test_hue_map_categorical(self, wide_df, long_df, using_polars):
+    def test_hue_map_categorical(self, wide_df, long_df):
 
         p = VectorPlotter(data=wide_df)
         m = HueMapping(p)
-        if using_polars:
-            assert m.levels == wide_df.columns
-        else:
-            assert m.levels == wide_df.columns.to_list()
+        assert m.levels == wide_df.columns.to_list()
         assert m.map_type == "categorical"
         assert m.cmap is None
 
@@ -172,19 +164,13 @@ class TestHueMapping:
         # Test long data
         p = VectorPlotter(data=long_df, variables=dict(x="x", y="y", hue="a"))
         m = HueMapping(p)
-        if using_polars:
-            assert m.levels == categorical_order(long_df.to_pandas()["a"])
-        else:
-            assert m.levels == categorical_order(long_df["a"])
+        assert m.levels == categorical_order(long_df["a"])
         assert m.map_type == "categorical"
         assert m.cmap is None
 
         # Test default palette
         m = HueMapping(p)
-        if using_polars:
-            hue_levels = categorical_order(long_df.to_pandas()["a"])
-        else:
-            hue_levels = categorical_order(long_df["a"])
+        hue_levels = categorical_order(long_df["a"])
         expected_colors = color_palette(n_colors=len(hue_levels))
         expected_lookup_table = dict(zip(hue_levels, expected_colors))
         assert m.lookup_table == expected_lookup_table
@@ -209,13 +195,8 @@ class TestHueMapping:
         assert m.map_type == "categorical"
 
         for val in [0, 1]:
-            if using_polars:
-                import polars as pl
-                data = long_df.filter(pl.col('c') == val)
-            else:
-                data = long_df[long_df["c"]]
             p = VectorPlotter(
-                data=data,
+                data=long_df[long_df["c"] == val],
                 variables=dict(x="x", y="y", hue="c"),
             )
             m = HueMapping(p)
@@ -225,33 +206,24 @@ class TestHueMapping:
         # Test Timestamp data
         p = VectorPlotter(data=long_df, variables=dict(x="x", y="y", hue="t"))
         m = HueMapping(p)
-        if using_polars:
-            assert m.levels == [
-                pd.Timestamp(t) for t in long_df.to_pandas()["t"].unique()
-            ]
-        else:
-            assert m.levels == [pd.Timestamp(t) for t in long_df["t"].unique()]
+        assert m.levels == [pd.Timestamp(t) for t in long_df["t"].unique()]
         assert m.map_type == "datetime"
 
         # Test explicit categories
         p = VectorPlotter(data=long_df, variables=dict(x="x", hue="a_cat"))
         m = HueMapping(p)
-        if using_polars:
-            assert m.levels == long_df.to_pandas()["a_cat"].cat.categories.to_list()
-        else:
-            assert m.levels == long_df["a_cat"].cat.categories.to_list()
+        assert m.levels == long_df["a_cat"].cat.categories.to_list()
         assert m.map_type == "categorical"
 
         # Test numeric data with category type
-        if not using_polars:
-            p = VectorPlotter(
-                data=long_df,
-                variables=dict(x="x", y="y", hue="s_cat")
-            )
-            m = HueMapping(p)
-            assert m.levels == categorical_order(long_df["s_cat"])
-            assert m.map_type == "categorical"
-            assert m.cmap is None
+        p = VectorPlotter(
+            data=long_df,
+            variables=dict(x="x", y="y", hue="s_cat")
+        )
+        m = HueMapping(p)
+        assert m.levels == categorical_order(long_df["s_cat"])
+        assert m.map_type == "categorical"
+        assert m.cmap is None
 
         # Test categorical palette specified for numeric data
         p = VectorPlotter(
@@ -354,11 +326,9 @@ class TestHueMapping:
         with pytest.warns(UserWarning, match="Ignoring `palette`"):
             HueMapping(p, palette="viridis")
 
-    def test_saturation(self, long_df, using_polars):
+    def test_saturation(self, long_df):
 
         p = VectorPlotter(data=long_df, variables=dict(x="x", y="y", hue="a"))
-        if using_polars:
-            long_df = long_df.to_pandas()
         levels = categorical_order(long_df["a"])
         palette = color_palette("viridis", len(levels))
         saturation = 0.8
@@ -412,10 +382,6 @@ class TestSizeMapping:
         assert p._size_map.lookup_table == dict(zip(size_order, sizes))
         assert p._size_map.levels == size_order
 
-    @pytest.mark.xfail(
-        os.environ.get('SEABORN_TEST_INTERCHANGE_PROTOCOL', '0') == '1',
-        reason='different-length inputs not yet supported for non-pandas'
-    )
     def test_size_map_null(self, flat_series, null_series):
 
         p = VectorPlotter(variables=dict(x=flat_series, size=null_series))
@@ -470,7 +436,7 @@ class TestSizeMapping:
         with pytest.raises(ValueError):
             SizeMapping(p, norm="bad_norm")
 
-    def test_map_size_categorical(self, long_df, using_polars):
+    def test_map_size_categorical(self, long_df):
 
         p = VectorPlotter(
             data=long_df,
@@ -504,10 +470,7 @@ class TestSizeMapping:
         # Test explicit categories
         p = VectorPlotter(data=long_df, variables=dict(x="x", size="a_cat"))
         m = SizeMapping(p)
-        if using_polars:
-            assert m.levels == long_df.to_pandas()["a_cat"].cat.categories.to_list()
-        else:
-            assert m.levels == long_df["a_cat"].cat.categories.to_list()
+        assert m.levels == long_df["a_cat"].cat.categories.to_list()
         assert m.map_type == "categorical"
 
         # Test sizes list with wrong length
@@ -566,10 +529,6 @@ class TestStyleMapping:
         assert p._style_map.levels == style_order
         assert p._style_map(style_order, "marker") == markers
 
-    @pytest.mark.xfail(
-        os.environ.get('SEABORN_TEST_INTERCHANGE_PROTOCOL', '0') == '1',
-        reason='different-length inputs not yet supported for non-pandas'
-    )
     def test_style_map_null(self, flat_series, null_series):
 
         p = VectorPlotter(variables=dict(x=flat_series, style=null_series))
@@ -578,7 +537,7 @@ class TestStyleMapping:
         assert m.map_type is None
         assert m.lookup_table is None
 
-    def test_map_style(self, long_df, using_polars):
+    def test_map_style(self, long_df):
 
         p = VectorPlotter(
             data=long_df,
@@ -620,8 +579,6 @@ class TestStyleMapping:
         # Test explicit categories
         p = VectorPlotter(data=long_df, variables=dict(x="x", style="a_cat"))
         m = StyleMapping(p)
-        if using_polars:
-            long_df = long_df.to_pandas()
         assert m.levels == long_df["a_cat"].cat.categories.to_list()
 
         # Test style order with defaults
@@ -659,7 +616,7 @@ class TestStyleMapping:
 
 class TestVectorPlotter:
 
-    def test_flat_variables(self, flat_data, using_polars):
+    def test_flat_variables(self, flat_data):
 
         p = VectorPlotter()
         p.assign_variables(data=flat_data)
@@ -696,14 +653,11 @@ class TestVectorPlotter:
         for key, val in long_variables.items():
             assert_array_equal(p.plot_data[key], long_df[val])
 
-    def test_long_df_with_index(self, long_df, long_variables, using_polars):
+    def test_long_df_with_index(self, long_df, long_variables):
 
         p = VectorPlotter()
-        if using_polars:
-            # no index
-            return
         p.assign_variables(
-            data=long_df.set_index('a'),
+            data=long_df.set_index("a"),
             variables=long_variables,
         )
         assert p.input_format == "long"
@@ -712,10 +666,7 @@ class TestVectorPlotter:
         for key, val in long_variables.items():
             assert_array_equal(p.plot_data[key], long_df[val])
 
-    def test_long_df_with_multiindex(self, long_df, long_variables, using_polars):
-        if using_polars:
-            # no index (let along multiindex)
-            return
+    def test_long_df_with_multiindex(self, long_df, long_variables):
 
         p = VectorPlotter()
         p.assign_variables(
@@ -807,11 +758,8 @@ class TestVectorPlotter:
         assert_array_equal(p.plot_data["units"], repeated_df["u"])
 
     @pytest.mark.parametrize("name", [3, 4.5])
-    def test_long_numeric_name(self, long_df, name, using_polars):
+    def test_long_numeric_name(self, long_df, name):
 
-        if using_polars:
-            # Only string names allowed
-            return
         long_df[name] = long_df["x"]
         p = VectorPlotter()
         p.assign_variables(data=long_df, variables={"x": name})
@@ -913,7 +861,7 @@ class TestVectorPlotter:
         out = p.iter_data(["hue"])
         assert len(list(out)) == n_subsets
 
-        n_subsets = len(set(list(map(tuple, long_df[[var1, var2]].to_numpy()))))
+        n_subsets = len(set(list(map(tuple, long_df[[var1, var2]].values))))
 
         p = VectorPlotter(
             data=long_df,
@@ -933,7 +881,7 @@ class TestVectorPlotter:
 
         var1, var2, var3 = "a", "s", "b"
         cols = [var1, var2, var3]
-        n_subsets = len(set(list(map(tuple, long_df[cols].to_numpy()))))
+        n_subsets = len(set(list(map(tuple, long_df[cols].values))))
 
         p = VectorPlotter(
             data=long_df,
@@ -963,7 +911,7 @@ class TestVectorPlotter:
         )
         for sub_vars, _ in p.iter_data("hue"):
             assert list(sub_vars) == ["hue"]
-            assert sub_vars["hue"] in long_df[var].to_numpy()
+            assert sub_vars["hue"] in long_df[var].values
 
         p = VectorPlotter(
             data=long_df,
@@ -971,7 +919,7 @@ class TestVectorPlotter:
         )
         for sub_vars, _ in p.iter_data("size"):
             assert list(sub_vars) == ["size"]
-            assert sub_vars["size"] in long_df[var].to_numpy()
+            assert sub_vars["size"] in long_df[var].values
 
         p = VectorPlotter(
             data=long_df,
@@ -979,8 +927,8 @@ class TestVectorPlotter:
         )
         for sub_vars, _ in p.iter_data(semantics):
             assert list(sub_vars) == ["hue", "style"]
-            assert sub_vars["hue"] in long_df[var].to_numpy()
-            assert sub_vars["style"] in long_df[var].to_numpy()
+            assert sub_vars["hue"] in long_df[var].values
+            assert sub_vars["style"] in long_df[var].values
             assert sub_vars["hue"] == sub_vars["style"]
 
         var1, var2 = "a", "s"
@@ -991,8 +939,8 @@ class TestVectorPlotter:
         )
         for sub_vars, _ in p.iter_data(semantics):
             assert list(sub_vars) == ["hue", "size"]
-            assert sub_vars["hue"] in long_df[var1].to_numpy()
-            assert sub_vars["size"] in long_df[var2].to_numpy()
+            assert sub_vars["hue"] in long_df[var1].values
+            assert sub_vars["size"] in long_df[var2].values
 
         semantics = ["hue", "col", "row"]
         p = VectorPlotter(
@@ -1001,8 +949,8 @@ class TestVectorPlotter:
         )
         for sub_vars, _ in p.iter_data("hue"):
             assert list(sub_vars) == ["hue", "col"]
-            assert sub_vars["hue"] in long_df[var1].to_numpy()
-            assert sub_vars["col"] in long_df[var2].to_numpy()
+            assert sub_vars["hue"] in long_df[var1].values
+            assert sub_vars["col"] in long_df[var2].values
 
     def test_iter_data_values(self, long_df):
 
@@ -1033,16 +981,14 @@ class TestVectorPlotter:
             rows &= p.plot_data["size"] == sub_vars["size"]
             assert_frame_equal(sub_data, p.plot_data[rows])
 
-    def test_iter_data_reverse(self, long_df, using_polars):
+    def test_iter_data_reverse(self, long_df):
 
+        reversed_order = categorical_order(long_df["a"])[::-1]
         p = VectorPlotter(
             data=long_df,
             variables=dict(x="x", y="y", hue="a")
         )
         iterator = p.iter_data("hue", reverse=True)
-        if using_polars:
-            long_df = long_df.to_pandas()
-        reversed_order = categorical_order(long_df["a"])[::-1]
         for i, (sub_vars, _) in enumerate(iterator):
             assert sub_vars["hue"] == reversed_order[i]
 
@@ -1435,7 +1381,7 @@ class TestVectorPlotter:
         with pytest.raises(NotImplementedError):
             p.scale_datetime("x")
 
-    def test_scale_categorical(self, long_df, using_polars):
+    def test_scale_categorical(self, long_df):
 
         p = VectorPlotter(data=long_df, variables={"x": "x"})
         p.scale_categorical("y")
@@ -1454,12 +1400,7 @@ class TestVectorPlotter:
         p = VectorPlotter(data=long_df, variables={"x": "a"})
         p.scale_categorical("x")
         assert not p._var_ordered["x"]
-        if using_polars:
-            assert_array_equal(
-                p.var_levels["x"], categorical_order(long_df.to_pandas()["a"])
-            )
-        else:
-            assert_array_equal(p.var_levels["x"], categorical_order(long_df["a"]))
+        assert_array_equal(p.var_levels["x"], categorical_order(long_df["a"]))
 
         p = VectorPlotter(data=long_df, variables={"x": "a_cat"})
         p.scale_categorical("x")

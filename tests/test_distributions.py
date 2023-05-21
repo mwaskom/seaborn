@@ -272,11 +272,9 @@ class TestRugPlot(SharedAxesLevelTests):
         assert_array_equal(segments[:, 1, 1], np.full(n, height))
         assert_array_equal(segments[:, 1, 0], flat_array)
 
-    def test_rug_colors(self, long_df, using_polars):
+    def test_rug_colors(self, long_df):
 
         ax = rugplot(data=long_df, x="x", hue="a")
-        if using_polars:
-            long_df = long_df.to_pandas()
 
         order = categorical_order(long_df["a"])
         palette = color_palette()
@@ -705,7 +703,7 @@ class TestKDEPlotUnivariate(SharedAxesLevelTests):
             xdata, ydata = line.get_xydata().T
             assert integrate(ydata, xdata) == pytest.approx(1)
 
-    def test_common_grid(self, long_df, using_polars):
+    def test_common_grid(self, long_df):
 
         f, (ax1, ax2) = plt.subplots(ncols=2)
 
@@ -719,8 +717,6 @@ class TestKDEPlotUnivariate(SharedAxesLevelTests):
             data=long_df, x="x", hue="a", hue_order=order,
             common_grid=True, cut=0, ax=ax2,
         )
-        if using_polars:
-            long_df = long_df.to_pandas()
 
         for line, level in zip(ax1.lines[::-1], order):
             xdata = line.get_xdata()
@@ -896,17 +892,14 @@ class TestKDEPlotUnivariate(SharedAxesLevelTests):
         assert ax2.get_xlabel() == "Density"
         assert ax2.get_ylabel() == "y"
 
-    def test_legend(self, long_df, using_polars):
+    def test_legend(self, long_df):
 
         ax = kdeplot(data=long_df, x="x", hue="a")
 
         assert ax.legend_.get_title().get_text() == "a"
 
         legend_labels = ax.legend_.get_texts()
-        if using_polars:
-            order = categorical_order(long_df.to_pandas()["a"])
-        else:
-            order = categorical_order(long_df["a"])
+        order = categorical_order(long_df["a"])
         for label, level in zip(legend_labels, order):
             assert label.get_text() == level
 
@@ -1440,11 +1433,9 @@ class TestHistPlotUnivariate(SharedAxesLevelTests):
             assert_array_almost_equal(start, wide_df[col].min())
             assert_array_almost_equal(stop, wide_df[col].max())
 
-    def test_weights_with_missing(self, null_df, using_polars):
+    def test_weights_with_missing(self, null_df):
 
         ax = histplot(null_df, x="x", weights="s", bins=5)
-        if using_polars:
-            null_df = null_df.to_pandas()
 
         bar_heights = [bar.get_height() for bar in ax.patches]
         total_weight = null_df[["x", "s"]].dropna()["s"].sum()
@@ -2076,7 +2067,7 @@ class TestHistPlotBivariate:
             (counts <= f(counts, pthresh)).T.flat,
         )
 
-    def test_hue_color_limits(self, long_df, using_polars):
+    def test_hue_color_limits(self, long_df):
 
         _, (ax1, ax2, ax3, ax4) = plt.subplots(4)
         kws = dict(data=long_df, x="x", y="y", hue="c", bins=4)
@@ -2086,11 +2077,7 @@ class TestHistPlotBivariate:
         full_counts, _ = hist(long_df["x"], long_df["y"])
 
         sub_counts = []
-        if using_polars:
-            group_by = long_df.groupby(kws['hue'], maintain_order=True)
-        else:
-            group_by = long_df.groupby(kws['hue'])
-        for _, sub_df in group_by:
+        for _, sub_df in long_df.groupby(kws["hue"]):
             c, _ = hist(sub_df["x"], sub_df["y"])
             sub_counts.append(c)
 
@@ -2272,7 +2259,7 @@ class TestDisPlot:
             dict(x="x", y="y"),
         ],
     )
-    def test_versus_single_histplot(self, long_df, kwargs, using_polars):
+    def test_versus_single_histplot(self, long_df, kwargs):
 
         ax = histplot(long_df, **kwargs)
         g = displot(long_df, **kwargs)
@@ -2282,11 +2269,7 @@ class TestDisPlot:
             assert_legends_equal(ax.legend_, g._legend)
 
         if kwargs:
-            if using_polars:
-                import polars as pl
-                long_df = long_df.with_columns(pl.lit('_').alias('_'))
-            else:
-                long_df["_"] = "_"
+            long_df["_"] = "_"
             g2 = displot(long_df, col="_", **kwargs)
             assert_plots_equal(ax, g2.ax)
 
@@ -2306,7 +2289,7 @@ class TestDisPlot:
             dict(x="x", y="y"),
         ],
     )
-    def test_versus_single_kdeplot(self, long_df, kwargs, using_polars):
+    def test_versus_single_kdeplot(self, long_df, kwargs):
 
         ax = kdeplot(data=long_df, **kwargs)
         g = displot(long_df, kind="kde", **kwargs)
@@ -2316,11 +2299,7 @@ class TestDisPlot:
             assert_legends_equal(ax.legend_, g._legend)
 
         if kwargs:
-            if using_polars:
-                import polars as pl
-                long_df = long_df.with_columns(pl.lit('_').alias('_'))
-            else:
-                long_df["_"] = "_"
+            long_df["_"] = "_"
             g2 = displot(long_df, kind="kde", col="_", **kwargs)
             assert_plots_equal(ax, g2.ax)
 
@@ -2338,7 +2317,7 @@ class TestDisPlot:
             dict(x="x", hue="a", palette="muted"),
         ],
     )
-    def test_versus_single_ecdfplot(self, long_df, kwargs, using_polars):
+    def test_versus_single_ecdfplot(self, long_df, kwargs):
 
         ax = ecdfplot(data=long_df, **kwargs)
         g = displot(long_df, kind="ecdf", **kwargs)
@@ -2348,11 +2327,7 @@ class TestDisPlot:
             assert_legends_equal(ax.legend_, g._legend)
 
         if kwargs:
-            if using_polars:
-                import polars as pl
-                long_df = long_df.with_columns(pl.lit('_').alias('_'))
-            else:
-                long_df["_"] = "_"
+            long_df["_"] = "_"
             g2 = displot(long_df, kind="ecdf", col="_", **kwargs)
             assert_plots_equal(ax, g2.ax)
 
@@ -2363,7 +2338,7 @@ class TestDisPlot:
             dict(x="x", hue="a"),
         ]
     )
-    def test_with_rug(self, long_df, kwargs, using_polars):
+    def test_with_rug(self, long_df, kwargs):
 
         ax = plt.figure().subplots()
         histplot(data=long_df, **kwargs, ax=ax)
@@ -2373,11 +2348,7 @@ class TestDisPlot:
 
         assert_plots_equal(ax, g.ax, labels=False)
 
-        if using_polars:
-            import polars as pl
-            long_df = long_df.with_columns(pl.lit('_').alias('_'))
-        else:
-            long_df["_"] = "_"
+        long_df["_"] = "_"
         g2 = displot(long_df, col="_", rug=True, **kwargs)
 
         assert_plots_equal(ax, g2.ax, labels=False)
@@ -2402,16 +2373,11 @@ class TestDisPlot:
             assert text in facet_ax.get_title()
 
     @pytest.mark.parametrize("multiple", ["dodge", "stack", "fill"])
-    def test_facet_multiple(self, long_df, multiple, using_polars):
+    def test_facet_multiple(self, long_df, multiple):
 
         bins = np.linspace(0, 20, 5)
-        if using_polars:
-            import polars as pl
-            data = long_df.filter(pl.col('c') == 0)
-        else:
-            data = long_df[long_df['c'] == 0]
         ax = histplot(
-            data=data,
+            data=long_df[long_df["c"] == 0],
             x="x", hue="a", hue_order=["a", "b", "c"],
             multiple=multiple, bins=bins,
         )
@@ -2484,10 +2450,7 @@ class TestDisPlot:
         clim2 = g.axes.flat[1].collections[0].get_clim()
         assert clim1[1] > clim2[1]
 
-    def test_facetgrid_data(self, long_df, using_polars):
-        if using_polars:
-            # This test doesn't pass a DataFrame anyway
-            return
+    def test_facetgrid_data(self, long_df):
 
         g = displot(
             data=long_df.to_dict(orient="list"),

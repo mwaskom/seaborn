@@ -794,7 +794,6 @@ class VectorPlotter:
         else:
 
             # Otherwise assume we have some collection of vectors.
-            data = try_convert_to_pandas(data)
 
             # Handle Python sequences such that entries end up in the columns,
             # not in the rows, of the intermediate wide DataFrame.

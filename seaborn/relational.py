@@ -13,7 +13,6 @@ from .utils import (
     adjust_legend_subtitles,
     _default_color,
     _deprecate_ci,
-    try_convert_to_pandas,
 )
 from ._statistics import EstimateAggregator
 from .axisgrid import FacetGrid, _facet_docs
@@ -705,7 +704,6 @@ def scatterplot(
     markers=True, style_order=None, legend="auto", ax=None,
     **kwargs
 ):
-    data = try_convert_to_pandas(data)
 
     variables = _ScatterPlotter.get_semantics(locals())
     p = _ScatterPlotter(data=data, variables=variables, legend=legend)
@@ -801,8 +799,6 @@ def relplot(
     legend="auto", kind="scatter", height=5, aspect=1, facet_kws=None,
     **kwargs
 ):
-    data = try_convert_to_pandas(data)
-
     if kind == "scatter":
 
         plotter = _ScatterPlotter

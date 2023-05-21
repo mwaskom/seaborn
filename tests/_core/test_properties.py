@@ -24,14 +24,6 @@ from seaborn._core.properties import (
 from seaborn._compat import MarkerStyle, get_colormap
 from seaborn.palettes import color_palette
 
-import os
-if os.environ.get('SEABORN_TEST_INTERCHANGE_PROTOCOL', '0') == '1':
-    pytest.skip(
-        "Testing internal classes/methods, which are reached with non-pandas "
-        "dataframes already transformed to pandas",
-        allow_module_level=True
-    )
-
 
 class DataFixtures:
 
@@ -48,9 +40,7 @@ class DataFixtures:
         return long_df["a"]
 
     @pytest.fixture
-    def cat_order(self, cat_vector, using_polars):
-        if using_polars:
-            return categorical_order(cat_vector.to_pandas())
+    def cat_order(self, cat_vector):
         return categorical_order(cat_vector)
 
     @pytest.fixture
@@ -90,10 +80,7 @@ class TestColor(DataFixtures):
     def assert_same_rgb(self, a, b):
         assert_array_equal(a[:, :3], b[:, :3])
 
-    def test_nominal_default_palette(self, cat_vector, cat_order, using_polars):
-        if using_polars:
-            # get_mapping expected pd.Series
-            return
+    def test_nominal_default_palette(self, cat_vector, cat_order):
 
         m = Color().get_mapping(Nominal(), cat_vector)
         n = len(cat_order)

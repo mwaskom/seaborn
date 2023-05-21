@@ -8,14 +8,6 @@ from numpy.testing import assert_array_equal
 from seaborn._core.groupby import GroupBy
 from seaborn._stats.counting import Hist, Count
 
-import os
-if os.environ.get('SEABORN_TEST_INTERCHANGE_PROTOCOL', '0') == '1':
-    pytest.skip(
-        "Testing internal classes/methods, which are reached with non-pandas "
-        "dataframes already transformed to pandas",
-        allow_module_level=True
-    )
-
 
 class TestCount:
 

@@ -2090,8 +2090,6 @@ def pairplot(
     # Avoid circular import
     from .distributions import histplot, kdeplot
 
-    data = utils.try_convert_to_pandas(data)
-
     # Handle deprecations
     if size is not None:
         height = size
