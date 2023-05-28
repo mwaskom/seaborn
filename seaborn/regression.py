@@ -6,6 +6,7 @@ import numpy as np
 import pandas as pd
 import matplotlib as mpl
 import matplotlib.pyplot as plt
+from statsmodels.nonparametric.smoothers_lowess import lowess as use_lowess
 
 try:
     import statsmodels
@@ -749,7 +750,6 @@ def regplot(
     label=None, color=None, marker="o",
     scatter_kws=None, line_kws=None, ax=None
 ):
-
     plotter = _RegressionPlotter(x, y, data, x_estimator, x_bins, x_ci,
                                  scatter, fit_reg, ci, n_boot, units, seed,
                                  order, logistic, lowess, robust, logx,
@@ -762,9 +762,25 @@ def regplot(
     scatter_kws = {} if scatter_kws is None else copy.copy(scatter_kws)
     scatter_kws["marker"] = marker
     line_kws = {} if line_kws is None else copy.copy(line_kws)
-    plotter.plot(ax, scatter_kws, line_kws)
-    return ax
 
+    if lowess and ci is not None:
+        # Calculate lowess fit
+        lowess_fit = use_lowess(plotter.y, plotter.x)
+
+        # Calculate confidence intervals
+        lowess_y = lowess_fit[:, 1]
+        lowess_ci = np.percentile(lowess_fit[:, 1:], [100 - ci / 2, ci / 2], axis=1)
+
+        # Plot lowess line
+        ax.plot(plotter.x, lowess_y, **line_kws)
+
+        # Plot confidence intervals
+        ax.fill_between(plotter.x, lowess_ci[0], lowess_ci[1], alpha=0.2)
+
+    else:
+        plotter.plot(ax, scatter_kws, line_kws)
+
+    return ax
 
 regplot.__doc__ = dedent("""\
     Plot data and a linear regression model fit.
