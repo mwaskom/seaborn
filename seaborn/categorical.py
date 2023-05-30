@@ -10,6 +10,7 @@ import pandas as pd
 
 import matplotlib as mpl
 from matplotlib.collections import PatchCollection
+from matplotlib.patches import Rectangle
 import matplotlib.patches as Patches
 import matplotlib.pyplot as plt
 
@@ -32,7 +33,7 @@ from seaborn.utils import (
     _normalize_kwargs,
     _version_predates,
 )
-from seaborn._statistics import EstimateAggregator
+from seaborn._statistics import EstimateAggregator, LetterValues
 from seaborn.palettes import color_palette, husl_palette, light_palette, dark_palette
 from seaborn.axisgrid import FacetGrid, _facet_docs
 
@@ -608,9 +609,6 @@ class _CategoricalPlotterNew(_RelationalPlotter):
             self._invert_scale(ax, data)
 
             maincolor = self._hue_map(sub_vars["hue"]) if "hue" in sub_vars else color
-
-            # TODO how to handle solid / empty fliers?
-
             if fill:
                 boxprops = {
                     "facecolor": maincolor, "edgecolor": linecolor, **props["box"]
@@ -696,6 +694,136 @@ class _CategoricalPlotterNew(_RelationalPlotter):
         else:
             patch_kws["edgecolor"] = linecolor
         self._configure_legend(ax, ax.fill_between, patch_kws)
+
+    def plot_boxens(
+        self,
+        width,
+        dodge,
+        gap,
+        fill,
+        color,
+        linecolor,
+        linewidth,
+        scale,  # TODO name?
+        k_depth,
+        outlier_prop,
+        trust_alpha,
+        showfliers,
+        box_kws,
+        flier_kws,
+        line_kws,
+        # TODO how to handle label?
+    ):
+
+        iter_vars = [self.orient, "hue"]
+        value_var = {"x": "y", "y": "x"}[self.orient]
+
+        estimator = LetterValues(k_depth, outlier_prop, trust_alpha)
+
+        # TODO merge with general kws
+        box_kws = {} if box_kws is None else box_kws.copy()
+        flier_kws = {} if flier_kws is None else flier_kws.copy()
+        line_kws = {} if line_kws is None else line_kws.copy()
+
+        if linewidth is None:
+            if fill:
+                linewidth = 0.5 * mpl.rcParams["lines.linewidth"]
+            else:
+                linewidth = mpl.rcParams["lines.linewidth"]
+
+        if linecolor is None:
+            if "hue" in self.variables:
+                linecolor = self._get_gray(list(self._hue_map.lookup_table.values()))
+            else:
+                linecolor = self._get_gray([color])
+
+        ax = self.ax
+
+        for sub_vars, sub_data in self.iter_data(iter_vars,
+                                                 from_comp_data=True,
+                                                 allow_empty=False):
+
+            ax = self._get_axes(sub_vars)
+            _, inv_ori = utils._get_transform_functions(ax, self.orient)
+            _, inv_val = utils._get_transform_functions(ax, value_var)
+
+            lv_data = estimator(sub_data[value_var])
+            n = lv_data["k"] * 2 - 1
+            vals = lv_data["values"]
+
+            pos_data = pd.DataFrame({
+                self.orient: [sub_vars[self.orient]],
+                "width": [width * self._native_width],
+            })
+            if dodge:
+                self._dodge(sub_vars, pos_data)
+            if gap:
+                pos_data["width"] *= 1 - gap
+
+            exponent = lv_data["levels"] - 1 - lv_data["k"]
+            if scale == "linear":
+                rel_widths = lv_data["levels"] + 1
+            elif scale == "exponential":
+                rel_widths = 2 ** exponent
+            elif scale == "area":
+                tails = lv_data["levels"] < (lv_data["k"] - 1)
+                rel_widths = 2 ** (exponent - tails) / np.diff(lv_data["values"])
+
+            box_widths = rel_widths / rel_widths.max() * pos_data["width"].item()
+            box_heights = inv_val(vals[1:]) - inv_val(vals[:-1])
+            box_pos = inv_ori(pos_data[self.orient].item() - box_widths / 2)
+            box_vals = inv_val(vals)
+
+            maincolor = self._hue_map(sub_vars["hue"]) if "hue" in sub_vars else color
+            flier_colors = {
+                "facecolor": "none", "edgecolor": linecolor if fill else maincolor
+            }
+            if fill:
+                cmap = light_palette(maincolor, as_cmap=True)
+                boxcolors = cmap(2 ** ((exponent + 2) / 2))
+            else:
+                boxcolors = maincolor
+
+            boxen = []
+            for i in range(n):
+                if self.orient == "x":
+                    xy = (box_pos[i], box_vals[i])
+                    w, h = (box_widths[i], box_heights[i])
+                else:
+                    xy = (box_vals[i], box_pos[i])
+                    w, h = (box_heights[i], box_widths[i])
+                boxen.append(Rectangle(xy, w, h))
+
+            if fill:
+                box_colors = {"facecolors": boxcolors, "edgecolors": linecolor}
+            else:
+                box_colors = {"facecolors": "none", "edgecolors": boxcolors}
+
+            collection_kws = {**box_colors, "linewidth": linewidth, **box_kws}
+            ax.add_collection(PatchCollection(boxen, **collection_kws))
+
+            # Median line
+            med = lv_data["median"]
+            pos = pos_data[self.orient].item()
+            hw = pos_data["width"].item() / 2
+            if self.orient == "x":
+                x, y = inv_ori([pos - hw, pos + hw]), inv_val([med, med])
+            else:
+                x, y = inv_val([med, med]), inv_ori([pos - hw, pos + hw])
+            default_kws = {
+                "color": linecolor if fill else maincolor,
+                "solid_capstyle": "butt",
+                "linewidth": 1.25 * linewidth,
+            }
+            ax.plot(x, y, **{**default_kws, **line_kws})
+
+            if showfliers:
+                vals = inv_val(lv_data["fliers"])
+                pos = np.full(len(vals), inv_ori(pos_data[self.orient].item()))
+                x, y = (pos, vals) if self.orient == "x" else (vals, pos)
+                ax.scatter(x, y, **{**flier_colors, "s": 25, **flier_kws})
+
+        ax.autoscale_view(scalex=self.orient == "y", scaley=self.orient == "x")
 
     def plot_violins(
         self,
@@ -2395,20 +2523,78 @@ violinplot.__doc__ = dedent("""\
 def boxenplot(
     data=None, *, x=None, y=None, hue=None, order=None, hue_order=None,
     orient=None, color=None, palette=None, saturation=.75,
-    width=.8, dodge=True, k_depth='tukey', linewidth=None,
+    width=.8, dodge="auto", k_depth='tukey', linewidth=None,
     scale='exponential', outlier_prop=0.007, trust_alpha=0.05,
     showfliers=True,
-    ax=None, box_kws=None, flier_kws=None, line_kws=None,
+    box_kws=None, flier_kws=None, line_kws=None,
+    gap=0,  # TODO new
+    linecolor=None,  # TODO new
+    fill=True,  # TODO new
+    hue_norm=None,  # TODO new
+    native_scale=False,  # TODO new
+    formatter=None,  # TODO new
+    legend="auto",  # TODO new
+    ax=None,
 ):
-    plotter = _LVPlotter(x, y, hue, data, order, hue_order,
-                         orient, color, palette, saturation,
-                         width, dodge, k_depth, linewidth, scale,
-                         outlier_prop, trust_alpha, showfliers)
+
+    p = _CategoricalPlotterNew(
+        data=data,
+        variables=_CategoricalPlotterNew.get_semantics(locals()),
+        order=order,
+        orient=orient,
+        require_numeric=False,
+        legend=legend,
+    )
 
     if ax is None:
         ax = plt.gca()
 
-    plotter.plot(ax, box_kws, flier_kws, line_kws)
+    if p.plot_data.empty:
+        return ax
+
+    if dodge == "auto":
+        # Needs to be before scale_categorical changes the coordinate series dtype
+        dodge = p._dodge_needed()
+
+    if p.var_types.get(p.orient) == "categorical" or not native_scale:
+        p.scale_categorical(p.orient, order=order, formatter=formatter)
+
+    p._attach(ax)
+
+    # Deprecations to remove in v0.14.0.
+    hue_order = p._palette_without_hue_backcompat(palette, hue_order)
+    palette, hue_order = p._hue_backcompat(color, palette, hue_order)
+
+    saturation = saturation if fill else 1
+    p.map_hue(palette=palette, order=hue_order, norm=hue_norm, saturation=saturation)
+    color = _default_color(
+        ax.fill_between, hue, color,
+        {},  # TODO how to get default color?
+        # {k: v for k, v in kwargs.items() if k in ["c", "color", "fc", "facecolor"]},
+        saturation=saturation,
+    )
+
+    p.plot_boxens(
+        width=width,
+        dodge=dodge,
+        gap=gap,
+        fill=fill,
+        color=color,
+        linecolor=linecolor,
+        linewidth=linewidth,
+        scale=scale,
+        k_depth=k_depth,
+        outlier_prop=outlier_prop,
+        trust_alpha=trust_alpha,
+        showfliers=showfliers,
+        box_kws=box_kws,
+        flier_kws=flier_kws,
+        line_kws=line_kws,
+    )
+
+    p._add_axis_labels(ax)
+    p._adjust_cat_axis(ax, axis=p.orient)
+
     return ax
 
 

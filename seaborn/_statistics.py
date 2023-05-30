@@ -520,44 +520,50 @@ class EstimateAggregator:
 
 class LetterValues:
 
-    def __init__(self, depth, outlier_prop, trust_alpha):
+    def __init__(self, k_depth, outlier_prop, trust_alpha):
         ...
-        self.depth = depth
+        self.k_depth = k_depth
         self.outlier_prop = outlier_prop
         self.trust_alpha = trust_alpha
 
-    def _compute_k_depth(self, n):
+    def _compute_k(self, n):
 
         # Select the depth, i.e. number of boxes to draw, based on the method
-        if self.depth == "full":
+        if self.k_depth == "full":
             # extend boxes to 100% of the data
             k = int(np.log2(n)) + 1
-        elif self.depth == "tukey":
+        elif self.k_depth == "tukey":
             # This results with 5-8 points in each tail
             k = int(np.log2(n)) - 3
-        elif self.depth == "proportion":
+        elif self.k_depth == "proportion":
             k = int(np.log2(n)) - int(np.log2(n * self.outlier_prop)) + 1
-        elif self.depth == "trustworthy":
+        elif self.k_depth == "trustworthy":
             point_conf = 2 * _normal_quantile_func(1 - self.trust_alpha / 2) ** 2
             k = int(np.log2(n / point_conf)) + 1
         else:
-            # allow having k directly specified as input
-            k = int(self.depth)
+            # Allow having k directly specified as input
+            k = int(self.k_depth)
 
         return max(k, 1)
 
-    def _compute_breaks(self, x):
-
-        k = self._compute_k_depth(len(x))
-        exp = np.arange(k + 1, 1, -1), np.arange(2, k + 2)
-        levels = k + 1 - np.concatenate(exp).astype(float)
-        percentiles = 100 * np.concatenate([0.5 ** exp[0], 1 - 0.5 ** exp[1]])
-        values = np.percentile(x, percentiles)
-        return levels, percentiles, values
-
     def __call__(self, x):
 
-        ...
+        k = self._compute_k(len(x))
+        exp = np.arange(k + 1, 1, -1), np.arange(2, k + 2)
+        levels = k + 1 - np.concatenate([exp[0], exp[1][1:]]).astype(float)
+        percentiles = 100 * np.concatenate([0.5 ** exp[0], 1 - 0.5 ** exp[1]])
+        values = np.percentile(x, percentiles)
+        fliers = np.asarray(x[(x < values.min()) | (x > values.max())])
+        median = np.percentile(x, 50)
+
+        return {
+            "k": k,
+            "levels": levels,
+            "percs": percentiles,
+            "values": values,
+            "fliers": fliers,
+            "median": median,
+        }
 
 
 def _percentile_interval(data, width):
