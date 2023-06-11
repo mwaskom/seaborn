@@ -670,8 +670,11 @@ class _CategoricalPlotterNew(_RelationalPlotter):
                         if not fill:
                             # When fill is True, the data get changed in place
                             box_artist.set_data(box_verts)
-                        # TODO XXX don't update value dimension; don't shrink orient dim
-                        ax.update_datalim(np.transpose(box_verts))
+                        ax.update_datalim(
+                            np.transpose(box_verts),
+                            updatex=self.orient == "x",
+                            updatey=self.orient == "y",
+                        )
 
                     if artists["medians"]:
                         verts = artists["medians"][i].get_xydata().T
@@ -712,7 +715,7 @@ class _CategoricalPlotterNew(_RelationalPlotter):
         box_kws,
         flier_kws,
         line_kws,
-        # TODO how to handle label?
+        plot_kws,
     ):
 
         iter_vars = [self.orient, "hue"]
@@ -720,8 +723,7 @@ class _CategoricalPlotterNew(_RelationalPlotter):
 
         estimator = LetterValues(k_depth, outlier_prop, trust_alpha)
 
-        # TODO merge with general kws
-        box_kws = {} if box_kws is None else box_kws.copy()
+        box_kws = plot_kws if box_kws is None else {**plot_kws, **box_kws}
         flier_kws = {} if flier_kws is None else flier_kws.copy()
         line_kws = {} if line_kws is None else line_kws.copy()
 
@@ -747,6 +749,7 @@ class _CategoricalPlotterNew(_RelationalPlotter):
             _, inv_ori = utils._get_transform_functions(ax, self.orient)
             _, inv_val = utils._get_transform_functions(ax, value_var)
 
+            # Statistics
             lv_data = estimator(sub_data[value_var])
             n = lv_data["k"] * 2 - 1
             vals = lv_data["values"]
@@ -760,6 +763,7 @@ class _CategoricalPlotterNew(_RelationalPlotter):
             if gap:
                 pos_data["width"] *= 1 - gap
 
+            # Letter-value boxes
             exponent = lv_data["levels"] - 1 - lv_data["k"]
             if scale == "linear":
                 rel_widths = lv_data["levels"] + 1
@@ -769,10 +773,13 @@ class _CategoricalPlotterNew(_RelationalPlotter):
                 tails = lv_data["levels"] < (lv_data["k"] - 1)
                 rel_widths = 2 ** (exponent - tails) / np.diff(lv_data["values"])
 
-            box_widths = rel_widths / rel_widths.max() * pos_data["width"].item()
-            box_heights = inv_val(vals[1:]) - inv_val(vals[:-1])
-            box_pos = inv_ori(pos_data[self.orient].item() - box_widths / 2)
+            center = pos_data[self.orient].item()
+            widths = rel_widths / rel_widths.max() * pos_data["width"].item()
+
             box_vals = inv_val(vals)
+            box_pos = inv_ori(center - widths / 2)
+            box_heights = inv_val(vals[1:]) - inv_val(vals[:-1])
+            box_widths = inv_ori(center + widths / 2) - inv_ori(center - widths / 2)
 
             maincolor = self._hue_map(sub_vars["hue"]) if "hue" in sub_vars else color
             flier_colors = {
@@ -780,7 +787,7 @@ class _CategoricalPlotterNew(_RelationalPlotter):
             }
             if fill:
                 cmap = light_palette(maincolor, as_cmap=True)
-                boxcolors = cmap(2 ** ((exponent + 2) / 2))
+                boxcolors = cmap(2 ** ((exponent + 2) / 3))
             else:
                 boxcolors = maincolor
 
@@ -800,16 +807,20 @@ class _CategoricalPlotterNew(_RelationalPlotter):
                 box_colors = {"facecolors": "none", "edgecolors": boxcolors}
 
             collection_kws = {**box_colors, "linewidth": linewidth, **box_kws}
-            ax.add_collection(PatchCollection(boxen, **collection_kws))
+            ax.add_collection(PatchCollection(boxen, **collection_kws), autolim=False)
+            ax.update_datalim(
+                np.c_[box_vals, box_vals],
+                updatex=self.orient == "y",
+                updatey=self.orient == "x",
+            )
 
             # Median line
             med = lv_data["median"]
-            pos = pos_data[self.orient].item()
             hw = pos_data["width"].item() / 2
             if self.orient == "x":
-                x, y = inv_ori([pos - hw, pos + hw]), inv_val([med, med])
+                x, y = inv_ori([center - hw, center + hw]), inv_val([med, med])
             else:
-                x, y = inv_val([med, med]), inv_ori([pos - hw, pos + hw])
+                x, y = inv_val([med, med]), inv_ori([center - hw, center + hw])
             default_kws = {
                 "color": linecolor if fill else maincolor,
                 "solid_capstyle": "butt",
@@ -817,6 +828,7 @@ class _CategoricalPlotterNew(_RelationalPlotter):
             }
             ax.plot(x, y, **{**default_kws, **line_kws})
 
+            # Outliers ("fliers")
             if showfliers:
                 vals = inv_val(lv_data["fliers"])
                 pos = np.full(len(vals), inv_ori(pos_data[self.orient].item()))
@@ -824,6 +836,13 @@ class _CategoricalPlotterNew(_RelationalPlotter):
                 ax.scatter(x, y, **{**flier_colors, "s": 25, **flier_kws})
 
         ax.autoscale_view(scalex=self.orient == "y", scaley=self.orient == "x")
+
+        patch_kws = box_kws.copy()
+        if not fill:
+            patch_kws["facecolor"] = (1, 1, 1, 0)
+        else:
+            patch_kws["edgecolor"] = linecolor
+        self._configure_legend(ax, ax.fill_between, patch_kws)
 
     def plot_violins(
         self,
@@ -2534,7 +2553,7 @@ def boxenplot(
     native_scale=False,  # TODO new
     formatter=None,  # TODO new
     legend="auto",  # TODO new
-    ax=None,
+    ax=None, **kwargs,
 ):
 
     p = _CategoricalPlotterNew(
@@ -2590,6 +2609,7 @@ def boxenplot(
         box_kws=box_kws,
         flier_kws=flier_kws,
         line_kws=line_kws,
+        plot_kws=kwargs,
     )
 
     p._add_axis_labels(ax)
