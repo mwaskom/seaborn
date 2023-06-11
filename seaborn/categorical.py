@@ -2542,8 +2542,8 @@ violinplot.__doc__ = dedent("""\
 def boxenplot(
     data=None, *, x=None, y=None, hue=None, order=None, hue_order=None,
     orient=None, color=None, palette=None, saturation=.75,
-    width=.8, dodge="auto", k_depth='tukey', linewidth=None,
-    scale='exponential', outlier_prop=0.007, trust_alpha=0.05,
+    width=.8, dodge="auto", k_depth="tukey", linewidth=None,
+    scale="exponential", outlier_prop=0.007, trust_alpha=0.05,
     showfliers=True,
     box_kws=None, flier_kws=None, line_kws=None,
     gap=0,  # TODO new
@@ -3388,8 +3388,10 @@ def catplot(
         warnings.warn(msg, UserWarning)
         kwargs.pop("ax")
 
-    refactored_kinds = ["strip", "swarm", "point", "bar", "count", "box", "violin"]
-    desaturated_kinds = ["bar", "count", "box", "violin"]
+    refactored_kinds = [
+        "strip", "swarm", "point", "bar", "count", "box", "violin", "boxen"
+    ]
+    desaturated_kinds = ["bar", "count", "box", "violin", "boxen"]
     undodged_kinds = ["strip", "swarm", "point"]
 
     if kind in refactored_kinds:
@@ -3595,6 +3597,41 @@ def catplot(
                 common_norm=common_norm,
                 kde_kws=kde_kws,
                 inner_kws=inner_kws,
+                plot_kws=plot_kws,
+            )
+
+        elif kind == "boxen":
+
+            plot_kws = kwargs.copy()
+            gap = plot_kws.pop("gap", 0)
+            fill = plot_kws.pop("fill", True)
+            linecolor = plot_kws.pop("linecolor", None)
+            linewidth = plot_kws.pop("linewidth", None)
+            k_depth = plot_kws.pop("k_depth", "tukey")
+            scale = plot_kws.pop("scale", "exponential")
+            outlier_prop = plot_kws.pop("outlier_prop", 0.007)
+            trust_alpha = plot_kws.pop("trust_alpha", 0.05)
+            showfliers = plot_kws.pop("showfliers", True)
+            box_kws = plot_kws.pop("box_kws", {})
+            flier_kws = plot_kws.pop("flier_kws", {})
+            line_kws = plot_kws.pop("line_kws", {})
+
+            p.plot_boxens(
+                width=width,
+                dodge=dodge,
+                gap=gap,
+                fill=fill,
+                color=color,
+                linecolor=linecolor,
+                linewidth=linewidth,
+                scale=scale,
+                k_depth=k_depth,
+                outlier_prop=outlier_prop,
+                trust_alpha=trust_alpha,
+                showfliers=showfliers,
+                box_kws=box_kws,
+                flier_kws=flier_kws,
+                line_kws=line_kws,
                 plot_kws=plot_kws,
             )
 
