@@ -94,7 +94,7 @@ def variable_type(
                 boolean_dtypes = ["bool"]
             boolean_vector = vector.dtype in boolean_dtypes
         else:
-            boolean_vector = bool(np.isin(vector, [0, 1, np.nan]).all())
+            boolean_vector = bool(np.isin(vector.dropna(), [0, 1]).all())
         if boolean_vector:
             return VarType(boolean_type)
 
