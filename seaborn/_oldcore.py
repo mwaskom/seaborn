@@ -1495,9 +1495,10 @@ def variable_type(vector, boolean_type="numeric"):
     var_type : 'numeric', 'categorical', or 'datetime'
         Name identifying the type of data in the vector.
     """
+    vector = pd.Series(vector)
 
     # If a categorical dtype is set, infer categorical
-    if isinstance(getattr(vector, 'dtype', None), pd.CategoricalDtype):
+    if isinstance(vector.dtype, pd.CategoricalDtype):
         return VariableType("categorical")
 
     # Special-case all-na data, which is always "numeric"
@@ -1516,7 +1517,7 @@ def variable_type(vector, boolean_type="numeric"):
         warnings.simplefilter(
             action='ignore', category=(FutureWarning, DeprecationWarning)
         )
-        if np.isin(vector, [0, 1, np.nan]).all():
+        if np.isin(vector.dropna(), [0, 1]).all():
             return VariableType(boolean_type)
 
     # Defer to positive pandas tests
