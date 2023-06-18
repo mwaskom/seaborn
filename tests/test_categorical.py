@@ -29,6 +29,7 @@ from seaborn.categorical import (
     catplot,
     barplot,
     boxplot,
+    boxenplot,
     countplot,
     pointplot,
     stripplot,
@@ -45,6 +46,7 @@ PLOT_FUNCS = [
     catplot,
     barplot,
     boxplot,
+    boxenplot,
     pointplot,
     stripplot,
     swarmplot,
@@ -1496,6 +1498,38 @@ class TestBoxPlot(SharedAxesLevelTests):
         g = catplot(**kwargs, kind="box")
 
         assert_plots_equal(ax, g.ax)
+
+
+class TestBoxenPlot(SharedAxesLevelTests):
+
+    func = staticmethod(boxenplot)
+
+    @pytest.fixture
+    def common_kws(self):
+        return {"saturation": 1}
+
+    def get_last_color(self, ax):
+
+        fcs = ax.collections[-2].get_facecolors()
+        return to_rgba(fcs[len(fcs) // 2])
+
+    def check_boxens(self, patches, data, orient, pos, width=0.8):
+
+        pos_idx, val_idx = self.orient_indices(orient)
+        verts = np.stack([v.vertices for v in patches.get_paths()], 1).T
+
+        assert verts[pos_idx].min() >= (pos - width / 2)
+        assert verts[pos_idx].max() <= (pos + width / 2)
+        assert np.in1d(np.percentile(data, [25, 75]), verts[val_idx].flat).all()
+        assert_array_equal(verts[val_idx, 1:, 0], verts[val_idx, :-1, 2])
+
+    @pytest.mark.parametrize("orient,col", [("x", "y"), ("y", "z")])
+    def test_single_var(self, long_df, orient, col):
+
+        var = {"x": "y", "y": "x"}[orient]
+        ax = boxenplot(long_df, **{var: col})
+        patches = ax.collections[0]
+        self.check_boxens(patches, long_df[col], orient, 0)
 
 
 class TestViolinPlot(SharedAxesLevelTests):
