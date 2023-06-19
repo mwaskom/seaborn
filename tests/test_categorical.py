@@ -1513,14 +1513,16 @@ class TestBoxenPlot(SharedAxesLevelTests):
         fcs = ax.collections[-2].get_facecolors()
         return to_rgba(fcs[len(fcs) // 2])
 
-    def check_boxens(self, patches, data, orient, pos, width=0.8):
+    def check_boxen(self, patches, data, orient, pos, width=0.8):
 
         pos_idx, val_idx = self.orient_indices(orient)
         verts = np.stack([v.vertices for v in patches.get_paths()], 1).T
 
-        assert verts[pos_idx].min() >= (pos - width / 2)
-        assert verts[pos_idx].max() <= (pos + width / 2)
-        assert np.in1d(np.percentile(data, [25, 75]), verts[val_idx].flat).all()
+        assert verts[pos_idx].min().round(4) >= np.round(pos - width / 2, 4)
+        assert verts[pos_idx].max().round(4) <= np.round(pos + width / 2, 4)
+        assert np.in1d(
+            np.percentile(data, [25, 75]).round(4), verts[val_idx].round(4).flat
+        ).all()
         assert_array_equal(verts[val_idx, 1:, 0], verts[val_idx, :-1, 2])
 
     @pytest.mark.parametrize("orient,col", [("x", "y"), ("y", "z")])
@@ -1529,7 +1531,117 @@ class TestBoxenPlot(SharedAxesLevelTests):
         var = {"x": "y", "y": "x"}[orient]
         ax = boxenplot(long_df, **{var: col})
         patches = ax.collections[0]
-        self.check_boxens(patches, long_df[col], orient, 0)
+        self.check_boxen(patches, long_df[col], orient, 0)
+
+    @pytest.mark.parametrize("orient,col", [(None, "x"), ("x", "y"), ("y", "z")])
+    def test_vector_data(self, long_df, orient, col):
+
+        orient = "x" if orient is None else orient
+        ax = boxenplot(long_df[col], orient=orient)
+        patches = ax.collections[0]
+        self.check_boxen(patches, long_df[col], orient, 0)
+
+    @pytest.mark.parametrize("orient", ["h", "v"])
+    def test_wide_data(self, wide_df, orient):
+
+        orient = {"h": "y", "v": "x"}[orient]
+        ax = boxenplot(wide_df, orient=orient)
+        collections = ax.findobj(mpl.collections.PatchCollection)
+        for i, patches in enumerate(collections):
+            col = wide_df.columns[i]
+            self.check_boxen(patches, wide_df[col], orient, i)
+
+    @pytest.mark.parametrize("orient", ["x", "y"])
+    def test_grouped(self, long_df, orient):
+
+        value = {"x": "y", "y": "x"}[orient]
+        ax = boxenplot(long_df, **{orient: "a", value: "z"})
+        levels = categorical_order(long_df["a"])
+        collections = ax.findobj(mpl.collections.PatchCollection)
+        for i, level in enumerate(levels):
+            data = long_df.loc[long_df["a"] == level, "z"]
+            self.check_boxen(collections[i], data, orient, i)
+
+    @pytest.mark.parametrize("orient", ["x", "y"])
+    def test_hue_grouped(self, long_df, orient):
+
+        value = {"x": "y", "y": "x"}[orient]
+        ax = boxenplot(long_df, hue="c", **{orient: "a", value: "z"})
+        collections = iter(ax.findobj(mpl.collections.PatchCollection))
+        for i, level in enumerate(categorical_order(long_df["a"])):
+            for j, hue_level in enumerate(categorical_order(long_df["c"])):
+                rows = (long_df["a"] == level) & (long_df["c"] == hue_level)
+                data = long_df.loc[rows, "z"]
+                pos = i + [-.2, +.2][j]
+                width = 0.4
+                self.check_boxen(next(collections), data, orient, pos, width)
+
+    def test_dodge_native_scale(self, long_df):
+
+        centers = categorical_order(long_df["s"])
+        hue_levels = categorical_order(long_df["c"])
+        spacing = min(np.diff(centers))
+        width = 0.8 * spacing / len(hue_levels)
+        offset = width / len(hue_levels)
+        ax = boxenplot(long_df, x="s", y="z", hue="c", native_scale=True)
+        collections = iter(ax.findobj(mpl.collections.PatchCollection))
+        for center in centers:
+            for i, hue_level in enumerate(hue_levels):
+                rows = (long_df["s"] == center) & (long_df["c"] == hue_level)
+                data = long_df.loc[rows, "z"]
+                pos = center + [-offset, +offset][i]
+                self.check_boxen(next(collections), data, "x", pos, width)
+
+    def test_color(self, long_df):
+
+        color = "#123456"
+        ax = boxenplot(long_df, x="a", y="y", color=color, saturation=1)
+        collections = ax.findobj(mpl.collections.PatchCollection)
+        for patches in collections:
+            fcs = patches.get_facecolors()
+            assert same_color(fcs[len(fcs) // 2], color)
+
+    def test_hue_colors(self, long_df):
+
+        ax = boxenplot(long_df, x="a", y="y", hue="b", saturation=1)
+        n_levels = long_df["b"].nunique()
+        collections = ax.findobj(mpl.collections.PatchCollection)
+        for i, patches in enumerate(collections):
+            fcs = patches.get_facecolors()
+            assert same_color(fcs[len(fcs) // 2], f"C{i % n_levels}")
+
+    def test_linecolor(self, long_df):
+
+        color = "#669913"
+        ax = boxenplot(long_df, x="a", y="y", linecolor=color)
+        for patches in ax.findobj(mpl.collections.PatchCollection):
+            assert same_color(patches.get_edgecolor(), color)
+
+    def test_linewidth(self, long_df):
+
+        width = 5
+        ax = boxenplot(long_df, x="a", y="y", linewidth=width)
+        for patches in ax.findobj(mpl.collections.PatchCollection):
+            assert patches.get_linewidth() == width
+
+    def test_saturation(self, long_df):
+
+        color = "#8912b0"
+        ax = boxenplot(long_df["x"], color=color, saturation=.5)
+        fcs = ax.collections[0].get_facecolors()
+        assert np.allclose(fcs[len(fcs) // 2, :3], desaturate(color, 0.5))
+
+    def test_gap(self, long_df):
+
+        ax1, ax2 = mpl.figure.Figure().subplots(2)
+        boxenplot(long_df, x="a", y="y", hue="s", ax=ax1)
+        boxenplot(long_df, x="a", y="y", hue="s", gap=.2, ax=ax2)
+        c1 = ax1.findobj(mpl.collections.PatchCollection)
+        c2 = ax2.findobj(mpl.collections.PatchCollection)
+        for p1, p2 in zip(c1, c2):
+            w1 = np.ptp(p1.get_paths()[0].vertices[:, 0])
+            w2 = np.ptp(p2.get_paths()[0].vertices[:, 0])
+            assert (w2 / w1) == pytest.approx(0.8)
 
 
 class TestViolinPlot(SharedAxesLevelTests):
