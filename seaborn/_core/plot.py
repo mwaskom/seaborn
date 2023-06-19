@@ -1392,11 +1392,11 @@ class Plotter:
                         spec_error = PlotSpecError._during("Scaling operation", var)
                         raise spec_error from err
 
-            # Now the transformed data series are complete, set update the layer data
+            # Now the transformed data series are complete, update the layer data
             for layer, new_series in zip(layers, transformed_data):
                 layer_df = layer["data"].frame
                 if var in layer_df:
-                    layer_df[var] = new_series
+                    layer_df[var] = pd.to_numeric(new_series)
 
     def _plot_layer(self, p: Plot, layer: Layer) -> None:
 
