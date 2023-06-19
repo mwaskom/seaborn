@@ -1643,6 +1643,53 @@ class TestBoxenPlot(SharedAxesLevelTests):
             w2 = np.ptp(p2.get_paths()[0].vertices[:, 0])
             assert (w2 / w1) == pytest.approx(0.8)
 
+    def test_fill(self, long_df):
+
+        ax = boxenplot(long_df, x="a", y="y", hue="s", fill=False)
+        for c in ax.findobj(mpl.collections.PatchCollection):
+            assert not c.get_facecolors().size
+
+    def test_k_depth_int(self, rng):
+
+        x = rng.normal(0, 1, 10_000)
+        ax = boxenplot(x, k_depth=(k := 8))
+        assert len(ax.collections[0].get_paths()) == (k * 2 - 1)
+
+    def test_trust_alpha(self, rng):
+
+        x = rng.normal(0, 1, 10_000)
+        ax = boxenplot(x, k_depth="trustworthy", trust_alpha=.1)
+        boxenplot(x, k_depth="trustworthy", trust_alpha=.001, ax=ax)
+        cs = ax.findobj(mpl.collections.PatchCollection)
+        assert len(cs[0].get_paths()) > len(cs[1].get_paths())
+
+    def test_outlier_prop(self, rng):
+
+        x = rng.normal(0, 1, 10_000)
+        ax = boxenplot(x, k_depth="proportion", outlier_prop=.001)
+        boxenplot(x, k_depth="proportion", outlier_prop=.1, ax=ax)
+        cs = ax.findobj(mpl.collections.PatchCollection)
+        assert len(cs[0].get_paths()) > len(cs[1].get_paths())
+
+    def test_box_kws(self, long_df):
+
+        ax = boxenplot(long_df, x="a", y="y", box_kws={"linewidth": (lw := 7.1)})
+        for c in ax.findobj(mpl.collections.PatchCollection):
+            assert c.get_linewidths() == lw
+
+    def test_line_kws(self, long_df):
+
+        ax = boxenplot(long_df, x="a", y="y", line_kws={"lw": (lw := 6.2)})
+        for line in ax.lines:
+            assert line.get_linewidth() == lw
+
+    def test_flier_kws(self, long_df):
+
+        ax = boxenplot(long_df, x="a", y="y", flier_kws={"marker": (marker := "X")})
+        expected = mpl.markers.MarkerStyle(marker).get_path().vertices
+        for c in ax.findobj(mpl.collections.PathCollection):
+            assert_array_equal(c.get_paths()[0].vertices, expected)
+
 
 class TestViolinPlot(SharedAxesLevelTests):
 
