@@ -38,6 +38,12 @@ def test_variable_type():
     s = pd.Series([pd.NA, pd.NA])
     assert variable_type(s) == "numeric"
 
+    s = pd.Series([1, 2, pd.NA], dtype="Int64")
+    assert variable_type(s) == "numeric"
+
+    s = pd.Series([1, 2, pd.NA], dtype=object)
+    assert variable_type(s) == "numeric"
+
     s = pd.Series(["1", "2", "3"])
     assert variable_type(s) == "categorical"
 
