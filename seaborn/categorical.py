@@ -809,7 +809,7 @@ class _CategoricalPlotterNew(_RelationalPlotter):
             collection_kws = {**box_colors, "linewidth": linewidth, **box_kws}
             ax.add_collection(PatchCollection(boxen, **collection_kws), autolim=False)
             ax.update_datalim(
-                np.c_[box_vals, box_vals],
+                np.column_stack([box_vals, box_vals]),
                 updatex=self.orient == "y",
                 updatey=self.orient == "x",
             )

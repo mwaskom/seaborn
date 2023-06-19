@@ -1679,7 +1679,7 @@ class TestBoxenPlot(SharedAxesLevelTests):
 
     def test_line_kws(self, long_df):
 
-        ax = boxenplot(long_df, x="a", y="y", line_kws={"lw": (lw := 6.2)})
+        ax = boxenplot(long_df, x="a", y="y", line_kws={"linewidth": (lw := 6.2)})
         for line in ax.lines:
             assert line.get_linewidth() == lw
 
@@ -3502,28 +3502,6 @@ class TestBoxenPlotter(CategoricalFixture):
         ax = cat.boxenplot(x="g", y="y", hue="h", data=self.df)
         patches = filter(self.ispatch, ax.collections)
         assert len(list(patches)) == 6
-
-        plt.close("all")
-
-    def test_box_colors(self):
-
-        pal = palettes.color_palette()
-
-        ax = cat.boxenplot(
-            x="g", y="y", data=self.df, saturation=1, showfliers=False
-        )
-        ax.figure.canvas.draw()
-        for i, box in enumerate(ax.collections):
-            assert same_color(box.get_facecolor()[0], pal[i])
-
-        plt.close("all")
-
-        ax = cat.boxenplot(
-            x="g", y="y", hue="h", data=self.df, saturation=1, showfliers=False
-        )
-        ax.figure.canvas.draw()
-        for i, box in enumerate(ax.collections):
-            assert same_color(box.get_facecolor()[0], pal[i % 2])
 
         plt.close("all")
 
