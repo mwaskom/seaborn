@@ -2198,8 +2198,15 @@ class TestBarPlot(SharedAggTests):
         width = .5
         x, y = [4, 6, 10], [1, 2, 3]
         ax = barplot(x=x, y=y, width=width, native_scale=True)
-        for i, bar in enumerate(ax.patches):
+        for bar in ax.patches:
             assert bar.get_width() == (width * 2)
+
+    def test_width_spaced_categories(self):
+
+        ax = barplot(x=["a", "b", "c"], y=[4, 5, 6])
+        barplot(x=["a", "c"], y=[1, 3], ax=ax)
+        for bar in ax.patches:
+            assert bar.get_width() == pytest.approx(0.8)
 
     def test_saturation_color(self):
 

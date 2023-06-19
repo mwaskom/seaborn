@@ -375,6 +375,11 @@ class _CategoricalPlotterNew(_RelationalPlotter):
     @property
     def _native_width(self):
         """Return unit of width separating categories on native numeric scale."""
+        # Categorical data always have a unit width
+        if self.var_types[self.orient] == "categorical":
+            return 1
+
+        # Otherwise, define the width as the smallest space between observations
         unique_values = np.unique(self.comp_data[self.orient])
         if len(unique_values) > 1:
             native_width = np.nanmin(np.diff(unique_values))
