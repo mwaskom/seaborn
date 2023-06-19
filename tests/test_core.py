@@ -23,14 +23,7 @@ from seaborn._oldcore import (
     categorical_order,
 )
 from seaborn.utils import desaturate
-
 from seaborn.palettes import color_palette
-
-
-try:
-    from pandas import NA as PD_NA
-except ImportError:
-    PD_NA = None
 
 
 @pytest.fixture(params=[
@@ -1302,13 +1295,11 @@ class TestVectorPlotter:
 
     @pytest.fixture(
         params=itertools.product(
-            [None, np.nan, PD_NA],
-            ["numeric", "category", "datetime"]
+            [None, np.nan, pd.NA],
+            ["numeric", "category", "datetime"],
         )
     )
-    @pytest.mark.parametrize(
-        "NA,var_type",
-    )
+    @pytest.mark.parametrize("NA,var_type")
     def comp_data_missing_fixture(self, request):
 
         # This fixture holds the logic for parameterizing
@@ -1316,14 +1307,11 @@ class TestVectorPlotter:
 
         NA, var_type = request.param
 
-        if NA is None:
-            pytest.skip("No pandas.NA available")
-
         comp_data = [0, 1, np.nan, 2, np.nan, 1]
         if var_type == "numeric":
             orig_data = [0, 1, NA, 2, np.inf, 1]
         elif var_type == "category":
-            orig_data = ["a", "b", NA, "c", NA, "b"]
+            orig_data = ["a", "b", NA, "c", pd.NA, "b"]
         elif var_type == "datetime":
             # Use 1-based numbers to avoid issue on matplotlib<3.2
             # Could simplify the test a bit when we roll off that version
