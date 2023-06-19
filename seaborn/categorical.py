@@ -764,13 +764,14 @@ class _CategoricalPlotterNew(_RelationalPlotter):
                 pos_data["width"] *= 1 - gap
 
             # Letter-value boxes
-            exponent = lv_data["levels"] - 1 - lv_data["k"]
+            levels = lv_data["levels"]
+            exponent = (levels - 1 - lv_data["k"]).astype(float)
             if scale == "linear":
-                rel_widths = lv_data["levels"] + 1
+                rel_widths = levels + 1
             elif scale == "exponential":
                 rel_widths = 2 ** exponent
             elif scale == "area":
-                tails = lv_data["levels"] < (lv_data["k"] - 1)
+                tails = levels < (lv_data["k"] - 1)
                 rel_widths = 2 ** (exponent - tails) / np.diff(lv_data["values"])
 
             center = pos_data[self.orient].item()

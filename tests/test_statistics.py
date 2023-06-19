@@ -14,6 +14,7 @@ from seaborn._statistics import (
     Histogram,
     ECDF,
     EstimateAggregator,
+    LetterValues,
     _validate_errorbar_arg,
     _no_scipy,
 )
@@ -629,3 +630,52 @@ class TestEstimateAggregator:
         for arg, exception in bad_args:
             with pytest.raises(exception, match="`errorbar` must be"):
                 _validate_errorbar_arg(arg)
+
+
+class TestLetterValues:
+
+    @pytest.fixture
+    def x(self, rng):
+        return pd.Series(rng.standard_t(10, 10_000))
+
+    def test_levels(self, x):
+
+        res = LetterValues(k_depth="tukey", outlier_prop=0, trust_alpha=0)(x)
+        k = res["k"]
+        expected = np.concatenate([np.arange(k), np.arange(k - 1)[::-1]])
+        assert_array_equal(res["levels"], expected)
+
+    def test_values(self, x):
+
+        res = LetterValues(k_depth="tukey", outlier_prop=0, trust_alpha=0)(x)
+        assert_array_equal(np.percentile(x, res["percs"]), res["values"])
+
+    def test_fliers(self, x):
+
+        res = LetterValues(k_depth="tukey", outlier_prop=0, trust_alpha=0)(x)
+        fliers = res["fliers"]
+        values = res["values"]
+        assert ((fliers < values.min()) | (fliers > values.max())).all()
+
+    def test_median(self, x):
+
+        res = LetterValues(k_depth="tukey", outlier_prop=0, trust_alpha=0)(x)
+        assert res["median"] == np.median(x)
+
+    def test_k_depth_int(self, x):
+
+        res = LetterValues(k_depth=(k := 12), outlier_prop=0, trust_alpha=0)(x)
+        assert res["k"] == k
+        assert len(res["levels"]) == (2 * k - 1)
+
+    def test_trust_alpha(self, x):
+
+        res1 = LetterValues(k_depth="trustworthy", outlier_prop=0, trust_alpha=.1)(x)
+        res2 = LetterValues(k_depth="trustworthy", outlier_prop=0, trust_alpha=.001)(x)
+        assert res1["k"] > res2["k"]
+
+    def test_outlier_prop(self, x):
+
+        res1 = LetterValues(k_depth="proportion", outlier_prop=.001, trust_alpha=0)(x)
+        res2 = LetterValues(k_depth="proportion", outlier_prop=.1, trust_alpha=0)(x)
+        assert res1["k"] > res2["k"]

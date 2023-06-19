@@ -521,7 +521,29 @@ class EstimateAggregator:
 class LetterValues:
 
     def __init__(self, k_depth, outlier_prop, trust_alpha):
-        ...
+        """
+        Compute percentiles of a distribution using various tail stopping rules.
+
+        Parameters
+        ----------
+        k_depth: "tukey", "proportion", "trustworthy", or "full"
+            Stopping rule for choosing tail percentiled to show:
+
+            - tukey: Show a similar number of outliers as in a conventional boxplot.
+            - proportion: Show approximately `outlier_prop` outliers.
+            - trust_alpha: Use `trust_alpha` level for most extreme tail percentile.
+
+        outlier_prop: float
+            Parameter for `k_depth="proportion"` setting the expected outlier rate.
+        trust_alpha: float
+            Parameter for `k_depth="trustworthy"` setting the confidence threshold.
+
+        Notes
+        -----
+        Based on the proposal in this paper:
+        https://vita.had.co.nz/papers/letter-value-plot.pdf
+
+        """
         self.k_depth = k_depth
         self.outlier_prop = outlier_prop
         self.trust_alpha = trust_alpha
@@ -547,10 +569,10 @@ class LetterValues:
         return max(k, 1)
 
     def __call__(self, x):
-
+        """Evaluate the letter values."""
         k = self._compute_k(len(x))
         exp = np.arange(k + 1, 1, -1), np.arange(2, k + 2)
-        levels = k + 1 - np.concatenate([exp[0], exp[1][1:]]).astype(float)
+        levels = k + 1 - np.concatenate([exp[0], exp[1][1:]])
         percentiles = 100 * np.concatenate([0.5 ** exp[0], 1 - 0.5 ** exp[1]])
         values = np.percentile(x, percentiles)
         fliers = np.asarray(x[(x < values.min()) | (x > values.max())])
