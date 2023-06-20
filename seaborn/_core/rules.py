@@ -74,6 +74,9 @@ def variable_type(
     if pd.isna(vector).all():
         return VarType("numeric")
 
+    # Now drop nulls to simplify further type inference
+    vector = vector.dropna()
+
     # Special-case binary/boolean data, allow caller to determine
     # This triggers a numpy warning when vector has strings/objects
     # https://github.com/numpy/numpy/issues/6784
@@ -94,7 +97,7 @@ def variable_type(
                 boolean_dtypes = ["bool"]
             boolean_vector = vector.dtype in boolean_dtypes
         else:
-            boolean_vector = bool(np.isin(vector.dropna(), [0, 1]).all())
+            boolean_vector = bool(np.isin(vector, [0, 1]).all())
         if boolean_vector:
             return VarType(boolean_type)
 
