@@ -544,6 +544,16 @@ class LetterValues:
         https://vita.had.co.nz/papers/letter-value-plot.pdf
 
         """
+        k_options = ["tukey", "proportion", "trustworthy"]
+        if isinstance(k_depth, str):
+            _check_argument("k_depth", k_options, k_depth)
+        elif not isinstance(k_depth, int):
+            err = (
+                "The `k_depth` parameter must be either an integer or string "
+                f"(one of {k_options}), not {k_depth!r}."
+            )
+            raise TypeError(err)
+
         self.k_depth = k_depth
         self.outlier_prop = outlier_prop
         self.trust_alpha = trust_alpha

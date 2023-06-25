@@ -723,6 +723,9 @@ class _CategoricalPlotterNew(_RelationalPlotter):
 
         estimator = LetterValues(k_depth, outlier_prop, trust_alpha)
 
+        scale_options = ["exponential", "linear", "area"]
+        _check_argument("scale", scale_options, scale)
+
         box_kws = plot_kws if box_kws is None else {**plot_kws, **box_kws}
         flier_kws = {} if flier_kws is None else flier_kws.copy()
         line_kws = {} if line_kws is None else line_kws.copy()

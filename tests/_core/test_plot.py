@@ -2063,7 +2063,7 @@ class TestLegend:
         labels = [t.get_text() for t in legend.get_texts()]
         assert labels == names
 
-        if not _version_predates(mpl, "3.4"):
+        if not _version_predates(mpl, "3.5"):
             contents = legend.get_children()[0]
             assert len(contents.findobj(mpl.lines.Line2D)) == len(names)
             assert len(contents.findobj(mpl.patches.Patch)) == len(names)

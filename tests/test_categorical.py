@@ -1698,6 +1698,63 @@ class TestBoxenPlot(SharedAxesLevelTests):
         for c in ax.findobj(mpl.collections.PathCollection):
             assert_array_equal(c.get_paths()[0].vertices, expected)
 
+    def test_k_depth_checks(self, long_df):
+
+        with pytest.raises(ValueError, match="The value for `k_depth`"):
+            boxenplot(x=long_df["y"], k_depth="auto")
+
+        with pytest.raises(TypeError, match="The `k_depth` parameter"):
+            boxenplot(x=long_df["y"], k_depth=(1, 2))
+
+    def test_scale_checks(self, long_df):
+
+        with pytest.raises(ValueError, match="The value for `scale`"):
+            boxenplot(x=long_df["y"], scale="uniform")
+
+    @pytest.mark.parametrize(
+        "kwargs",
+        [
+            dict(data="wide"),
+            dict(data="wide", orient="h"),
+            dict(data="flat"),
+            dict(data="long", x="a", y="y"),
+            dict(data=None, x="a", y="y"),
+            dict(data="long", x="a", y="y", hue="a"),
+            dict(data=None, x="a", y="y", hue="a"),
+            dict(data="long", x="a", y="y", hue="b"),
+            dict(data=None, x="s", y="y", hue="a"),
+            dict(data="long", x="a", y="y", hue="s", showfliers=False),
+            dict(data="null", x="a", y="y", hue="a", saturation=.5),
+            dict(data="long", x="s", y="y", hue="a", native_scale=True),
+            dict(data="long", x="d", y="y", hue="a", native_scale=True),
+            dict(data="null", x="a", y="y", hue="b", fill=False, gap=.2),
+            dict(data="null", x="a", y="y", linecolor="r", linewidth=5),
+            dict(data="long", x="a", y="y", k_depth="trustworthy", trust_alpha=.1),
+            dict(data="long", x="a", y="y", k_depth="proportion", outlier_prop=.1),
+            dict(data="long", x="a", y="z", scale="area"),
+            dict(data="long", x="a", y="z", box_kws={"alpha": .2}, alpha=.4)
+        ]
+    )
+    def test_vs_catplot(self, long_df, wide_df, null_df, flat_series, kwargs):
+
+        if kwargs["data"] == "long":
+            kwargs["data"] = long_df
+        elif kwargs["data"] == "wide":
+            kwargs["data"] = wide_df
+        elif kwargs["data"] == "flat":
+            kwargs["data"] = flat_series
+        elif kwargs["data"] == "null":
+            kwargs["data"] = null_df
+        elif kwargs["data"] is None:
+            for var in ["x", "y", "hue"]:
+                if var in kwargs:
+                    kwargs[var] = long_df[kwargs[var]]
+
+        ax = boxenplot(**kwargs)
+        g = catplot(**kwargs, kind="boxen")
+
+        assert_plots_equal(ax, g.ax)
+
 
 class TestViolinPlot(SharedAxesLevelTests):
 
