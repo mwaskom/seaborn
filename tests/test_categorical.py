@@ -579,6 +579,15 @@ class SharedAxesLevelTests:
         for label, level in zip(labels, wide_df.columns):
             assert label == level
 
+    def test_labels_hue_order(self, long_df):
+
+        hue_var = "b"
+        hue_order = categorical_order(long_df[hue_var])[::-1]
+        ax = self.func(long_df, x="a", y="y", hue=hue_var, hue_order=hue_order)
+        legend = ax.get_legend()
+        hue_labels = [t.get_text() for t in legend.texts]
+        assert hue_labels == hue_order
+
     def test_color(self, long_df, common_kws):
         common_kws.update(data=long_df, x="a", y="y")
 
@@ -3587,39 +3596,6 @@ class TestBoxenPlotter(CategoricalFixture):
 
         cat.boxenplot(x="y", y="g", hue="h", data=self.df,
                       orient="h", color="b")
-        plt.close("all")
-
-    def test_axes_annotation(self):
-
-        ax = cat.boxenplot(x="g", y="y", data=self.df)
-        assert ax.get_xlabel() == "g"
-        assert ax.get_ylabel() == "y"
-        assert ax.get_xlim() == (-.5, 2.5)
-        npt.assert_array_equal(ax.get_xticks(), [0, 1, 2])
-        npt.assert_array_equal([l.get_text() for l in ax.get_xticklabels()],
-                               ["a", "b", "c"])
-
-        plt.close("all")
-
-        ax = cat.boxenplot(x="g", y="y", hue="h", data=self.df)
-        assert ax.get_xlabel() == "g"
-        assert ax.get_ylabel() == "y"
-        npt.assert_array_equal(ax.get_xticks(), [0, 1, 2])
-        npt.assert_array_equal([l.get_text() for l in ax.get_xticklabels()],
-                               ["a", "b", "c"])
-        npt.assert_array_equal([l.get_text() for l in ax.legend_.get_texts()],
-                               ["m", "n"])
-
-        plt.close("all")
-
-        ax = cat.boxenplot(x="y", y="g", data=self.df, orient="h")
-        assert ax.get_xlabel() == "y"
-        assert ax.get_ylabel() == "g"
-        assert ax.get_ylim() == (2.5, -.5)
-        npt.assert_array_equal(ax.get_yticks(), [0, 1, 2])
-        npt.assert_array_equal([l.get_text() for l in ax.get_yticklabels()],
-                               ["a", "b", "c"])
-
         plt.close("all")
 
     @pytest.mark.parametrize("size", ["large", "medium", "small", 22, 12])
