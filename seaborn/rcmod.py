@@ -180,7 +180,7 @@ def axes_style(style=None, rc=None):
         style_dict = style
 
     else:
-        styles = ["white", "dark", "whitegrid", "darkgrid", "ticks"]
+        styles = ["white", "dark", "whitegrid", "darkgrid", "ticks", "classic"]
         if style not in styles:
             raise ValueError(f"style must be one of {', '.join(styles)}")
 
@@ -274,11 +274,17 @@ def axes_style(style=None, rc=None):
             })
 
         # Show or hide the axes ticks
-        if style == "ticks":
+        if style == "ticks" or style == "classic":
             style_dict.update({
                 "xtick.bottom": True,
                 "ytick.left": True,
             })
+            if style == "classic":
+                style_dict.update({
+                    "axes.edgecolor": dark_gray,
+                    "axes.spines.top":False,
+                    "axes.spines.right":False,
+                })
         else:
             style_dict.update({
                 "xtick.bottom": False,
@@ -315,7 +321,7 @@ def set_style(style=None, rc=None):
 
     Parameters
     ----------
-    style : dict, or one of {darkgrid, whitegrid, dark, white, ticks}
+    style : dict, or one of {darkgrid, whitegrid, dark, white, ticks, classic}
         A dictionary of parameters or the name of a preconfigured style.
     rc : dict, optional
         Parameter mappings to override the values in the preset seaborn
