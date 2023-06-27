@@ -1422,6 +1422,13 @@ class TestPairGrid:
         with pytest.warns(UserWarning):
             g = ag.pairplot(self.df, hue="a", vars=vars, markers=markers[:-2])
 
+    def test_pairplot_column_multiindex(self):
+
+        cols = pd.MultiIndex.from_arrays([["x", "y"], [1, 2]])
+        df = self.df[["x", "y"]].set_axis(cols, axis=1)
+        g = ag.pairplot(df)
+        assert g.diag_vars == list(cols)
+
     def test_corner_despine(self):
 
         g = ag.PairGrid(self.df, corner=True, despine=False)
