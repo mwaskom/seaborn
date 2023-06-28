@@ -1472,8 +1472,8 @@ class PairGrid(Grid):
                 for ax in diag_axes[1:]:
                     share_axis(diag_axes[0], ax, "y")
 
-            self.diag_vars = np.array(diag_vars, np.object_)
-            self.diag_axes = np.array(diag_axes, np.object_)
+            self.diag_vars = diag_vars
+            self.diag_axes = diag_axes
 
         if "hue" not in signature(func).parameters:
             return self._map_diag_iter_hue(func, **kwargs)
