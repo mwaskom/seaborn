@@ -544,7 +544,7 @@ class LetterValues:
         https://vita.had.co.nz/papers/letter-value-plot.pdf
 
         """
-        k_options = ["tukey", "proportion", "trustworthy"]
+        k_options = ["tukey", "proportion", "trustworthy", "full"]
         if isinstance(k_depth, str):
             _check_argument("k_depth", k_options, k_depth)
         elif not isinstance(k_depth, int):

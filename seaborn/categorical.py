@@ -2130,13 +2130,18 @@ _categorical_docs = dict(
     """),
     width=dedent("""\
     width : float
-        Width of a full element when not using hue nesting, or width of all the
-        elements for one level of the major grouping variable.\
+        Width allotted to each element on the orient axis. When `native_scale=True`,
+        it is relative to the minimum distance between two values in the native scale.\
     """),
     dodge=dedent("""\
-    dodge : bool
-        When hue nesting is used, whether elements should be shifted along the
-        categorical axis.\
+    dodge : "auto" or bool
+        When hue mapping is used, whether elements should be narrowed and shifted along
+        the orient axis to eliminate overlap. If `"auto"`, set to `True` when the
+        orient variable is crossed with the categorical variable or `False` otherwise.
+
+        .. versionchanged:: 0.13.0
+
+            Added `"auto"` mode as a new default.\
     """),
     linewidth=dedent("""\
     linewidth : float
@@ -2314,7 +2319,7 @@ boxplot.__doc__ = dedent("""\
     {gap}
     whis : float or pair of floats
         Paramater that controls whisker length. If scalar, whiskers are drawn
-        to the farthest datapoint within `whis * IQR` from the nearest hinge.
+        to the farthest datapoint within *whis * IQR* from the nearest hinge.
         If a tuple, it is interpreted as percentiles that whiskers represent.
     {linecolor}
     {linewidth}
@@ -2456,9 +2461,9 @@ violinplot.__doc__ = dedent("""\
     inner : {{"box", "quart", "point", "stick", None}}
         Representation of the data in the violin interior. One of the following:
 
-        - `box`: draw a miniature box-and-whisker plot
-        - `quart`: show the quartiles of the data
-        - `point` or `stick`: show each observation
+        - `"box"`: draw a miniature box-and-whisker plot
+        - `"quart"`: show the quartiles of the data
+        - `"point"` or `"stick"`: show each observation
     split : bool
         Show an un-mirrored distribution, alternating sides when using `hue`.
 
@@ -2514,7 +2519,7 @@ violinplot.__doc__ = dedent("""\
 
         - :class:`matplotlib.collections.LineCollection` (with `inner="stick"`)
         - :meth:`matplotlib.axes.Axes.scatter` (with `inner="point"`)
-        - :meth:`matplotlib.axes.Axes.plot` (with `inner="quart"` or `kind="box"`)
+        - :meth:`matplotlib.axes.Axes.plot` (with `inner="quart"` or `inner="box"`)
 
         Additionally, with `inner="box"`, the keywords `box_width`, `whis_width`,
         and `marker` receive special handling for the components of the "box" plot.
@@ -2545,18 +2550,11 @@ violinplot.__doc__ = dedent("""\
 
 def boxenplot(
     data=None, *, x=None, y=None, hue=None, order=None, hue_order=None,
-    orient=None, color=None, palette=None, saturation=.75,
-    width=.8, dodge="auto", k_depth="tukey", linewidth=None,
-    scale="exponential", outlier_prop=0.007, trust_alpha=0.05,
-    showfliers=True,
-    box_kws=None, flier_kws=None, line_kws=None,
-    gap=0,  # TODO new
-    linecolor=None,  # TODO new
-    fill=True,  # TODO new
-    hue_norm=None,  # TODO new
-    native_scale=False,  # TODO new
-    formatter=None,  # TODO new
-    legend="auto",  # TODO new
+    orient=None, color=None, palette=None, saturation=.75, fill=True,
+    dodge="auto", width=.8, gap=0, linewidth=None, linecolor=None,
+    scale="exponential", k_depth="tukey", outlier_prop=0.007, trust_alpha=0.05,
+    showfliers=True, hue_norm=None, native_scale=False, formatter=None,
+    legend="auto", box_kws=None, flier_kws=None, line_kws=None,
     ax=None, **kwargs,
 ):
 
@@ -2630,11 +2628,9 @@ boxenplot.__doc__ = dedent("""\
     is similar to a box plot in plotting a nonparametric representation of a
     distribution in which all features correspond to actual observations. By
     plotting more quantiles, it provides more information about the shape of
-    the distribution, particularly in the tails. For a more extensive
-    explanation, you can read the paper that introduced the plot:
-    https://vita.had.co.nz/papers/letter-value-plot.html
+    the distribution, particularly in the tails.
 
-    {categorical_narrative}
+    {new_categorical_narrative}
 
     Parameters
     ----------
@@ -2645,40 +2641,53 @@ boxenplot.__doc__ = dedent("""\
     {color}
     {palette}
     {saturation}
-    {width}
+    {fill}
     {dodge}
-    k_depth : {{"tukey", "proportion", "trustworthy", "full"}} or scalar
-        The number of boxes, and by extension number of percentiles, to draw.
-        All methods are detailed in Wickham's paper. Each makes different
-        assumptions about the number of outliers and leverages different
-        statistical properties. If "proportion", draw no more than
-        `outlier_prop` extreme observations. If "full", draw `log(n) +1` boxes.
+    {width}
+    {gap}
     {linewidth}
+    {linecolor}
     scale : {{"exponential", "linear", "area"}}
         Method to use for the width of the letter value boxes. All give similar
         results visually. "linear" reduces the width by a constant linear
         factor, "exponential" uses the proportion of data not covered, "area"
         is proportional to the percentage of data covered.
+    k_depth : {{"tukey", "proportion", "trustworthy", "full"}} or int
+        The number of levels to compute and draw in each tail:
+
+        - `"tukey"`: Use log2(n) - 3 levels, covering similar range as boxplot whiskers
+        - `"proportion"`: Use levels that leave approximately `outlier_prop` fliers
+        - `"trusthworthy"`: Use levels with confidence of at least `trust_alpha`
+        - `"full"`: Use log2(n) + 1 levels
     outlier_prop : float
-        Proportion of data believed to be outliers. Must be in the range
-        (0, 1]. Used to determine the number of boxes to plot when
-        `k_depth="proportion"`.
+        Proportion of data expected to be outliers; used when `k_depth="proportion"`.
     trust_alpha : float
-        Confidence level for a box to be plotted. Used to determine the
-        number of boxes to plot when `k_depth="trustworthy"`. Must be in the
-        range (0, 1).
+        Confidence threshold for most extreme level; used when `k_depth="trustworthy"`.
     showfliers : bool
         If False, suppress the plotting of outliers.
-    {ax_in}
+    {hue_norm}
+    {native_scale}
+    {formatter}
+    {legend}
     box_kws: dict
         Keyword arguments for the box artists; passed to
         :class:`matplotlib.patches.Rectangle`.
+
+        .. versionadded:: v0.12.0
     line_kws: dict
         Keyword arguments for the line denoting the median; passed to
         :meth:`matplotlib.axes.Axes.plot`.
+
+        .. versionadded:: v0.12.0
     flier_kws: dict
         Keyword arguments for the scatter denoting the outlier observations;
         passed to :meth:`matplotlib.axes.Axes.scatter`.
+
+        .. versionadded:: v0.12.0
+    {ax_in}
+    kwargs : key, value mappings
+        Other keyword arguments are passed to :class:`matplotlib.patches.Rectangle`,
+        superceded by those in `box_kws`.
 
     Returns
     -------
@@ -2690,9 +2699,14 @@ boxenplot.__doc__ = dedent("""\
     {boxplot}
     {catplot}
 
+    Notes
+    -----
+
+    For a more extensive explanation, you can read the paper that introduced the plot:
+    https://vita.had.co.nz/papers/letter-value-plot.html
+
     Examples
     --------
-
     .. include:: ../docstrings/boxenplot.rst
 
     """).format(**_categorical_docs)
