@@ -1521,6 +1521,12 @@ class TestBoxenPlot(SharedAxesLevelTests):
         fcs = ax.collections[-2].get_facecolors()
         return to_rgba(fcs[len(fcs) // 2])
 
+    def get_box_width(self, path, orient="x"):
+
+        verts = path.vertices.T
+        idx = ["y", "x"].index(orient)
+        return np.ptp(verts[idx])
+
     def check_boxen(self, patches, data, orient, pos, width=0.8):
 
         pos_idx, val_idx = self.orient_indices(orient)
@@ -1679,6 +1685,30 @@ class TestBoxenPlot(SharedAxesLevelTests):
         cs = ax.findobj(mpl.collections.PatchCollection)
         assert len(cs[0].get_paths()) > len(cs[1].get_paths())
 
+    def test_exponential_width_method(self, rng):
+
+        x = rng.normal(0, 1, 10_000)
+        ax = boxenplot(x=x, width_method="exponential")
+        c = ax.findobj(mpl.collections.PatchCollection)[0]
+        ws = [self.get_box_width(p) for p in c.get_paths()]
+        assert (ws[1] / ws[0]) == pytest.approx(ws[2] / ws[1])
+
+    def test_linear_width_method(self, rng):
+
+        x = rng.normal(0, 1, 10_000)
+        ax = boxenplot(x=x, width_method="linear")
+        c = ax.findobj(mpl.collections.PatchCollection)[0]
+        ws = [self.get_box_width(p) for p in c.get_paths()]
+        assert (ws[1] - ws[0]) == pytest.approx(ws[2] - ws[1])
+
+    def test_area_width_method(self, rng):
+
+        x = rng.uniform(0, 1, 10_000)
+        ax = boxenplot(x=x, width_method="area", k_depth=2)
+        ps = ax.findobj(mpl.collections.PatchCollection)[0].get_paths()
+        ws = [self.get_box_width(p) for p in ps]
+        assert np.greater(ws, 0.7).all()
+
     def test_box_kws(self, long_df):
 
         ax = boxenplot(long_df, x="a", y="y", box_kws={"linewidth": (lw := 7.1)})
@@ -1706,10 +1736,18 @@ class TestBoxenPlot(SharedAxesLevelTests):
         with pytest.raises(TypeError, match="The `k_depth` parameter"):
             boxenplot(x=long_df["y"], k_depth=(1, 2))
 
-    def test_scale_checks(self, long_df):
+    def test_width_method_check(self, long_df):
 
-        with pytest.raises(ValueError, match="The value for `scale`"):
-            boxenplot(x=long_df["y"], scale="uniform")
+        with pytest.raises(ValueError, match="The value for `width_method`"):
+            boxenplot(x=long_df["y"], width_method="uniform")
+
+    def test_scale_deprecation(self, long_df):
+
+        with pytest.warns(FutureWarning, match="The `scale` parameter has been"):
+            boxenplot(x=long_df["y"], scale="linear")
+
+        with pytest.warns(FutureWarning, match=".+result for 'area' will appear"):
+            boxenplot(x=long_df["y"], scale="area")
 
     @pytest.mark.parametrize(
         "kwargs",
@@ -1731,7 +1769,7 @@ class TestBoxenPlot(SharedAxesLevelTests):
             dict(data="null", x="a", y="y", linecolor="r", linewidth=5),
             dict(data="long", x="a", y="y", k_depth="trustworthy", trust_alpha=.1),
             dict(data="long", x="a", y="y", k_depth="proportion", outlier_prop=.1),
-            dict(data="long", x="a", y="z", scale="area"),
+            dict(data="long", x="a", y="z", width_method="area"),
             dict(data="long", x="a", y="z", box_kws={"alpha": .2}, alpha=.4)
         ]
     )

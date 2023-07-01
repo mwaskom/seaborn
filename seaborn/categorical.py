@@ -253,7 +253,7 @@ class _CategoricalPlotterNew(_RelationalPlotter):
 
         return err_kws, capsize
 
-    def _scale_backcompat(self, scale, scale_hue, density_norm, common_norm):
+    def _violin_scale_backcompat(self, scale, scale_hue, density_norm, common_norm):
         """Provide two cycles of backcompat for scale kwargs"""
         if scale is not deprecated:
             density_norm = scale
@@ -272,6 +272,22 @@ class _CategoricalPlotterNew(_RelationalPlotter):
             warnings.warn(msg, FutureWarning, stacklevel=3)
 
         return density_norm, common_norm
+
+    def _boxen_scale_backcompat(self, scale, width_method):
+        """Provide two cycles of backcompat for scale kwargs"""
+        if scale is not deprecated:
+            width_method = scale
+            msg = (
+                "\n\nThe `scale` parameter has been renamed to `width_method` and "
+                f"will be removed in v0.15. Pass `width_method={scale!r}"
+            )
+            if scale == "area":
+                msg += ", but note that the result for 'area' will appear different."
+            else:
+                msg += " for the same effect."
+            warnings.warn(msg, FutureWarning, stacklevel=3)
+
+        return width_method
 
     def _get_gray(self, colors):
         """Get a grayscale value that looks good with color."""
@@ -707,7 +723,7 @@ class _CategoricalPlotterNew(_RelationalPlotter):
         color,
         linecolor,
         linewidth,
-        scale,  # TODO name?
+        width_method,
         k_depth,
         outlier_prop,
         trust_alpha,
@@ -723,8 +739,8 @@ class _CategoricalPlotterNew(_RelationalPlotter):
 
         estimator = LetterValues(k_depth, outlier_prop, trust_alpha)
 
-        scale_options = ["exponential", "linear", "area"]
-        _check_argument("scale", scale_options, scale)
+        width_method_options = ["exponential", "linear", "area"]
+        _check_argument("width_method", width_method_options, width_method)
 
         box_kws = plot_kws if box_kws is None else {**plot_kws, **box_kws}
         flier_kws = {} if flier_kws is None else flier_kws.copy()
@@ -769,11 +785,11 @@ class _CategoricalPlotterNew(_RelationalPlotter):
             # Letter-value boxes
             levels = lv_data["levels"]
             exponent = (levels - 1 - lv_data["k"]).astype(float)
-            if scale == "linear":
+            if width_method == "linear":
                 rel_widths = levels + 1
-            elif scale == "exponential":
+            elif width_method == "exponential":
                 rel_widths = 2 ** exponent
-            elif scale == "area":
+            elif width_method == "area":
                 tails = levels < (lv_data["k"] - 1)
                 rel_widths = 2 ** (exponent - tails) / np.diff(lv_data["values"])
 
@@ -2399,7 +2415,7 @@ def violinplot(
         saturation=saturation,
     )
 
-    density_norm, common_norm = p._scale_backcompat(
+    density_norm, common_norm = p._violin_scale_backcompat(
         scale, scale_hue, density_norm, common_norm,
     )
 
@@ -2552,9 +2568,9 @@ def boxenplot(
     data=None, *, x=None, y=None, hue=None, order=None, hue_order=None,
     orient=None, color=None, palette=None, saturation=.75, fill=True,
     dodge="auto", width=.8, gap=0, linewidth=None, linecolor=None,
-    scale="exponential", k_depth="tukey", outlier_prop=0.007, trust_alpha=0.05,
+    width_method="exponential", k_depth="tukey", outlier_prop=0.007, trust_alpha=0.05,
     showfliers=True, hue_norm=None, native_scale=False, formatter=None,
-    legend="auto", box_kws=None, flier_kws=None, line_kws=None,
+    legend="auto", scale=deprecated, box_kws=None, flier_kws=None, line_kws=None,
     ax=None, **kwargs,
 ):
 
@@ -2586,6 +2602,9 @@ def boxenplot(
     hue_order = p._palette_without_hue_backcompat(palette, hue_order)
     palette, hue_order = p._hue_backcompat(color, palette, hue_order)
 
+    # Longer-term deprecations
+    width_method = p._boxen_scale_backcompat(scale, width_method)
+
     saturation = saturation if fill else 1
     p.map_hue(palette=palette, order=hue_order, norm=hue_norm, saturation=saturation)
     color = _default_color(
@@ -2603,7 +2622,7 @@ def boxenplot(
         color=color,
         linecolor=linecolor,
         linewidth=linewidth,
-        scale=scale,
+        width_method=width_method,
         k_depth=k_depth,
         outlier_prop=outlier_prop,
         trust_alpha=trust_alpha,
@@ -3577,7 +3596,7 @@ def catplot(
 
             scale = plot_kws.pop("scale", deprecated)
             scale_hue = plot_kws.pop("scale_hue", deprecated)
-            density_norm, common_norm = p._scale_backcompat(
+            density_norm, common_norm = p._violin_scale_backcompat(
                 scale, scale_hue, density_norm, common_norm,
             )
 
@@ -3626,13 +3645,17 @@ def catplot(
             linecolor = plot_kws.pop("linecolor", None)
             linewidth = plot_kws.pop("linewidth", None)
             k_depth = plot_kws.pop("k_depth", "tukey")
-            scale = plot_kws.pop("scale", "exponential")
+            width_method = plot_kws.pop("width_method", "exponential")
             outlier_prop = plot_kws.pop("outlier_prop", 0.007)
             trust_alpha = plot_kws.pop("trust_alpha", 0.05)
             showfliers = plot_kws.pop("showfliers", True)
             box_kws = plot_kws.pop("box_kws", {})
             flier_kws = plot_kws.pop("flier_kws", {})
             line_kws = plot_kws.pop("line_kws", {})
+            if "scale" in plot_kws:
+                width_method = p._boxen_scale_backcompat(
+                    plot_kws["scale"], width_method
+                )
 
             p.plot_boxens(
                 width=width,
@@ -3642,7 +3665,7 @@ def catplot(
                 color=color,
                 linecolor=linecolor,
                 linewidth=linewidth,
-                scale=scale,
+                width_method=width_method,
                 k_depth=k_depth,
                 outlier_prop=outlier_prop,
                 trust_alpha=trust_alpha,
