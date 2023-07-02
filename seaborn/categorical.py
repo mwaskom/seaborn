@@ -3102,13 +3102,6 @@ def catplot(
     **kwargs
 ):
 
-    # Determine the plotting function
-    try:
-        plot_func = globals()[kind + "plot"]
-    except KeyError:
-        err = f"Plot kind '{kind}' is not recognized"
-        raise ValueError(err)
-
     # Check for attempt to plot onto specific axes and warn
     if "ax" in kwargs:
         msg = ("catplot is a figure-level function and does not accept "
@@ -3116,449 +3109,359 @@ def catplot(
         warnings.warn(msg, UserWarning)
         kwargs.pop("ax")
 
-    refactored_kinds = [
-        "strip", "swarm", "point", "bar", "count", "box", "violin", "boxen"
-    ]
     desaturated_kinds = ["bar", "count", "box", "violin", "boxen"]
     undodged_kinds = ["strip", "swarm", "point"]
 
-    if kind in refactored_kinds:
+    if kind in ["bar", "point", "count"]:
+        Plotter = _CategoricalAggFacetPlotter
+    else:
+        Plotter = _CategoricalFacetPlotter
 
-        if kind in ["bar", "point", "count"]:
-            Plotter = _CategoricalAggFacetPlotter
-        else:
-            Plotter = _CategoricalFacetPlotter
-
-        if kind == "count":
-            if x is None and y is not None:
-                orient = "y"
-                x = 1
-            elif x is not None and y is None:
-                orient = "x"
-                y = 1
-            elif x is not None and y is not None:
-                raise ValueError("Cannot pass values for both `x` and `y`.")
-
-        p = Plotter(
-            data=data,
-            variables=Plotter.get_semantics(locals()),
-            order=order,
-            orient=orient,
-            require_numeric=False,
-            legend=legend,
-        )
-
-        # XXX Copying a fair amount from displot, which is not ideal
-
-        for var in ["row", "col"]:
-            # Handle faceting variables that lack name information
-            if var in p.variables and p.variables[var] is None:
-                p.variables[var] = f"_{var}_"
-
-        # Adapt the plot_data dataframe for use with FacetGrid
-        data = p.plot_data.rename(columns=p.variables)
-        data = data.loc[:, ~data.columns.duplicated()]
-
-        col_name = p.variables.get("col", None)
-        row_name = p.variables.get("row", None)
-
-        if facet_kws is None:
-            facet_kws = {}
-
-        g = FacetGrid(
-            data=data, row=row_name, col=col_name,
-            col_wrap=col_wrap, row_order=row_order,
-            col_order=col_order, height=height,
-            sharex=sharex, sharey=sharey,
-            aspect=aspect,
-            **facet_kws,
-        )
-
-        # Capture this here because scale_categorical is going to insert a (null)
-        # x variable even if it is empty. It's not clear whether that needs to
-        # happen or if disabling that is the cleaner solution.
-        has_xy_data = p.has_xy_data
-
-        if not native_scale or p.var_types[p.orient] == "categorical":
-            p.scale_categorical(p.orient, order=order, formatter=formatter)
-
-        p._attach(g)
-
-        if not has_xy_data:
-            return g
-
-        # Deprecations to remove in v0.14.0.
-        hue_order = p._palette_without_hue_backcompat(palette, hue_order)
-        palette, hue_order = p._hue_backcompat(color, palette, hue_order)
-
-        saturation = kwargs.pop(
-            "saturation",
-            0.75 if kind in desaturated_kinds and kwargs.get("fill", True) else 1
-        )
-        p.map_hue(
-            palette=palette, order=hue_order, norm=hue_norm, saturation=saturation
-        )
-
-        # Set a default color
-        # Otherwise each artist will be plotted separately and trip the color cycle
-        if hue is None:
-            color = "C0" if color is None else color
-            if saturation < 1:
-                color = desaturate(color, saturation)
-        edgecolor = kwargs.pop("edgecolor", "gray")  # XXX TODO default
-
-        width = kwargs.pop("width", 0.8)
-        dodge = kwargs.pop("dodge", False if kind in undodged_kinds else "auto")
-        if dodge == "auto":
-            dodge = p._dodge_needed()
-
-        if kind == "strip":
-
-            # TODO get these defaults programmatically?
-            jitter = kwargs.pop("jitter", True)
-
-            # XXX Copying possibly bad default decisions from original code for now
-            plot_kws = kwargs.copy()
-            plot_kws.setdefault("zorder", 3)
-            plot_kws.setdefault("s", plot_kws.pop("size", 5) ** 2)
-            plot_kws.setdefault("linewidth", 0)
-
-            p.plot_strips(
-                jitter=jitter,
-                dodge=dodge,
-                color=color,
-                edgecolor=edgecolor,
-                plot_kws=plot_kws,
-            )
-
-        elif kind == "swarm":
-
-            # TODO get these defaults programmatically?
-            warn_thresh = kwargs.pop("warn_thresh", .05)
-
-            # XXX Copying possibly bad default decisions from original code for now
-            plot_kws = kwargs.copy()
-            plot_kws.setdefault("zorder", 3)
-            plot_kws.setdefault("s", plot_kws.pop("size", 5) ** 2)
-
-            if plot_kws.setdefault("linewidth", 0) is None:
-                plot_kws["linewidth"] = np.sqrt(plot_kws["s"]) / 10
-
-            p.plot_swarms(
-                dodge=dodge,
-                color=color,
-                edgecolor=edgecolor,
-                warn_thresh=warn_thresh,
-                plot_kws=plot_kws,
-            )
-
-        elif kind == "box":
-
-            plot_kws = kwargs.copy()
-            gap = plot_kws.pop("gap", 0)
-            fill = plot_kws.pop("fill", True)
-            whis = plot_kws.pop("whis", 1.5)
-            linecolor = plot_kws.pop("linecolor", None)
-            linewidth = plot_kws.pop("linewidth", None)
-            fliersize = plot_kws.pop("fliersize", 5)
-
-            p.plot_boxes(
-                width=width,
-                dodge=dodge,
-                gap=gap,
-                fill=fill,
-                whis=whis,
-                color=color,
-                linecolor=linecolor,
-                linewidth=linewidth,
-                fliersize=fliersize,
-                plot_kws=plot_kws,
-            )
-
-        elif kind == "violin":
-
-            plot_kws = kwargs.copy()
-            gap = plot_kws.pop("gap", 0)
-            fill = plot_kws.pop("fill", True)
-            split = plot_kws.pop("split", False)
-            inner = plot_kws.pop("inner", "box")
-            density_norm = plot_kws.pop("density_norm", "area")
-            common_norm = plot_kws.pop("common_norm", False)
-
-            scale = plot_kws.pop("scale", deprecated)
-            scale_hue = plot_kws.pop("scale_hue", deprecated)
-            density_norm, common_norm = p._violin_scale_backcompat(
-                scale, scale_hue, density_norm, common_norm,
-            )
-
-            kde_kws = dict(
-                cut=plot_kws.pop("cut", 2),
-                gridsize=plot_kws.pop("gridsize", 100),
-                bw_method=plot_kws.pop("bw_method", "scott"),
-                bw_adjust=plot_kws.pop("bw_adjust", 1),
-            )
-            bw = plot_kws.pop("bw", deprecated)
-            msg = dedent(f"""\n
-            The `bw` parameter is deprecated in favor of `bw_method` and `bw_adjust`.
-            Setting `bw_method={bw!r}`, but please see the docs for the new parameters
-            and update your code. This will become an error in seaborn v0.15.0.
-            """)
-            if bw is not deprecated:
-                warnings.warn(msg, FutureWarning, stacklevel=2)
-                kde_kws["bw_method"] = bw
-
-            inner_kws = plot_kws.pop("inner_kws", {}).copy()
-            linecolor = plot_kws.pop("linecolor", None)
-            linewidth = plot_kws.pop("linewidth", None)
-
-            p.plot_violins(
-                width=width,
-                dodge=dodge,
-                gap=gap,
-                split=split,
-                color=color,
-                fill=fill,
-                linecolor=linecolor,
-                linewidth=linewidth,
-                inner=inner,
-                density_norm=density_norm,
-                common_norm=common_norm,
-                kde_kws=kde_kws,
-                inner_kws=inner_kws,
-                plot_kws=plot_kws,
-            )
-
-        elif kind == "boxen":
-
-            plot_kws = kwargs.copy()
-            gap = plot_kws.pop("gap", 0)
-            fill = plot_kws.pop("fill", True)
-            linecolor = plot_kws.pop("linecolor", None)
-            linewidth = plot_kws.pop("linewidth", None)
-            k_depth = plot_kws.pop("k_depth", "tukey")
-            width_method = plot_kws.pop("width_method", "exponential")
-            outlier_prop = plot_kws.pop("outlier_prop", 0.007)
-            trust_alpha = plot_kws.pop("trust_alpha", 0.05)
-            showfliers = plot_kws.pop("showfliers", True)
-            box_kws = plot_kws.pop("box_kws", {})
-            flier_kws = plot_kws.pop("flier_kws", {})
-            line_kws = plot_kws.pop("line_kws", {})
-            if "scale" in plot_kws:
-                width_method = p._boxen_scale_backcompat(
-                    plot_kws["scale"], width_method
-                )
-
-            p.plot_boxens(
-                width=width,
-                dodge=dodge,
-                gap=gap,
-                fill=fill,
-                color=color,
-                linecolor=linecolor,
-                linewidth=linewidth,
-                width_method=width_method,
-                k_depth=k_depth,
-                outlier_prop=outlier_prop,
-                trust_alpha=trust_alpha,
-                showfliers=showfliers,
-                box_kws=box_kws,
-                flier_kws=flier_kws,
-                line_kws=line_kws,
-                plot_kws=plot_kws,
-            )
-
-        elif kind == "point":
-
-            aggregator = EstimateAggregator(
-                estimator, errorbar, n_boot=n_boot, seed=seed
-            )
-
-            markers = kwargs.pop("markers", default)
-            linestyles = kwargs.pop("linestyles", default)
-
-            # Deprecations to remove in v0.15.0.
-            # TODO Uncomment when removing deprecation backcompat
-            # capsize = kwargs.pop("capsize", 0)
-            # err_kws = _normalize_kwargs(kwargs.pop("err_kws", {}), mpl.lines.Line2D)
-            p._point_kwargs_backcompat(
-                kwargs.pop("scale", deprecated),
-                kwargs.pop("join", deprecated),
-                kwargs
-            )
-            err_kws, capsize = p._err_kws_backcompat(
-                _normalize_kwargs(kwargs.pop("err_kws", {}), mpl.lines.Line2D),
-                None,
-                errwidth=kwargs.pop("errwidth", deprecated),
-                capsize=kwargs.pop("capsize", 0),
-            )
-
-            p.plot_points(
-                aggregator=aggregator,
-                markers=markers,
-                linestyles=linestyles,
-                dodge=dodge,
-                color=color,
-                capsize=capsize,
-                err_kws=err_kws,
-                plot_kws=kwargs,
-            )
-
-        elif kind == "bar":
-
-            aggregator = EstimateAggregator(
-                estimator, errorbar, n_boot=n_boot, seed=seed
-            )
-            err_kws, capsize = p._err_kws_backcompat(
-                _normalize_kwargs(kwargs.pop("err_kws", {}), mpl.lines.Line2D),
-                errcolor=kwargs.pop("errcolor", deprecated),
-                errwidth=kwargs.pop("errwidth", deprecated),
-                capsize=kwargs.pop("capsize", 0),
-            )
-            gap = kwargs.pop("gap", 0)
-            fill = kwargs.pop("fill", True)
-
-            p.plot_bars(
-                aggregator=aggregator,
-                dodge=dodge,
-                width=width,
-                gap=gap,
-                color=color,
-                fill=fill,
-                capsize=capsize,
-                err_kws=err_kws,
-                plot_kws=kwargs,
-            )
-
-        elif kind == "count":
-
-            aggregator = EstimateAggregator("sum", errorbar=None)
-
-            count_axis = {"x": "y", "y": "x"}[p.orient]
-            p.plot_data[count_axis] = 1
-
-            stat_options = ["count", "percent", "probability", "proportion"]
-            stat = _check_argument("stat", stat_options, kwargs.pop("stat", "count"))
-            p.variables[count_axis] = stat
-            if stat != "count":
-                denom = 100 if stat == "percent" else 1
-                p.plot_data[count_axis] /= len(p.plot_data) / denom
-
-            gap = kwargs.pop("gap", 0)
-            fill = kwargs.pop("fill", True)
-
-            p.plot_bars(
-                aggregator=aggregator,
-                dodge=dodge,
-                width=width,
-                gap=gap,
-                color=color,
-                fill=fill,
-                capsize=0,
-                err_kws={},
-                plot_kws=kwargs,
-            )
-
-        for ax in g.axes.flat:
-            p._adjust_cat_axis(ax, axis=p.orient)
-
-        g.set_axis_labels(p.variables.get("x"), p.variables.get("y"))
-        g.set_titles()
-        g.tight_layout()
-
-        for ax in g.axes.flat:
-            g._update_legend_data(ax)
-            ax.legend_ = None
-
-        if legend and "hue" in p.variables:
-            g.add_legend(title=p.variables.get("hue"), label_order=hue_order)
-
-        return g
-
-    # Don't allow usage of forthcoming functionality
-    if native_scale is True:
-        err = f"native_scale not yet implemented for `kind={kind}`"
-        raise ValueError(err)
-    if formatter is not None:
-        err = f"formatter not yet implemented for `kind={kind}`"
-        raise ValueError(err)
-
-    # Alias the input variables to determine categorical order and palette
-    # correctly in the case of a count plot
     if kind == "count":
         if x is None and y is not None:
-            x_, y_, orient = y, y, "y"
-        elif y is None and x is not None:
-            x_, y_, orient = x, x, "x"
-        else:
-            raise ValueError("Either `x` or `y` must be None for kind='count'")
-    else:
-        x_, y_ = x, y
+            orient = "y"
+            x = 1
+        elif x is not None and y is None:
+            orient = "x"
+            y = 1
+        elif x is not None and y is not None:
+            raise ValueError("Cannot pass values for both `x` and `y`.")
 
-    # Determine the order for the whole dataset, which will be used in all
-    # facets to ensure representation of all data in the final plot
-    p = _CategoricalPlotter()
-    p.establish_variables(x_, y_, hue, data, orient, order, hue_order)
-    if (
-        order is not None
-        or (sharex and p.orient == "x")
-        or (sharey and p.orient == "y")
-    ):
-        # Sync categorical axis between facets to have the same categories
-        order = p.group_names
-    elif color is None and hue is None:
-        msg = (
-            "Setting `{}=False` with `color=None` may cause different levels of the "
-            "`{}` variable to share colors. This will change in a future version."
-        )
-        if not sharex and p.orient == "x":
-            warnings.warn(msg.format("sharex", "x"), UserWarning)
-        if not sharey and p.orient == "y":
-            warnings.warn(msg.format("sharey", "y"), UserWarning)
+    p = Plotter(
+        data=data,
+        variables=Plotter.get_semantics(locals()),
+        order=order,
+        orient=orient,
+        require_numeric=False,
+        legend=legend,
+    )
 
-    hue_order = p.hue_names
+    # XXX Copying a fair amount from displot, which is not ideal
 
-    # Determine the palette to use
-    # (FacetGrid will pass a value for ``color`` to the plotting function
-    # so we need to define ``palette`` to get default behavior for the
-    # categorical functions
-    p.establish_colors(color, palette, 1)
-    if kind != "point" or hue is not None:
-        palette = p.colors
+    for var in ["row", "col"]:
+        # Handle faceting variables that lack name information
+        if var in p.variables and p.variables[var] is None:
+            p.variables[var] = f"_{var}_"
 
-    # Determine keyword arguments for the facets
-    facet_kws = {} if facet_kws is None else facet_kws
-    facet_kws.update(
-        data=data, row=row, col=col,
-        row_order=row_order, col_order=col_order,
-        col_wrap=col_wrap, height=height, aspect=aspect,
+    # Adapt the plot_data dataframe for use with FacetGrid
+    data = p.plot_data.rename(columns=p.variables)
+    data = data.loc[:, ~data.columns.duplicated()]
+
+    col_name = p.variables.get("col", None)
+    row_name = p.variables.get("row", None)
+
+    if facet_kws is None:
+        facet_kws = {}
+
+    g = FacetGrid(
+        data=data, row=row_name, col=col_name,
+        col_wrap=col_wrap, row_order=row_order,
+        col_order=col_order, height=height,
         sharex=sharex, sharey=sharey,
-        legend_out=legend_out, margin_titles=margin_titles,
-        dropna=False,
+        aspect=aspect,
+        **facet_kws,
     )
 
-    # Determine keyword arguments for the plotting function
-    plot_kws = dict(
-        order=order, hue_order=hue_order,
-        orient=orient, color=color, palette=palette,
+    # Capture this here because scale_categorical is going to insert a (null)
+    # x variable even if it is empty. It's not clear whether that needs to
+    # happen or if disabling that is the cleaner solution.
+    has_xy_data = p.has_xy_data
+
+    if not native_scale or p.var_types[p.orient] == "categorical":
+        p.scale_categorical(p.orient, order=order, formatter=formatter)
+
+    p._attach(g)
+
+    if not has_xy_data:
+        return g
+
+    # Deprecations to remove in v0.14.0.
+    hue_order = p._palette_without_hue_backcompat(palette, hue_order)
+    palette, hue_order = p._hue_backcompat(color, palette, hue_order)
+
+    saturation = kwargs.pop(
+        "saturation",
+        0.75 if kind in desaturated_kinds and kwargs.get("fill", True) else 1
     )
-    plot_kws.update(kwargs)
+    p.map_hue(
+        palette=palette, order=hue_order, norm=hue_norm, saturation=saturation
+    )
 
-    # Initialize the facets
-    g = FacetGrid(**facet_kws)
+    # Set a default color
+    # Otherwise each artist will be plotted separately and trip the color cycle
+    if hue is None:
+        color = "C0" if color is None else color
+        if saturation < 1:
+            color = desaturate(color, saturation)
+    edgecolor = kwargs.pop("edgecolor", "gray")  # XXX TODO default
 
-    # Draw the plot onto the facets
-    if not plot_kws.get("order"):
-        plot_kws.pop("order", None)
-    g.map_dataframe(plot_func, x=x, y=y, hue=hue, **plot_kws)
+    width = kwargs.pop("width", 0.8)
+    dodge = kwargs.pop("dodge", False if kind in undodged_kinds else "auto")
+    if dodge == "auto":
+        dodge = p._dodge_needed()
 
-    if p.orient == "y":
-        g.set_axis_labels(p.value_label, p.group_label)
+    if kind == "strip":
+
+        # TODO get these defaults programmatically?
+        jitter = kwargs.pop("jitter", True)
+
+        # XXX Copying possibly bad default decisions from original code for now
+        plot_kws = kwargs.copy()
+        plot_kws.setdefault("zorder", 3)
+        plot_kws.setdefault("s", plot_kws.pop("size", 5) ** 2)
+        plot_kws.setdefault("linewidth", 0)
+
+        p.plot_strips(
+            jitter=jitter,
+            dodge=dodge,
+            color=color,
+            edgecolor=edgecolor,
+            plot_kws=plot_kws,
+        )
+
+    elif kind == "swarm":
+
+        # TODO get these defaults programmatically?
+        warn_thresh = kwargs.pop("warn_thresh", .05)
+
+        # XXX Copying possibly bad default decisions from original code for now
+        plot_kws = kwargs.copy()
+        plot_kws.setdefault("zorder", 3)
+        plot_kws.setdefault("s", plot_kws.pop("size", 5) ** 2)
+
+        if plot_kws.setdefault("linewidth", 0) is None:
+            plot_kws["linewidth"] = np.sqrt(plot_kws["s"]) / 10
+
+        p.plot_swarms(
+            dodge=dodge,
+            color=color,
+            edgecolor=edgecolor,
+            warn_thresh=warn_thresh,
+            plot_kws=plot_kws,
+        )
+
+    elif kind == "box":
+
+        plot_kws = kwargs.copy()
+        gap = plot_kws.pop("gap", 0)
+        fill = plot_kws.pop("fill", True)
+        whis = plot_kws.pop("whis", 1.5)
+        linecolor = plot_kws.pop("linecolor", None)
+        linewidth = plot_kws.pop("linewidth", None)
+        fliersize = plot_kws.pop("fliersize", 5)
+
+        p.plot_boxes(
+            width=width,
+            dodge=dodge,
+            gap=gap,
+            fill=fill,
+            whis=whis,
+            color=color,
+            linecolor=linecolor,
+            linewidth=linewidth,
+            fliersize=fliersize,
+            plot_kws=plot_kws,
+        )
+
+    elif kind == "violin":
+
+        plot_kws = kwargs.copy()
+        gap = plot_kws.pop("gap", 0)
+        fill = plot_kws.pop("fill", True)
+        split = plot_kws.pop("split", False)
+        inner = plot_kws.pop("inner", "box")
+        density_norm = plot_kws.pop("density_norm", "area")
+        common_norm = plot_kws.pop("common_norm", False)
+
+        scale = plot_kws.pop("scale", deprecated)
+        scale_hue = plot_kws.pop("scale_hue", deprecated)
+        density_norm, common_norm = p._violin_scale_backcompat(
+            scale, scale_hue, density_norm, common_norm,
+        )
+
+        kde_kws = dict(
+            cut=plot_kws.pop("cut", 2),
+            gridsize=plot_kws.pop("gridsize", 100),
+            bw_method=plot_kws.pop("bw_method", "scott"),
+            bw_adjust=plot_kws.pop("bw_adjust", 1),
+        )
+        bw = plot_kws.pop("bw", deprecated)
+        msg = dedent(f"""\n
+        The `bw` parameter is deprecated in favor of `bw_method` and `bw_adjust`.
+        Setting `bw_method={bw!r}`, but please see the docs for the new parameters
+        and update your code. This will become an error in seaborn v0.15.0.
+        """)
+        if bw is not deprecated:
+            warnings.warn(msg, FutureWarning, stacklevel=2)
+            kde_kws["bw_method"] = bw
+
+        inner_kws = plot_kws.pop("inner_kws", {}).copy()
+        linecolor = plot_kws.pop("linecolor", None)
+        linewidth = plot_kws.pop("linewidth", None)
+
+        p.plot_violins(
+            width=width,
+            dodge=dodge,
+            gap=gap,
+            split=split,
+            color=color,
+            fill=fill,
+            linecolor=linecolor,
+            linewidth=linewidth,
+            inner=inner,
+            density_norm=density_norm,
+            common_norm=common_norm,
+            kde_kws=kde_kws,
+            inner_kws=inner_kws,
+            plot_kws=plot_kws,
+        )
+
+    elif kind == "boxen":
+
+        plot_kws = kwargs.copy()
+        gap = plot_kws.pop("gap", 0)
+        fill = plot_kws.pop("fill", True)
+        linecolor = plot_kws.pop("linecolor", None)
+        linewidth = plot_kws.pop("linewidth", None)
+        k_depth = plot_kws.pop("k_depth", "tukey")
+        width_method = plot_kws.pop("width_method", "exponential")
+        outlier_prop = plot_kws.pop("outlier_prop", 0.007)
+        trust_alpha = plot_kws.pop("trust_alpha", 0.05)
+        showfliers = plot_kws.pop("showfliers", True)
+        box_kws = plot_kws.pop("box_kws", {})
+        flier_kws = plot_kws.pop("flier_kws", {})
+        line_kws = plot_kws.pop("line_kws", {})
+        if "scale" in plot_kws:
+            width_method = p._boxen_scale_backcompat(
+                plot_kws["scale"], width_method
+            )
+
+        p.plot_boxens(
+            width=width,
+            dodge=dodge,
+            gap=gap,
+            fill=fill,
+            color=color,
+            linecolor=linecolor,
+            linewidth=linewidth,
+            width_method=width_method,
+            k_depth=k_depth,
+            outlier_prop=outlier_prop,
+            trust_alpha=trust_alpha,
+            showfliers=showfliers,
+            box_kws=box_kws,
+            flier_kws=flier_kws,
+            line_kws=line_kws,
+            plot_kws=plot_kws,
+        )
+
+    elif kind == "point":
+
+        aggregator = EstimateAggregator(
+            estimator, errorbar, n_boot=n_boot, seed=seed
+        )
+
+        markers = kwargs.pop("markers", default)
+        linestyles = kwargs.pop("linestyles", default)
+
+        # Deprecations to remove in v0.15.0.
+        # TODO Uncomment when removing deprecation backcompat
+        # capsize = kwargs.pop("capsize", 0)
+        # err_kws = _normalize_kwargs(kwargs.pop("err_kws", {}), mpl.lines.Line2D)
+        p._point_kwargs_backcompat(
+            kwargs.pop("scale", deprecated),
+            kwargs.pop("join", deprecated),
+            kwargs
+        )
+        err_kws, capsize = p._err_kws_backcompat(
+            _normalize_kwargs(kwargs.pop("err_kws", {}), mpl.lines.Line2D),
+            None,
+            errwidth=kwargs.pop("errwidth", deprecated),
+            capsize=kwargs.pop("capsize", 0),
+        )
+
+        p.plot_points(
+            aggregator=aggregator,
+            markers=markers,
+            linestyles=linestyles,
+            dodge=dodge,
+            color=color,
+            capsize=capsize,
+            err_kws=err_kws,
+            plot_kws=kwargs,
+        )
+
+    elif kind == "bar":
+
+        aggregator = EstimateAggregator(
+            estimator, errorbar, n_boot=n_boot, seed=seed
+        )
+        err_kws, capsize = p._err_kws_backcompat(
+            _normalize_kwargs(kwargs.pop("err_kws", {}), mpl.lines.Line2D),
+            errcolor=kwargs.pop("errcolor", deprecated),
+            errwidth=kwargs.pop("errwidth", deprecated),
+            capsize=kwargs.pop("capsize", 0),
+        )
+        gap = kwargs.pop("gap", 0)
+        fill = kwargs.pop("fill", True)
+
+        p.plot_bars(
+            aggregator=aggregator,
+            dodge=dodge,
+            width=width,
+            gap=gap,
+            color=color,
+            fill=fill,
+            capsize=capsize,
+            err_kws=err_kws,
+            plot_kws=kwargs,
+        )
+
+    elif kind == "count":
+
+        aggregator = EstimateAggregator("sum", errorbar=None)
+
+        count_axis = {"x": "y", "y": "x"}[p.orient]
+        p.plot_data[count_axis] = 1
+
+        stat_options = ["count", "percent", "probability", "proportion"]
+        stat = _check_argument("stat", stat_options, kwargs.pop("stat", "count"))
+        p.variables[count_axis] = stat
+        if stat != "count":
+            denom = 100 if stat == "percent" else 1
+            p.plot_data[count_axis] /= len(p.plot_data) / denom
+
+        gap = kwargs.pop("gap", 0)
+        fill = kwargs.pop("fill", True)
+
+        p.plot_bars(
+            aggregator=aggregator,
+            dodge=dodge,
+            width=width,
+            gap=gap,
+            color=color,
+            fill=fill,
+            capsize=0,
+            err_kws={},
+            plot_kws=kwargs,
+        )
+
     else:
-        g.set_axis_labels(p.group_label, p.value_label)
+        raise ValueError(f"Invalid `kind`: {kind!r}")
 
-    if legend and (hue is not None) and (hue not in [x, row, col]):
-        hue_order = list(map(utils.to_utf8, hue_order))
-        g.add_legend(title=hue, label_order=hue_order)
+    for ax in g.axes.flat:
+        p._adjust_cat_axis(ax, axis=p.orient)
+
+    g.set_axis_labels(p.variables.get("x"), p.variables.get("y"))
+    g.set_titles()
+    g.tight_layout()
+
+    for ax in g.axes.flat:
+        g._update_legend_data(ax)
+        ax.legend_ = None
+
+    if legend and "hue" in p.variables:
+        g.add_legend(title=p.variables.get("hue"), label_order=hue_order)
 
     return g
 

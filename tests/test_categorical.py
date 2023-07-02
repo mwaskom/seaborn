@@ -3400,6 +3400,11 @@ class TestCatPlot(CategoricalFixture):
         for ax1, ax2 in zip(g1.axes.flat, g2.axes.flat):
             assert_plots_equal(ax1, ax2)
 
+    def test_invalid_kind(self, long_df):
+
+        with pytest.raises(ValueError, match="Invalid `kind`: 'wrong'"):
+            catplot(long_df, kind="wrong")
+
 
 class TestBeeswarm:
 
