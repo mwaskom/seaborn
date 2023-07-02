@@ -803,7 +803,7 @@ class _CategoricalPlotterNew(_RelationalPlotter):
 
             maincolor = self._hue_map(sub_vars["hue"]) if "hue" in sub_vars else color
             flier_colors = {
-                "facecolor": "none", "edgecolor": ".3" if fill else maincolor
+                "facecolor": "none", "edgecolor": ".45" if fill else maincolor
             }
             if fill:
                 cmap = light_palette(maincolor, as_cmap=True)
