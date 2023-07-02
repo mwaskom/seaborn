@@ -1,6 +1,5 @@
 from collections import namedtuple
 from textwrap import dedent
-from numbers import Number
 import warnings
 from colorsys import rgb_to_hls
 from functools import partial
@@ -11,7 +10,6 @@ import pandas as pd
 import matplotlib as mpl
 from matplotlib.collections import PatchCollection
 from matplotlib.patches import Rectangle
-import matplotlib.patches as Patches
 import matplotlib.pyplot as plt
 
 from seaborn._core.typing import default, deprecated
@@ -24,12 +22,10 @@ from seaborn._stats.density import KDE
 from seaborn.relational import _RelationalPlotter
 from seaborn import utils
 from seaborn.utils import (
-    remove_na,
     desaturate,
     _check_argument,
     _draw_figure,
     _default_color,
-    _normal_quantile_func,
     _normalize_kwargs,
     _version_predates,
 )
@@ -1704,312 +1700,6 @@ class _CategoricalPlotter:
                              facecolor=color,
                              label=label)
         ax.add_patch(rect)
-
-
-class _LVPlotter(_CategoricalPlotter):
-
-    def __init__(self, x, y, hue, data, order, hue_order,
-                 orient, color, palette, saturation,
-                 width, dodge, k_depth, linewidth, scale, outlier_prop,
-                 trust_alpha, showfliers=True):
-
-        self.width = width
-        self.dodge = dodge
-        self.saturation = saturation
-
-        k_depth_methods = ['proportion', 'tukey', 'trustworthy', 'full']
-        if not (k_depth in k_depth_methods or isinstance(k_depth, Number)):
-            msg = (f'k_depth must be one of {k_depth_methods} or a number, '
-                   f'but {k_depth} was passed.')
-            raise ValueError(msg)
-        self.k_depth = k_depth
-
-        if linewidth is None:
-            linewidth = mpl.rcParams["lines.linewidth"]
-        self.linewidth = linewidth
-
-        scales = ['linear', 'exponential', 'area']
-        if scale not in scales:
-            msg = f'scale must be one of {scales}, but {scale} was passed.'
-            raise ValueError(msg)
-        self.scale = scale
-
-        if ((outlier_prop > 1) or (outlier_prop <= 0)):
-            msg = f'outlier_prop {outlier_prop} not in range (0, 1]'
-            raise ValueError(msg)
-        self.outlier_prop = outlier_prop
-
-        if not 0 < trust_alpha < 1:
-            msg = f'trust_alpha {trust_alpha} not in range (0, 1) '
-            raise ValueError(msg)
-        self.trust_alpha = trust_alpha
-
-        self.showfliers = showfliers
-
-        self.establish_variables(x, y, hue, data, orient, order, hue_order)
-        self.establish_colors(color, palette, saturation)
-
-    def _lv_box_ends(self, vals):
-        """Get the number of data points and calculate `depth` of
-        letter-value plot."""
-        vals = np.asarray(vals)
-        # Remove infinite values while handling a 'object' dtype
-        # that can come from pd.Float64Dtype() input
-        with pd.option_context('mode.use_inf_as_na', True):
-            vals = vals[~pd.isnull(vals)]
-        n = len(vals)
-        p = self.outlier_prop
-
-        # Select the depth, i.e. number of boxes to draw, based on the method
-        if self.k_depth == 'full':
-            # extend boxes to 100% of the data
-            k = int(np.log2(n)) + 1
-        elif self.k_depth == 'tukey':
-            # This results with 5-8 points in each tail
-            k = int(np.log2(n)) - 3
-        elif self.k_depth == 'proportion':
-            k = int(np.log2(n)) - int(np.log2(n * p)) + 1
-        elif self.k_depth == 'trustworthy':
-            point_conf = 2 * _normal_quantile_func(1 - self.trust_alpha / 2) ** 2
-            k = int(np.log2(n / point_conf)) + 1
-        else:
-            k = int(self.k_depth)  # allow having k as input
-        # If the number happens to be less than 1, set k to 1
-        if k < 1:
-            k = 1
-
-        # Calculate the upper end for each of the k boxes
-        upper = [100 * (1 - 0.5 ** (i + 1)) for i in range(k, 0, -1)]
-        # Calculate the lower end for each of the k boxes
-        lower = [100 * (0.5 ** (i + 1)) for i in range(k, 0, -1)]
-        # Stitch the box ends together
-        percentile_ends = [(i, j) for i, j in zip(lower, upper)]
-        box_ends = [np.percentile(vals, q) for q in percentile_ends]
-        return box_ends, k
-
-    def _lv_outliers(self, vals, k):
-        """Find the outliers based on the letter value depth."""
-        box_edge = 0.5 ** (k + 1)
-        perc_ends = (100 * box_edge, 100 * (1 - box_edge))
-        edges = np.percentile(vals, perc_ends)
-        lower_out = vals[np.where(vals < edges[0])[0]]
-        upper_out = vals[np.where(vals > edges[1])[0]]
-        return np.concatenate((lower_out, upper_out))
-
-    def _width_functions(self, width_func):
-        # Dictionary of functions for computing the width of the boxes
-        width_functions = {'linear': lambda h, i, k: (i + 1.) / k,
-                           'exponential': lambda h, i, k: 2**(-k + i - 1),
-                           'area': lambda h, i, k: (1 - 2**(-k + i - 2)) / h}
-        return width_functions[width_func]
-
-    def _lvplot(self, box_data, positions,
-                color=[255. / 256., 185. / 256., 0.],
-                widths=1, ax=None, box_kws=None,
-                flier_kws=None,
-                line_kws=None):
-
-        # -- Default keyword dicts - based on
-        # distributions.plot_univariate_histogram
-        box_kws = {} if box_kws is None else box_kws.copy()
-        flier_kws = {} if flier_kws is None else flier_kws.copy()
-        line_kws = {} if line_kws is None else line_kws.copy()
-
-        # Set the default kwargs for the boxes
-        box_default_kws = dict(edgecolor=self.gray,
-                               linewidth=self.linewidth)
-        for k, v in box_default_kws.items():
-            box_kws.setdefault(k, v)
-
-        # Set the default kwargs for the lines denoting medians
-        line_default_kws = dict(
-            color=".15", alpha=0.45, solid_capstyle="butt", linewidth=self.linewidth
-        )
-        for k, v in line_default_kws.items():
-            line_kws.setdefault(k, v)
-
-        # Set the default kwargs for the outliers scatterplot
-        flier_default_kws = dict(marker='d', color=self.gray)
-        for k, v in flier_default_kws.items():
-            flier_kws.setdefault(k, v)
-
-        vert = self.orient == "x"
-        x = positions[0]
-        box_data = np.asarray(box_data)
-
-        # If we only have one data point, plot a line
-        if len(box_data) == 1:
-            line_kws.update({
-                'color': box_kws['edgecolor'],
-                'linestyle': box_kws.get('linestyle', '-'),
-                'linewidth': max(box_kws["linewidth"], line_kws["linewidth"])
-            })
-            ys = [box_data[0], box_data[0]]
-            xs = [x - widths / 2, x + widths / 2]
-            if vert:
-                xx, yy = xs, ys
-            else:
-                xx, yy = ys, xs
-            ax.plot(xx, yy, **line_kws)
-        else:
-            # Get the number of data points and calculate "depth" of
-            # letter-value plot
-            box_ends, k = self._lv_box_ends(box_data)
-
-            # Anonymous functions for calculating the width and height
-            # of the letter value boxes
-            width = self._width_functions(self.scale)
-
-            # Function to find height of boxes
-            def height(b):
-                return b[1] - b[0]
-
-            # Functions to construct the letter value boxes
-            def vert_perc_box(x, b, i, k, w):
-                rect = Patches.Rectangle((x - widths * w / 2, b[0]),
-                                         widths * w,
-                                         height(b), fill=True)
-                return rect
-
-            def horz_perc_box(x, b, i, k, w):
-                rect = Patches.Rectangle((b[0], x - widths * w / 2),
-                                         height(b), widths * w,
-                                         fill=True)
-                return rect
-
-            # Scale the width of the boxes so the biggest starts at 1
-            w_area = np.array([width(height(b), i, k)
-                               for i, b in enumerate(box_ends)])
-            w_area = w_area / np.max(w_area)
-
-            # Calculate the medians
-            y = np.median(box_data)
-
-            # Calculate the outliers and plot (only if showfliers == True)
-            outliers = []
-            if self.showfliers:
-                outliers = self._lv_outliers(box_data, k)
-            hex_color = mpl.colors.rgb2hex(color)
-
-            if vert:
-                box_func = vert_perc_box
-                xs_median = [x - widths / 2, x + widths / 2]
-                ys_median = [y, y]
-                xs_outliers = np.full(len(outliers), x)
-                ys_outliers = outliers
-
-            else:
-                box_func = horz_perc_box
-                xs_median = [y, y]
-                ys_median = [x - widths / 2, x + widths / 2]
-                xs_outliers = outliers
-                ys_outliers = np.full(len(outliers), x)
-
-            # Plot the medians
-            ax.plot(
-                xs_median,
-                ys_median,
-                **line_kws
-            )
-
-            # Plot outliers (if any)
-            if len(outliers) > 0:
-                ax.scatter(xs_outliers, ys_outliers,
-                           **flier_kws
-                           )
-
-            # Construct a color map from the input color
-            rgb = [hex_color, (1, 1, 1)]
-            cmap = mpl.colors.LinearSegmentedColormap.from_list('new_map', rgb)
-            # Make sure that the last boxes contain hue and are not pure white
-            rgb = [hex_color, cmap(.85)]
-            cmap = mpl.colors.LinearSegmentedColormap.from_list('new_map', rgb)
-
-            # Update box_kws with `cmap` if not defined in dict until now
-            box_kws.setdefault('cmap', cmap)
-
-            boxes = [box_func(x, b[0], i, k, b[1])
-                     for i, b in enumerate(zip(box_ends, w_area))]
-
-            collection = PatchCollection(boxes, **box_kws)
-
-            # Set the color gradation, first box will have color=hex_color
-            collection.set_array(np.array(np.linspace(1, 0, len(boxes))))
-
-            # Plot the boxes
-            ax.add_collection(collection)
-
-    def draw_letter_value_plot(self, ax, box_kws=None, flier_kws=None,
-                               line_kws=None):
-        """Use matplotlib to draw a letter value plot on an Axes."""
-
-        for i, group_data in enumerate(self.plot_data):
-
-            if self.plot_hues is None:
-
-                # Handle case where there is data at this level
-                if group_data.size == 0:
-                    continue
-
-                # Draw a single box or a set of boxes
-                # with a single level of grouping
-                box_data = remove_na(group_data)
-
-                # Handle case where there is no non-null data
-                if box_data.size == 0:
-                    continue
-
-                color = self.colors[i]
-
-                self._lvplot(box_data,
-                             positions=[i],
-                             color=color,
-                             widths=self.width,
-                             ax=ax,
-                             box_kws=box_kws,
-                             flier_kws=flier_kws,
-                             line_kws=line_kws)
-
-            else:
-                # Draw nested groups of boxes
-                offsets = self.hue_offsets
-                for j, hue_level in enumerate(self.hue_names):
-
-                    # Add a legend for this hue level
-                    if not i:
-                        self.add_legend_data(ax, self.colors[j], hue_level)
-
-                    # Handle case where there is data at this level
-                    if group_data.size == 0:
-                        continue
-
-                    hue_mask = self.plot_hues[i] == hue_level
-                    box_data = remove_na(group_data[hue_mask])
-
-                    # Handle case where there is no non-null data
-                    if box_data.size == 0:
-                        continue
-
-                    color = self.colors[j]
-                    center = i + offsets[j]
-                    self._lvplot(box_data,
-                                 positions=[center],
-                                 color=color,
-                                 widths=self.nested_width,
-                                 ax=ax,
-                                 box_kws=box_kws,
-                                 flier_kws=flier_kws,
-                                 line_kws=line_kws)
-
-        # Autoscale the values axis to make sure all patches are visible
-        ax.autoscale_view(scalex=self.orient == "y", scaley=self.orient == "x")
-
-    def plot(self, ax, box_kws, flier_kws, line_kws):
-        """Make the plot."""
-        self.draw_letter_value_plot(ax, box_kws, flier_kws, line_kws)
-        self.annotate_axes(ax)
-        if self.orient == "y":
-            ax.invert_yaxis()
 
 
 _categorical_docs = dict(
@@ -3806,9 +3496,7 @@ def catplot(
 
     # Determine the order for the whole dataset, which will be used in all
     # facets to ensure representation of all data in the final plot
-    plotter_class = {"boxen": _LVPlotter}[kind]
     p = _CategoricalPlotter()
-    p.require_numeric = plotter_class.require_numeric
     p.establish_variables(x_, y_, hue, data, orient, order, hue_order)
     if (
         order is not None
