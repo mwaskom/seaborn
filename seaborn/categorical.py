@@ -2671,14 +2671,14 @@ boxenplot.__doc__ = dedent("""\
 
         - `"exponential"`: Represent the corresponding percentile
         - `"linear"`: Decrease by a constant amount for each box
-        ` `"area"`: Represent the density of data points in that box
+        - `"area"`: Represent the density of data points in that box
     k_depth : {{"tukey", "proportion", "trustworthy", "full"}} or int
         The number of levels to compute and draw in each tail:
 
         - `"tukey"`: Use log2(n) - 3 levels, covering similar range as boxplot whiskers
         - `"proportion"`: Leave approximately `outlier_prop` fliers
         - `"trusthworthy"`: Extend to level with confidence of at least `trust_alpha`
-        - `"full"`: Use log2(n) + 1 levels
+        - `"full"`: Use log2(n) + 1 levels and extend to most extreme points
     outlier_prop : float
         Proportion of data expected to be outliers; used when `k_depth="proportion"`.
     trust_alpha : float

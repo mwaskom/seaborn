@@ -584,6 +584,9 @@ class LetterValues:
         exp = np.arange(k + 1, 1, -1), np.arange(2, k + 2)
         levels = k + 1 - np.concatenate([exp[0], exp[1][1:]])
         percentiles = 100 * np.concatenate([0.5 ** exp[0], 1 - 0.5 ** exp[1]])
+        if self.k_depth == "full":
+            percentiles[0] = 0
+            percentiles[-1] = 100
         values = np.percentile(x, percentiles)
         fliers = np.asarray(x[(x < values.min()) | (x > values.max())])
         median = np.percentile(x, 50)

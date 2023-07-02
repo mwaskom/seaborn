@@ -1669,6 +1669,17 @@ class TestBoxenPlot(SharedAxesLevelTests):
         ax = boxenplot(x, k_depth=(k := 8))
         assert len(ax.collections[0].get_paths()) == (k * 2 - 1)
 
+    def test_k_depth_full(self, rng):
+
+        x = rng.normal(0, 1, 10_000)
+        ax = boxenplot(x=x, k_depth="full")
+        paths = ax.collections[0].get_paths()
+        assert len(paths) == 2 * int(np.log2(x.size)) + 1
+        verts = np.concatenate([p.vertices for p in paths]).T
+        assert verts[0].min() == x.min()
+        assert verts[0].max() == x.max()
+        assert not ax.collections[1].get_offsets().size
+
     def test_trust_alpha(self, rng):
 
         x = rng.normal(0, 1, 10_000)
