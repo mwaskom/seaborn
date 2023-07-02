@@ -803,7 +803,7 @@ class _CategoricalPlotterNew(_RelationalPlotter):
 
             maincolor = self._hue_map(sub_vars["hue"]) if "hue" in sub_vars else color
             flier_colors = {
-                "facecolor": "none", "edgecolor": linecolor if fill else maincolor
+                "facecolor": "none", "edgecolor": ".3" if fill else maincolor
             }
             if fill:
                 cmap = light_palette(maincolor, as_cmap=True)
@@ -2666,17 +2666,18 @@ boxenplot.__doc__ = dedent("""\
     {gap}
     {linewidth}
     {linecolor}
-    scale : {{"exponential", "linear", "area"}}
-        Method to use for the width of the letter value boxes. All give similar
-        results visually. "linear" reduces the width by a constant linear
-        factor, "exponential" uses the proportion of data not covered, "area"
-        is proportional to the percentage of data covered.
+    width_method : {{"exponential", "linear", "area"}}
+        Method to use for the width of the letter value boxes:
+
+        - `"exponential"`: Represent the corresponding percentile
+        - `"linear"`: Decrease by a constant amount for each box
+        ` `"area"`: Represent the density of data points in that box
     k_depth : {{"tukey", "proportion", "trustworthy", "full"}} or int
         The number of levels to compute and draw in each tail:
 
         - `"tukey"`: Use log2(n) - 3 levels, covering similar range as boxplot whiskers
-        - `"proportion"`: Use levels that leave approximately `outlier_prop` fliers
-        - `"trusthworthy"`: Use levels with confidence of at least `trust_alpha`
+        - `"proportion"`: Leave approximately `outlier_prop` fliers
+        - `"trusthworthy"`: Extend to level with confidence of at least `trust_alpha`
         - `"full"`: Use log2(n) + 1 levels
     outlier_prop : float
         Proportion of data expected to be outliers; used when `k_depth="proportion"`.
