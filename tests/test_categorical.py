@@ -9,7 +9,6 @@ from matplotlib.colors import same_color, to_rgb, to_rgba
 
 import pytest
 from pytest import approx
-import numpy.testing as npt
 from numpy.testing import (
     assert_array_equal,
     assert_array_less,
@@ -17,7 +16,6 @@ from numpy.testing import (
 )
 
 from seaborn import categorical as cat
-from seaborn import palettes
 
 from seaborn.utils import _version_predates, desaturate
 from seaborn._oldcore import categorical_order
@@ -108,425 +106,6 @@ class TestCategoricalPlotterNew:
         assert p.variables["hue"] == "s"
         assert_array_equal(p.plot_data["hue"], p.plot_data["x"])
         assert all(isinstance(k, str) for k in palette)
-
-
-class CategoricalFixture:
-    """Test boxplot (also base class for things like violinplots)."""
-    rs = np.random.RandomState(30)
-    n_total = 60
-    x = rs.randn(int(n_total / 3), 3)
-    x_df = pd.DataFrame(x, columns=pd.Series(list("XYZ"), name="big"))
-    y = pd.Series(rs.randn(n_total), name="y_data")
-    y_perm = y.reindex(rs.choice(y.index, y.size, replace=False))
-    g = pd.Series(np.repeat(list("abc"), int(n_total / 3)), name="small")
-    h = pd.Series(np.tile(list("mn"), int(n_total / 2)), name="medium")
-    u = pd.Series(np.tile(list("jkh"), int(n_total / 3)))
-    df = pd.DataFrame(dict(y=y, g=g, h=h, u=u))
-    x_df["W"] = g
-
-    def get_box_artists(self, ax):
-
-        if _version_predates(mpl, "3.5.0b0"):
-            return ax.artists
-        else:
-            # Exclude labeled patches, which are for the legend
-            return [p for p in ax.patches if not p.get_label()]
-
-
-class TestCategoricalPlotter(CategoricalFixture):
-
-    def test_wide_df_data(self):
-
-        p = cat._CategoricalPlotter()
-
-        # Test basic wide DataFrame
-        p.establish_variables(data=self.x_df)
-
-        # Check data attribute
-        for x, y, in zip(p.plot_data, self.x_df[["X", "Y", "Z"]].values.T):
-            npt.assert_array_equal(x, y)
-
-        # Check semantic attributes
-        assert p.orient == "x"
-        assert p.plot_hues is None
-        assert p.group_label == "big"
-        assert p.value_label is None
-
-        # Test wide dataframe with forced horizontal orientation
-        p.establish_variables(data=self.x_df, orient="horiz")
-        assert p.orient == "y"
-
-        # Test exception by trying to hue-group with a wide dataframe
-        with pytest.raises(ValueError):
-            p.establish_variables(hue="d", data=self.x_df)
-
-    def test_1d_input_data(self):
-
-        p = cat._CategoricalPlotter()
-
-        # Test basic vector data
-        x_1d_array = self.x.ravel()
-        p.establish_variables(data=x_1d_array)
-        assert len(p.plot_data) == 1
-        assert len(p.plot_data[0]) == self.n_total
-        assert p.group_label is None
-        assert p.value_label is None
-
-        # Test basic vector data in list form
-        x_1d_list = x_1d_array.tolist()
-        p.establish_variables(data=x_1d_list)
-        assert len(p.plot_data) == 1
-        assert len(p.plot_data[0]) == self.n_total
-        assert p.group_label is None
-        assert p.value_label is None
-
-        # Test an object array that looks 1D but isn't
-        x_notreally_1d = np.array([self.x.ravel(),
-                                   self.x.ravel()[:int(self.n_total / 2)]],
-                                  dtype=object)
-        p.establish_variables(data=x_notreally_1d)
-        assert len(p.plot_data) == 2
-        assert len(p.plot_data[0]) == self.n_total
-        assert len(p.plot_data[1]) == self.n_total / 2
-        assert p.group_label is None
-        assert p.value_label is None
-
-    def test_2d_input_data(self):
-
-        p = cat._CategoricalPlotter()
-
-        x = self.x[:, 0]
-
-        # Test vector data that looks 2D but doesn't really have columns
-        p.establish_variables(data=x[:, np.newaxis])
-        assert len(p.plot_data) == 1
-        assert len(p.plot_data[0]) == self.x.shape[0]
-        assert p.group_label is None
-        assert p.value_label is None
-
-        # Test vector data that looks 2D but doesn't really have rows
-        p.establish_variables(data=x[np.newaxis, :])
-        assert len(p.plot_data) == 1
-        assert len(p.plot_data[0]) == self.x.shape[0]
-        assert p.group_label is None
-        assert p.value_label is None
-
-    def test_3d_input_data(self):
-
-        p = cat._CategoricalPlotter()
-
-        # Test that passing actually 3D data raises
-        x = np.zeros((5, 5, 5))
-        with pytest.raises(ValueError):
-            p.establish_variables(data=x)
-
-    def test_list_of_array_input_data(self):
-
-        p = cat._CategoricalPlotter()
-
-        # Test 2D input in list form
-        x_list = self.x.T.tolist()
-        p.establish_variables(data=x_list)
-        assert len(p.plot_data) == 3
-
-        lengths = [len(v_i) for v_i in p.plot_data]
-        assert lengths == [self.n_total / 3] * 3
-
-        assert p.group_label is None
-        assert p.value_label is None
-
-    def test_wide_array_input_data(self):
-
-        p = cat._CategoricalPlotter()
-
-        # Test 2D input in array form
-        p.establish_variables(data=self.x)
-        assert np.shape(p.plot_data) == (3, self.n_total / 3)
-        npt.assert_array_equal(p.plot_data, self.x.T)
-
-        assert p.group_label is None
-        assert p.value_label is None
-
-    def test_single_long_direct_inputs(self):
-
-        p = cat._CategoricalPlotter()
-
-        # Test passing a series to the x variable
-        p.establish_variables(x=self.y)
-        npt.assert_equal(p.plot_data, [self.y])
-        assert p.orient == "y"
-        assert p.value_label == "y_data"
-        assert p.group_label is None
-
-        # Test passing a series to the y variable
-        p.establish_variables(y=self.y)
-        npt.assert_equal(p.plot_data, [self.y])
-        assert p.orient == "x"
-        assert p.value_label == "y_data"
-        assert p.group_label is None
-
-        # Test passing an array to the y variable
-        p.establish_variables(y=self.y.values)
-        npt.assert_equal(p.plot_data, [self.y])
-        assert p.orient == "x"
-        assert p.group_label is None
-        assert p.value_label is None
-
-        # Test array and series with non-default index
-        x = pd.Series([1, 1, 1, 1], index=[0, 2, 4, 6])
-        y = np.array([1, 2, 3, 4])
-        p.establish_variables(x, y)
-        assert len(p.plot_data[0]) == 4
-
-    def test_single_long_indirect_inputs(self):
-
-        p = cat._CategoricalPlotter()
-
-        # Test referencing a DataFrame series in the x variable
-        p.establish_variables(x="y", data=self.df)
-        npt.assert_equal(p.plot_data, [self.y])
-        assert p.orient == "y"
-        assert p.value_label == "y"
-        assert p.group_label is None
-
-        # Test referencing a DataFrame series in the y variable
-        p.establish_variables(y="y", data=self.df)
-        npt.assert_equal(p.plot_data, [self.y])
-        assert p.orient == "x"
-        assert p.value_label == "y"
-        assert p.group_label is None
-
-    def test_longform_groupby(self):
-
-        p = cat._CategoricalPlotter()
-
-        # Test a vertically oriented grouped and nested plot
-        p.establish_variables("g", "y", hue="h", data=self.df)
-        assert len(p.plot_data) == 3
-        assert len(p.plot_hues) == 3
-        assert p.orient == "x"
-        assert p.value_label == "y"
-        assert p.group_label == "g"
-        assert p.hue_title == "h"
-
-        for group, vals in zip(["a", "b", "c"], p.plot_data):
-            npt.assert_array_equal(vals, self.y[self.g == group])
-
-        for group, hues in zip(["a", "b", "c"], p.plot_hues):
-            npt.assert_array_equal(hues, self.h[self.g == group])
-
-        # Test a grouped and nested plot with direct array value data
-        p.establish_variables("g", self.y.values, "h", self.df)
-        assert p.value_label is None
-        assert p.group_label == "g"
-
-        for group, vals in zip(["a", "b", "c"], p.plot_data):
-            npt.assert_array_equal(vals, self.y[self.g == group])
-
-        # Test a grouped and nested plot with direct array hue data
-        p.establish_variables("g", "y", self.h.values, self.df)
-
-        for group, hues in zip(["a", "b", "c"], p.plot_hues):
-            npt.assert_array_equal(hues, self.h[self.g == group])
-
-        # Test categorical grouping data
-        df = self.df.copy()
-        df.g = df.g.astype("category")
-
-        # Test that horizontal orientation is automatically detected
-        p.establish_variables("y", "g", hue="h", data=df)
-        assert len(p.plot_data) == 3
-        assert len(p.plot_hues) == 3
-        assert p.orient == "y"
-        assert p.value_label == "y"
-        assert p.group_label == "g"
-        assert p.hue_title == "h"
-
-        for group, vals in zip(["a", "b", "c"], p.plot_data):
-            npt.assert_array_equal(vals, self.y[self.g == group])
-
-        for group, hues in zip(["a", "b", "c"], p.plot_hues):
-            npt.assert_array_equal(hues, self.h[self.g == group])
-
-        # Test grouped data that matches on index
-        p1 = cat._CategoricalPlotter()
-        p1.establish_variables(self.g, self.y, hue=self.h)
-        p2 = cat._CategoricalPlotter()
-        p2.establish_variables(self.g, self.y.iloc[::-1], self.h)
-        for i, (d1, d2) in enumerate(zip(p1.plot_data, p2.plot_data)):
-            assert np.array_equal(d1.sort_index(), d2.sort_index())
-
-    def test_input_validation(self):
-
-        p = cat._CategoricalPlotter()
-
-        kws = dict(x="g", y="y", hue="h", units="u", data=self.df)
-        for var in ["x", "y", "hue", "units"]:
-            input_kws = kws.copy()
-            input_kws[var] = "bad_input"
-            with pytest.raises(ValueError):
-                p.establish_variables(**input_kws)
-
-    def test_order(self):
-
-        p = cat._CategoricalPlotter()
-
-        # Test inferred order from a wide dataframe input
-        p.establish_variables(data=self.x_df)
-        assert p.group_names == ["X", "Y", "Z"]
-
-        # Test specified order with a wide dataframe input
-        p.establish_variables(data=self.x_df, order=["Y", "Z", "X"])
-        assert p.group_names == ["Y", "Z", "X"]
-
-        for group, vals in zip(["Y", "Z", "X"], p.plot_data):
-            npt.assert_array_equal(vals, self.x_df[group])
-
-        with pytest.raises(ValueError):
-            p.establish_variables(data=self.x, order=[1, 2, 0])
-
-        # Test inferred order from a grouped longform input
-        p.establish_variables("g", "y", data=self.df)
-        assert p.group_names == ["a", "b", "c"]
-
-        # Test specified order from a grouped longform input
-        p.establish_variables("g", "y", data=self.df, order=["b", "a", "c"])
-        assert p.group_names == ["b", "a", "c"]
-
-        for group, vals in zip(["b", "a", "c"], p.plot_data):
-            npt.assert_array_equal(vals, self.y[self.g == group])
-
-        # Test inferred order from a grouped input with categorical groups
-        df = self.df.copy()
-        df.g = df.g.astype("category")
-        df.g = df.g.cat.reorder_categories(["c", "b", "a"])
-        p.establish_variables("g", "y", data=df)
-        assert p.group_names == ["c", "b", "a"]
-
-        for group, vals in zip(["c", "b", "a"], p.plot_data):
-            npt.assert_array_equal(vals, self.y[self.g == group])
-
-        df.g = (df.g.cat.add_categories("d")
-                    .cat.reorder_categories(["c", "b", "d", "a"]))
-        p.establish_variables("g", "y", data=df)
-        assert p.group_names == ["c", "b", "d", "a"]
-
-    def test_hue_order(self):
-
-        p = cat._CategoricalPlotter()
-
-        # Test inferred hue order
-        p.establish_variables("g", "y", hue="h", data=self.df)
-        assert p.hue_names == ["m", "n"]
-
-        # Test specified hue order
-        p.establish_variables("g", "y", hue="h", data=self.df,
-                              hue_order=["n", "m"])
-        assert p.hue_names == ["n", "m"]
-
-        # Test inferred hue order from a categorical hue input
-        df = self.df.copy()
-        df.h = df.h.astype("category")
-        df.h = df.h.cat.reorder_categories(["n", "m"])
-        p.establish_variables("g", "y", hue="h", data=df)
-        assert p.hue_names == ["n", "m"]
-
-        df.h = (df.h.cat.add_categories("o")
-                    .cat.reorder_categories(["o", "m", "n"]))
-        p.establish_variables("g", "y", hue="h", data=df)
-        assert p.hue_names == ["o", "m", "n"]
-
-    def test_plot_units(self):
-
-        p = cat._CategoricalPlotter()
-        p.establish_variables("g", "y", hue="h", data=self.df)
-        assert p.plot_units is None
-
-        p.establish_variables("g", "y", hue="h", data=self.df, units="u")
-        for group, units in zip(["a", "b", "c"], p.plot_units):
-            npt.assert_array_equal(units, self.u[self.g == group])
-
-    def test_default_palettes(self):
-
-        p = cat._CategoricalPlotter()
-
-        # Test palette mapping the x position
-        p.establish_variables("g", "y", data=self.df)
-        p.establish_colors(None, None, 1)
-        assert p.colors == palettes.color_palette(n_colors=3)
-
-        # Test palette mapping the hue position
-        p.establish_variables("g", "y", hue="h", data=self.df)
-        p.establish_colors(None, None, 1)
-        assert p.colors == palettes.color_palette(n_colors=2)
-
-    def test_default_palette_with_many_levels(self):
-
-        with palettes.color_palette(["blue", "red"], 2):
-            p = cat._CategoricalPlotter()
-            p.establish_variables("g", "y", data=self.df)
-            p.establish_colors(None, None, 1)
-            npt.assert_array_equal(p.colors,
-                                   palettes.husl_palette(3, l=.7))  # noqa
-
-    def test_specific_color(self):
-
-        p = cat._CategoricalPlotter()
-
-        # Test the same color for each x position
-        p.establish_variables("g", "y", data=self.df)
-        p.establish_colors("blue", None, 1)
-        blue_rgb = mpl.colors.colorConverter.to_rgb("blue")
-        assert p.colors == [blue_rgb] * 3
-
-        # Test a color-based blend for the hue mapping
-        p.establish_variables("g", "y", hue="h", data=self.df)
-        p.establish_colors("#ff0022", None, 1)
-        rgba_array = np.array(palettes.light_palette("#ff0022", 2))
-        npt.assert_array_almost_equal(p.colors,
-                                      rgba_array[:, :3])
-
-    def test_specific_palette(self):
-
-        p = cat._CategoricalPlotter()
-
-        # Test palette mapping the x position
-        p.establish_variables("g", "y", data=self.df)
-        p.establish_colors(None, "dark", 1)
-        assert p.colors == palettes.color_palette("dark", 3)
-
-        # Test that non-None `color` and `hue` raises an error
-        p.establish_variables("g", "y", hue="h", data=self.df)
-        p.establish_colors(None, "muted", 1)
-        assert p.colors == palettes.color_palette("muted", 2)
-
-        # Test that specified palette overrides specified color
-        p = cat._CategoricalPlotter()
-        p.establish_variables("g", "y", data=self.df)
-        p.establish_colors("blue", "deep", 1)
-        assert p.colors == palettes.color_palette("deep", 3)
-
-    def test_dict_as_palette(self):
-
-        p = cat._CategoricalPlotter()
-        p.establish_variables("g", "y", hue="h", data=self.df)
-        pal = {"m": (0, 0, 1), "n": (1, 0, 0)}
-        p.establish_colors(None, pal, 1)
-        assert p.colors == [(0, 0, 1), (1, 0, 0)]
-
-    def test_palette_desaturation(self):
-
-        p = cat._CategoricalPlotter()
-        p.establish_variables("g", "y", data=self.df)
-        p.establish_colors((0, 0, 1), None, .5)
-        assert p.colors == [(.25, .25, .75)] * 3
-
-        p.establish_colors(None, [(0, 0, 1), (1, 0, 0), "w"], .5)
-        assert p.colors == [(.25, .25, .75), (.75, .25, .25), (1, 1, 1)]
-
-
-# ====================================================================================
-# ====================================================================================
 
 
 class SharedAxesLevelTests:
@@ -3205,6 +2784,29 @@ class TestCountPlot:
         g = catplot(**kwargs, kind="count")
 
         assert_plots_equal(ax, g.ax)
+
+
+class CategoricalFixture:
+    """Test boxplot (also base class for things like violinplots)."""
+    rs = np.random.RandomState(30)
+    n_total = 60
+    x = rs.randn(int(n_total / 3), 3)
+    x_df = pd.DataFrame(x, columns=pd.Series(list("XYZ"), name="big"))
+    y = pd.Series(rs.randn(n_total), name="y_data")
+    y_perm = y.reindex(rs.choice(y.index, y.size, replace=False))
+    g = pd.Series(np.repeat(list("abc"), int(n_total / 3)), name="small")
+    h = pd.Series(np.tile(list("mn"), int(n_total / 2)), name="medium")
+    u = pd.Series(np.tile(list("jkh"), int(n_total / 3)))
+    df = pd.DataFrame(dict(y=y, g=g, h=h, u=u))
+    x_df["W"] = g
+
+    def get_box_artists(self, ax):
+
+        if _version_predates(mpl, "3.5.0b0"):
+            return ax.artists
+        else:
+            # Exclude labeled patches, which are for the legend
+            return [p for p in ax.patches if not p.get_label()]
 
 
 class TestCatPlot(CategoricalFixture):
