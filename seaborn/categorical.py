@@ -1344,21 +1344,12 @@ _categorical_docs = dict(
 
     # Shared narrative docs
     categorical_narrative=dedent("""\
-    .. note::
-        This function always treats one of the variables as categorical and
-        draws data at ordinal positions (0, 1, ... n) on the relevant axis,
-        even when the data has a numeric or date type.
+    See the :ref:`tutorial <categorical_tutorial>` for more information.
 
-    See the :ref:`tutorial <categorical_tutorial>` for more information.\
-    """),
-
-    new_categorical_narrative=dedent("""\
     .. note::
         By default, this function treats one of the variables as categorical
         and draws data at ordinal positions (0, 1, ... n) on the relevant axis.
         As of version 0.13.0, this can be disabled by setting `native_scale=True`.
-
-    See the :ref:`tutorial <categorical_tutorial>` for more information.\
     """),
 
     # Shared function parameters
@@ -1366,19 +1357,10 @@ _categorical_docs = dict(
     x, y, hue : names of variables in `data` or vector data
         Inputs for plotting long-form data. See examples for interpretation.\
     """),
-    string_input_params=dedent("""\
-    x, y, hue : names of variables in `data`
-        Inputs for plotting long-form data. See examples for interpretation.\
-    """),
     categorical_data=dedent("""\
     data : DataFrame, Series, dict, array, or list of arrays
         Dataset for plotting. If `x` and `y` are absent, this is
         interpreted as wide-form. Otherwise it is expected to be long-form.\
-    """),
-    long_form_data=dedent("""\
-    data : DataFrame
-        Long-form (tidy) dataset for plotting. Each column should correspond
-        to a variable, and each row should correspond to an observation.\
     """),
     order_vars=dedent("""\
     order, hue_order : lists of strings
@@ -1397,8 +1379,8 @@ _categorical_docs = dict(
     n_boot : int
         Number of bootstrap samples used to compute confidence intervals.
     units : name of variable in `data` or vector data
-        Identifier of sampling units, which will be used to perform a
-        multilevel bootstrap and account for repeated measures design.
+        Identifier of sampling units; used by the errorbar function to
+        perform a multilevel bootstrap and account for repeated measures
     seed : int, `numpy.random.Generator`, or `numpy.random.RandomState`
         Seed or random number generator for reproducible bootstrapping.\
     """),
@@ -1558,8 +1540,7 @@ _categorical_docs = dict(
     countplot : Show the counts of observations in each categorical bin.\
     """),
     pointplot=dedent("""\
-    pointplot : Show point estimates and confidence intervals using scatterplot
-                glyphs.\
+    pointplot : Show point estimates and confidence intervals using dots.\
     """),
     catplot=dedent("""\
     catplot : Combine a categorical plot with a :class:`FacetGrid`.\
@@ -1646,7 +1627,7 @@ boxplot.__doc__ = dedent("""\
     except for points that are determined to be "outliers" using a method
     that is a function of the inter-quartile range.
 
-    {new_categorical_narrative}
+    {categorical_narrative}
 
     Parameters
     ----------
@@ -1790,7 +1771,7 @@ violinplot.__doc__ = dedent("""\
     Unlike a box plot, each violin is drawn using a kernel density estimate
     of the underlying distribution.
 
-    {new_categorical_narrative}
+    {categorical_narrative}
 
     Parameters
     ----------
@@ -1977,7 +1958,7 @@ boxenplot.__doc__ = dedent("""\
     plotting more quantiles, it provides more information about the shape of
     the distribution, particularly in the tails.
 
-    {new_categorical_narrative}
+    {categorical_narrative}
 
     Parameters
     ----------
@@ -2130,31 +2111,31 @@ stripplot.__doc__ = dedent("""\
     to a box or violin plot in cases where you want to show all observations
     along with some representation of the underlying distribution.
 
-    {new_categorical_narrative}
+    {categorical_narrative}
 
     Parameters
     ----------
     {categorical_data}
     {input_params}
     {order_vars}
-    jitter : float, ``True``/``1`` is special-cased
+    jitter : float, `True`/`1` is special-cased
         Amount of jitter (only along the categorical axis) to apply. This
         can be useful when you have many points and they overlap, so that
         it is easier to see the distribution. You can specify the amount
         of jitter (half the width of the uniform random variable support),
-        or just use ``True`` for a good default.
+        or use `True` for a good default.
     dodge : bool
-        When using ``hue`` nesting, setting this to ``True`` will separate
-        the strips for different hue levels along the categorical axis.
-        Otherwise, the points for each level will be plotted on top of
-        each other.
+        When a `hue` variable is assigned, setting this to `True` will
+        separate the strips for different hue levels along the categorical
+        axis and narrow the amount of space allotedto each strip. Otherwise,
+        the points for each level will be plotted in the same strip.
     {orient}
     {color}
     {palette}
     size : float
         Radius of the markers, in points.
     edgecolor : matplotlib color, "gray" is special-cased
-        Color of the lines around each point. If you pass ``"gray"``, the
+        Color of the lines around each point. If you pass `"gray"`, the
         brightness is determined by the color palette used for the body
         of the points. Note that `stripplot` has `linewidth=0` by default,
         so edge colors are only visible with nonzero line width.
@@ -2264,7 +2245,7 @@ swarmplot.__doc__ = dedent("""\
     to a box or violin plot in cases where you want to show all observations
     along with some representation of the underlying distribution.
 
-    {new_categorical_narrative}
+    {categorical_narrative}
 
     Parameters
     ----------
@@ -2272,16 +2253,17 @@ swarmplot.__doc__ = dedent("""\
     {input_params}
     {order_vars}
     dodge : bool
-        When using ``hue`` nesting, setting this to ``True`` will separate
-        the strips for different hue levels along the categorical axis.
-        Otherwise, the points for each level will be plotted in one swarm.
+        When a `hue` variable is assigned, setting this to `True` will
+        separate the swaarms for different hue levels along the categorical
+        axis and narrow the amount of space allotedto each strip. Otherwise,
+        the points for each level will be plotted in the same swarm.
     {orient}
     {color}
     {palette}
     size : float
         Radius of the markers, in points.
     edgecolor : matplotlib color, "gray" is special-cased
-        Color of the lines around each point. If you pass ``"gray"``, the
+        Color of the lines around each point. If you pass `"gray"`, the
         brightness is determined by the color palette used for the body
         of the points.
     {linewidth}
@@ -2392,7 +2374,7 @@ barplot.__doc__ = dedent("""\
     axis range, and they are a good choice when 0 is a meaningful value
     for the variable to take.
 
-    {new_categorical_narrative}
+    {categorical_narrative}
 
     Parameters
     ----------
@@ -2531,7 +2513,7 @@ pointplot.__doc__ = dedent("""\
     easier for the eyes than comparing the heights of several groups of points
     or bars.
 
-    {new_categorical_narrative}
+    {categorical_narrative}
 
     Parameters
     ----------
@@ -2546,8 +2528,8 @@ pointplot.__doc__ = dedent("""\
     linestyles : string or list of strings
         Line styles to use for each of the `hue` levels.
     dodge : bool or float
-        Amount to separate the points for each level of the ``hue`` variable
-        along the categorical axis.
+        Amount to separate the points for each level of the `hue` variable along
+        the categorical axis. Setting to `True` will apply a small default.
     {native_scale}
     {orient}
     {capsize}
@@ -2557,7 +2539,7 @@ pointplot.__doc__ = dedent("""\
     {ci}
     {errwidth}
     join : bool
-        If `True`, draw lines will be drawn between point estimates.
+        If `True`, connect point estimates with a line.
 
         .. deprecated:: v0.13.0
             Set `linestyle="none"` to remove the lines between the points.
@@ -2684,7 +2666,7 @@ countplot.__doc__ = dedent("""\
     Note that :func:`histplot` function offers similar functionality with additional
     features (e.g. bar stacking), although its default behavior is somewhat different.
 
-    {new_categorical_narrative}
+    {categorical_narrative}
 
     Parameters
     ----------
@@ -2728,13 +2710,12 @@ countplot.__doc__ = dedent("""\
 
 
 def catplot(
-    data=None, *, x=None, y=None, hue=None, row=None, col=None,
-    col_wrap=None, estimator="mean", errorbar=("ci", 95), n_boot=1000,
-    units=None, seed=None, order=None, hue_order=None, row_order=None,
-    col_order=None, height=5, aspect=1, kind="strip", native_scale=False,
-    formatter=None, orient=None, color=None, palette=None, hue_norm=None,
-    legend="auto", legend_out=True, sharex=True, sharey=True,
-    margin_titles=False, facet_kws=None, ci="deprecated",
+    data=None, *, x=None, y=None, hue=None, row=None, col=None, kind="strip",
+    estimator="mean", errorbar=("ci", 95), n_boot=1000, units=None, seed=None,
+    order=None, hue_order=None, row_order=None, col_order=None, col_wrap=None,
+    height=5, aspect=1, native_scale=False, formatter=None, orient=None,
+    color=None, palette=None, hue_norm=None, legend="auto", legend_out=True,
+    sharex=True, sharey=True, margin_titles=False, facet_kws=None, ci=deprecated,
     **kwargs
 ):
 
@@ -2790,11 +2771,10 @@ def catplot(
         facet_kws = {}
 
     g = FacetGrid(
-        data=data, row=row_name, col=col_name,
-        col_wrap=col_wrap, row_order=row_order,
-        col_order=col_order, height=height,
-        sharex=sharex, sharey=sharey,
-        aspect=aspect,
+        data=data, row=row_name, col=col_name, col_wrap=col_wrap,
+        row_order=row_order, col_order=col_order, sharex=sharex, sharey=sharey,
+        legend_out=legend_out, margin_titles=margin_titles,
+        height=height, aspect=aspect,
         **facet_kws,
     )
 
@@ -2815,13 +2795,14 @@ def catplot(
     hue_order = p._palette_without_hue_backcompat(palette, hue_order)
     palette, hue_order = p._hue_backcompat(color, palette, hue_order)
 
+    # Othe deprecations
+    errorbar = utils._deprecate_ci(errorbar, ci)
+
     saturation = kwargs.pop(
         "saturation",
         0.75 if kind in desaturated_kinds and kwargs.get("fill", True) else 1
     )
-    p.map_hue(
-        palette=palette, order=hue_order, norm=hue_norm, saturation=saturation
-    )
+    p.map_hue(palette=palette, order=hue_order, norm=hue_norm, saturation=saturation)
 
     # Set a default color
     # Otherwise each artist will be plotted separately and trip the color cycle
@@ -3108,7 +3089,7 @@ catplot.__doc__ = dedent("""\
     This function provides access to several axes-level functions that
     show the relationship between a numerical and one or more categorical
     variables using one of several visual representations. The `kind`
-    parameter selects the underlying axes-level function to use:
+    parameter selects the underlying axes-level function to use.
 
     Categorical scatterplots:
 
@@ -3130,10 +3111,6 @@ catplot.__doc__ = dedent("""\
     Extra keyword arguments are passed to the underlying function, so you
     should refer to the documentation for each to see kind-specific options.
 
-    Note that unlike when using the axes-level functions directly, data must be
-    passed in a long-form DataFrame with variables specified by passing strings
-    to `x`, `y`, `hue`, etc.
-
     {categorical_narrative}
 
     After plotting, the :class:`FacetGrid` with the plot is returned and can
@@ -3141,31 +3118,29 @@ catplot.__doc__ = dedent("""\
 
     Parameters
     ----------
-    {long_form_data}
-    {string_input_params}
-    row, col : names of variables in `data`
+    {categorical_data}
+    {input_params}
+    row, col : names of variables in `data` or vector data
         Categorical variables that will determine the faceting of the grid.
-    {col_wrap}
-    {stat_api_params}
-    {order_vars}
-    row_order, col_order : lists of strings
-        Order to organize the rows and/or columns of the grid in, otherwise the
-        orders are inferred from the data objects.
-    {height}
-    {aspect}
     kind : str
         The kind of plot to draw, corresponds to the name of a categorical
         axes-level plotting function. Options are: "strip", "swarm", "box", "violin",
         "boxen", "point", "bar", or "count".
+    {stat_api_params}
+    {order_vars}
+    row_order, col_order : lists of strings
+        Order to organize the rows and/or columns of the grid in; otherwise the
+        orders are inferred from the data objects.
+    {col_wrap}
+    {height}
+    {aspect}
     {native_scale}
     {formatter}
     {orient}
     {color}
     {palette}
     {hue_norm}
-    legend : str or bool
-        Set to `False` to disable the legend. With `strip` or `swarm` plots,
-        this also accepts a string, as described in the axes-level docstrings.
+    {legend}
     {legend_out}
     {share_xy}
     {margin_titles}
@@ -3177,7 +3152,7 @@ catplot.__doc__ = dedent("""\
 
     Returns
     -------
-    g : :class:`FacetGrid`
+    :class:`FacetGrid`
         Returns the :class:`FacetGrid` object with the plot on it for further
         tweaking.
 
