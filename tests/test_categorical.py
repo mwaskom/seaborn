@@ -1,6 +1,5 @@
 import itertools
 from functools import partial
-import warnings
 
 import numpy as np
 import pandas as pd
@@ -29,6 +28,7 @@ from seaborn.categorical import (
     catplot,
     barplot,
     boxplot,
+    boxenplot,
     countplot,
     pointplot,
     stripplot,
@@ -45,6 +45,7 @@ PLOT_FUNCS = [
     catplot,
     barplot,
     boxplot,
+    boxenplot,
     pointplot,
     stripplot,
     swarmplot,
@@ -577,6 +578,15 @@ class SharedAxesLevelTests:
         labels = [t.get_text() for t in ax.get_xticklabels()]
         for label, level in zip(labels, wide_df.columns):
             assert label == level
+
+    def test_labels_hue_order(self, long_df):
+
+        hue_var = "b"
+        hue_order = categorical_order(long_df[hue_var])[::-1]
+        ax = self.func(long_df, x="a", y="y", hue=hue_var, hue_order=hue_order)
+        legend = ax.get_legend()
+        hue_labels = [t.get_text() for t in legend.texts]
+        assert hue_labels == hue_order
 
     def test_color(self, long_df, common_kws):
         common_kws.update(data=long_df, x="a", y="y")
@@ -1494,6 +1504,303 @@ class TestBoxPlot(SharedAxesLevelTests):
 
         ax = boxplot(**kwargs)
         g = catplot(**kwargs, kind="box")
+
+        assert_plots_equal(ax, g.ax)
+
+
+class TestBoxenPlot(SharedAxesLevelTests):
+
+    func = staticmethod(boxenplot)
+
+    @pytest.fixture
+    def common_kws(self):
+        return {"saturation": 1}
+
+    def get_last_color(self, ax):
+
+        fcs = ax.collections[-2].get_facecolors()
+        return to_rgba(fcs[len(fcs) // 2])
+
+    def get_box_width(self, path, orient="x"):
+
+        verts = path.vertices.T
+        idx = ["y", "x"].index(orient)
+        return np.ptp(verts[idx])
+
+    def check_boxen(self, patches, data, orient, pos, width=0.8):
+
+        pos_idx, val_idx = self.orient_indices(orient)
+        verts = np.stack([v.vertices for v in patches.get_paths()], 1).T
+
+        assert verts[pos_idx].min().round(4) >= np.round(pos - width / 2, 4)
+        assert verts[pos_idx].max().round(4) <= np.round(pos + width / 2, 4)
+        assert np.in1d(
+            np.percentile(data, [25, 75]).round(4), verts[val_idx].round(4).flat
+        ).all()
+        assert_array_equal(verts[val_idx, 1:, 0], verts[val_idx, :-1, 2])
+
+    @pytest.mark.parametrize("orient,col", [("x", "y"), ("y", "z")])
+    def test_single_var(self, long_df, orient, col):
+
+        var = {"x": "y", "y": "x"}[orient]
+        ax = boxenplot(long_df, **{var: col})
+        patches = ax.collections[0]
+        self.check_boxen(patches, long_df[col], orient, 0)
+
+    @pytest.mark.parametrize("orient,col", [(None, "x"), ("x", "y"), ("y", "z")])
+    def test_vector_data(self, long_df, orient, col):
+
+        orient = "x" if orient is None else orient
+        ax = boxenplot(long_df[col], orient=orient)
+        patches = ax.collections[0]
+        self.check_boxen(patches, long_df[col], orient, 0)
+
+    @pytest.mark.parametrize("orient", ["h", "v"])
+    def test_wide_data(self, wide_df, orient):
+
+        orient = {"h": "y", "v": "x"}[orient]
+        ax = boxenplot(wide_df, orient=orient)
+        collections = ax.findobj(mpl.collections.PatchCollection)
+        for i, patches in enumerate(collections):
+            col = wide_df.columns[i]
+            self.check_boxen(patches, wide_df[col], orient, i)
+
+    @pytest.mark.parametrize("orient", ["x", "y"])
+    def test_grouped(self, long_df, orient):
+
+        value = {"x": "y", "y": "x"}[orient]
+        ax = boxenplot(long_df, **{orient: "a", value: "z"})
+        levels = categorical_order(long_df["a"])
+        collections = ax.findobj(mpl.collections.PatchCollection)
+        for i, level in enumerate(levels):
+            data = long_df.loc[long_df["a"] == level, "z"]
+            self.check_boxen(collections[i], data, orient, i)
+
+    @pytest.mark.parametrize("orient", ["x", "y"])
+    def test_hue_grouped(self, long_df, orient):
+
+        value = {"x": "y", "y": "x"}[orient]
+        ax = boxenplot(long_df, hue="c", **{orient: "a", value: "z"})
+        collections = iter(ax.findobj(mpl.collections.PatchCollection))
+        for i, level in enumerate(categorical_order(long_df["a"])):
+            for j, hue_level in enumerate(categorical_order(long_df["c"])):
+                rows = (long_df["a"] == level) & (long_df["c"] == hue_level)
+                data = long_df.loc[rows, "z"]
+                pos = i + [-.2, +.2][j]
+                width = 0.4
+                self.check_boxen(next(collections), data, orient, pos, width)
+
+    def test_dodge_native_scale(self, long_df):
+
+        centers = categorical_order(long_df["s"])
+        hue_levels = categorical_order(long_df["c"])
+        spacing = min(np.diff(centers))
+        width = 0.8 * spacing / len(hue_levels)
+        offset = width / len(hue_levels)
+        ax = boxenplot(long_df, x="s", y="z", hue="c", native_scale=True)
+        collections = iter(ax.findobj(mpl.collections.PatchCollection))
+        for center in centers:
+            for i, hue_level in enumerate(hue_levels):
+                rows = (long_df["s"] == center) & (long_df["c"] == hue_level)
+                data = long_df.loc[rows, "z"]
+                pos = center + [-offset, +offset][i]
+                self.check_boxen(next(collections), data, "x", pos, width)
+
+    def test_color(self, long_df):
+
+        color = "#123456"
+        ax = boxenplot(long_df, x="a", y="y", color=color, saturation=1)
+        collections = ax.findobj(mpl.collections.PatchCollection)
+        for patches in collections:
+            fcs = patches.get_facecolors()
+            assert same_color(fcs[len(fcs) // 2], color)
+
+    def test_hue_colors(self, long_df):
+
+        ax = boxenplot(long_df, x="a", y="y", hue="b", saturation=1)
+        n_levels = long_df["b"].nunique()
+        collections = ax.findobj(mpl.collections.PatchCollection)
+        for i, patches in enumerate(collections):
+            fcs = patches.get_facecolors()
+            assert same_color(fcs[len(fcs) // 2], f"C{i % n_levels}")
+
+    def test_linecolor(self, long_df):
+
+        color = "#669913"
+        ax = boxenplot(long_df, x="a", y="y", linecolor=color)
+        for patches in ax.findobj(mpl.collections.PatchCollection):
+            assert same_color(patches.get_edgecolor(), color)
+
+    def test_linewidth(self, long_df):
+
+        width = 5
+        ax = boxenplot(long_df, x="a", y="y", linewidth=width)
+        for patches in ax.findobj(mpl.collections.PatchCollection):
+            assert patches.get_linewidth() == width
+
+    def test_saturation(self, long_df):
+
+        color = "#8912b0"
+        ax = boxenplot(long_df["x"], color=color, saturation=.5)
+        fcs = ax.collections[0].get_facecolors()
+        assert np.allclose(fcs[len(fcs) // 2, :3], desaturate(color, 0.5))
+
+    def test_gap(self, long_df):
+
+        ax1, ax2 = mpl.figure.Figure().subplots(2)
+        boxenplot(long_df, x="a", y="y", hue="s", ax=ax1)
+        boxenplot(long_df, x="a", y="y", hue="s", gap=.2, ax=ax2)
+        c1 = ax1.findobj(mpl.collections.PatchCollection)
+        c2 = ax2.findobj(mpl.collections.PatchCollection)
+        for p1, p2 in zip(c1, c2):
+            w1 = np.ptp(p1.get_paths()[0].vertices[:, 0])
+            w2 = np.ptp(p2.get_paths()[0].vertices[:, 0])
+            assert (w2 / w1) == pytest.approx(0.8)
+
+    def test_fill(self, long_df):
+
+        ax = boxenplot(long_df, x="a", y="y", hue="s", fill=False)
+        for c in ax.findobj(mpl.collections.PatchCollection):
+            assert not c.get_facecolors().size
+
+    def test_k_depth_int(self, rng):
+
+        x = rng.normal(0, 1, 10_000)
+        ax = boxenplot(x, k_depth=(k := 8))
+        assert len(ax.collections[0].get_paths()) == (k * 2 - 1)
+
+    def test_k_depth_full(self, rng):
+
+        x = rng.normal(0, 1, 10_000)
+        ax = boxenplot(x=x, k_depth="full")
+        paths = ax.collections[0].get_paths()
+        assert len(paths) == 2 * int(np.log2(x.size)) + 1
+        verts = np.concatenate([p.vertices for p in paths]).T
+        assert verts[0].min() == x.min()
+        assert verts[0].max() == x.max()
+        assert not ax.collections[1].get_offsets().size
+
+    def test_trust_alpha(self, rng):
+
+        x = rng.normal(0, 1, 10_000)
+        ax = boxenplot(x, k_depth="trustworthy", trust_alpha=.1)
+        boxenplot(x, k_depth="trustworthy", trust_alpha=.001, ax=ax)
+        cs = ax.findobj(mpl.collections.PatchCollection)
+        assert len(cs[0].get_paths()) > len(cs[1].get_paths())
+
+    def test_outlier_prop(self, rng):
+
+        x = rng.normal(0, 1, 10_000)
+        ax = boxenplot(x, k_depth="proportion", outlier_prop=.001)
+        boxenplot(x, k_depth="proportion", outlier_prop=.1, ax=ax)
+        cs = ax.findobj(mpl.collections.PatchCollection)
+        assert len(cs[0].get_paths()) > len(cs[1].get_paths())
+
+    def test_exponential_width_method(self, rng):
+
+        x = rng.normal(0, 1, 10_000)
+        ax = boxenplot(x=x, width_method="exponential")
+        c = ax.findobj(mpl.collections.PatchCollection)[0]
+        ws = [self.get_box_width(p) for p in c.get_paths()]
+        assert (ws[1] / ws[0]) == pytest.approx(ws[2] / ws[1])
+
+    def test_linear_width_method(self, rng):
+
+        x = rng.normal(0, 1, 10_000)
+        ax = boxenplot(x=x, width_method="linear")
+        c = ax.findobj(mpl.collections.PatchCollection)[0]
+        ws = [self.get_box_width(p) for p in c.get_paths()]
+        assert (ws[1] - ws[0]) == pytest.approx(ws[2] - ws[1])
+
+    def test_area_width_method(self, rng):
+
+        x = rng.uniform(0, 1, 10_000)
+        ax = boxenplot(x=x, width_method="area", k_depth=2)
+        ps = ax.findobj(mpl.collections.PatchCollection)[0].get_paths()
+        ws = [self.get_box_width(p) for p in ps]
+        assert np.greater(ws, 0.7).all()
+
+    def test_box_kws(self, long_df):
+
+        ax = boxenplot(long_df, x="a", y="y", box_kws={"linewidth": (lw := 7.1)})
+        for c in ax.findobj(mpl.collections.PatchCollection):
+            assert c.get_linewidths() == lw
+
+    def test_line_kws(self, long_df):
+
+        ax = boxenplot(long_df, x="a", y="y", line_kws={"linewidth": (lw := 6.2)})
+        for line in ax.lines:
+            assert line.get_linewidth() == lw
+
+    def test_flier_kws(self, long_df):
+
+        ax = boxenplot(long_df, x="a", y="y", flier_kws={"marker": (marker := "X")})
+        expected = mpl.markers.MarkerStyle(marker).get_path().vertices
+        for c in ax.findobj(mpl.collections.PathCollection):
+            assert_array_equal(c.get_paths()[0].vertices, expected)
+
+    def test_k_depth_checks(self, long_df):
+
+        with pytest.raises(ValueError, match="The value for `k_depth`"):
+            boxenplot(x=long_df["y"], k_depth="auto")
+
+        with pytest.raises(TypeError, match="The `k_depth` parameter"):
+            boxenplot(x=long_df["y"], k_depth=(1, 2))
+
+    def test_width_method_check(self, long_df):
+
+        with pytest.raises(ValueError, match="The value for `width_method`"):
+            boxenplot(x=long_df["y"], width_method="uniform")
+
+    def test_scale_deprecation(self, long_df):
+
+        with pytest.warns(FutureWarning, match="The `scale` parameter has been"):
+            boxenplot(x=long_df["y"], scale="linear")
+
+        with pytest.warns(FutureWarning, match=".+result for 'area' will appear"):
+            boxenplot(x=long_df["y"], scale="area")
+
+    @pytest.mark.parametrize(
+        "kwargs",
+        [
+            dict(data="wide"),
+            dict(data="wide", orient="h"),
+            dict(data="flat"),
+            dict(data="long", x="a", y="y"),
+            dict(data=None, x="a", y="y"),
+            dict(data="long", x="a", y="y", hue="a"),
+            dict(data=None, x="a", y="y", hue="a"),
+            dict(data="long", x="a", y="y", hue="b"),
+            dict(data=None, x="s", y="y", hue="a"),
+            dict(data="long", x="a", y="y", hue="s", showfliers=False),
+            dict(data="null", x="a", y="y", hue="a", saturation=.5),
+            dict(data="long", x="s", y="y", hue="a", native_scale=True),
+            dict(data="long", x="d", y="y", hue="a", native_scale=True),
+            dict(data="null", x="a", y="y", hue="b", fill=False, gap=.2),
+            dict(data="null", x="a", y="y", linecolor="r", linewidth=5),
+            dict(data="long", x="a", y="y", k_depth="trustworthy", trust_alpha=.1),
+            dict(data="long", x="a", y="y", k_depth="proportion", outlier_prop=.1),
+            dict(data="long", x="a", y="z", width_method="area"),
+            dict(data="long", x="a", y="z", box_kws={"alpha": .2}, alpha=.4)
+        ]
+    )
+    def test_vs_catplot(self, long_df, wide_df, null_df, flat_series, kwargs):
+
+        if kwargs["data"] == "long":
+            kwargs["data"] = long_df
+        elif kwargs["data"] == "wide":
+            kwargs["data"] = wide_df
+        elif kwargs["data"] == "flat":
+            kwargs["data"] = flat_series
+        elif kwargs["data"] == "null":
+            kwargs["data"] = null_df
+        elif kwargs["data"] is None:
+            for var in ["x", "y", "hue"]:
+                if var in kwargs:
+                    kwargs[var] = long_df[kwargs[var]]
+
+        ax = boxenplot(**kwargs)
+        g = catplot(**kwargs, kind="boxen")
 
         assert_plots_equal(ax, g.ax)
 
@@ -3062,20 +3369,15 @@ class TestCatPlot(CategoricalFixture):
         for ax in g.axes.flat:
             assert len(ax.patches) == 1
 
-        # Make sure no warning is raised if color is provided on unshared plot
-        with warnings.catch_warnings():
-            warnings.simplefilter("error")
-            g = cat.catplot(
-                x="g", y="y", col="g", data=self.df, sharex=False, color="b"
-            )
+        g = cat.catplot(
+            x="g", y="y", col="g", data=self.df, sharex=False, color="b"
+        )
         for ax in g.axes.flat:
             assert ax.get_xlim() == (-.5, .5)
 
-        with warnings.catch_warnings():
-            warnings.simplefilter("error")
-            g = cat.catplot(
-                x="y", y="g", col="g", data=self.df, sharey=False, color="r"
-            )
+        g = cat.catplot(
+            x="y", y="g", col="g", data=self.df, sharey=False, color="r"
+        )
         for ax in g.axes.flat:
             assert ax.get_ylim() == (.5, -.5)
 
@@ -3098,443 +3400,10 @@ class TestCatPlot(CategoricalFixture):
         for ax1, ax2 in zip(g1.axes.flat, g2.axes.flat):
             assert_plots_equal(ax1, ax2)
 
+    def test_invalid_kind(self, long_df):
 
-class TestBoxenPlotter(CategoricalFixture):
-
-    default_kws = dict(x=None, y=None, hue=None, data=None,
-                       order=None, hue_order=None,
-                       orient=None, color=None, palette=None,
-                       saturation=.75, width=.8, dodge=True,
-                       k_depth='tukey', linewidth=None,
-                       scale='exponential', outlier_prop=0.007,
-                       trust_alpha=0.05, showfliers=True)
-
-    def ispatch(self, c):
-
-        return isinstance(c, mpl.collections.PatchCollection)
-
-    def ispath(self, c):
-
-        return isinstance(c, mpl.collections.PathCollection)
-
-    def edge_calc(self, n, data):
-
-        q = np.asanyarray([0.5 ** n, 1 - 0.5 ** n]) * 100
-        q = list(np.unique(q))
-        return np.percentile(data, q)
-
-    def test_box_ends_finite(self):
-
-        p = cat._LVPlotter(**self.default_kws)
-        p.establish_variables("g", "y", data=self.df)
-        box_ends = []
-        k_vals = []
-        for s in p.plot_data:
-            b, k = p._lv_box_ends(s)
-            box_ends.append(b)
-            k_vals.append(k)
-
-        # Check that all the box ends are finite and are within
-        # the bounds of the data
-        b_e = map(lambda a: np.all(np.isfinite(a)), box_ends)
-        assert np.sum(list(b_e)) == len(box_ends)
-
-        def within(t):
-            a, d = t
-            return ((np.ravel(a) <= d.max())
-                    & (np.ravel(a) >= d.min())).all()
-
-        b_w = map(within, zip(box_ends, p.plot_data))
-        assert np.sum(list(b_w)) == len(box_ends)
-
-        k_f = map(lambda k: (k > 0.) & np.isfinite(k), k_vals)
-        assert np.sum(list(k_f)) == len(k_vals)
-
-    def test_box_ends_correct_tukey(self):
-
-        n = 100
-        linear_data = np.arange(n)
-        expected_k = max(int(np.log2(n)) - 3, 1)
-        expected_edges = [self.edge_calc(i, linear_data)
-                          for i in range(expected_k + 1, 1, -1)]
-
-        p = cat._LVPlotter(**self.default_kws)
-        calc_edges, calc_k = p._lv_box_ends(linear_data)
-
-        npt.assert_array_equal(expected_edges, calc_edges)
-        assert expected_k == calc_k
-
-    def test_box_ends_correct_proportion(self):
-
-        n = 100
-        linear_data = np.arange(n)
-        expected_k = int(np.log2(n)) - int(np.log2(n * 0.007)) + 1
-        expected_edges = [self.edge_calc(i, linear_data)
-                          for i in range(expected_k + 1, 1, -1)]
-
-        kws = self.default_kws.copy()
-        kws["k_depth"] = "proportion"
-        p = cat._LVPlotter(**kws)
-        calc_edges, calc_k = p._lv_box_ends(linear_data)
-
-        npt.assert_array_equal(expected_edges, calc_edges)
-        assert expected_k == calc_k
-
-    @pytest.mark.parametrize(
-        "n,exp_k",
-        [(491, 6), (492, 7), (983, 7), (984, 8), (1966, 8), (1967, 9)],
-    )
-    def test_box_ends_correct_trustworthy(self, n, exp_k):
-
-        linear_data = np.arange(n)
-        kws = self.default_kws.copy()
-        kws["k_depth"] = "trustworthy"
-        p = cat._LVPlotter(**kws)
-        _, calc_k = p._lv_box_ends(linear_data)
-
-        assert exp_k == calc_k
-
-    def test_outliers(self):
-
-        n = 100
-        outlier_data = np.append(np.arange(n - 1), 2 * n)
-        expected_k = max(int(np.log2(n)) - 3, 1)
-        expected_edges = [self.edge_calc(i, outlier_data)
-                          for i in range(expected_k + 1, 1, -1)]
-
-        p = cat._LVPlotter(**self.default_kws)
-        calc_edges, calc_k = p._lv_box_ends(outlier_data)
-
-        npt.assert_array_equal(calc_edges, expected_edges)
-        assert calc_k == expected_k
-
-        out_calc = p._lv_outliers(outlier_data, calc_k)
-        out_exp = p._lv_outliers(outlier_data, expected_k)
-
-        npt.assert_equal(out_calc, out_exp)
-
-    def test_showfliers(self):
-
-        ax = cat.boxenplot(x="g", y="y", data=self.df, k_depth="proportion",
-                           showfliers=True)
-        ax_collections = list(filter(self.ispath, ax.collections))
-        for c in ax_collections:
-            assert len(c.get_offsets()) == 2
-
-        # Test that all data points are in the plot
-        assert ax.get_ylim()[0] < self.df["y"].min()
-        assert ax.get_ylim()[1] > self.df["y"].max()
-
-        plt.close("all")
-
-        ax = cat.boxenplot(x="g", y="y", data=self.df, showfliers=False)
-        assert len(list(filter(self.ispath, ax.collections))) == 0
-
-        plt.close("all")
-
-    def test_invalid_depths(self):
-
-        kws = self.default_kws.copy()
-
-        # Make sure illegal depth raises
-        kws["k_depth"] = "nosuchdepth"
-        with pytest.raises(ValueError):
-            cat._LVPlotter(**kws)
-
-        # Make sure illegal outlier_prop raises
-        kws["k_depth"] = "proportion"
-        for p in (-13, 37):
-            kws["outlier_prop"] = p
-            with pytest.raises(ValueError):
-                cat._LVPlotter(**kws)
-
-        kws["k_depth"] = "trustworthy"
-        for alpha in (-13, 37):
-            kws["trust_alpha"] = alpha
-            with pytest.raises(ValueError):
-                cat._LVPlotter(**kws)
-
-    @pytest.mark.parametrize("power", [1, 3, 7, 11, 13, 17])
-    def test_valid_depths(self, power):
-
-        x = np.random.standard_t(10, 2 ** power)
-
-        valid_depths = ["proportion", "tukey", "trustworthy", "full"]
-        kws = self.default_kws.copy()
-
-        for depth in valid_depths + [4]:
-            kws["k_depth"] = depth
-            box_ends, k = cat._LVPlotter(**kws)._lv_box_ends(x)
-
-            if depth == "full":
-                assert k == int(np.log2(len(x))) + 1
-
-    def test_valid_scales(self):
-
-        valid_scales = ["linear", "exponential", "area"]
-        kws = self.default_kws.copy()
-
-        for scale in valid_scales + ["unknown_scale"]:
-            kws["scale"] = scale
-            if scale not in valid_scales:
-                with pytest.raises(ValueError):
-                    cat._LVPlotter(**kws)
-            else:
-                cat._LVPlotter(**kws)
-
-    def test_hue_offsets(self):
-
-        p = cat._LVPlotter(**self.default_kws)
-        p.establish_variables("g", "y", hue="h", data=self.df)
-        npt.assert_array_equal(p.hue_offsets, [-.2, .2])
-
-        kws = self.default_kws.copy()
-        kws["width"] = .6
-        p = cat._LVPlotter(**kws)
-        p.establish_variables("g", "y", hue="h", data=self.df)
-        npt.assert_array_equal(p.hue_offsets, [-.15, .15])
-
-        p = cat._LVPlotter(**kws)
-        p.establish_variables("h", "y", "g", data=self.df)
-        npt.assert_array_almost_equal(p.hue_offsets, [-.2, 0, .2])
-
-    def test_axes_data(self):
-
-        ax = cat.boxenplot(x="g", y="y", data=self.df)
-        patches = filter(self.ispatch, ax.collections)
-        assert len(list(patches)) == 3
-
-        plt.close("all")
-
-        ax = cat.boxenplot(x="g", y="y", hue="h", data=self.df)
-        patches = filter(self.ispatch, ax.collections)
-        assert len(list(patches)) == 6
-
-        plt.close("all")
-
-    def test_box_colors(self):
-
-        pal = palettes.color_palette()
-
-        ax = cat.boxenplot(
-            x="g", y="y", data=self.df, saturation=1, showfliers=False
-        )
-        ax.figure.canvas.draw()
-        for i, box in enumerate(ax.collections):
-            assert same_color(box.get_facecolor()[0], pal[i])
-
-        plt.close("all")
-
-        ax = cat.boxenplot(
-            x="g", y="y", hue="h", data=self.df, saturation=1, showfliers=False
-        )
-        ax.figure.canvas.draw()
-        for i, box in enumerate(ax.collections):
-            assert same_color(box.get_facecolor()[0], pal[i % 2])
-
-        plt.close("all")
-
-    def test_draw_missing_boxes(self):
-
-        ax = cat.boxenplot(x="g", y="y", data=self.df,
-                           order=["a", "b", "c", "d"])
-
-        patches = filter(self.ispatch, ax.collections)
-        assert len(list(patches)) == 3
-        plt.close("all")
-
-    def test_unaligned_index(self):
-
-        f, (ax1, ax2) = plt.subplots(2)
-        cat.boxenplot(x=self.g, y=self.y, ax=ax1)
-        cat.boxenplot(x=self.g, y=self.y_perm, ax=ax2)
-        for l1, l2 in zip(ax1.lines, ax2.lines):
-            assert np.array_equal(l1.get_xydata(), l2.get_xydata())
-
-        f, (ax1, ax2) = plt.subplots(2)
-        hue_order = self.h.unique()
-        cat.boxenplot(x=self.g, y=self.y, hue=self.h,
-                      hue_order=hue_order, ax=ax1)
-        cat.boxenplot(x=self.g, y=self.y_perm, hue=self.h,
-                      hue_order=hue_order, ax=ax2)
-        for l1, l2 in zip(ax1.lines, ax2.lines):
-            assert np.array_equal(l1.get_xydata(), l2.get_xydata())
-
-    def test_missing_data(self):
-
-        x = ["a", "a", "b", "b", "c", "c", "d", "d"]
-        h = ["x", "y", "x", "y", "x", "y", "x", "y"]
-        y = self.rs.randn(8)
-        y[-2:] = np.nan
-
-        ax = cat.boxenplot(x=x, y=y)
-        assert len(ax.lines) == 3
-
-        plt.close("all")
-
-        y[-1] = 0
-        ax = cat.boxenplot(x=x, y=y, hue=h)
-        assert len(ax.lines) == 7
-
-        plt.close("all")
-
-    def test_boxenplots(self):
-
-        # Smoke test the high level boxenplot options
-
-        cat.boxenplot(x="y", data=self.df)
-        plt.close("all")
-
-        cat.boxenplot(y="y", data=self.df)
-        plt.close("all")
-
-        cat.boxenplot(x="g", y="y", data=self.df)
-        plt.close("all")
-
-        cat.boxenplot(x="y", y="g", data=self.df, orient="h")
-        plt.close("all")
-
-        cat.boxenplot(x="g", y="y", hue="h", data=self.df)
-        plt.close("all")
-
-        for scale in ("linear", "area", "exponential"):
-            cat.boxenplot(x="g", y="y", hue="h", scale=scale, data=self.df)
-            plt.close("all")
-
-        for depth in ("proportion", "tukey", "trustworthy"):
-            cat.boxenplot(x="g", y="y", hue="h", k_depth=depth, data=self.df)
-            plt.close("all")
-
-        order = list("nabc")
-        cat.boxenplot(x="g", y="y", hue="h", order=order, data=self.df)
-        plt.close("all")
-
-        order = list("omn")
-        cat.boxenplot(x="g", y="y", hue="h", hue_order=order, data=self.df)
-        plt.close("all")
-
-        cat.boxenplot(x="y", y="g", hue="h", data=self.df, orient="h")
-        plt.close("all")
-
-        cat.boxenplot(x="y", y="g", hue="h", data=self.df, orient="h",
-                      palette="Set2")
-        plt.close("all")
-
-        cat.boxenplot(x="y", y="g", hue="h", data=self.df,
-                      orient="h", color="b")
-        plt.close("all")
-
-    def test_axes_annotation(self):
-
-        ax = cat.boxenplot(x="g", y="y", data=self.df)
-        assert ax.get_xlabel() == "g"
-        assert ax.get_ylabel() == "y"
-        assert ax.get_xlim() == (-.5, 2.5)
-        npt.assert_array_equal(ax.get_xticks(), [0, 1, 2])
-        npt.assert_array_equal([l.get_text() for l in ax.get_xticklabels()],
-                               ["a", "b", "c"])
-
-        plt.close("all")
-
-        ax = cat.boxenplot(x="g", y="y", hue="h", data=self.df)
-        assert ax.get_xlabel() == "g"
-        assert ax.get_ylabel() == "y"
-        npt.assert_array_equal(ax.get_xticks(), [0, 1, 2])
-        npt.assert_array_equal([l.get_text() for l in ax.get_xticklabels()],
-                               ["a", "b", "c"])
-        npt.assert_array_equal([l.get_text() for l in ax.legend_.get_texts()],
-                               ["m", "n"])
-
-        plt.close("all")
-
-        ax = cat.boxenplot(x="y", y="g", data=self.df, orient="h")
-        assert ax.get_xlabel() == "y"
-        assert ax.get_ylabel() == "g"
-        assert ax.get_ylim() == (2.5, -.5)
-        npt.assert_array_equal(ax.get_yticks(), [0, 1, 2])
-        npt.assert_array_equal([l.get_text() for l in ax.get_yticklabels()],
-                               ["a", "b", "c"])
-
-        plt.close("all")
-
-    @pytest.mark.parametrize("size", ["large", "medium", "small", 22, 12])
-    def test_legend_titlesize(self, size):
-
-        rc_ctx = {"legend.title_fontsize": size}
-        exp = mpl.font_manager.FontProperties(size=size).get_size()
-
-        with plt.rc_context(rc=rc_ctx):
-            ax = cat.boxenplot(x="g", y="y", hue="h", data=self.df)
-            obs = ax.get_legend().get_title().get_fontproperties().get_size()
-            assert obs == exp
-
-        plt.close("all")
-
-    @pytest.mark.skipif(
-        _version_predates(pd, "1.2"),
-        reason="Test requires pandas>=1.2")
-    def test_Float64_input(self):
-        data = pd.DataFrame(
-            {"x": np.random.choice(["a", "b"], 20), "y": np.random.random(20)}
-        )
-        data['y'] = data['y'].astype(pd.Float64Dtype())
-        _ = cat.boxenplot(x="x", y="y", data=data)
-
-        plt.close("all")
-
-    def test_line_kws(self):
-        line_kws = {'linewidth': 5, 'color': 'purple',
-                    'linestyle': '-.'}
-
-        ax = cat.boxenplot(data=self.df, y='y', line_kws=line_kws)
-
-        median_line = ax.lines[0]
-
-        assert median_line.get_linewidth() == line_kws['linewidth']
-        assert median_line.get_linestyle() == line_kws['linestyle']
-        assert median_line.get_color() == line_kws['color']
-
-        plt.close("all")
-
-    def test_flier_kws(self):
-        flier_kws = {
-            'marker': 'v',
-            'color': np.array([[1, 0, 0, 1]]),
-            's': 5,
-        }
-
-        ax = cat.boxenplot(data=self.df, y='y', x='g', flier_kws=flier_kws)
-
-        outliers_scatter = ax.findobj(mpl.collections.PathCollection)[0]
-
-        # The number of vertices for a triangle is 3, the length of Path
-        # collection objects is defined as n + 1 vertices.
-        assert len(outliers_scatter.get_paths()[0]) == 4
-        assert len(outliers_scatter.get_paths()[-1]) == 4
-
-        assert (outliers_scatter.get_facecolor() == flier_kws['color']).all()
-
-        assert np.unique(outliers_scatter.get_sizes()) == flier_kws['s']
-
-        plt.close("all")
-
-    def test_box_kws(self):
-
-        box_kws = {'linewidth': 5, 'edgecolor': np.array([[0, 1, 0, 1]])}
-
-        ax = cat.boxenplot(data=self.df, y='y', x='g',
-                           box_kws=box_kws)
-
-        boxes = ax.findobj(mpl.collections.PatchCollection)[0]
-
-        # The number of vertices for a triangle is 3, the length of Path
-        # collection objects is defined as n + 1 vertices.
-        assert len(boxes.get_paths()[0]) == 5
-        assert len(boxes.get_paths()[-1]) == 5
-
-        assert np.unique(boxes.get_linewidth() == box_kws['linewidth'])
-
-        plt.close("all")
+        with pytest.raises(ValueError, match="Invalid `kind`: 'wrong'"):
+            catplot(long_df, kind="wrong")
 
 
 class TestBeeswarm:

@@ -1,6 +1,5 @@
 from collections import namedtuple
 from textwrap import dedent
-from numbers import Number
 import warnings
 from colorsys import rgb_to_hls
 from functools import partial
@@ -10,7 +9,7 @@ import pandas as pd
 
 import matplotlib as mpl
 from matplotlib.collections import PatchCollection
-import matplotlib.patches as Patches
+from matplotlib.patches import Rectangle
 import matplotlib.pyplot as plt
 
 from seaborn._core.typing import default, deprecated
@@ -23,16 +22,14 @@ from seaborn._stats.density import KDE
 from seaborn.relational import _RelationalPlotter
 from seaborn import utils
 from seaborn.utils import (
-    remove_na,
     desaturate,
     _check_argument,
     _draw_figure,
     _default_color,
-    _normal_quantile_func,
     _normalize_kwargs,
     _version_predates,
 )
-from seaborn._statistics import EstimateAggregator
+from seaborn._statistics import EstimateAggregator, LetterValues
 from seaborn.palettes import color_palette, husl_palette, light_palette, dark_palette
 from seaborn.axisgrid import FacetGrid, _facet_docs
 
@@ -252,7 +249,7 @@ class _CategoricalPlotterNew(_RelationalPlotter):
 
         return err_kws, capsize
 
-    def _scale_backcompat(self, scale, scale_hue, density_norm, common_norm):
+    def _violin_scale_backcompat(self, scale, scale_hue, density_norm, common_norm):
         """Provide two cycles of backcompat for scale kwargs"""
         if scale is not deprecated:
             density_norm = scale
@@ -271,6 +268,22 @@ class _CategoricalPlotterNew(_RelationalPlotter):
             warnings.warn(msg, FutureWarning, stacklevel=3)
 
         return density_norm, common_norm
+
+    def _boxen_scale_backcompat(self, scale, width_method):
+        """Provide two cycles of backcompat for scale kwargs"""
+        if scale is not deprecated:
+            width_method = scale
+            msg = (
+                "\n\nThe `scale` parameter has been renamed to `width_method` and "
+                f"will be removed in v0.15. Pass `width_method={scale!r}"
+            )
+            if scale == "area":
+                msg += ", but note that the result for 'area' will appear different."
+            else:
+                msg += " for the same effect."
+            warnings.warn(msg, FutureWarning, stacklevel=3)
+
+        return width_method
 
     def _get_gray(self, colors):
         """Get a grayscale value that looks good with color."""
@@ -608,9 +621,6 @@ class _CategoricalPlotterNew(_RelationalPlotter):
             self._invert_scale(ax, data)
 
             maincolor = self._hue_map(sub_vars["hue"]) if "hue" in sub_vars else color
-
-            # TODO how to handle solid / empty fliers?
-
             if fill:
                 boxprops = {
                     "facecolor": maincolor, "edgecolor": linecolor, **props["box"]
@@ -672,8 +682,11 @@ class _CategoricalPlotterNew(_RelationalPlotter):
                         if not fill:
                             # When fill is True, the data get changed in place
                             box_artist.set_data(box_verts)
-                        # TODO XXX don't update value dimension; don't shrink orient dim
-                        ax.update_datalim(np.transpose(box_verts))
+                        ax.update_datalim(
+                            np.transpose(box_verts),
+                            updatex=self.orient == "x",
+                            updatey=self.orient == "y",
+                        )
 
                     if artists["medians"]:
                         verts = artists["medians"][i].get_xydata().T
@@ -691,6 +704,156 @@ class _CategoricalPlotterNew(_RelationalPlotter):
             ax.add_container(BoxPlotContainer(artists))
 
         patch_kws = props["box"].copy()
+        if not fill:
+            patch_kws["facecolor"] = (1, 1, 1, 0)
+        else:
+            patch_kws["edgecolor"] = linecolor
+        self._configure_legend(ax, ax.fill_between, patch_kws)
+
+    def plot_boxens(
+        self,
+        width,
+        dodge,
+        gap,
+        fill,
+        color,
+        linecolor,
+        linewidth,
+        width_method,
+        k_depth,
+        outlier_prop,
+        trust_alpha,
+        showfliers,
+        box_kws,
+        flier_kws,
+        line_kws,
+        plot_kws,
+    ):
+
+        iter_vars = [self.orient, "hue"]
+        value_var = {"x": "y", "y": "x"}[self.orient]
+
+        estimator = LetterValues(k_depth, outlier_prop, trust_alpha)
+
+        width_method_options = ["exponential", "linear", "area"]
+        _check_argument("width_method", width_method_options, width_method)
+
+        box_kws = plot_kws if box_kws is None else {**plot_kws, **box_kws}
+        flier_kws = {} if flier_kws is None else flier_kws.copy()
+        line_kws = {} if line_kws is None else line_kws.copy()
+
+        if linewidth is None:
+            if fill:
+                linewidth = 0.5 * mpl.rcParams["lines.linewidth"]
+            else:
+                linewidth = mpl.rcParams["lines.linewidth"]
+
+        if linecolor is None:
+            if "hue" in self.variables:
+                linecolor = self._get_gray(list(self._hue_map.lookup_table.values()))
+            else:
+                linecolor = self._get_gray([color])
+
+        ax = self.ax
+
+        for sub_vars, sub_data in self.iter_data(iter_vars,
+                                                 from_comp_data=True,
+                                                 allow_empty=False):
+
+            ax = self._get_axes(sub_vars)
+            _, inv_ori = utils._get_transform_functions(ax, self.orient)
+            _, inv_val = utils._get_transform_functions(ax, value_var)
+
+            # Statistics
+            lv_data = estimator(sub_data[value_var])
+            n = lv_data["k"] * 2 - 1
+            vals = lv_data["values"]
+
+            pos_data = pd.DataFrame({
+                self.orient: [sub_vars[self.orient]],
+                "width": [width * self._native_width],
+            })
+            if dodge:
+                self._dodge(sub_vars, pos_data)
+            if gap:
+                pos_data["width"] *= 1 - gap
+
+            # Letter-value boxes
+            levels = lv_data["levels"]
+            exponent = (levels - 1 - lv_data["k"]).astype(float)
+            if width_method == "linear":
+                rel_widths = levels + 1
+            elif width_method == "exponential":
+                rel_widths = 2 ** exponent
+            elif width_method == "area":
+                tails = levels < (lv_data["k"] - 1)
+                rel_widths = 2 ** (exponent - tails) / np.diff(lv_data["values"])
+
+            center = pos_data[self.orient].item()
+            widths = rel_widths / rel_widths.max() * pos_data["width"].item()
+
+            box_vals = inv_val(vals)
+            box_pos = inv_ori(center - widths / 2)
+            box_heights = inv_val(vals[1:]) - inv_val(vals[:-1])
+            box_widths = inv_ori(center + widths / 2) - inv_ori(center - widths / 2)
+
+            maincolor = self._hue_map(sub_vars["hue"]) if "hue" in sub_vars else color
+            flier_colors = {
+                "facecolor": "none", "edgecolor": ".45" if fill else maincolor
+            }
+            if fill:
+                cmap = light_palette(maincolor, as_cmap=True)
+                boxcolors = cmap(2 ** ((exponent + 2) / 3))
+            else:
+                boxcolors = maincolor
+
+            boxen = []
+            for i in range(n):
+                if self.orient == "x":
+                    xy = (box_pos[i], box_vals[i])
+                    w, h = (box_widths[i], box_heights[i])
+                else:
+                    xy = (box_vals[i], box_pos[i])
+                    w, h = (box_heights[i], box_widths[i])
+                boxen.append(Rectangle(xy, w, h))
+
+            if fill:
+                box_colors = {"facecolors": boxcolors, "edgecolors": linecolor}
+            else:
+                box_colors = {"facecolors": "none", "edgecolors": boxcolors}
+
+            collection_kws = {**box_colors, "linewidth": linewidth, **box_kws}
+            ax.add_collection(PatchCollection(boxen, **collection_kws), autolim=False)
+            ax.update_datalim(
+                np.column_stack([box_vals, box_vals]),
+                updatex=self.orient == "y",
+                updatey=self.orient == "x",
+            )
+
+            # Median line
+            med = lv_data["median"]
+            hw = pos_data["width"].item() / 2
+            if self.orient == "x":
+                x, y = inv_ori([center - hw, center + hw]), inv_val([med, med])
+            else:
+                x, y = inv_val([med, med]), inv_ori([center - hw, center + hw])
+            default_kws = {
+                "color": linecolor if fill else maincolor,
+                "solid_capstyle": "butt",
+                "linewidth": 1.25 * linewidth,
+            }
+            ax.plot(x, y, **{**default_kws, **line_kws})
+
+            # Outliers ("fliers")
+            if showfliers:
+                vals = inv_val(lv_data["fliers"])
+                pos = np.full(len(vals), inv_ori(pos_data[self.orient].item()))
+                x, y = (pos, vals) if self.orient == "x" else (vals, pos)
+                ax.scatter(x, y, **{**flier_colors, "s": 25, **flier_kws})
+
+        ax.autoscale_view(scalex=self.orient == "y", scaley=self.orient == "x")
+
+        patch_kws = box_kws.copy()
         if not fill:
             patch_kws["facecolor"] = (1, 1, 1, 0)
         else:
@@ -1539,312 +1702,6 @@ class _CategoricalPlotter:
         ax.add_patch(rect)
 
 
-class _LVPlotter(_CategoricalPlotter):
-
-    def __init__(self, x, y, hue, data, order, hue_order,
-                 orient, color, palette, saturation,
-                 width, dodge, k_depth, linewidth, scale, outlier_prop,
-                 trust_alpha, showfliers=True):
-
-        self.width = width
-        self.dodge = dodge
-        self.saturation = saturation
-
-        k_depth_methods = ['proportion', 'tukey', 'trustworthy', 'full']
-        if not (k_depth in k_depth_methods or isinstance(k_depth, Number)):
-            msg = (f'k_depth must be one of {k_depth_methods} or a number, '
-                   f'but {k_depth} was passed.')
-            raise ValueError(msg)
-        self.k_depth = k_depth
-
-        if linewidth is None:
-            linewidth = mpl.rcParams["lines.linewidth"]
-        self.linewidth = linewidth
-
-        scales = ['linear', 'exponential', 'area']
-        if scale not in scales:
-            msg = f'scale must be one of {scales}, but {scale} was passed.'
-            raise ValueError(msg)
-        self.scale = scale
-
-        if ((outlier_prop > 1) or (outlier_prop <= 0)):
-            msg = f'outlier_prop {outlier_prop} not in range (0, 1]'
-            raise ValueError(msg)
-        self.outlier_prop = outlier_prop
-
-        if not 0 < trust_alpha < 1:
-            msg = f'trust_alpha {trust_alpha} not in range (0, 1) '
-            raise ValueError(msg)
-        self.trust_alpha = trust_alpha
-
-        self.showfliers = showfliers
-
-        self.establish_variables(x, y, hue, data, orient, order, hue_order)
-        self.establish_colors(color, palette, saturation)
-
-    def _lv_box_ends(self, vals):
-        """Get the number of data points and calculate `depth` of
-        letter-value plot."""
-        vals = np.asarray(vals)
-        # Remove infinite values while handling a 'object' dtype
-        # that can come from pd.Float64Dtype() input
-        with pd.option_context('mode.use_inf_as_na', True):
-            vals = vals[~pd.isnull(vals)]
-        n = len(vals)
-        p = self.outlier_prop
-
-        # Select the depth, i.e. number of boxes to draw, based on the method
-        if self.k_depth == 'full':
-            # extend boxes to 100% of the data
-            k = int(np.log2(n)) + 1
-        elif self.k_depth == 'tukey':
-            # This results with 5-8 points in each tail
-            k = int(np.log2(n)) - 3
-        elif self.k_depth == 'proportion':
-            k = int(np.log2(n)) - int(np.log2(n * p)) + 1
-        elif self.k_depth == 'trustworthy':
-            point_conf = 2 * _normal_quantile_func(1 - self.trust_alpha / 2) ** 2
-            k = int(np.log2(n / point_conf)) + 1
-        else:
-            k = int(self.k_depth)  # allow having k as input
-        # If the number happens to be less than 1, set k to 1
-        if k < 1:
-            k = 1
-
-        # Calculate the upper end for each of the k boxes
-        upper = [100 * (1 - 0.5 ** (i + 1)) for i in range(k, 0, -1)]
-        # Calculate the lower end for each of the k boxes
-        lower = [100 * (0.5 ** (i + 1)) for i in range(k, 0, -1)]
-        # Stitch the box ends together
-        percentile_ends = [(i, j) for i, j in zip(lower, upper)]
-        box_ends = [np.percentile(vals, q) for q in percentile_ends]
-        return box_ends, k
-
-    def _lv_outliers(self, vals, k):
-        """Find the outliers based on the letter value depth."""
-        box_edge = 0.5 ** (k + 1)
-        perc_ends = (100 * box_edge, 100 * (1 - box_edge))
-        edges = np.percentile(vals, perc_ends)
-        lower_out = vals[np.where(vals < edges[0])[0]]
-        upper_out = vals[np.where(vals > edges[1])[0]]
-        return np.concatenate((lower_out, upper_out))
-
-    def _width_functions(self, width_func):
-        # Dictionary of functions for computing the width of the boxes
-        width_functions = {'linear': lambda h, i, k: (i + 1.) / k,
-                           'exponential': lambda h, i, k: 2**(-k + i - 1),
-                           'area': lambda h, i, k: (1 - 2**(-k + i - 2)) / h}
-        return width_functions[width_func]
-
-    def _lvplot(self, box_data, positions,
-                color=[255. / 256., 185. / 256., 0.],
-                widths=1, ax=None, box_kws=None,
-                flier_kws=None,
-                line_kws=None):
-
-        # -- Default keyword dicts - based on
-        # distributions.plot_univariate_histogram
-        box_kws = {} if box_kws is None else box_kws.copy()
-        flier_kws = {} if flier_kws is None else flier_kws.copy()
-        line_kws = {} if line_kws is None else line_kws.copy()
-
-        # Set the default kwargs for the boxes
-        box_default_kws = dict(edgecolor=self.gray,
-                               linewidth=self.linewidth)
-        for k, v in box_default_kws.items():
-            box_kws.setdefault(k, v)
-
-        # Set the default kwargs for the lines denoting medians
-        line_default_kws = dict(
-            color=".15", alpha=0.45, solid_capstyle="butt", linewidth=self.linewidth
-        )
-        for k, v in line_default_kws.items():
-            line_kws.setdefault(k, v)
-
-        # Set the default kwargs for the outliers scatterplot
-        flier_default_kws = dict(marker='d', color=self.gray)
-        for k, v in flier_default_kws.items():
-            flier_kws.setdefault(k, v)
-
-        vert = self.orient == "x"
-        x = positions[0]
-        box_data = np.asarray(box_data)
-
-        # If we only have one data point, plot a line
-        if len(box_data) == 1:
-            line_kws.update({
-                'color': box_kws['edgecolor'],
-                'linestyle': box_kws.get('linestyle', '-'),
-                'linewidth': max(box_kws["linewidth"], line_kws["linewidth"])
-            })
-            ys = [box_data[0], box_data[0]]
-            xs = [x - widths / 2, x + widths / 2]
-            if vert:
-                xx, yy = xs, ys
-            else:
-                xx, yy = ys, xs
-            ax.plot(xx, yy, **line_kws)
-        else:
-            # Get the number of data points and calculate "depth" of
-            # letter-value plot
-            box_ends, k = self._lv_box_ends(box_data)
-
-            # Anonymous functions for calculating the width and height
-            # of the letter value boxes
-            width = self._width_functions(self.scale)
-
-            # Function to find height of boxes
-            def height(b):
-                return b[1] - b[0]
-
-            # Functions to construct the letter value boxes
-            def vert_perc_box(x, b, i, k, w):
-                rect = Patches.Rectangle((x - widths * w / 2, b[0]),
-                                         widths * w,
-                                         height(b), fill=True)
-                return rect
-
-            def horz_perc_box(x, b, i, k, w):
-                rect = Patches.Rectangle((b[0], x - widths * w / 2),
-                                         height(b), widths * w,
-                                         fill=True)
-                return rect
-
-            # Scale the width of the boxes so the biggest starts at 1
-            w_area = np.array([width(height(b), i, k)
-                               for i, b in enumerate(box_ends)])
-            w_area = w_area / np.max(w_area)
-
-            # Calculate the medians
-            y = np.median(box_data)
-
-            # Calculate the outliers and plot (only if showfliers == True)
-            outliers = []
-            if self.showfliers:
-                outliers = self._lv_outliers(box_data, k)
-            hex_color = mpl.colors.rgb2hex(color)
-
-            if vert:
-                box_func = vert_perc_box
-                xs_median = [x - widths / 2, x + widths / 2]
-                ys_median = [y, y]
-                xs_outliers = np.full(len(outliers), x)
-                ys_outliers = outliers
-
-            else:
-                box_func = horz_perc_box
-                xs_median = [y, y]
-                ys_median = [x - widths / 2, x + widths / 2]
-                xs_outliers = outliers
-                ys_outliers = np.full(len(outliers), x)
-
-            # Plot the medians
-            ax.plot(
-                xs_median,
-                ys_median,
-                **line_kws
-            )
-
-            # Plot outliers (if any)
-            if len(outliers) > 0:
-                ax.scatter(xs_outliers, ys_outliers,
-                           **flier_kws
-                           )
-
-            # Construct a color map from the input color
-            rgb = [hex_color, (1, 1, 1)]
-            cmap = mpl.colors.LinearSegmentedColormap.from_list('new_map', rgb)
-            # Make sure that the last boxes contain hue and are not pure white
-            rgb = [hex_color, cmap(.85)]
-            cmap = mpl.colors.LinearSegmentedColormap.from_list('new_map', rgb)
-
-            # Update box_kws with `cmap` if not defined in dict until now
-            box_kws.setdefault('cmap', cmap)
-
-            boxes = [box_func(x, b[0], i, k, b[1])
-                     for i, b in enumerate(zip(box_ends, w_area))]
-
-            collection = PatchCollection(boxes, **box_kws)
-
-            # Set the color gradation, first box will have color=hex_color
-            collection.set_array(np.array(np.linspace(1, 0, len(boxes))))
-
-            # Plot the boxes
-            ax.add_collection(collection)
-
-    def draw_letter_value_plot(self, ax, box_kws=None, flier_kws=None,
-                               line_kws=None):
-        """Use matplotlib to draw a letter value plot on an Axes."""
-
-        for i, group_data in enumerate(self.plot_data):
-
-            if self.plot_hues is None:
-
-                # Handle case where there is data at this level
-                if group_data.size == 0:
-                    continue
-
-                # Draw a single box or a set of boxes
-                # with a single level of grouping
-                box_data = remove_na(group_data)
-
-                # Handle case where there is no non-null data
-                if box_data.size == 0:
-                    continue
-
-                color = self.colors[i]
-
-                self._lvplot(box_data,
-                             positions=[i],
-                             color=color,
-                             widths=self.width,
-                             ax=ax,
-                             box_kws=box_kws,
-                             flier_kws=flier_kws,
-                             line_kws=line_kws)
-
-            else:
-                # Draw nested groups of boxes
-                offsets = self.hue_offsets
-                for j, hue_level in enumerate(self.hue_names):
-
-                    # Add a legend for this hue level
-                    if not i:
-                        self.add_legend_data(ax, self.colors[j], hue_level)
-
-                    # Handle case where there is data at this level
-                    if group_data.size == 0:
-                        continue
-
-                    hue_mask = self.plot_hues[i] == hue_level
-                    box_data = remove_na(group_data[hue_mask])
-
-                    # Handle case where there is no non-null data
-                    if box_data.size == 0:
-                        continue
-
-                    color = self.colors[j]
-                    center = i + offsets[j]
-                    self._lvplot(box_data,
-                                 positions=[center],
-                                 color=color,
-                                 widths=self.nested_width,
-                                 ax=ax,
-                                 box_kws=box_kws,
-                                 flier_kws=flier_kws,
-                                 line_kws=line_kws)
-
-        # Autoscale the values axis to make sure all patches are visible
-        ax.autoscale_view(scalex=self.orient == "y", scaley=self.orient == "x")
-
-    def plot(self, ax, box_kws, flier_kws, line_kws):
-        """Make the plot."""
-        self.draw_letter_value_plot(ax, box_kws, flier_kws, line_kws)
-        self.annotate_axes(ax)
-        if self.orient == "y":
-            ax.invert_yaxis()
-
-
 _categorical_docs = dict(
 
     # Shared narrative docs
@@ -1979,13 +1836,18 @@ _categorical_docs = dict(
     """),
     width=dedent("""\
     width : float
-        Width of a full element when not using hue nesting, or width of all the
-        elements for one level of the major grouping variable.\
+        Width allotted to each element on the orient axis. When `native_scale=True`,
+        it is relative to the minimum distance between two values in the native scale.\
     """),
     dodge=dedent("""\
-    dodge : bool
-        When hue nesting is used, whether elements should be shifted along the
-        categorical axis.\
+    dodge : "auto" or bool
+        When hue mapping is used, whether elements should be narrowed and shifted along
+        the orient axis to eliminate overlap. If `"auto"`, set to `True` when the
+        orient variable is crossed with the categorical variable or `False` otherwise.
+
+        .. versionchanged:: 0.13.0
+
+            Added `"auto"` mode as a new default.\
     """),
     linewidth=dedent("""\
     linewidth : float
@@ -2163,7 +2025,7 @@ boxplot.__doc__ = dedent("""\
     {gap}
     whis : float or pair of floats
         Paramater that controls whisker length. If scalar, whiskers are drawn
-        to the farthest datapoint within `whis * IQR` from the nearest hinge.
+        to the farthest datapoint within *whis * IQR* from the nearest hinge.
         If a tuple, it is interpreted as percentiles that whiskers represent.
     {linecolor}
     {linewidth}
@@ -2243,7 +2105,7 @@ def violinplot(
         saturation=saturation,
     )
 
-    density_norm, common_norm = p._scale_backcompat(
+    density_norm, common_norm = p._violin_scale_backcompat(
         scale, scale_hue, density_norm, common_norm,
     )
 
@@ -2305,9 +2167,9 @@ violinplot.__doc__ = dedent("""\
     inner : {{"box", "quart", "point", "stick", None}}
         Representation of the data in the violin interior. One of the following:
 
-        - `box`: draw a miniature box-and-whisker plot
-        - `quart`: show the quartiles of the data
-        - `point` or `stick`: show each observation
+        - `"box"`: draw a miniature box-and-whisker plot
+        - `"quart"`: show the quartiles of the data
+        - `"point"` or `"stick"`: show each observation
     split : bool
         Show an un-mirrored distribution, alternating sides when using `hue`.
 
@@ -2363,7 +2225,7 @@ violinplot.__doc__ = dedent("""\
 
         - :class:`matplotlib.collections.LineCollection` (with `inner="stick"`)
         - :meth:`matplotlib.axes.Axes.scatter` (with `inner="point"`)
-        - :meth:`matplotlib.axes.Axes.plot` (with `inner="quart"` or `kind="box"`)
+        - :meth:`matplotlib.axes.Axes.plot` (with `inner="quart"` or `inner="box"`)
 
         Additionally, with `inner="box"`, the keywords `box_width`, `whis_width`,
         and `marker` receive special handling for the components of the "box" plot.
@@ -2394,21 +2256,76 @@ violinplot.__doc__ = dedent("""\
 
 def boxenplot(
     data=None, *, x=None, y=None, hue=None, order=None, hue_order=None,
-    orient=None, color=None, palette=None, saturation=.75,
-    width=.8, dodge=True, k_depth='tukey', linewidth=None,
-    scale='exponential', outlier_prop=0.007, trust_alpha=0.05,
-    showfliers=True,
-    ax=None, box_kws=None, flier_kws=None, line_kws=None,
+    orient=None, color=None, palette=None, saturation=.75, fill=True,
+    dodge="auto", width=.8, gap=0, linewidth=None, linecolor=None,
+    width_method="exponential", k_depth="tukey", outlier_prop=0.007, trust_alpha=0.05,
+    showfliers=True, hue_norm=None, native_scale=False, formatter=None,
+    legend="auto", scale=deprecated, box_kws=None, flier_kws=None, line_kws=None,
+    ax=None, **kwargs,
 ):
-    plotter = _LVPlotter(x, y, hue, data, order, hue_order,
-                         orient, color, palette, saturation,
-                         width, dodge, k_depth, linewidth, scale,
-                         outlier_prop, trust_alpha, showfliers)
+
+    p = _CategoricalPlotterNew(
+        data=data,
+        variables=_CategoricalPlotterNew.get_semantics(locals()),
+        order=order,
+        orient=orient,
+        require_numeric=False,
+        legend=legend,
+    )
 
     if ax is None:
         ax = plt.gca()
 
-    plotter.plot(ax, box_kws, flier_kws, line_kws)
+    if p.plot_data.empty:
+        return ax
+
+    if dodge == "auto":
+        # Needs to be before scale_categorical changes the coordinate series dtype
+        dodge = p._dodge_needed()
+
+    if p.var_types.get(p.orient) == "categorical" or not native_scale:
+        p.scale_categorical(p.orient, order=order, formatter=formatter)
+
+    p._attach(ax)
+
+    # Deprecations to remove in v0.14.0.
+    hue_order = p._palette_without_hue_backcompat(palette, hue_order)
+    palette, hue_order = p._hue_backcompat(color, palette, hue_order)
+
+    # Longer-term deprecations
+    width_method = p._boxen_scale_backcompat(scale, width_method)
+
+    saturation = saturation if fill else 1
+    p.map_hue(palette=palette, order=hue_order, norm=hue_norm, saturation=saturation)
+    color = _default_color(
+        ax.fill_between, hue, color,
+        {},  # TODO how to get default color?
+        # {k: v for k, v in kwargs.items() if k in ["c", "color", "fc", "facecolor"]},
+        saturation=saturation,
+    )
+
+    p.plot_boxens(
+        width=width,
+        dodge=dodge,
+        gap=gap,
+        fill=fill,
+        color=color,
+        linecolor=linecolor,
+        linewidth=linewidth,
+        width_method=width_method,
+        k_depth=k_depth,
+        outlier_prop=outlier_prop,
+        trust_alpha=trust_alpha,
+        showfliers=showfliers,
+        box_kws=box_kws,
+        flier_kws=flier_kws,
+        line_kws=line_kws,
+        plot_kws=kwargs,
+    )
+
+    p._add_axis_labels(ax)
+    p._adjust_cat_axis(ax, axis=p.orient)
+
     return ax
 
 
@@ -2420,11 +2337,9 @@ boxenplot.__doc__ = dedent("""\
     is similar to a box plot in plotting a nonparametric representation of a
     distribution in which all features correspond to actual observations. By
     plotting more quantiles, it provides more information about the shape of
-    the distribution, particularly in the tails. For a more extensive
-    explanation, you can read the paper that introduced the plot:
-    https://vita.had.co.nz/papers/letter-value-plot.html
+    the distribution, particularly in the tails.
 
-    {categorical_narrative}
+    {new_categorical_narrative}
 
     Parameters
     ----------
@@ -2435,40 +2350,54 @@ boxenplot.__doc__ = dedent("""\
     {color}
     {palette}
     {saturation}
-    {width}
+    {fill}
     {dodge}
-    k_depth : {{"tukey", "proportion", "trustworthy", "full"}} or scalar
-        The number of boxes, and by extension number of percentiles, to draw.
-        All methods are detailed in Wickham's paper. Each makes different
-        assumptions about the number of outliers and leverages different
-        statistical properties. If "proportion", draw no more than
-        `outlier_prop` extreme observations. If "full", draw `log(n) +1` boxes.
+    {width}
+    {gap}
     {linewidth}
-    scale : {{"exponential", "linear", "area"}}
-        Method to use for the width of the letter value boxes. All give similar
-        results visually. "linear" reduces the width by a constant linear
-        factor, "exponential" uses the proportion of data not covered, "area"
-        is proportional to the percentage of data covered.
+    {linecolor}
+    width_method : {{"exponential", "linear", "area"}}
+        Method to use for the width of the letter value boxes:
+
+        - `"exponential"`: Represent the corresponding percentile
+        - `"linear"`: Decrease by a constant amount for each box
+        - `"area"`: Represent the density of data points in that box
+    k_depth : {{"tukey", "proportion", "trustworthy", "full"}} or int
+        The number of levels to compute and draw in each tail:
+
+        - `"tukey"`: Use log2(n) - 3 levels, covering similar range as boxplot whiskers
+        - `"proportion"`: Leave approximately `outlier_prop` fliers
+        - `"trusthworthy"`: Extend to level with confidence of at least `trust_alpha`
+        - `"full"`: Use log2(n) + 1 levels and extend to most extreme points
     outlier_prop : float
-        Proportion of data believed to be outliers. Must be in the range
-        (0, 1]. Used to determine the number of boxes to plot when
-        `k_depth="proportion"`.
+        Proportion of data expected to be outliers; used when `k_depth="proportion"`.
     trust_alpha : float
-        Confidence level for a box to be plotted. Used to determine the
-        number of boxes to plot when `k_depth="trustworthy"`. Must be in the
-        range (0, 1).
+        Confidence threshold for most extreme level; used when `k_depth="trustworthy"`.
     showfliers : bool
         If False, suppress the plotting of outliers.
-    {ax_in}
+    {hue_norm}
+    {native_scale}
+    {formatter}
+    {legend}
     box_kws: dict
         Keyword arguments for the box artists; passed to
         :class:`matplotlib.patches.Rectangle`.
+
+        .. versionadded:: v0.12.0
     line_kws: dict
         Keyword arguments for the line denoting the median; passed to
         :meth:`matplotlib.axes.Axes.plot`.
+
+        .. versionadded:: v0.12.0
     flier_kws: dict
         Keyword arguments for the scatter denoting the outlier observations;
         passed to :meth:`matplotlib.axes.Axes.scatter`.
+
+        .. versionadded:: v0.12.0
+    {ax_in}
+    kwargs : key, value mappings
+        Other keyword arguments are passed to :class:`matplotlib.patches.Rectangle`,
+        superceded by those in `box_kws`.
 
     Returns
     -------
@@ -2480,9 +2409,14 @@ boxenplot.__doc__ = dedent("""\
     {boxplot}
     {catplot}
 
+    Notes
+    -----
+
+    For a more extensive explanation, you can read the paper that introduced the plot:
+    https://vita.had.co.nz/papers/letter-value-plot.html
+
     Examples
     --------
-
     .. include:: ../docstrings/boxenplot.rst
 
     """).format(**_categorical_docs)
@@ -3168,13 +3102,6 @@ def catplot(
     **kwargs
 ):
 
-    # Determine the plotting function
-    try:
-        plot_func = globals()[kind + "plot"]
-    except KeyError:
-        err = f"Plot kind '{kind}' is not recognized"
-        raise ValueError(err)
-
     # Check for attempt to plot onto specific axes and warn
     if "ax" in kwargs:
         msg = ("catplot is a figure-level function and does not accept "
@@ -3182,410 +3109,359 @@ def catplot(
         warnings.warn(msg, UserWarning)
         kwargs.pop("ax")
 
-    refactored_kinds = ["strip", "swarm", "point", "bar", "count", "box", "violin"]
-    desaturated_kinds = ["bar", "count", "box", "violin"]
+    desaturated_kinds = ["bar", "count", "box", "violin", "boxen"]
     undodged_kinds = ["strip", "swarm", "point"]
 
-    if kind in refactored_kinds:
+    if kind in ["bar", "point", "count"]:
+        Plotter = _CategoricalAggFacetPlotter
+    else:
+        Plotter = _CategoricalFacetPlotter
 
-        if kind in ["bar", "point", "count"]:
-            Plotter = _CategoricalAggFacetPlotter
-        else:
-            Plotter = _CategoricalFacetPlotter
-
-        if kind == "count":
-            if x is None and y is not None:
-                orient = "y"
-                x = 1
-            elif x is not None and y is None:
-                orient = "x"
-                y = 1
-            elif x is not None and y is not None:
-                raise ValueError("Cannot pass values for both `x` and `y`.")
-
-        p = Plotter(
-            data=data,
-            variables=Plotter.get_semantics(locals()),
-            order=order,
-            orient=orient,
-            require_numeric=False,
-            legend=legend,
-        )
-
-        # XXX Copying a fair amount from displot, which is not ideal
-
-        for var in ["row", "col"]:
-            # Handle faceting variables that lack name information
-            if var in p.variables and p.variables[var] is None:
-                p.variables[var] = f"_{var}_"
-
-        # Adapt the plot_data dataframe for use with FacetGrid
-        data = p.plot_data.rename(columns=p.variables)
-        data = data.loc[:, ~data.columns.duplicated()]
-
-        col_name = p.variables.get("col", None)
-        row_name = p.variables.get("row", None)
-
-        if facet_kws is None:
-            facet_kws = {}
-
-        g = FacetGrid(
-            data=data, row=row_name, col=col_name,
-            col_wrap=col_wrap, row_order=row_order,
-            col_order=col_order, height=height,
-            sharex=sharex, sharey=sharey,
-            aspect=aspect,
-            **facet_kws,
-        )
-
-        # Capture this here because scale_categorical is going to insert a (null)
-        # x variable even if it is empty. It's not clear whether that needs to
-        # happen or if disabling that is the cleaner solution.
-        has_xy_data = p.has_xy_data
-
-        if not native_scale or p.var_types[p.orient] == "categorical":
-            p.scale_categorical(p.orient, order=order, formatter=formatter)
-
-        p._attach(g)
-
-        if not has_xy_data:
-            return g
-
-        # Deprecations to remove in v0.14.0.
-        hue_order = p._palette_without_hue_backcompat(palette, hue_order)
-        palette, hue_order = p._hue_backcompat(color, palette, hue_order)
-
-        saturation = kwargs.pop(
-            "saturation",
-            0.75 if kind in desaturated_kinds and kwargs.get("fill", True) else 1
-        )
-        p.map_hue(
-            palette=palette, order=hue_order, norm=hue_norm, saturation=saturation
-        )
-
-        # Set a default color
-        # Otherwise each artist will be plotted separately and trip the color cycle
-        if hue is None:
-            color = "C0" if color is None else color
-            if saturation < 1:
-                color = desaturate(color, saturation)
-        edgecolor = kwargs.pop("edgecolor", "gray")  # XXX TODO default
-
-        width = kwargs.pop("width", 0.8)
-        dodge = kwargs.pop("dodge", False if kind in undodged_kinds else "auto")
-        if dodge == "auto":
-            dodge = p._dodge_needed()
-
-        if kind == "strip":
-
-            # TODO get these defaults programmatically?
-            jitter = kwargs.pop("jitter", True)
-
-            # XXX Copying possibly bad default decisions from original code for now
-            plot_kws = kwargs.copy()
-            plot_kws.setdefault("zorder", 3)
-            plot_kws.setdefault("s", plot_kws.pop("size", 5) ** 2)
-            plot_kws.setdefault("linewidth", 0)
-
-            p.plot_strips(
-                jitter=jitter,
-                dodge=dodge,
-                color=color,
-                edgecolor=edgecolor,
-                plot_kws=plot_kws,
-            )
-
-        elif kind == "swarm":
-
-            # TODO get these defaults programmatically?
-            warn_thresh = kwargs.pop("warn_thresh", .05)
-
-            # XXX Copying possibly bad default decisions from original code for now
-            plot_kws = kwargs.copy()
-            plot_kws.setdefault("zorder", 3)
-            plot_kws.setdefault("s", plot_kws.pop("size", 5) ** 2)
-
-            if plot_kws.setdefault("linewidth", 0) is None:
-                plot_kws["linewidth"] = np.sqrt(plot_kws["s"]) / 10
-
-            p.plot_swarms(
-                dodge=dodge,
-                color=color,
-                edgecolor=edgecolor,
-                warn_thresh=warn_thresh,
-                plot_kws=plot_kws,
-            )
-
-        elif kind == "box":
-
-            plot_kws = kwargs.copy()
-            gap = plot_kws.pop("gap", 0)
-            fill = plot_kws.pop("fill", True)
-            whis = plot_kws.pop("whis", 1.5)
-            linecolor = plot_kws.pop("linecolor", None)
-            linewidth = plot_kws.pop("linewidth", None)
-            fliersize = plot_kws.pop("fliersize", 5)
-
-            p.plot_boxes(
-                width=width,
-                dodge=dodge,
-                gap=gap,
-                fill=fill,
-                whis=whis,
-                color=color,
-                linecolor=linecolor,
-                linewidth=linewidth,
-                fliersize=fliersize,
-                plot_kws=plot_kws,
-            )
-
-        elif kind == "violin":
-
-            plot_kws = kwargs.copy()
-            gap = plot_kws.pop("gap", 0)
-            fill = plot_kws.pop("fill", True)
-            split = plot_kws.pop("split", False)
-            inner = plot_kws.pop("inner", "box")
-            density_norm = plot_kws.pop("density_norm", "area")
-            common_norm = plot_kws.pop("common_norm", False)
-
-            scale = plot_kws.pop("scale", deprecated)
-            scale_hue = plot_kws.pop("scale_hue", deprecated)
-            density_norm, common_norm = p._scale_backcompat(
-                scale, scale_hue, density_norm, common_norm,
-            )
-
-            kde_kws = dict(
-                cut=plot_kws.pop("cut", 2),
-                gridsize=plot_kws.pop("gridsize", 100),
-                bw_method=plot_kws.pop("bw_method", "scott"),
-                bw_adjust=plot_kws.pop("bw_adjust", 1),
-            )
-            bw = plot_kws.pop("bw", deprecated)
-            msg = dedent(f"""\n
-            The `bw` parameter is deprecated in favor of `bw_method` and `bw_adjust`.
-            Setting `bw_method={bw!r}`, but please see the docs for the new parameters
-            and update your code. This will become an error in seaborn v0.15.0.
-            """)
-            if bw is not deprecated:
-                warnings.warn(msg, FutureWarning, stacklevel=2)
-                kde_kws["bw_method"] = bw
-
-            inner_kws = plot_kws.pop("inner_kws", {}).copy()
-            linecolor = plot_kws.pop("linecolor", None)
-            linewidth = plot_kws.pop("linewidth", None)
-
-            p.plot_violins(
-                width=width,
-                dodge=dodge,
-                gap=gap,
-                split=split,
-                color=color,
-                fill=fill,
-                linecolor=linecolor,
-                linewidth=linewidth,
-                inner=inner,
-                density_norm=density_norm,
-                common_norm=common_norm,
-                kde_kws=kde_kws,
-                inner_kws=inner_kws,
-                plot_kws=plot_kws,
-            )
-
-        elif kind == "point":
-
-            aggregator = EstimateAggregator(
-                estimator, errorbar, n_boot=n_boot, seed=seed
-            )
-
-            markers = kwargs.pop("markers", default)
-            linestyles = kwargs.pop("linestyles", default)
-
-            # Deprecations to remove in v0.15.0.
-            # TODO Uncomment when removing deprecation backcompat
-            # capsize = kwargs.pop("capsize", 0)
-            # err_kws = _normalize_kwargs(kwargs.pop("err_kws", {}), mpl.lines.Line2D)
-            p._point_kwargs_backcompat(
-                kwargs.pop("scale", deprecated),
-                kwargs.pop("join", deprecated),
-                kwargs
-            )
-            err_kws, capsize = p._err_kws_backcompat(
-                _normalize_kwargs(kwargs.pop("err_kws", {}), mpl.lines.Line2D),
-                None,
-                errwidth=kwargs.pop("errwidth", deprecated),
-                capsize=kwargs.pop("capsize", 0),
-            )
-
-            p.plot_points(
-                aggregator=aggregator,
-                markers=markers,
-                linestyles=linestyles,
-                dodge=dodge,
-                color=color,
-                capsize=capsize,
-                err_kws=err_kws,
-                plot_kws=kwargs,
-            )
-
-        elif kind == "bar":
-
-            aggregator = EstimateAggregator(
-                estimator, errorbar, n_boot=n_boot, seed=seed
-            )
-            err_kws, capsize = p._err_kws_backcompat(
-                _normalize_kwargs(kwargs.pop("err_kws", {}), mpl.lines.Line2D),
-                errcolor=kwargs.pop("errcolor", deprecated),
-                errwidth=kwargs.pop("errwidth", deprecated),
-                capsize=kwargs.pop("capsize", 0),
-            )
-            gap = kwargs.pop("gap", 0)
-            fill = kwargs.pop("fill", True)
-
-            p.plot_bars(
-                aggregator=aggregator,
-                dodge=dodge,
-                width=width,
-                gap=gap,
-                color=color,
-                fill=fill,
-                capsize=capsize,
-                err_kws=err_kws,
-                plot_kws=kwargs,
-            )
-
-        elif kind == "count":
-
-            aggregator = EstimateAggregator("sum", errorbar=None)
-
-            count_axis = {"x": "y", "y": "x"}[p.orient]
-            p.plot_data[count_axis] = 1
-
-            stat_options = ["count", "percent", "probability", "proportion"]
-            stat = _check_argument("stat", stat_options, kwargs.pop("stat", "count"))
-            p.variables[count_axis] = stat
-            if stat != "count":
-                denom = 100 if stat == "percent" else 1
-                p.plot_data[count_axis] /= len(p.plot_data) / denom
-
-            gap = kwargs.pop("gap", 0)
-            fill = kwargs.pop("fill", True)
-
-            p.plot_bars(
-                aggregator=aggregator,
-                dodge=dodge,
-                width=width,
-                gap=gap,
-                color=color,
-                fill=fill,
-                capsize=0,
-                err_kws={},
-                plot_kws=kwargs,
-            )
-
-        for ax in g.axes.flat:
-            p._adjust_cat_axis(ax, axis=p.orient)
-
-        g.set_axis_labels(p.variables.get("x"), p.variables.get("y"))
-        g.set_titles()
-        g.tight_layout()
-
-        for ax in g.axes.flat:
-            g._update_legend_data(ax)
-            ax.legend_ = None
-
-        if legend and "hue" in p.variables:
-            g.add_legend(title=p.variables.get("hue"), label_order=hue_order)
-
-        return g
-
-    # Don't allow usage of forthcoming functionality
-    if native_scale is True:
-        err = f"native_scale not yet implemented for `kind={kind}`"
-        raise ValueError(err)
-    if formatter is not None:
-        err = f"formatter not yet implemented for `kind={kind}`"
-        raise ValueError(err)
-
-    # Alias the input variables to determine categorical order and palette
-    # correctly in the case of a count plot
     if kind == "count":
         if x is None and y is not None:
-            x_, y_, orient = y, y, "y"
-        elif y is None and x is not None:
-            x_, y_, orient = x, x, "x"
-        else:
-            raise ValueError("Either `x` or `y` must be None for kind='count'")
-    else:
-        x_, y_ = x, y
+            orient = "y"
+            x = 1
+        elif x is not None and y is None:
+            orient = "x"
+            y = 1
+        elif x is not None and y is not None:
+            raise ValueError("Cannot pass values for both `x` and `y`.")
 
-    # Determine the order for the whole dataset, which will be used in all
-    # facets to ensure representation of all data in the final plot
-    plotter_class = {"boxen": _LVPlotter}[kind]
-    p = _CategoricalPlotter()
-    p.require_numeric = plotter_class.require_numeric
-    p.establish_variables(x_, y_, hue, data, orient, order, hue_order)
-    if (
-        order is not None
-        or (sharex and p.orient == "x")
-        or (sharey and p.orient == "y")
-    ):
-        # Sync categorical axis between facets to have the same categories
-        order = p.group_names
-    elif color is None and hue is None:
-        msg = (
-            "Setting `{}=False` with `color=None` may cause different levels of the "
-            "`{}` variable to share colors. This will change in a future version."
-        )
-        if not sharex and p.orient == "x":
-            warnings.warn(msg.format("sharex", "x"), UserWarning)
-        if not sharey and p.orient == "y":
-            warnings.warn(msg.format("sharey", "y"), UserWarning)
+    p = Plotter(
+        data=data,
+        variables=Plotter.get_semantics(locals()),
+        order=order,
+        orient=orient,
+        require_numeric=False,
+        legend=legend,
+    )
 
-    hue_order = p.hue_names
+    # XXX Copying a fair amount from displot, which is not ideal
 
-    # Determine the palette to use
-    # (FacetGrid will pass a value for ``color`` to the plotting function
-    # so we need to define ``palette`` to get default behavior for the
-    # categorical functions
-    p.establish_colors(color, palette, 1)
-    if kind != "point" or hue is not None:
-        palette = p.colors
+    for var in ["row", "col"]:
+        # Handle faceting variables that lack name information
+        if var in p.variables and p.variables[var] is None:
+            p.variables[var] = f"_{var}_"
 
-    # Determine keyword arguments for the facets
-    facet_kws = {} if facet_kws is None else facet_kws
-    facet_kws.update(
-        data=data, row=row, col=col,
-        row_order=row_order, col_order=col_order,
-        col_wrap=col_wrap, height=height, aspect=aspect,
+    # Adapt the plot_data dataframe for use with FacetGrid
+    data = p.plot_data.rename(columns=p.variables)
+    data = data.loc[:, ~data.columns.duplicated()]
+
+    col_name = p.variables.get("col", None)
+    row_name = p.variables.get("row", None)
+
+    if facet_kws is None:
+        facet_kws = {}
+
+    g = FacetGrid(
+        data=data, row=row_name, col=col_name,
+        col_wrap=col_wrap, row_order=row_order,
+        col_order=col_order, height=height,
         sharex=sharex, sharey=sharey,
-        legend_out=legend_out, margin_titles=margin_titles,
-        dropna=False,
+        aspect=aspect,
+        **facet_kws,
     )
 
-    # Determine keyword arguments for the plotting function
-    plot_kws = dict(
-        order=order, hue_order=hue_order,
-        orient=orient, color=color, palette=palette,
+    # Capture this here because scale_categorical is going to insert a (null)
+    # x variable even if it is empty. It's not clear whether that needs to
+    # happen or if disabling that is the cleaner solution.
+    has_xy_data = p.has_xy_data
+
+    if not native_scale or p.var_types[p.orient] == "categorical":
+        p.scale_categorical(p.orient, order=order, formatter=formatter)
+
+    p._attach(g)
+
+    if not has_xy_data:
+        return g
+
+    # Deprecations to remove in v0.14.0.
+    hue_order = p._palette_without_hue_backcompat(palette, hue_order)
+    palette, hue_order = p._hue_backcompat(color, palette, hue_order)
+
+    saturation = kwargs.pop(
+        "saturation",
+        0.75 if kind in desaturated_kinds and kwargs.get("fill", True) else 1
     )
-    plot_kws.update(kwargs)
+    p.map_hue(
+        palette=palette, order=hue_order, norm=hue_norm, saturation=saturation
+    )
 
-    # Initialize the facets
-    g = FacetGrid(**facet_kws)
+    # Set a default color
+    # Otherwise each artist will be plotted separately and trip the color cycle
+    if hue is None:
+        color = "C0" if color is None else color
+        if saturation < 1:
+            color = desaturate(color, saturation)
+    edgecolor = kwargs.pop("edgecolor", "gray")  # XXX TODO default
 
-    # Draw the plot onto the facets
-    if not plot_kws.get("order"):
-        plot_kws.pop("order", None)
-    g.map_dataframe(plot_func, x=x, y=y, hue=hue, **plot_kws)
+    width = kwargs.pop("width", 0.8)
+    dodge = kwargs.pop("dodge", False if kind in undodged_kinds else "auto")
+    if dodge == "auto":
+        dodge = p._dodge_needed()
 
-    if p.orient == "y":
-        g.set_axis_labels(p.value_label, p.group_label)
+    if kind == "strip":
+
+        # TODO get these defaults programmatically?
+        jitter = kwargs.pop("jitter", True)
+
+        # XXX Copying possibly bad default decisions from original code for now
+        plot_kws = kwargs.copy()
+        plot_kws.setdefault("zorder", 3)
+        plot_kws.setdefault("s", plot_kws.pop("size", 5) ** 2)
+        plot_kws.setdefault("linewidth", 0)
+
+        p.plot_strips(
+            jitter=jitter,
+            dodge=dodge,
+            color=color,
+            edgecolor=edgecolor,
+            plot_kws=plot_kws,
+        )
+
+    elif kind == "swarm":
+
+        # TODO get these defaults programmatically?
+        warn_thresh = kwargs.pop("warn_thresh", .05)
+
+        # XXX Copying possibly bad default decisions from original code for now
+        plot_kws = kwargs.copy()
+        plot_kws.setdefault("zorder", 3)
+        plot_kws.setdefault("s", plot_kws.pop("size", 5) ** 2)
+
+        if plot_kws.setdefault("linewidth", 0) is None:
+            plot_kws["linewidth"] = np.sqrt(plot_kws["s"]) / 10
+
+        p.plot_swarms(
+            dodge=dodge,
+            color=color,
+            edgecolor=edgecolor,
+            warn_thresh=warn_thresh,
+            plot_kws=plot_kws,
+        )
+
+    elif kind == "box":
+
+        plot_kws = kwargs.copy()
+        gap = plot_kws.pop("gap", 0)
+        fill = plot_kws.pop("fill", True)
+        whis = plot_kws.pop("whis", 1.5)
+        linecolor = plot_kws.pop("linecolor", None)
+        linewidth = plot_kws.pop("linewidth", None)
+        fliersize = plot_kws.pop("fliersize", 5)
+
+        p.plot_boxes(
+            width=width,
+            dodge=dodge,
+            gap=gap,
+            fill=fill,
+            whis=whis,
+            color=color,
+            linecolor=linecolor,
+            linewidth=linewidth,
+            fliersize=fliersize,
+            plot_kws=plot_kws,
+        )
+
+    elif kind == "violin":
+
+        plot_kws = kwargs.copy()
+        gap = plot_kws.pop("gap", 0)
+        fill = plot_kws.pop("fill", True)
+        split = plot_kws.pop("split", False)
+        inner = plot_kws.pop("inner", "box")
+        density_norm = plot_kws.pop("density_norm", "area")
+        common_norm = plot_kws.pop("common_norm", False)
+
+        scale = plot_kws.pop("scale", deprecated)
+        scale_hue = plot_kws.pop("scale_hue", deprecated)
+        density_norm, common_norm = p._violin_scale_backcompat(
+            scale, scale_hue, density_norm, common_norm,
+        )
+
+        kde_kws = dict(
+            cut=plot_kws.pop("cut", 2),
+            gridsize=plot_kws.pop("gridsize", 100),
+            bw_method=plot_kws.pop("bw_method", "scott"),
+            bw_adjust=plot_kws.pop("bw_adjust", 1),
+        )
+        bw = plot_kws.pop("bw", deprecated)
+        msg = dedent(f"""\n
+        The `bw` parameter is deprecated in favor of `bw_method` and `bw_adjust`.
+        Setting `bw_method={bw!r}`, but please see the docs for the new parameters
+        and update your code. This will become an error in seaborn v0.15.0.
+        """)
+        if bw is not deprecated:
+            warnings.warn(msg, FutureWarning, stacklevel=2)
+            kde_kws["bw_method"] = bw
+
+        inner_kws = plot_kws.pop("inner_kws", {}).copy()
+        linecolor = plot_kws.pop("linecolor", None)
+        linewidth = plot_kws.pop("linewidth", None)
+
+        p.plot_violins(
+            width=width,
+            dodge=dodge,
+            gap=gap,
+            split=split,
+            color=color,
+            fill=fill,
+            linecolor=linecolor,
+            linewidth=linewidth,
+            inner=inner,
+            density_norm=density_norm,
+            common_norm=common_norm,
+            kde_kws=kde_kws,
+            inner_kws=inner_kws,
+            plot_kws=plot_kws,
+        )
+
+    elif kind == "boxen":
+
+        plot_kws = kwargs.copy()
+        gap = plot_kws.pop("gap", 0)
+        fill = plot_kws.pop("fill", True)
+        linecolor = plot_kws.pop("linecolor", None)
+        linewidth = plot_kws.pop("linewidth", None)
+        k_depth = plot_kws.pop("k_depth", "tukey")
+        width_method = plot_kws.pop("width_method", "exponential")
+        outlier_prop = plot_kws.pop("outlier_prop", 0.007)
+        trust_alpha = plot_kws.pop("trust_alpha", 0.05)
+        showfliers = plot_kws.pop("showfliers", True)
+        box_kws = plot_kws.pop("box_kws", {})
+        flier_kws = plot_kws.pop("flier_kws", {})
+        line_kws = plot_kws.pop("line_kws", {})
+        if "scale" in plot_kws:
+            width_method = p._boxen_scale_backcompat(
+                plot_kws["scale"], width_method
+            )
+
+        p.plot_boxens(
+            width=width,
+            dodge=dodge,
+            gap=gap,
+            fill=fill,
+            color=color,
+            linecolor=linecolor,
+            linewidth=linewidth,
+            width_method=width_method,
+            k_depth=k_depth,
+            outlier_prop=outlier_prop,
+            trust_alpha=trust_alpha,
+            showfliers=showfliers,
+            box_kws=box_kws,
+            flier_kws=flier_kws,
+            line_kws=line_kws,
+            plot_kws=plot_kws,
+        )
+
+    elif kind == "point":
+
+        aggregator = EstimateAggregator(
+            estimator, errorbar, n_boot=n_boot, seed=seed
+        )
+
+        markers = kwargs.pop("markers", default)
+        linestyles = kwargs.pop("linestyles", default)
+
+        # Deprecations to remove in v0.15.0.
+        # TODO Uncomment when removing deprecation backcompat
+        # capsize = kwargs.pop("capsize", 0)
+        # err_kws = _normalize_kwargs(kwargs.pop("err_kws", {}), mpl.lines.Line2D)
+        p._point_kwargs_backcompat(
+            kwargs.pop("scale", deprecated),
+            kwargs.pop("join", deprecated),
+            kwargs
+        )
+        err_kws, capsize = p._err_kws_backcompat(
+            _normalize_kwargs(kwargs.pop("err_kws", {}), mpl.lines.Line2D),
+            None,
+            errwidth=kwargs.pop("errwidth", deprecated),
+            capsize=kwargs.pop("capsize", 0),
+        )
+
+        p.plot_points(
+            aggregator=aggregator,
+            markers=markers,
+            linestyles=linestyles,
+            dodge=dodge,
+            color=color,
+            capsize=capsize,
+            err_kws=err_kws,
+            plot_kws=kwargs,
+        )
+
+    elif kind == "bar":
+
+        aggregator = EstimateAggregator(
+            estimator, errorbar, n_boot=n_boot, seed=seed
+        )
+        err_kws, capsize = p._err_kws_backcompat(
+            _normalize_kwargs(kwargs.pop("err_kws", {}), mpl.lines.Line2D),
+            errcolor=kwargs.pop("errcolor", deprecated),
+            errwidth=kwargs.pop("errwidth", deprecated),
+            capsize=kwargs.pop("capsize", 0),
+        )
+        gap = kwargs.pop("gap", 0)
+        fill = kwargs.pop("fill", True)
+
+        p.plot_bars(
+            aggregator=aggregator,
+            dodge=dodge,
+            width=width,
+            gap=gap,
+            color=color,
+            fill=fill,
+            capsize=capsize,
+            err_kws=err_kws,
+            plot_kws=kwargs,
+        )
+
+    elif kind == "count":
+
+        aggregator = EstimateAggregator("sum", errorbar=None)
+
+        count_axis = {"x": "y", "y": "x"}[p.orient]
+        p.plot_data[count_axis] = 1
+
+        stat_options = ["count", "percent", "probability", "proportion"]
+        stat = _check_argument("stat", stat_options, kwargs.pop("stat", "count"))
+        p.variables[count_axis] = stat
+        if stat != "count":
+            denom = 100 if stat == "percent" else 1
+            p.plot_data[count_axis] /= len(p.plot_data) / denom
+
+        gap = kwargs.pop("gap", 0)
+        fill = kwargs.pop("fill", True)
+
+        p.plot_bars(
+            aggregator=aggregator,
+            dodge=dodge,
+            width=width,
+            gap=gap,
+            color=color,
+            fill=fill,
+            capsize=0,
+            err_kws={},
+            plot_kws=kwargs,
+        )
+
     else:
-        g.set_axis_labels(p.group_label, p.value_label)
+        raise ValueError(f"Invalid `kind`: {kind!r}")
 
-    if legend and (hue is not None) and (hue not in [x, row, col]):
-        hue_order = list(map(utils.to_utf8, hue_order))
-        g.add_legend(title=hue, label_order=hue_order)
+    for ax in g.axes.flat:
+        p._adjust_cat_axis(ax, axis=p.orient)
+
+    g.set_axis_labels(p.variables.get("x"), p.variables.get("y"))
+    g.set_titles()
+    g.tight_layout()
+
+    for ax in g.axes.flat:
+        g._update_legend_data(ax)
+        ax.legend_ = None
+
+    if legend and "hue" in p.variables:
+        g.add_legend(title=p.variables.get("hue"), label_order=hue_order)
 
     return g
 
