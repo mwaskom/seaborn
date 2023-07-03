@@ -40,7 +40,7 @@ __all__ = [
 
 # Subclassing _RelationalPlotter for the legend machinery,
 # but probably should move that more centrally
-class _CategoricalPlotterNew(_RelationalPlotter):
+class _CategoricalPlotter(_RelationalPlotter):
 
     semantics = "x", "y", "hue", "units"
 
@@ -1326,13 +1326,13 @@ class _CategoricalPlotterNew(_RelationalPlotter):
             ax.plot(*args, **err_kws)
 
 
-class _CategoricalAggPlotter(_CategoricalPlotterNew):
+class _CategoricalAggPlotter(_CategoricalPlotter):
 
     flat_structure = {"x": "@index", "y": "@values"}
 
 
-class _CategoricalFacetPlotter(_CategoricalPlotterNew):
-    semantics = _CategoricalPlotterNew.semantics + ("col", "row")
+class _CategoricalFacetPlotter(_CategoricalPlotter):
+    semantics = _CategoricalPlotter.semantics + ("col", "row")
 
 
 class _CategoricalAggFacetPlotter(_CategoricalAggPlotter, _CategoricalFacetPlotter):
@@ -1581,9 +1581,9 @@ def boxplot(
     legend="auto", ax=None, **kwargs
 ):
 
-    p = _CategoricalPlotterNew(
+    p = _CategoricalPlotter(
         data=data,
-        variables=_CategoricalPlotterNew.get_semantics(locals()),
+        variables=_CategoricalPlotter.get_semantics(locals()),
         order=order,
         orient=orient,
         require_numeric=False,
@@ -1707,9 +1707,9 @@ def violinplot(
     inner_kws=None, ax=None, **kwargs,
 ):
 
-    p = _CategoricalPlotterNew(
+    p = _CategoricalPlotter(
         data=data,
-        variables=_CategoricalPlotterNew.get_semantics(locals()),
+        variables=_CategoricalPlotter.get_semantics(locals()),
         order=order,
         orient=orient,
         require_numeric=False,
@@ -1902,9 +1902,9 @@ def boxenplot(
     ax=None, **kwargs,
 ):
 
-    p = _CategoricalPlotterNew(
+    p = _CategoricalPlotter(
         data=data,
-        variables=_CategoricalPlotterNew.get_semantics(locals()),
+        variables=_CategoricalPlotter.get_semantics(locals()),
         order=order,
         orient=orient,
         require_numeric=False,
@@ -2068,9 +2068,9 @@ def stripplot(
     ax=None, **kwargs
 ):
 
-    p = _CategoricalPlotterNew(
+    p = _CategoricalPlotter(
         data=data,
-        variables=_CategoricalPlotterNew.get_semantics(locals()),
+        variables=_CategoricalPlotter.get_semantics(locals()),
         order=order,
         orient=orient,
         require_numeric=False,
@@ -2181,7 +2181,6 @@ stripplot.__doc__ = dedent("""\
 
     Examples
     --------
-
     .. include:: ../docstrings/stripplot.rst
 
     """).format(**_categorical_docs)
@@ -2195,9 +2194,9 @@ def swarmplot(
     ax=None, **kwargs
 ):
 
-    p = _CategoricalPlotterNew(
+    p = _CategoricalPlotter(
         data=data,
-        variables=_CategoricalPlotterNew.get_semantics(locals()),
+        variables=_CategoricalPlotter.get_semantics(locals()),
         order=order,
         orient=orient,
         require_numeric=False,
@@ -2307,7 +2306,6 @@ swarmplot.__doc__ = dedent("""\
 
     Examples
     --------
-
     .. include:: ../docstrings/swarmplot.rst
 
     """).format(**_categorical_docs)
@@ -2724,8 +2722,8 @@ countplot.__doc__ = dedent("""\
 
     Examples
     --------
-
     .. include:: ../docstrings/countplot.rst
+
     """).format(**_categorical_docs)
 
 
@@ -3185,7 +3183,6 @@ catplot.__doc__ = dedent("""\
 
     Examples
     --------
-
     .. include:: ../docstrings/catplot.rst
 
     """).format(**_categorical_docs)

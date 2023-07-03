@@ -20,7 +20,7 @@ from seaborn import categorical as cat
 from seaborn.utils import _version_predates, desaturate
 from seaborn._oldcore import categorical_order
 from seaborn.categorical import (
-    _CategoricalPlotterNew,
+    _CategoricalPlotter,
     Beeswarm,
     BoxPlotContainer,
     catplot,
@@ -92,7 +92,7 @@ class TestCategoricalPlotterNew:
 
     def test_redundant_hue_backcompat(self, long_df):
 
-        p = _CategoricalPlotterNew(
+        p = _CategoricalPlotter(
             data=long_df,
             variables={"x": "s", "y": "y"},
         )
