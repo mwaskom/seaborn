@@ -265,6 +265,18 @@ class _CategoricalPlotter(_RelationalPlotter):
 
         return density_norm, common_norm
 
+    def _violin_bw_backcompat(self, bw, bw_method):
+        """Provide two cycles of backcompat for violin bandwidth parameterization."""
+        if bw is not deprecated:
+            bw_method = bw
+            msg = dedent(f"""\n
+                The `bw` parameter is deprecated in favor of `bw_method`/`bw_adjust`.
+                Setting `bw_method={bw!r}`, but please see docs for the new parameters
+                and update your code. This will become an error in seaborn v0.15.0.
+            """)
+            warnings.warn(msg, FutureWarning, stacklevel=3)
+        return bw_method
+
     def _boxen_scale_backcompat(self, scale, width_method):
         """Provide two cycles of backcompat for scale kwargs"""
         if scale is not deprecated:
@@ -1728,15 +1740,7 @@ def violinplot(
         scale, scale_hue, density_norm, common_norm,
     )
 
-    if bw is not deprecated:
-        msg = dedent(f"""\n
-        The `bw` parameter is deprecated in favor of `bw_method` and `bw_adjust`.
-        Setting `bw_method={bw!r}`, but please see the docs for the new parameters
-        and update your code. This will become an error in seaborn v0.15.0.
-        """)
-        warnings.warn(msg, FutureWarning, stacklevel=2)
-        bw_method = bw
-
+    bw_method = p._violin_bw_backcompat(bw, bw_method)
     kde_kws = dict(cut=cut, gridsize=gridsize, bw_method=bw_method, bw_adjust=bw_adjust)
     inner_kws = {} if inner_kws is None else inner_kws.copy()
 
@@ -2896,21 +2900,15 @@ def catplot(
             scale, scale_hue, density_norm, common_norm,
         )
 
+        bw_method = p._violin_bw_backcompat(
+            plot_kws.pop("bw", deprecated), plot_kws.pop("bw_method", "scott")
+        )
         kde_kws = dict(
             cut=plot_kws.pop("cut", 2),
             gridsize=plot_kws.pop("gridsize", 100),
-            bw_method=plot_kws.pop("bw_method", "scott"),
             bw_adjust=plot_kws.pop("bw_adjust", 1),
+            bw_method=bw_method,
         )
-        bw = plot_kws.pop("bw", deprecated)
-        msg = dedent(f"""\n
-        The `bw` parameter is deprecated in favor of `bw_method` and `bw_adjust`.
-        Setting `bw_method={bw!r}`, but please see the docs for the new parameters
-        and update your code. This will become an error in seaborn v0.15.0.
-        """)
-        if bw is not deprecated:
-            warnings.warn(msg, FutureWarning, stacklevel=2)
-            kde_kws["bw_method"] = bw
 
         inner_kws = plot_kws.pop("inner_kws", {}).copy()
         linecolor = plot_kws.pop("linecolor", None)
