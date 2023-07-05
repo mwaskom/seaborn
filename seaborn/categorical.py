@@ -13,11 +13,7 @@ from matplotlib.patches import Rectangle
 import matplotlib.pyplot as plt
 
 from seaborn._core.typing import default, deprecated
-from seaborn._oldcore import (
-    variable_type,
-    infer_orient,
-    categorical_order,
-)
+from seaborn._oldcore import infer_orient, categorical_order
 from seaborn._stats.density import KDE
 from seaborn.relational import _RelationalPlotter
 from seaborn import utils
@@ -30,7 +26,7 @@ from seaborn.utils import (
     _version_predates,
 )
 from seaborn._statistics import EstimateAggregator, LetterValues
-from seaborn.palettes import color_palette, husl_palette, light_palette, dark_palette
+from seaborn.palettes import light_palette
 from seaborn.axisgrid import FacetGrid, _facet_docs
 
 
@@ -44,7 +40,7 @@ __all__ = [
 
 # Subclassing _RelationalPlotter for the legend machinery,
 # but probably should move that more centrally
-class _CategoricalPlotterNew(_RelationalPlotter):
+class _CategoricalPlotter(_RelationalPlotter):
 
     semantics = "x", "y", "hue", "units"
 
@@ -268,6 +264,18 @@ class _CategoricalPlotterNew(_RelationalPlotter):
             warnings.warn(msg, FutureWarning, stacklevel=3)
 
         return density_norm, common_norm
+
+    def _violin_bw_backcompat(self, bw, bw_method):
+        """Provide two cycles of backcompat for violin bandwidth parameterization."""
+        if bw is not deprecated:
+            bw_method = bw
+            msg = dedent(f"""\n
+                The `bw` parameter is deprecated in favor of `bw_method`/`bw_adjust`.
+                Setting `bw_method={bw!r}`, but please see docs for the new parameters
+                and update your code. This will become an error in seaborn v0.15.0.
+            """)
+            warnings.warn(msg, FutureWarning, stacklevel=3)
+        return bw_method
 
     def _boxen_scale_backcompat(self, scale, width_method):
         """Provide two cycles of backcompat for scale kwargs"""
@@ -1330,13 +1338,13 @@ class _CategoricalPlotterNew(_RelationalPlotter):
             ax.plot(*args, **err_kws)
 
 
-class _CategoricalAggPlotter(_CategoricalPlotterNew):
+class _CategoricalAggPlotter(_CategoricalPlotter):
 
     flat_structure = {"x": "@index", "y": "@values"}
 
 
-class _CategoricalFacetPlotter(_CategoricalPlotterNew):
-    semantics = _CategoricalPlotterNew.semantics + ("col", "row")
+class _CategoricalFacetPlotter(_CategoricalPlotter):
+    semantics = _CategoricalPlotter.semantics + ("col", "row")
 
 
 class _CategoricalAggFacetPlotter(_CategoricalAggPlotter, _CategoricalFacetPlotter):
@@ -1344,383 +1352,16 @@ class _CategoricalAggFacetPlotter(_CategoricalAggPlotter, _CategoricalFacetPlott
     pass
 
 
-class _CategoricalPlotter:
-
-    width = .8
-    default_palette = "light"
-    require_numeric = True
-
-    def establish_variables(self, x=None, y=None, hue=None, data=None,
-                            orient=None, order=None, hue_order=None,
-                            units=None):
-        """Convert input specification into a common representation."""
-        # Option 1:
-        # We are plotting a wide-form dataset
-        # -----------------------------------
-        if x is None and y is None:
-
-            # Do a sanity check on the inputs
-            if hue is not None:
-                error = "Cannot use `hue` without `x` and `y`"
-                raise ValueError(error)
-
-            # No hue grouping with wide inputs
-            plot_hues = None
-            hue_title = None
-            hue_names = None
-
-            # No statistical units with wide inputs
-            plot_units = None
-
-            # We also won't get a axes labels here
-            value_label = None
-            group_label = None
-
-            # Option 1a:
-            # The input data is a Pandas DataFrame
-            # ------------------------------------
-
-            if isinstance(data, pd.DataFrame):
-
-                # Order the data correctly
-                if order is None:
-                    order = []
-                    # Reduce to just numeric columns
-                    for col in data:
-                        if variable_type(data[col]) == "numeric":
-                            order.append(col)
-                plot_data = data[order]
-                group_names = order
-                group_label = data.columns.name
-
-                # Convert to a list of arrays, the common representation
-                iter_data = plot_data.items()
-                plot_data = [np.asarray(s, float) for k, s in iter_data]
-
-            # Option 1b:
-            # The input data is an array or list
-            # ----------------------------------
-
-            else:
-
-                # We can't reorder the data
-                if order is not None:
-                    error = "Input data must be a pandas object to reorder"
-                    raise ValueError(error)
-
-                # The input data is an array
-                if hasattr(data, "shape"):
-                    if len(data.shape) == 1:
-                        if np.isscalar(data[0]):
-                            plot_data = [data]
-                        else:
-                            plot_data = list(data)
-                    elif len(data.shape) == 2:
-                        nr, nc = data.shape
-                        if nr == 1 or nc == 1:
-                            plot_data = [data.ravel()]
-                        else:
-                            plot_data = [data[:, i] for i in range(nc)]
-                    else:
-                        error = ("Input `data` can have no "
-                                 "more than 2 dimensions")
-                        raise ValueError(error)
-
-                # Check if `data` is None to let us bail out here (for testing)
-                elif data is None:
-                    plot_data = [[]]
-
-                # The input data is a flat list
-                elif np.isscalar(data[0]):
-                    plot_data = [data]
-
-                # The input data is a nested list
-                # This will catch some things that might fail later
-                # but exhaustive checks are hard
-                else:
-                    plot_data = data
-
-                # Convert to a list of arrays, the common representation
-                plot_data = [np.asarray(d, float) for d in plot_data]
-
-                # The group names will just be numeric indices
-                group_names = list(range(len(plot_data)))
-
-            # Figure out the plotting orientation
-            orient = "y" if str(orient)[0] in "hy" else "x"
-
-        # Option 2:
-        # We are plotting a long-form dataset
-        # -----------------------------------
-
-        else:
-
-            # See if we need to get variables from `data`
-            if data is not None:
-                x = data.get(x, x)
-                y = data.get(y, y)
-                hue = data.get(hue, hue)
-                units = data.get(units, units)
-
-            # Validate the inputs
-            for var in [x, y, hue, units]:
-                if isinstance(var, str):
-                    err = f"Could not interpret input '{var}'"
-                    raise ValueError(err)
-
-            # Figure out the plotting orientation
-            orient = infer_orient(x, y, orient, require_numeric=self.require_numeric)
-
-            # Option 2a:
-            # We are plotting a single set of data
-            # ------------------------------------
-            if x is None or y is None:
-
-                # Determine where the data are
-                vals = y if x is None else x
-
-                # Put them into the common representation
-                plot_data = [np.asarray(vals)]
-
-                # Get a label for the value axis
-                if hasattr(vals, "name"):
-                    value_label = vals.name
-                else:
-                    value_label = None
-
-                # This plot will not have group labels or hue nesting
-                groups = None
-                group_label = None
-                group_names = []
-                plot_hues = None
-                hue_names = None
-                hue_title = None
-                plot_units = None
-
-            # Option 2b:
-            # We are grouping the data values by another variable
-            # ---------------------------------------------------
-            else:
-
-                # Determine which role each variable will play
-                if orient == "x":
-                    vals, groups = y, x
-                else:
-                    vals, groups = x, y
-
-                # Get the categorical axis label
-                group_label = None
-                if hasattr(groups, "name"):
-                    group_label = groups.name
-
-                # Get the order on the categorical axis
-                group_names = categorical_order(groups, order)
-
-                # Group the numeric data
-                plot_data, value_label = self._group_longform(vals, groups,
-                                                              group_names)
-
-                # Now handle the hue levels for nested ordering
-                if hue is None:
-                    plot_hues = None
-                    hue_title = None
-                    hue_names = None
-                else:
-
-                    # Get the order of the hue levels
-                    hue_names = categorical_order(hue, hue_order)
-
-                    # Group the hue data
-                    plot_hues, hue_title = self._group_longform(hue, groups,
-                                                                group_names)
-
-                # Now handle the units for nested observations
-                if units is None:
-                    plot_units = None
-                else:
-                    plot_units, _ = self._group_longform(units, groups,
-                                                         group_names)
-
-        # Assign object attributes
-        # ------------------------
-        self.orient = orient
-        self.plot_data = plot_data
-        self.group_label = group_label
-        self.value_label = value_label
-        self.group_names = group_names
-        self.plot_hues = plot_hues
-        self.hue_title = hue_title
-        self.hue_names = hue_names
-        self.plot_units = plot_units
-
-    def _group_longform(self, vals, grouper, order):
-        """Group a long-form variable by another with correct order."""
-        # Ensure that the groupby will work
-        if not isinstance(vals, pd.Series):
-            if isinstance(grouper, pd.Series):
-                index = grouper.index
-            else:
-                index = None
-            vals = pd.Series(vals, index=index)
-
-        # Group the val data
-        grouped_vals = vals.groupby(grouper)
-        out_data = []
-        for g in order:
-            try:
-                g_vals = grouped_vals.get_group(g)
-            except KeyError:
-                g_vals = np.array([])
-            out_data.append(g_vals)
-
-        # Get the vals axis label
-        label = vals.name
-
-        return out_data, label
-
-    def establish_colors(self, color, palette, saturation):
-        """Get a list of colors for the main component of the plots."""
-        if self.hue_names is None:
-            n_colors = len(self.plot_data)
-        else:
-            n_colors = len(self.hue_names)
-
-        # Determine the main colors
-        if color is None and palette is None:
-            # Determine whether the current palette will have enough values
-            # If not, we'll default to the husl palette so each is distinct
-            current_palette = utils.get_color_cycle()
-            if n_colors <= len(current_palette):
-                colors = color_palette(n_colors=n_colors)
-            else:
-                colors = husl_palette(n_colors, l=.7)  # noqa
-
-        elif palette is None:
-            # When passing a specific color, the interpretation depends
-            # on whether there is a hue variable or not.
-            # If so, we will make a blend palette so that the different
-            # levels have some amount of variation.
-            if self.hue_names is None:
-                colors = [color] * n_colors
-            else:
-                if self.default_palette == "light":
-                    colors = light_palette(color, n_colors)
-                elif self.default_palette == "dark":
-                    colors = dark_palette(color, n_colors)
-                else:
-                    raise RuntimeError("No default palette specified")
-        else:
-
-            # Let `palette` be a dict mapping level to color
-            if isinstance(palette, dict):
-                if self.hue_names is None:
-                    levels = self.group_names
-                else:
-                    levels = self.hue_names
-                palette = [palette[l] for l in levels]
-
-            colors = color_palette(palette, n_colors)
-
-        # Desaturate a bit because these are patches
-        if saturation < 1:
-            colors = color_palette(colors, desat=saturation)
-
-        # Convert the colors to a common representations
-        rgb_colors = color_palette(colors)
-
-        # Determine the gray color to use for the lines framing the plot
-        light_vals = [rgb_to_hls(*c)[1] for c in rgb_colors]
-        lum = min(light_vals) * .6
-        gray = mpl.colors.rgb2hex((lum, lum, lum))
-
-        # Assign object attributes
-        self.colors = rgb_colors
-        self.gray = gray
-
-    @property
-    def hue_offsets(self):
-        """A list of center positions for plots when hue nesting is used."""
-        n_levels = len(self.hue_names)
-        if self.dodge:
-            each_width = self.width / n_levels
-            offsets = np.linspace(0, self.width - each_width, n_levels)
-            offsets -= offsets.mean()
-        else:
-            offsets = np.zeros(n_levels)
-
-        return offsets
-
-    @property
-    def nested_width(self):
-        """A float with the width of plot elements when hue nesting is used."""
-        if self.dodge:
-            width = self.width / len(self.hue_names) * .98
-        else:
-            width = self.width
-        return width
-
-    def annotate_axes(self, ax):
-        """Add descriptive labels to an Axes object."""
-        if self.orient == "x":
-            xlabel, ylabel = self.group_label, self.value_label
-        else:
-            xlabel, ylabel = self.value_label, self.group_label
-
-        if xlabel is not None:
-            ax.set_xlabel(xlabel)
-        if ylabel is not None:
-            ax.set_ylabel(ylabel)
-
-        group_names = self.group_names
-        if not group_names:
-            group_names = ["" for _ in range(len(self.plot_data))]
-
-        if self.orient == "x":
-            ax.set_xticks(np.arange(len(self.plot_data)))
-            ax.set_xticklabels(group_names)
-        else:
-            ax.set_yticks(np.arange(len(self.plot_data)))
-            ax.set_yticklabels(group_names)
-
-        if self.orient == "x":
-            ax.xaxis.grid(False)
-            ax.set_xlim(-.5, len(self.plot_data) - .5, auto=None)
-        else:
-            ax.yaxis.grid(False)
-            ax.set_ylim(-.5, len(self.plot_data) - .5, auto=None)
-
-        if self.hue_names is not None:
-            ax.legend(loc="best", title=self.hue_title)
-
-    def add_legend_data(self, ax, color, label):
-        """Add a dummy patch object so we can get legend data."""
-        rect = plt.Rectangle([0, 0], 0, 0,
-                             linewidth=self.linewidth / 2,
-                             edgecolor=self.gray,
-                             facecolor=color,
-                             label=label)
-        ax.add_patch(rect)
-
-
 _categorical_docs = dict(
 
     # Shared narrative docs
     categorical_narrative=dedent("""\
-    .. note::
-        This function always treats one of the variables as categorical and
-        draws data at ordinal positions (0, 1, ... n) on the relevant axis,
-        even when the data has a numeric or date type.
+    See the :ref:`tutorial <categorical_tutorial>` for more information.
 
-    See the :ref:`tutorial <categorical_tutorial>` for more information.\
-    """),
-
-    new_categorical_narrative=dedent("""\
     .. note::
         By default, this function treats one of the variables as categorical
         and draws data at ordinal positions (0, 1, ... n) on the relevant axis.
         As of version 0.13.0, this can be disabled by setting `native_scale=True`.
-
-    See the :ref:`tutorial <categorical_tutorial>` for more information.\
     """),
 
     # Shared function parameters
@@ -1728,19 +1369,10 @@ _categorical_docs = dict(
     x, y, hue : names of variables in `data` or vector data
         Inputs for plotting long-form data. See examples for interpretation.\
     """),
-    string_input_params=dedent("""\
-    x, y, hue : names of variables in `data`
-        Inputs for plotting long-form data. See examples for interpretation.\
-    """),
     categorical_data=dedent("""\
     data : DataFrame, Series, dict, array, or list of arrays
         Dataset for plotting. If `x` and `y` are absent, this is
         interpreted as wide-form. Otherwise it is expected to be long-form.\
-    """),
-    long_form_data=dedent("""\
-    data : DataFrame
-        Long-form (tidy) dataset for plotting. Each column should correspond
-        to a variable, and each row should correspond to an observation.\
     """),
     order_vars=dedent("""\
     order, hue_order : lists of strings
@@ -1759,8 +1391,8 @@ _categorical_docs = dict(
     n_boot : int
         Number of bootstrap samples used to compute confidence intervals.
     units : name of variable in `data` or vector data
-        Identifier of sampling units, which will be used to perform a
-        multilevel bootstrap and account for repeated measures design.
+        Identifier of sampling units; used by the errorbar function to
+        perform a multilevel bootstrap and account for repeated measures
     seed : int, `numpy.random.Generator`, or `numpy.random.RandomState`
         Seed or random number generator for reproducible bootstrapping.\
     """),
@@ -1920,8 +1552,7 @@ _categorical_docs = dict(
     countplot : Show the counts of observations in each categorical bin.\
     """),
     pointplot=dedent("""\
-    pointplot : Show point estimates and confidence intervals using scatterplot
-                glyphs.\
+    pointplot : Show point estimates and confidence intervals using dots.\
     """),
     catplot=dedent("""\
     catplot : Combine a categorical plot with a :class:`FacetGrid`.\
@@ -1943,9 +1574,9 @@ def boxplot(
     legend="auto", ax=None, **kwargs
 ):
 
-    p = _CategoricalPlotterNew(
+    p = _CategoricalPlotter(
         data=data,
-        variables=_CategoricalPlotterNew.get_semantics(locals()),
+        variables=_CategoricalPlotter.get_semantics(locals()),
         order=order,
         orient=orient,
         require_numeric=False,
@@ -2008,7 +1639,7 @@ boxplot.__doc__ = dedent("""\
     except for points that are determined to be "outliers" using a method
     that is a function of the inter-quartile range.
 
-    {new_categorical_narrative}
+    {categorical_narrative}
 
     Parameters
     ----------
@@ -2069,9 +1700,9 @@ def violinplot(
     inner_kws=None, ax=None, **kwargs,
 ):
 
-    p = _CategoricalPlotterNew(
+    p = _CategoricalPlotter(
         data=data,
-        variables=_CategoricalPlotterNew.get_semantics(locals()),
+        variables=_CategoricalPlotter.get_semantics(locals()),
         order=order,
         orient=orient,
         require_numeric=False,
@@ -2109,15 +1740,7 @@ def violinplot(
         scale, scale_hue, density_norm, common_norm,
     )
 
-    if bw is not deprecated:
-        msg = dedent(f"""\n
-        The `bw` parameter is deprecated in favor of `bw_method` and `bw_adjust`.
-        Setting `bw_method={bw!r}`, but please see the docs for the new parameters
-        and update your code. This will become an error in seaborn v0.15.0.
-        """)
-        warnings.warn(msg, FutureWarning, stacklevel=2)
-        bw_method = bw
-
+    bw_method = p._violin_bw_backcompat(bw, bw_method)
     kde_kws = dict(cut=cut, gridsize=gridsize, bw_method=bw_method, bw_adjust=bw_adjust)
     inner_kws = {} if inner_kws is None else inner_kws.copy()
 
@@ -2152,7 +1775,7 @@ violinplot.__doc__ = dedent("""\
     Unlike a box plot, each violin is drawn using a kernel density estimate
     of the underlying distribution.
 
-    {new_categorical_narrative}
+    {categorical_narrative}
 
     Parameters
     ----------
@@ -2264,9 +1887,9 @@ def boxenplot(
     ax=None, **kwargs,
 ):
 
-    p = _CategoricalPlotterNew(
+    p = _CategoricalPlotter(
         data=data,
-        variables=_CategoricalPlotterNew.get_semantics(locals()),
+        variables=_CategoricalPlotter.get_semantics(locals()),
         order=order,
         orient=orient,
         require_numeric=False,
@@ -2339,7 +1962,7 @@ boxenplot.__doc__ = dedent("""\
     plotting more quantiles, it provides more information about the shape of
     the distribution, particularly in the tails.
 
-    {new_categorical_narrative}
+    {categorical_narrative}
 
     Parameters
     ----------
@@ -2430,9 +2053,9 @@ def stripplot(
     ax=None, **kwargs
 ):
 
-    p = _CategoricalPlotterNew(
+    p = _CategoricalPlotter(
         data=data,
-        variables=_CategoricalPlotterNew.get_semantics(locals()),
+        variables=_CategoricalPlotter.get_semantics(locals()),
         order=order,
         orient=orient,
         require_numeric=False,
@@ -2492,31 +2115,31 @@ stripplot.__doc__ = dedent("""\
     to a box or violin plot in cases where you want to show all observations
     along with some representation of the underlying distribution.
 
-    {new_categorical_narrative}
+    {categorical_narrative}
 
     Parameters
     ----------
     {categorical_data}
     {input_params}
     {order_vars}
-    jitter : float, ``True``/``1`` is special-cased
+    jitter : float, `True`/`1` is special-cased
         Amount of jitter (only along the categorical axis) to apply. This
         can be useful when you have many points and they overlap, so that
         it is easier to see the distribution. You can specify the amount
         of jitter (half the width of the uniform random variable support),
-        or just use ``True`` for a good default.
+        or use `True` for a good default.
     dodge : bool
-        When using ``hue`` nesting, setting this to ``True`` will separate
-        the strips for different hue levels along the categorical axis.
-        Otherwise, the points for each level will be plotted on top of
-        each other.
+        When a `hue` variable is assigned, setting this to `True` will
+        separate the strips for different hue levels along the categorical
+        axis and narrow the amount of space allotedto each strip. Otherwise,
+        the points for each level will be plotted in the same strip.
     {orient}
     {color}
     {palette}
     size : float
         Radius of the markers, in points.
     edgecolor : matplotlib color, "gray" is special-cased
-        Color of the lines around each point. If you pass ``"gray"``, the
+        Color of the lines around each point. If you pass `"gray"`, the
         brightness is determined by the color palette used for the body
         of the points. Note that `stripplot` has `linewidth=0` by default,
         so edge colors are only visible with nonzero line width.
@@ -2543,7 +2166,6 @@ stripplot.__doc__ = dedent("""\
 
     Examples
     --------
-
     .. include:: ../docstrings/stripplot.rst
 
     """).format(**_categorical_docs)
@@ -2557,9 +2179,9 @@ def swarmplot(
     ax=None, **kwargs
 ):
 
-    p = _CategoricalPlotterNew(
+    p = _CategoricalPlotter(
         data=data,
-        variables=_CategoricalPlotterNew.get_semantics(locals()),
+        variables=_CategoricalPlotter.get_semantics(locals()),
         order=order,
         orient=orient,
         require_numeric=False,
@@ -2627,7 +2249,7 @@ swarmplot.__doc__ = dedent("""\
     to a box or violin plot in cases where you want to show all observations
     along with some representation of the underlying distribution.
 
-    {new_categorical_narrative}
+    {categorical_narrative}
 
     Parameters
     ----------
@@ -2635,16 +2257,17 @@ swarmplot.__doc__ = dedent("""\
     {input_params}
     {order_vars}
     dodge : bool
-        When using ``hue`` nesting, setting this to ``True`` will separate
-        the strips for different hue levels along the categorical axis.
-        Otherwise, the points for each level will be plotted in one swarm.
+        When a `hue` variable is assigned, setting this to `True` will
+        separate the swaarms for different hue levels along the categorical
+        axis and narrow the amount of space allotedto each strip. Otherwise,
+        the points for each level will be plotted in the same swarm.
     {orient}
     {color}
     {palette}
     size : float
         Radius of the markers, in points.
     edgecolor : matplotlib color, "gray" is special-cased
-        Color of the lines around each point. If you pass ``"gray"``, the
+        Color of the lines around each point. If you pass `"gray"`, the
         brightness is determined by the color palette used for the body
         of the points.
     {linewidth}
@@ -2669,7 +2292,6 @@ swarmplot.__doc__ = dedent("""\
 
     Examples
     --------
-
     .. include:: ../docstrings/swarmplot.rst
 
     """).format(**_categorical_docs)
@@ -2756,7 +2378,7 @@ barplot.__doc__ = dedent("""\
     axis range, and they are a good choice when 0 is a meaningful value
     for the variable to take.
 
-    {new_categorical_narrative}
+    {categorical_narrative}
 
     Parameters
     ----------
@@ -2895,7 +2517,7 @@ pointplot.__doc__ = dedent("""\
     easier for the eyes than comparing the heights of several groups of points
     or bars.
 
-    {new_categorical_narrative}
+    {categorical_narrative}
 
     Parameters
     ----------
@@ -2910,8 +2532,8 @@ pointplot.__doc__ = dedent("""\
     linestyles : string or list of strings
         Line styles to use for each of the `hue` levels.
     dodge : bool or float
-        Amount to separate the points for each level of the ``hue`` variable
-        along the categorical axis.
+        Amount to separate the points for each level of the `hue` variable along
+        the categorical axis. Setting to `True` will apply a small default.
     {native_scale}
     {orient}
     {capsize}
@@ -2921,7 +2543,7 @@ pointplot.__doc__ = dedent("""\
     {ci}
     {errwidth}
     join : bool
-        If `True`, draw lines will be drawn between point estimates.
+        If `True`, connect point estimates with a line.
 
         .. deprecated:: v0.13.0
             Set `linestyle="none"` to remove the lines between the points.
@@ -3048,7 +2670,7 @@ countplot.__doc__ = dedent("""\
     Note that :func:`histplot` function offers similar functionality with additional
     features (e.g. bar stacking), although its default behavior is somewhat different.
 
-    {new_categorical_narrative}
+    {categorical_narrative}
 
     Parameters
     ----------
@@ -3086,19 +2708,18 @@ countplot.__doc__ = dedent("""\
 
     Examples
     --------
-
     .. include:: ../docstrings/countplot.rst
+
     """).format(**_categorical_docs)
 
 
 def catplot(
-    data=None, *, x=None, y=None, hue=None, row=None, col=None,
-    col_wrap=None, estimator="mean", errorbar=("ci", 95), n_boot=1000,
-    units=None, seed=None, order=None, hue_order=None, row_order=None,
-    col_order=None, height=5, aspect=1, kind="strip", native_scale=False,
-    formatter=None, orient=None, color=None, palette=None, hue_norm=None,
-    legend="auto", legend_out=True, sharex=True, sharey=True,
-    margin_titles=False, facet_kws=None, ci="deprecated",
+    data=None, *, x=None, y=None, hue=None, row=None, col=None, kind="strip",
+    estimator="mean", errorbar=("ci", 95), n_boot=1000, units=None, seed=None,
+    order=None, hue_order=None, row_order=None, col_order=None, col_wrap=None,
+    height=5, aspect=1, native_scale=False, formatter=None, orient=None,
+    color=None, palette=None, hue_norm=None, legend="auto", legend_out=True,
+    sharex=True, sharey=True, margin_titles=False, facet_kws=None, ci=deprecated,
     **kwargs
 ):
 
@@ -3154,11 +2775,10 @@ def catplot(
         facet_kws = {}
 
     g = FacetGrid(
-        data=data, row=row_name, col=col_name,
-        col_wrap=col_wrap, row_order=row_order,
-        col_order=col_order, height=height,
-        sharex=sharex, sharey=sharey,
-        aspect=aspect,
+        data=data, row=row_name, col=col_name, col_wrap=col_wrap,
+        row_order=row_order, col_order=col_order, sharex=sharex, sharey=sharey,
+        legend_out=legend_out, margin_titles=margin_titles,
+        height=height, aspect=aspect,
         **facet_kws,
     )
 
@@ -3179,13 +2799,14 @@ def catplot(
     hue_order = p._palette_without_hue_backcompat(palette, hue_order)
     palette, hue_order = p._hue_backcompat(color, palette, hue_order)
 
+    # Othe deprecations
+    errorbar = utils._deprecate_ci(errorbar, ci)
+
     saturation = kwargs.pop(
         "saturation",
         0.75 if kind in desaturated_kinds and kwargs.get("fill", True) else 1
     )
-    p.map_hue(
-        palette=palette, order=hue_order, norm=hue_norm, saturation=saturation
-    )
+    p.map_hue(palette=palette, order=hue_order, norm=hue_norm, saturation=saturation)
 
     # Set a default color
     # Otherwise each artist will be plotted separately and trip the color cycle
@@ -3279,21 +2900,15 @@ def catplot(
             scale, scale_hue, density_norm, common_norm,
         )
 
+        bw_method = p._violin_bw_backcompat(
+            plot_kws.pop("bw", deprecated), plot_kws.pop("bw_method", "scott")
+        )
         kde_kws = dict(
             cut=plot_kws.pop("cut", 2),
             gridsize=plot_kws.pop("gridsize", 100),
-            bw_method=plot_kws.pop("bw_method", "scott"),
             bw_adjust=plot_kws.pop("bw_adjust", 1),
+            bw_method=bw_method,
         )
-        bw = plot_kws.pop("bw", deprecated)
-        msg = dedent(f"""\n
-        The `bw` parameter is deprecated in favor of `bw_method` and `bw_adjust`.
-        Setting `bw_method={bw!r}`, but please see the docs for the new parameters
-        and update your code. This will become an error in seaborn v0.15.0.
-        """)
-        if bw is not deprecated:
-            warnings.warn(msg, FutureWarning, stacklevel=2)
-            kde_kws["bw_method"] = bw
 
         inner_kws = plot_kws.pop("inner_kws", {}).copy()
         linecolor = plot_kws.pop("linecolor", None)
@@ -3447,7 +3062,11 @@ def catplot(
         )
 
     else:
-        raise ValueError(f"Invalid `kind`: {kind!r}")
+        msg = (
+            f"Invalid `kind`: {kind!r}. Options are 'strip', 'swarm', "
+            "'box', 'boxen', 'violin', 'bar', 'count', and 'point'."
+        )
+        raise ValueError(msg)
 
     for ax in g.axes.flat:
         p._adjust_cat_axis(ax, axis=p.orient)
@@ -3472,7 +3091,7 @@ catplot.__doc__ = dedent("""\
     This function provides access to several axes-level functions that
     show the relationship between a numerical and one or more categorical
     variables using one of several visual representations. The `kind`
-    parameter selects the underlying axes-level function to use:
+    parameter selects the underlying axes-level function to use.
 
     Categorical scatterplots:
 
@@ -3494,10 +3113,6 @@ catplot.__doc__ = dedent("""\
     Extra keyword arguments are passed to the underlying function, so you
     should refer to the documentation for each to see kind-specific options.
 
-    Note that unlike when using the axes-level functions directly, data must be
-    passed in a long-form DataFrame with variables specified by passing strings
-    to `x`, `y`, `hue`, etc.
-
     {categorical_narrative}
 
     After plotting, the :class:`FacetGrid` with the plot is returned and can
@@ -3505,31 +3120,29 @@ catplot.__doc__ = dedent("""\
 
     Parameters
     ----------
-    {long_form_data}
-    {string_input_params}
-    row, col : names of variables in `data`
+    {categorical_data}
+    {input_params}
+    row, col : names of variables in `data` or vector data
         Categorical variables that will determine the faceting of the grid.
-    {col_wrap}
-    {stat_api_params}
-    {order_vars}
-    row_order, col_order : lists of strings
-        Order to organize the rows and/or columns of the grid in, otherwise the
-        orders are inferred from the data objects.
-    {height}
-    {aspect}
     kind : str
         The kind of plot to draw, corresponds to the name of a categorical
         axes-level plotting function. Options are: "strip", "swarm", "box", "violin",
         "boxen", "point", "bar", or "count".
+    {stat_api_params}
+    {order_vars}
+    row_order, col_order : lists of strings
+        Order to organize the rows and/or columns of the grid in; otherwise the
+        orders are inferred from the data objects.
+    {col_wrap}
+    {height}
+    {aspect}
     {native_scale}
     {formatter}
     {orient}
     {color}
     {palette}
     {hue_norm}
-    legend : str or bool
-        Set to `False` to disable the legend. With `strip` or `swarm` plots,
-        this also accepts a string, as described in the axes-level docstrings.
+    {legend}
     {legend_out}
     {share_xy}
     {margin_titles}
@@ -3541,13 +3154,12 @@ catplot.__doc__ = dedent("""\
 
     Returns
     -------
-    g : :class:`FacetGrid`
+    :class:`FacetGrid`
         Returns the :class:`FacetGrid` object with the plot on it for further
         tweaking.
 
     Examples
     --------
-
     .. include:: ../docstrings/catplot.rst
 
     """).format(**_categorical_docs)
