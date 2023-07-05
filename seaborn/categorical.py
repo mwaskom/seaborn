@@ -3062,7 +3062,11 @@ def catplot(
         )
 
     else:
-        raise ValueError(f"Invalid `kind`: {kind!r}")
+        msg = (
+            f"Invalid `kind`: {kind!r}. Options are 'strip', 'swarm', "
+            "'box', 'boxen', 'violin', 'bar', 'count', and 'point'."
+        )
+        raise ValueError(msg)
 
     for ax in g.axes.flat:
         p._adjust_cat_axis(ax, axis=p.orient)
