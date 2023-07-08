@@ -14,7 +14,7 @@ from seaborn.palettes import (
     color_palette,
     light_palette,
 )
-from seaborn._oldcore import (
+from seaborn._base import (
     categorical_order,
 )
 from seaborn._statistics import (

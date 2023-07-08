@@ -13,9 +13,7 @@ import matplotlib.transforms as tx
 from matplotlib.colors import to_rgba
 from matplotlib.collections import LineCollection
 
-from ._oldcore import (
-    VectorPlotter,
-)
+from ._base import VectorPlotter
 
 # We have moved univariate histogram computation over to the new Hist class,
 # but still use the older Histogram for bivariate computation.

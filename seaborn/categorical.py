@@ -13,7 +13,7 @@ from matplotlib.patches import Rectangle
 import matplotlib.pyplot as plt
 
 from seaborn._core.typing import default, deprecated
-from seaborn._oldcore import infer_orient, categorical_order
+from seaborn._base import infer_orient, categorical_order
 from seaborn._stats.density import KDE
 from seaborn.relational import _RelationalPlotter
 from seaborn import utils
