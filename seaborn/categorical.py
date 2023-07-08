@@ -22,6 +22,7 @@ from seaborn.utils import (
     _check_argument,
     _draw_figure,
     _default_color,
+    _get_transform_functions,
     _normalize_kwargs,
     _version_predates,
 )
@@ -371,7 +372,7 @@ class _CategoricalPlotter(_RelationalPlotter):
     def _invert_scale(self, ax, data, vars=("x", "y")):
         """Undo scaling after computation so data are plotted correctly."""
         for var in vars:
-            _, inv = utils._get_transform_functions(ax, var[0])
+            _, inv = _get_transform_functions(ax, var[0])
             if var == self.orient and "width" in data:
                 hw = data["width"] / 2
                 data["edge"] = inv(data[var] - hw)
@@ -769,8 +770,8 @@ class _CategoricalPlotter(_RelationalPlotter):
                                                  allow_empty=False):
 
             ax = self._get_axes(sub_vars)
-            _, inv_ori = utils._get_transform_functions(ax, self.orient)
-            _, inv_val = utils._get_transform_functions(ax, value_var)
+            _, inv_ori = _get_transform_functions(ax, self.orient)
+            _, inv_val = _get_transform_functions(ax, value_var)
 
             # Statistics
             lv_data = estimator(sub_data[value_var])
@@ -1010,8 +1011,8 @@ class _CategoricalPlotter(_RelationalPlotter):
                 offsets = span, span
 
             ax = violin["ax"]
-            _, invx = utils._get_transform_functions(ax, "x")
-            _, invy = utils._get_transform_functions(ax, "y")
+            _, invx = _get_transform_functions(ax, "x")
+            _, invy = _get_transform_functions(ax, "y")
             inv_pos = {"x": invx, "y": invy}[self.orient]
             inv_val = {"x": invx, "y": invy}[value_var]
 
@@ -1316,14 +1317,12 @@ class _CategoricalPlotter(_RelationalPlotter):
             pos = np.array([row[self.orient], row[self.orient]])
             val = np.array([row[f"{var}min"], row[f"{var}max"]])
 
-            cw = capsize * self._native_width / 2
-            if self._log_scaled(self.orient):
-                log_pos = np.log10(pos)
-                cap = 10 ** (log_pos[0] - cw), 10 ** (log_pos[1] + cw)
-            else:
-                cap = pos[0] - cw, pos[1] + cw
-
             if capsize:
+
+                cw = capsize * self._native_width / 2
+                scl, inv = _get_transform_functions(ax, self.orient)
+                cap = inv(scl(pos[0]) - cw), inv(scl(pos[1]) + cw)
+
                 pos = np.concatenate([
                     [*cap, np.nan], pos, [np.nan, *cap]
                 ])
