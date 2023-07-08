@@ -10,7 +10,7 @@ from pandas.testing import assert_frame_equal
 
 from seaborn.axisgrid import FacetGrid
 from seaborn._compat import get_colormap
-from seaborn._oldcore import (
+from seaborn._base import (
     SemanticMapping,
     HueMapping,
     SizeMapping,

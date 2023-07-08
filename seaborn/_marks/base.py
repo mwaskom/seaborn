@@ -198,7 +198,7 @@ class Mark:
 
     def _infer_orient(self, scales: dict) -> str:  # TODO type scales
 
-        # TODO The original version of this (in seaborn._oldcore) did more checking.
+        # TODO The original version of this (in seaborn._base) did more checking.
         # Paring that down here for the prototype to see what restrictions make sense.
 
         # TODO rethink this to map from scale type to "DV priority" and use that?

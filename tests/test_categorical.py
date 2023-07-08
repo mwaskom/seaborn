@@ -17,8 +17,9 @@ from numpy.testing import (
 
 from seaborn import categorical as cat
 
-from seaborn.utils import _version_predates, desaturate
-from seaborn._oldcore import categorical_order
+from seaborn._base import categorical_order
+from seaborn._compat import get_colormap, get_legend_handles
+from seaborn._testing import assert_plots_equal
 from seaborn.categorical import (
     _CategoricalPlotter,
     Beeswarm,
@@ -34,9 +35,7 @@ from seaborn.categorical import (
     violinplot,
 )
 from seaborn.palettes import color_palette
-from seaborn.utils import _draw_figure
-from seaborn._compat import get_colormap, get_legend_handles
-from seaborn._testing import assert_plots_equal
+from seaborn.utils import _draw_figure, _version_predates, desaturate
 
 
 PLOT_FUNCS = [
