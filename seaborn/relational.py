@@ -13,6 +13,7 @@ from .utils import (
     adjust_legend_subtitles,
     _default_color,
     _deprecate_ci,
+    _get_transform_functions,
 )
 from ._statistics import EstimateAggregator
 from .axisgrid import FacetGrid, _facet_docs
@@ -410,11 +411,11 @@ class _LinePlotter(_RelationalPlotter):
                 sub_data[f"{other}min"] = np.nan
                 sub_data[f"{other}max"] = np.nan
 
-            # TODO this is pretty ad hoc ; see GH2409
+            # Apply inverse axis scaling
             for var in "xy":
-                if self._log_scaled(var):
-                    for col in sub_data.filter(regex=f"^{var}"):
-                        sub_data[col] = np.power(10, sub_data[col])
+                _, inv = _get_transform_functions(ax, var)
+                for col in sub_data.filter(regex=f"^{var}"):
+                    sub_data[col] = inv(sub_data[col])
 
             # --- Draw the main line(s)
 
@@ -510,7 +511,7 @@ class _ScatterPlotter(_RelationalPlotter):
 
         # --- Determine the visual attributes of the plot
 
-        data = self.plot_data.dropna()
+        data = self.comp_data.dropna()
         if data.empty:
             return
 
@@ -518,6 +519,11 @@ class _ScatterPlotter(_RelationalPlotter):
         empty = np.full(len(data), np.nan)
         x = data.get("x", empty)
         y = data.get("y", empty)
+
+        # Apply inverse scaling to the coordinate variables
+        _, inv_x = _get_transform_functions(ax, "x")
+        _, inv_y = _get_transform_functions(ax, "y")
+        x, y = inv_x(x), inv_y(y)
 
         if "style" in self.variables:
             # Use a representative marker so scatter sets the edgecolor

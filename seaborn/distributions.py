@@ -26,6 +26,7 @@ from .axisgrid import (
 )
 from .utils import (
     remove_na,
+    _get_transform_functions,
     _kde_support,
     _normalize_kwargs,
     _check_argument,
@@ -487,9 +488,10 @@ class _DistributionPlotter(VectorPlotter):
                 densities[key] *= hist_norm
 
             # Convert edges back to original units for plotting
-            if self._log_scaled(self.data_variable):
-                widths = np.power(10, edges + widths) - np.power(10, edges)
-                edges = np.power(10, edges)
+            ax = self._get_axes(sub_vars)
+            _, inv = _get_transform_functions(ax, self.data_variable)
+            widths = inv(edges + widths) - inv(edges)
+            edges = inv(edges)
 
             # Pack the histogram data and metadata together
             edges = edges + (1 - shrink) / 2 * widths
@@ -809,11 +811,14 @@ class _DistributionPlotter(VectorPlotter):
                 weights=sub_data.get("weights", None),
             )
 
-            # Check for log scaling on the data axis
-            if self._log_scaled("x"):
-                x_edges = np.power(10, x_edges)
-            if self._log_scaled("y"):
-                y_edges = np.power(10, y_edges)
+            # Get the axes for this plot
+            ax = self._get_axes(sub_vars)
+
+            # Invert the scale for the edges
+            _, inv_x = _get_transform_functions(ax, "x")
+            _, inv_y = _get_transform_functions(ax, "y")
+            x_edges = inv_x(x_edges)
+            y_edges = inv_y(y_edges)
 
             # Apply scaling to normalize across groups
             if estimator.stat != "count" and common_norm:
@@ -844,9 +849,6 @@ class _DistributionPlotter(VectorPlotter):
                 thresh = self._quantile_to_level(heights, pthresh)
             if thresh is not None:
                 heights = np.ma.masked_less_equal(heights, thresh)
-
-            # Get the axes for this plot
-            ax = self._get_axes(sub_vars)
 
             # pcolormesh is going to turn the grid off, but we want to keep it
             # I'm not sure if there's a better way to get the grid state
@@ -1093,12 +1095,10 @@ class _DistributionPlotter(VectorPlotter):
                 continue
 
             # Transform the support grid back to the original scale
-            xx, yy = support
-            if self._log_scaled("x"):
-                xx = np.power(10, xx)
-            if self._log_scaled("y"):
-                yy = np.power(10, yy)
-            support = xx, yy
+            ax = self._get_axes(sub_vars)
+            _, inv_x = _get_transform_functions(ax, "x")
+            _, inv_y = _get_transform_functions(ax, "y")
+            support = inv_x(support[0]), inv_y(support[1])
 
             # Apply a scaling factor so that the integral over all subsets is 1
             if common_norm:
@@ -1245,9 +1245,10 @@ class _DistributionPlotter(VectorPlotter):
                 artist_kws["color"] = self._hue_map(sub_vars["hue"])
 
             # Return the data variable to the linear domain
-            # This needs an automatic solution; see GH2409
+            ax = self._get_axes(sub_vars)
+            _, inv = _get_transform_functions(ax, self.data_variable)
+            vals = inv(vals)
             if self._log_scaled(self.data_variable):
-                vals = np.power(10, vals)
                 vals[0] = -np.inf
 
             # Work out the orientation of the plot
@@ -1264,7 +1265,6 @@ class _DistributionPlotter(VectorPlotter):
                 top_edge = 1
 
             # Draw the line for this subset
-            ax = self._get_axes(sub_vars)
             artist, = ax.plot(*plot_args, **artist_kws)
             sticky_edges = getattr(artist.sticky_edges, stat_variable)
             sticky_edges[:] = 0, top_edge
@@ -1327,9 +1327,8 @@ class _DistributionPlotter(VectorPlotter):
         n = len(vector)
 
         # Return data to linear domain
-        # This needs an automatic solution; see GH2409
-        if self._log_scaled(var):
-            vector = np.power(10, vector)
+        _, inv = _get_transform_functions(ax, var)
+        vector = inv(vector)
 
         # We'll always add a single collection with varying colors
         if "hue" in self.variables:
