@@ -20,6 +20,7 @@ import matplotlib as mpl
 from matplotlib.axes import Axes
 from matplotlib.artist import Artist
 from matplotlib.figure import Figure
+import numpy as np
 from PIL import Image
 
 from seaborn._marks.base import Mark
@@ -1587,7 +1588,7 @@ class Plotter:
 
                 axes_df = self._filter_subplot_data(df, view)
 
-                axes_df = axes_df.replace(np.inf, np.nan)
+                axes_df = axes_df.replace(np.inf, np.nan).replace(-np.inf, np.nan)
                 if keep_na:
                     # The simpler thing to do would be x.dropna().reindex(x.index).
                     # But that doesn't work with the way that the subset iteration
