@@ -485,7 +485,7 @@ class Plot:
     def add(
         self,
         mark: Mark,
-        *transforms: Stat | Mark,
+        *transforms: Stat | Move,
         orient: str | None = None,
         legend: bool = True,
         data: DataSource = None,
