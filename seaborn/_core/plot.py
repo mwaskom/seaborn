@@ -1185,19 +1185,19 @@ class Plotter:
 
     def _compute_stats(self, spec: Plot, layers: list[Layer]) -> None:
 
-        grouping_vars = [v for v in PROPERTIES if v not in "xy"]
-        grouping_vars += ["col", "row", "group"]
-
         pair_vars = spec._pair_spec.get("structure", {})
 
         for layer in layers:
-
             data = layer["data"]
             mark = layer["mark"]
             stat = layer["stat"]
 
             if stat is None:
                 continue
+            target_vars = getattr(stat, "target_vars", "xy")
+
+            grouping_vars = [v for v in PROPERTIES if v not in target_vars]
+            grouping_vars += ["col", "row", "group"]
 
             iter_axes = itertools.product(*[
                 pair_vars.get(axis, [axis]) for axis in "xy"

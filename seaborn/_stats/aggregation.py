@@ -1,6 +1,6 @@
 from __future__ import annotations
 from dataclasses import dataclass
-from typing import ClassVar, Callable
+from typing import ClassVar, Callable, Iterable
 
 import pandas as pd
 from pandas import DataFrame
@@ -21,6 +21,9 @@ class Agg(Stat):
     ----------
     func : str or callable
         Name of a :class:`pandas.Series` method or a vector -> scalar function.
+    target_vars : list of strings
+        Variables to perform the aggregation on. Defaults to x or y, depending on
+        orientation.
 
     See Also
     --------
@@ -32,6 +35,7 @@ class Agg(Stat):
 
     """
     func: str | Callable[[Vector], float] = "mean"
+    target_vars: Iterable[str] = ("x", "y")
 
     group_by_orient: ClassVar[bool] = True
 
@@ -39,11 +43,11 @@ class Agg(Stat):
         self, data: DataFrame, groupby: GroupBy, orient: str, scales: dict[str, Scale],
     ) -> DataFrame:
 
-        var = {"x": "y", "y": "x"}.get(orient)
+        vars = [v for v in self.target_vars if v != orient]
         res = (
             groupby
-            .agg(data, {var: self.func})
-            .dropna(subset=[var])
+            .agg(data, {var: self.func for var in vars})
+            .dropna(subset=vars)
             .reset_index(drop=True)
         )
         return res
