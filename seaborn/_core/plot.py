@@ -1588,21 +1588,23 @@ class Plotter:
 
                 axes_df = self._filter_subplot_data(df, view)
 
-                axes_df = axes_df.replace(np.inf, np.nan).replace(-np.inf, np.nan)
+                axes_df_inf_as_nan = axes_df.copy()
+                axes_df_inf_as_nan = axes_df_inf_as_nan.replace(np.inf, np.nan)
+                axes_df_inf_as_nan = axes_df_inf_as_nan.replace(-np.inf, np.nan)
                 if keep_na:
                     # The simpler thing to do would be x.dropna().reindex(x.index).
                     # But that doesn't work with the way that the subset iteration
                     # is written below, which assumes data for grouping vars.
                     # Matplotlib (usually?) masks nan data, so this should "work".
                     # Downstream code can also drop these rows, at some speed cost.
-                    present = axes_df.notna().all(axis=1)
+                    present = axes_df_inf_as_nan.notna().all(axis=1)
                     nulled = {}
                     for axis in "xy":
                         if axis in axes_df:
                             nulled[axis] = axes_df[axis].where(present)
-                    axes_df = axes_df.assign(**nulled)
+                    axes_df = axes_df_inf_as_nan.assign(**nulled)
                 else:
-                    axes_df = axes_df.dropna()
+                    axes_df = axes_df_inf_as_nan.dropna()
 
                 subplot_keys = {}
                 for dim in ["col", "row"]:
