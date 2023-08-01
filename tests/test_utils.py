@@ -124,7 +124,7 @@ def test_saturate():
 def test_to_utf8(s, exp):
     """Test the to_utf8 function: object to string"""
     u = utils.to_utf8(s)
-    assert type(u) == str
+    assert isinstance(u, str)
     assert u == exp
 
 
