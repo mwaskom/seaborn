@@ -1589,8 +1589,9 @@ class Plotter:
                 axes_df = self._filter_subplot_data(df, view)
 
                 axes_df_inf_as_nan = axes_df.copy()
-                axes_df_inf_as_nan = axes_df_inf_as_nan.replace(np.inf, np.nan)
-                axes_df_inf_as_nan = axes_df_inf_as_nan.replace(-np.inf, np.nan)
+                axes_df_inf_as_nan = axes_df_inf_as_nan.mask(
+                    axes_df_inf_as_nan.isin([np.inf, -np.inf]), np.nan
+                )
                 if keep_na:
                     # The simpler thing to do would be x.dropna().reindex(x.index).
                     # But that doesn't work with the way that the subset iteration
