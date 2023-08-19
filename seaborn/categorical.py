@@ -628,6 +628,7 @@ class _CategoricalPlotter(_RelationalPlotter):
             capwidth = plot_kws.get("capwidths", 0.5 * data["width"])
 
             self._invert_scale(ax, data)
+            linear_scale = getattr(ax, f"get_{self.orient}scale")() == "linear"
 
             maincolor = self._hue_map(sub_vars["hue"]) if "hue" in sub_vars else color
             if fill:
@@ -652,8 +653,8 @@ class _CategoricalPlotter(_RelationalPlotter):
             default_kws = dict(
                 bxpstats=stats.to_dict("records"),
                 positions=data[self.orient],
-                # Set width to 0 with log scaled orient axis to avoid going < 0
-                widths=0 if self._log_scaled(self.orient) else data["width"],
+                # Set width to 0 to avoid going out of domain
+                widths=data["width"] if linear_scale else 0,
                 patch_artist=fill,
                 vert=self.orient == "x",
                 manage_ticks=False,
@@ -674,7 +675,8 @@ class _CategoricalPlotter(_RelationalPlotter):
 
             # Reset artist widths after adding so everything stays positive
             ori_idx = ["x", "y"].index(self.orient)
-            if self._log_scaled(self.orient):
+
+            if not linear_scale:
                 for i, box in enumerate(data.to_dict("records")):
                     p0 = box["edge"]
                     p1 = box["edge"] + box["width"]
@@ -703,9 +705,10 @@ class _CategoricalPlotter(_RelationalPlotter):
                         artists["medians"][i].set_data(verts)
 
                     if artists["caps"]:
+                        f_fwd, f_inv = _get_transform_functions(ax, self.orient)
                         for line in artists["caps"][2 * i:2 * i + 2]:
-                            p0 = 10 ** (np.log10(box[self.orient]) - capwidth[i] / 2)
-                            p1 = 10 ** (np.log10(box[self.orient]) + capwidth[i] / 2)
+                            p0 = f_inv(f_fwd(box[self.orient]) - capwidth[i] / 2)
+                            p1 = f_inv(f_fwd(box[self.orient]) + capwidth[i] / 2)
                             verts = line.get_xydata().T
                             verts[ori_idx][:] = p0, p1
                             line.set_data(verts)
@@ -1169,17 +1172,11 @@ class _CategoricalPlotter(_RelationalPlotter):
         markers = self._map_prop_with_hue("marker", markers, "o", plot_kws)
         linestyles = self._map_prop_with_hue("linestyle", linestyles, "-", plot_kws)
 
-        positions = self.var_levels[self.orient]
+        base_positions = self.var_levels[self.orient]
         if self.var_types[self.orient] == "categorical":
             min_cat_val = int(self.comp_data[self.orient].min())
             max_cat_val = int(self.comp_data[self.orient].max())
-            positions = [i for i in range(min_cat_val, max_cat_val + 1)]
-        else:
-            if self._log_scaled(self.orient):
-                positions = np.log10(positions)
-            if self.var_types[self.orient] == "datetime":
-                positions = mpl.dates.date2num(positions)
-        positions = pd.Index(positions, name=self.orient)
+            base_positions = [i for i in range(min_cat_val, max_cat_val + 1)]
 
         n_hue_levels = 0 if self._hue_map.levels is None else len(self._hue_map.levels)
         if dodge is True:
@@ -1193,11 +1190,14 @@ class _CategoricalPlotter(_RelationalPlotter):
 
             ax = self._get_axes(sub_vars)
 
+            ori_axis = getattr(ax, f"{self.orient}axis")
+            transform, _ = _get_transform_functions(ax, self.orient)
+            positions = transform(ori_axis.convert_units(base_positions))
             agg_data = sub_data if sub_data.empty else (
                 sub_data
                 .groupby(self.orient)
                 .apply(aggregator, agg_var)
-                .reindex(positions)
+                .reindex(pd.Index(positions, name=self.orient))
                 .reset_index()
             )
 
