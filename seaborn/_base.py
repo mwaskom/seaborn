@@ -1121,13 +1121,13 @@ class VectorPlotter:
                 parts = []
                 grouped = self.plot_data[var].groupby(self.converters[var], sort=False)
                 for converter, orig in grouped:
-                    with pd.option_context('mode.use_inf_as_na', True):
-                        orig = orig.dropna()
-                        if var in self.var_levels:
-                            # TODO this should happen in some centralized location
-                            # it is similar to GH2419, but more complicated because
-                            # supporting `order` in categorical plots is tricky
-                            orig = orig[orig.isin(self.var_levels[var])]
+                    orig = orig.mask(orig.isin([np.inf, -np.inf]), np.nan)
+                    orig = orig.dropna()
+                    if var in self.var_levels:
+                        # TODO this should happen in some centralized location
+                        # it is similar to GH2419, but more complicated because
+                        # supporting `order` in categorical plots is tricky
+                        orig = orig[orig.isin(self.var_levels[var])]
                     comp = pd.to_numeric(converter.convert_units(orig)).astype(float)
                     if converter.get_scale() == "log":
                         comp = np.log10(comp)
