@@ -626,7 +626,12 @@ class _CategoricalPlotter(_RelationalPlotter):
             capwidth = plot_kws.get("capwidths", 0.5 * data["width"])
 
             self._invert_scale(ax, data)
-            linear_scale = getattr(ax, f"get_{self.orient}scale")() == "linear"
+            _, inv = _get_transform_functions(ax, value_var)
+            for stat in ["mean", "med", "q1", "q3", "cilo", "cihi", "whislo", "whishi"]:
+                stats[stat] = inv(stats[stat])
+            stats["fliers"] = stats["fliers"].map(inv)
+
+            linear_orient_scale = getattr(ax, f"get_{self.orient}scale")() == "linear"
 
             maincolor = self._hue_map(sub_vars["hue"]) if "hue" in sub_vars else color
             if fill:
@@ -652,7 +657,7 @@ class _CategoricalPlotter(_RelationalPlotter):
                 bxpstats=stats.to_dict("records"),
                 positions=data[self.orient],
                 # Set width to 0 to avoid going out of domain
-                widths=data["width"] if linear_scale else 0,
+                widths=data["width"] if linear_orient_scale else 0,
                 patch_artist=fill,
                 vert=self.orient == "x",
                 manage_ticks=False,
@@ -674,7 +679,7 @@ class _CategoricalPlotter(_RelationalPlotter):
             # Reset artist widths after adding so everything stays positive
             ori_idx = ["x", "y"].index(self.orient)
 
-            if not linear_scale:
+            if not linear_orient_scale:
                 for i, box in enumerate(data.to_dict("records")):
                     p0 = box["edge"]
                     p1 = box["edge"] + box["width"]

@@ -806,13 +806,13 @@ class TestBoxPlot(SharedAxesLevelTests):
         p25, p50, p75 = np.percentile(data, [25, 50, 75])
 
         box = self.get_box_verts(bxp.box)
-        assert box[val_idx].min() == p25
-        assert box[val_idx].max() == p75
+        assert box[val_idx].min() == approx(p25, 1e-3)
+        assert box[val_idx].max() == approx(p75, 1e-3)
         assert box[pos_idx].min() == approx(pos - width / 2)
         assert box[pos_idx].max() == approx(pos + width / 2)
 
         med = bxp.median.get_xydata().T
-        assert tuple(med[val_idx]) == (p50, p50)
+        assert np.allclose(med[val_idx], (p50, p50), rtol=1e-3)
         assert np.allclose(med[pos_idx], (pos - width / 2, pos + width / 2))
 
     def check_whiskers(self, bxp, data, orient, pos, capsize=0.4, whis=1.5):
@@ -831,13 +831,13 @@ class TestBoxPlot(SharedAxesLevelTests):
         adj_lo = data[data >= (p25 - iqr * whis)].min()
         adj_hi = data[data <= (p75 + iqr * whis)].max()
 
-        assert whis_lo[val_idx].max() == p25
+        assert whis_lo[val_idx].max() == approx(p25, 1e-3)
         assert whis_lo[val_idx].min() == approx(adj_lo)
         assert np.allclose(whis_lo[pos_idx], (pos, pos))
         assert np.allclose(caps_lo[val_idx], (adj_lo, adj_lo))
         assert np.allclose(caps_lo[pos_idx], (pos - capsize / 2, pos + capsize / 2))
 
-        assert whis_hi[val_idx].min() == p75
+        assert whis_hi[val_idx].min() == approx(p75, 1e-3)
         assert whis_hi[val_idx].max() == approx(adj_hi)
         assert np.allclose(whis_hi[pos_idx], (pos, pos))
         assert np.allclose(caps_hi[val_idx], (adj_hi, adj_hi))
@@ -943,6 +943,18 @@ class TestBoxPlot(SharedAxesLevelTests):
                 coords = np.log10(box.get_path().vertices.T[0])
                 widths.append(np.ptp(coords))
         assert np.std(widths) == approx(0)
+
+    @pytest.mark.parametrize("orient", ["x", "y"])
+    def test_log_data_scale(self, long_df, orient):
+
+        var = {"x": "y", "y": "x"}[orient]
+        s = long_df["z"]
+        ax = mpl.figure.Figure().subplots()
+        getattr(ax, f"set_{var}scale")("log")
+        boxplot(**{var: s}, whis=np.inf, ax=ax)
+        bxp = ax.containers[0][0]
+        self.check_box(bxp, s, orient, 0)
+        self.check_whiskers(bxp, s, orient, 0, whis=np.inf)
 
     def test_color(self, long_df):
 
