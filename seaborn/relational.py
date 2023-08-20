@@ -161,6 +161,10 @@ legend : "auto", "brief", "full", or False
     choose between brief or full representation based on number of levels.
     If `False`, no legend data is added and no legend is drawn.
     """,
+    loop="""
+loop : Boolean
+    If True, the ends of the line will be plotted as connected.
+    """,
     ax_in="""
 ax : matplotlib Axes
     Axes object to draw the plot onto, otherwise uses the current Axes.
@@ -318,8 +322,8 @@ class _LinePlotter(_RelationalPlotter):
     def __init__(
         self, *,
         data=None, variables={},
-        estimator=None, n_boot=None, seed=None, errorbar=None,
-        sort=True, orient="x", err_style=None, err_kws=None, legend=None
+        estimator=None, n_boot=None, seed=None, errorbar=None, sort=True, 
+        orient="x", err_style=None, err_kws=None, legend=None, loop=False
     ):
 
         # TODO this is messy, we want the mapping to be agnostic about
@@ -339,6 +343,7 @@ class _LinePlotter(_RelationalPlotter):
         self.orient = orient
         self.err_style = err_style
         self.err_kws = {} if err_kws is None else err_kws
+        self.loop = loop
 
         self.legend = legend
 
@@ -409,6 +414,10 @@ class _LinePlotter(_RelationalPlotter):
             else:
                 sub_data[f"{other}min"] = np.nan
                 sub_data[f"{other}max"] = np.nan
+
+            #loop=True makes the first and last points connect
+            if self.loop:
+                sub_data=sub_data.append(sub_data.iloc[0])
 
             # TODO this is pretty ad hoc ; see GH2409
             for var in "xy":
@@ -575,7 +584,7 @@ def lineplot(
     dashes=True, markers=None, style_order=None,
     estimator="mean", errorbar=("ci", 95), n_boot=1000, seed=None,
     orient="x", sort=True, err_style="band", err_kws=None,
-    legend="auto", ci="deprecated", ax=None, **kwargs
+    legend="auto", ci="deprecated", ax=None, loop=False, **kwargs
 ):
 
     # Handle deprecation of ci parameter
@@ -586,7 +595,7 @@ def lineplot(
         data=data, variables=variables,
         estimator=estimator, n_boot=n_boot, seed=seed, errorbar=errorbar,
         sort=sort, orient=orient, err_style=err_style, err_kws=err_kws,
-        legend=legend,
+        legend=legend, loop=loop
     )
 
     p.map_hue(palette=palette, order=hue_order, norm=hue_norm)
