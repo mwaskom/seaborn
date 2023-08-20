@@ -1296,25 +1296,27 @@ class VectorPlotter:
 
         # TODO -- Add axes labels
 
-    def _log_scaled(self, axis):
-        """Return True if specified axis is log scaled on all attached axes."""
-        if not hasattr(self, "ax"):
-            return False
-
+    def _get_scale_transforms(self, axis):
+        """Return a function implementing the scale transform (or its inverse)."""
         if self.ax is None:
-            axes_list = self.facets.axes.flatten()
+            axis_list = [getattr(ax, f"{axis}axis") for ax in self.facets.axes.flat]
+            scales = {axis.get_scale() for axis in axis_list}
+            if len(scales) > 1:
+                # It is a simplifying assumption that faceted axes will always have
+                # the same scale (even if they are unshared and have distinct limits).
+                # Nothing in the seaborn API allows you to create a FacetGrid with
+                # a mixture of scales, although it's possible via matplotlib.
+                # This is constraining, but no more so than previous behavior that
+                # only (properly) handled log scales, and there are some places where
+                # it would be much too complicated to use axes-specific transforms.
+                err = "Cannot determine transform with mixed scales on faceted axes."
+                raise RuntimeError(err)
+            transform_obj = axis_list[0].get_transform()
         else:
-            axes_list = [self.ax]
+            # This case is more straightforward
+            transform_obj = getattr(self.ax, f"{axis}axis").get_transform()
 
-        log_scaled = []
-        for ax in axes_list:
-            data_axis = getattr(ax, f"{axis}axis")
-            log_scaled.append(data_axis.get_scale() == "log")
-
-        if any(log_scaled) and not all(log_scaled):
-            raise RuntimeError("Axis scaling is not consistent")
-
-        return any(log_scaled)
+        return transform_obj.transform, transform_obj.inverted().transform
 
     def _add_axis_labels(self, ax, default_x="", default_y=""):
         """Add axis labels if not present, set visibility to match ticklabels."""

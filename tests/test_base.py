@@ -5,7 +5,7 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 
 import pytest
-from numpy.testing import assert_array_equal
+from numpy.testing import assert_array_equal, assert_array_almost_equal
 from pandas.testing import assert_frame_equal
 
 from seaborn.axisgrid import FacetGrid
@@ -1096,48 +1096,36 @@ class TestVectorPlotter:
         p._attach(ax, log_scale=True)
         assert ax.xaxis.get_scale() == "log"
         assert ax.yaxis.get_scale() == "linear"
-        assert p._log_scaled("x")
-        assert not p._log_scaled("y")
 
         _, ax = plt.subplots()
         p = VectorPlotter(data=long_df, variables={"x": "x"})
         p._attach(ax, log_scale=2)
         assert ax.xaxis.get_scale() == "log"
         assert ax.yaxis.get_scale() == "linear"
-        assert p._log_scaled("x")
-        assert not p._log_scaled("y")
 
         _, ax = plt.subplots()
         p = VectorPlotter(data=long_df, variables={"y": "y"})
         p._attach(ax, log_scale=True)
         assert ax.xaxis.get_scale() == "linear"
         assert ax.yaxis.get_scale() == "log"
-        assert not p._log_scaled("x")
-        assert p._log_scaled("y")
 
         _, ax = plt.subplots()
         p = VectorPlotter(data=long_df, variables={"x": "x", "y": "y"})
         p._attach(ax, log_scale=True)
         assert ax.xaxis.get_scale() == "log"
         assert ax.yaxis.get_scale() == "log"
-        assert p._log_scaled("x")
-        assert p._log_scaled("y")
 
         _, ax = plt.subplots()
         p = VectorPlotter(data=long_df, variables={"x": "x", "y": "y"})
         p._attach(ax, log_scale=(True, False))
         assert ax.xaxis.get_scale() == "log"
         assert ax.yaxis.get_scale() == "linear"
-        assert p._log_scaled("x")
-        assert not p._log_scaled("y")
 
         _, ax = plt.subplots()
         p = VectorPlotter(data=long_df, variables={"x": "x", "y": "y"})
         p._attach(ax, log_scale=(False, 2))
         assert ax.xaxis.get_scale() == "linear"
         assert ax.yaxis.get_scale() == "log"
-        assert not p._log_scaled("x")
-        assert p._log_scaled("y")
 
     def test_attach_converters(self, long_df):
 
@@ -1160,6 +1148,61 @@ class TestVectorPlotter:
         p._attach(g)
         assert p.ax is None
         assert p.facets == g
+
+    def test_scale_transform_identity(self, long_df):
+
+        _, ax = plt.subplots()
+        p = VectorPlotter(data=long_df, variables={"x": "x"})
+        p._attach(ax)
+        fwd, inv = p._get_scale_transforms("x")
+
+        x = np.arange(1, 10)
+        assert_array_equal(fwd(x), x)
+        assert_array_equal(inv(x), x)
+
+    def test_scale_transform_identity_facets(self, long_df):
+
+        g = FacetGrid(long_df, col="a")
+        p = VectorPlotter(data=long_df, variables={"x": "x", "col": "a"})
+        p._attach(g)
+
+        fwd, inv = p._get_scale_transforms("x")
+        x = np.arange(1, 10)
+        assert_array_equal(fwd(x), x)
+        assert_array_equal(inv(x), x)
+
+    def test_scale_transform_log(self, long_df):
+
+        _, ax = plt.subplots()
+        ax.set_xscale("log")
+        p = VectorPlotter(data=long_df, variables={"x": "x"})
+        p._attach(ax)
+
+        fwd, inv = p._get_scale_transforms("x")
+        x = np.arange(1, 4)
+        assert_array_almost_equal(fwd(x), np.log10(x))
+        assert_array_almost_equal(inv(x), 10 ** x)
+
+    def test_scale_transform_facets(self, long_df):
+
+        g = FacetGrid(long_df, col="a")
+        p = VectorPlotter(data=long_df, variables={"x": "x", "col": "a"})
+        p._attach(g)
+
+        fwd, inv = p._get_scale_transforms("x")
+        x = np.arange(4)
+        assert_array_equal(inv(fwd(x)), x)
+
+    def test_scale_transform_mixed_facets(self, long_df):
+
+        g = FacetGrid(long_df, col="a", sharex=False)
+        g.axes.flat[0].set_xscale("log")
+        p = VectorPlotter(data=long_df, variables={"x": "x", "col": "a"})
+        p._attach(g)
+
+        err = "Cannot determine transform with mixed scales on faceted axes"
+        with pytest.raises(RuntimeError, match=err):
+            p._get_scale_transforms("x")
 
     def test_attach_shared_axes(self, long_df):
 

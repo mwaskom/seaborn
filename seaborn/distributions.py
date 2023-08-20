@@ -274,21 +274,20 @@ class _DistributionPlotter(VectorPlotter):
             # This will require rethiniking if we add other semantics!
             hue_levels = self.var_levels["hue"]
             n = len(hue_levels)
+            f_fwd, f_inv = self._get_scale_transforms(self.data_variable)
             for key in curves:
+
                 level = dict(key)["hue"]
                 hist = curves[key].reset_index(name="heights")
                 level_idx = hue_levels.index(level)
-                if self._log_scaled(self.data_variable):
-                    log_min = np.log10(hist["edges"])
-                    log_max = np.log10(hist["edges"] + hist["widths"])
-                    log_width = (log_max - log_min) / n
-                    new_min = np.power(10, log_min + level_idx * log_width)
-                    new_max = np.power(10, log_min + (level_idx + 1) * log_width)
-                    hist["widths"] = new_max - new_min
-                    hist["edges"] = new_min
-                else:
-                    hist["widths"] /= n
-                    hist["edges"] += level_idx * hist["widths"]
+
+                a = f_fwd(hist["edges"])
+                b = f_fwd(hist["edges"] + hist["widths"])
+                w = (b - a) / n
+                new_min = f_inv(a + level_idx * w)
+                new_max = f_inv(a + (level_idx + 1) * w)
+                hist["widths"] = new_max - new_min
+                hist["edges"] = new_min
 
                 curves[key] = hist.set_index(["edges", "widths"])["heights"]
 
@@ -304,7 +303,6 @@ class _DistributionPlotter(VectorPlotter):
         common_norm,
         common_grid,
         estimate_kws,
-        log_scale,
         warn_singular=True,
     ):
 
@@ -359,8 +357,9 @@ class _DistributionPlotter(VectorPlotter):
                     warnings.warn(msg, UserWarning, stacklevel=4)
                 continue
 
-            if log_scale:
-                support = np.power(10, support)
+            # Invert the scaling of the support points
+            _, f_inv = self._get_scale_transforms(self.data_variable)
+            support = f_inv(support)
 
             # Apply a scaling factor so that the integral over all subsets is 1
             if common_norm:
@@ -447,13 +446,11 @@ class _DistributionPlotter(VectorPlotter):
             # TODO alternatively, clip at min/max bins?
             kde_kws.setdefault("cut", 0)
             kde_kws["cumulative"] = estimate_kws["cumulative"]
-            log_scale = self._log_scaled(self.data_variable)
             densities = self._compute_univariate_density(
                 self.data_variable,
                 common_norm,
                 common_bins,
                 kde_kws,
-                log_scale,
                 warn_singular=False,
             )
 
@@ -931,16 +928,12 @@ class _DistributionPlotter(VectorPlotter):
         if subsets and multiple in ("stack", "fill"):
             common_grid = True
 
-        # Check if the data axis is log scaled
-        log_scale = self._log_scaled(self.data_variable)
-
         # Do the computation
         densities = self._compute_univariate_density(
             self.data_variable,
             common_norm,
             common_grid,
             estimate_kws,
-            log_scale,
             warn_singular,
         )
 
@@ -1248,7 +1241,9 @@ class _DistributionPlotter(VectorPlotter):
             ax = self._get_axes(sub_vars)
             _, inv = _get_transform_functions(ax, self.data_variable)
             vals = inv(vals)
-            if self._log_scaled(self.data_variable):
+
+            # Manually set the minimum value on a "log" scale
+            if isinstance(inv.__self__, mpl.scale.LogTransform):
                 vals[0] = -np.inf
 
             # Work out the orientation of the plot

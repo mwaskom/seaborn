@@ -3062,12 +3062,13 @@ class TestBeeswarm:
         p = Beeswarm(width=1)
 
         points = np.zeros(10)
-        assert_array_equal(points, p.add_gutters(points, 0))
+        t_fwd = t_inv = lambda x: x
+        assert_array_equal(points, p.add_gutters(points, 0, t_fwd, t_inv))
 
         points = np.array([0, -1, .4, .8])
         msg = r"50.0% of the points cannot be placed.+$"
         with pytest.warns(UserWarning, match=msg):
-            new_points = p.add_gutters(points, 0)
+            new_points = p.add_gutters(points, 0, t_fwd, t_inv)
         assert_array_equal(new_points, np.array([0, -.5, .4, .5]))
 
 

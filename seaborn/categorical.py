@@ -529,9 +529,7 @@ class _CategoricalPlotter(_RelationalPlotter):
             if not sub_data.empty:
                 point_collections[(ax, sub_data[self.orient].iloc[0])] = points
 
-        beeswarm = Beeswarm(
-            width=width, orient=self.orient, warn_thresh=warn_thresh,
-        )
+        beeswarm = Beeswarm(width=width, orient=self.orient, warn_thresh=warn_thresh)
         for (ax, center), points in point_collections.items():
             if points.get_offsets().shape[0] > 1:
 
@@ -3219,13 +3217,12 @@ class Beeswarm:
             new_xy = new_xyr[:, :2]
         new_x_data, new_y_data = ax.transData.inverted().transform(new_xy).T
 
-        log_scale = getattr(ax, f"get_{self.orient}scale")() == "log"
-
         # Add gutters
+        t_fwd, t_inv = _get_transform_functions(ax, self.orient)
         if self.orient == "y":
-            self.add_gutters(new_y_data, center, log_scale=log_scale)
+            self.add_gutters(new_y_data, center, t_fwd, t_inv)
         else:
-            self.add_gutters(new_x_data, center, log_scale=log_scale)
+            self.add_gutters(new_x_data, center, t_fwd, t_inv)
 
         # Reposition the points so they do not overlap
         if self.orient == "y":
@@ -3329,20 +3326,14 @@ class Beeswarm:
             "No non-overlapping candidates found. This should not happen."
         )
 
-    def add_gutters(self, points, center, log_scale=False):
+    def add_gutters(self, points, center, trans_fwd, trans_inv):
         """Stop points from extending beyond their territory."""
         half_width = self.width / 2
-        if log_scale:
-            low_gutter = 10 ** (np.log10(center) - half_width)
-        else:
-            low_gutter = center - half_width
+        low_gutter = trans_inv(trans_fwd(center) - half_width)
         off_low = points < low_gutter
         if off_low.any():
             points[off_low] = low_gutter
-        if log_scale:
-            high_gutter = 10 ** (np.log10(center) + half_width)
-        else:
-            high_gutter = center + half_width
+        high_gutter = trans_inv(trans_fwd(center) + half_width)
         off_high = points > high_gutter
         if off_high.any():
             points[off_high] = high_gutter
