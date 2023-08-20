@@ -282,7 +282,7 @@ def convert_dataframe_to_pandas(data: object) -> pd.DataFrame:
         )
         raise TypeError(msg)
 
-    if _version_predates(pd, "2.0.2 "):
+    if _version_predates(pd, "2.0.2"):
         msg = (
             "DataFrame interchange with pandas<2.0.2 has some known issues. "
             f"You are using pandas {pd.__version__}. "
