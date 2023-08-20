@@ -22,6 +22,7 @@ from seaborn.utils import (
     _check_argument,
     _draw_figure,
     _default_color,
+    _get_transform_functions,
     _normalize_kwargs,
     _version_predates,
 )
@@ -371,7 +372,7 @@ class _CategoricalPlotter(_RelationalPlotter):
     def _invert_scale(self, ax, data, vars=("x", "y")):
         """Undo scaling after computation so data are plotted correctly."""
         for var in vars:
-            _, inv = utils._get_transform_functions(ax, var[0])
+            _, inv = _get_transform_functions(ax, var[0])
             if var == self.orient and "width" in data:
                 hw = data["width"] / 2
                 data["edge"] = inv(data[var] - hw)
@@ -528,9 +529,7 @@ class _CategoricalPlotter(_RelationalPlotter):
             if not sub_data.empty:
                 point_collections[(ax, sub_data[self.orient].iloc[0])] = points
 
-        beeswarm = Beeswarm(
-            width=width, orient=self.orient, warn_thresh=warn_thresh,
-        )
+        beeswarm = Beeswarm(width=width, orient=self.orient, warn_thresh=warn_thresh)
         for (ax, center), points in point_collections.items():
             if points.get_offsets().shape[0] > 1:
 
@@ -627,6 +626,12 @@ class _CategoricalPlotter(_RelationalPlotter):
             capwidth = plot_kws.get("capwidths", 0.5 * data["width"])
 
             self._invert_scale(ax, data)
+            _, inv = _get_transform_functions(ax, value_var)
+            for stat in ["mean", "med", "q1", "q3", "cilo", "cihi", "whislo", "whishi"]:
+                stats[stat] = inv(stats[stat])
+            stats["fliers"] = stats["fliers"].map(inv)
+
+            linear_orient_scale = getattr(ax, f"get_{self.orient}scale")() == "linear"
 
             maincolor = self._hue_map(sub_vars["hue"]) if "hue" in sub_vars else color
             if fill:
@@ -651,8 +656,8 @@ class _CategoricalPlotter(_RelationalPlotter):
             default_kws = dict(
                 bxpstats=stats.to_dict("records"),
                 positions=data[self.orient],
-                # Set width to 0 with log scaled orient axis to avoid going < 0
-                widths=0 if self._log_scaled(self.orient) else data["width"],
+                # Set width to 0 to avoid going out of domain
+                widths=data["width"] if linear_orient_scale else 0,
                 patch_artist=fill,
                 vert=self.orient == "x",
                 manage_ticks=False,
@@ -673,7 +678,8 @@ class _CategoricalPlotter(_RelationalPlotter):
 
             # Reset artist widths after adding so everything stays positive
             ori_idx = ["x", "y"].index(self.orient)
-            if self._log_scaled(self.orient):
+
+            if not linear_orient_scale:
                 for i, box in enumerate(data.to_dict("records")):
                     p0 = box["edge"]
                     p1 = box["edge"] + box["width"]
@@ -702,9 +708,10 @@ class _CategoricalPlotter(_RelationalPlotter):
                         artists["medians"][i].set_data(verts)
 
                     if artists["caps"]:
+                        f_fwd, f_inv = _get_transform_functions(ax, self.orient)
                         for line in artists["caps"][2 * i:2 * i + 2]:
-                            p0 = 10 ** (np.log10(box[self.orient]) - capwidth[i] / 2)
-                            p1 = 10 ** (np.log10(box[self.orient]) + capwidth[i] / 2)
+                            p0 = f_inv(f_fwd(box[self.orient]) - capwidth[i] / 2)
+                            p1 = f_inv(f_fwd(box[self.orient]) + capwidth[i] / 2)
                             verts = line.get_xydata().T
                             verts[ori_idx][:] = p0, p1
                             line.set_data(verts)
@@ -769,8 +776,8 @@ class _CategoricalPlotter(_RelationalPlotter):
                                                  allow_empty=False):
 
             ax = self._get_axes(sub_vars)
-            _, inv_ori = utils._get_transform_functions(ax, self.orient)
-            _, inv_val = utils._get_transform_functions(ax, value_var)
+            _, inv_ori = _get_transform_functions(ax, self.orient)
+            _, inv_val = _get_transform_functions(ax, value_var)
 
             # Statistics
             lv_data = estimator(sub_data[value_var])
@@ -1010,8 +1017,8 @@ class _CategoricalPlotter(_RelationalPlotter):
                 offsets = span, span
 
             ax = violin["ax"]
-            _, invx = utils._get_transform_functions(ax, "x")
-            _, invy = utils._get_transform_functions(ax, "y")
+            _, invx = _get_transform_functions(ax, "x")
+            _, invy = _get_transform_functions(ax, "y")
             inv_pos = {"x": invx, "y": invy}[self.orient]
             inv_val = {"x": invx, "y": invy}[value_var]
 
@@ -1168,17 +1175,11 @@ class _CategoricalPlotter(_RelationalPlotter):
         markers = self._map_prop_with_hue("marker", markers, "o", plot_kws)
         linestyles = self._map_prop_with_hue("linestyle", linestyles, "-", plot_kws)
 
-        positions = self.var_levels[self.orient]
+        base_positions = self.var_levels[self.orient]
         if self.var_types[self.orient] == "categorical":
             min_cat_val = int(self.comp_data[self.orient].min())
             max_cat_val = int(self.comp_data[self.orient].max())
-            positions = [i for i in range(min_cat_val, max_cat_val + 1)]
-        else:
-            if self._log_scaled(self.orient):
-                positions = np.log10(positions)
-            if self.var_types[self.orient] == "datetime":
-                positions = mpl.dates.date2num(positions)
-        positions = pd.Index(positions, name=self.orient)
+            base_positions = [i for i in range(min_cat_val, max_cat_val + 1)]
 
         n_hue_levels = 0 if self._hue_map.levels is None else len(self._hue_map.levels)
         if dodge is True:
@@ -1192,11 +1193,14 @@ class _CategoricalPlotter(_RelationalPlotter):
 
             ax = self._get_axes(sub_vars)
 
+            ori_axis = getattr(ax, f"{self.orient}axis")
+            transform, _ = _get_transform_functions(ax, self.orient)
+            positions = transform(ori_axis.convert_units(base_positions))
             agg_data = sub_data if sub_data.empty else (
                 sub_data
                 .groupby(self.orient)
                 .apply(aggregator, agg_var)
-                .reindex(positions)
+                .reindex(pd.Index(positions, name=self.orient))
                 .reset_index()
             )
 
@@ -1316,14 +1320,12 @@ class _CategoricalPlotter(_RelationalPlotter):
             pos = np.array([row[self.orient], row[self.orient]])
             val = np.array([row[f"{var}min"], row[f"{var}max"]])
 
-            cw = capsize * self._native_width / 2
-            if self._log_scaled(self.orient):
-                log_pos = np.log10(pos)
-                cap = 10 ** (log_pos[0] - cw), 10 ** (log_pos[1] + cw)
-            else:
-                cap = pos[0] - cw, pos[1] + cw
-
             if capsize:
+
+                cw = capsize * self._native_width / 2
+                scl, inv = _get_transform_functions(ax, self.orient)
+                cap = inv(scl(pos[0]) - cw), inv(scl(pos[1]) + cw)
+
                 pos = np.concatenate([
                     [*cap, np.nan], pos, [np.nan, *cap]
                 ])
@@ -3220,13 +3222,12 @@ class Beeswarm:
             new_xy = new_xyr[:, :2]
         new_x_data, new_y_data = ax.transData.inverted().transform(new_xy).T
 
-        log_scale = getattr(ax, f"get_{self.orient}scale")() == "log"
-
         # Add gutters
+        t_fwd, t_inv = _get_transform_functions(ax, self.orient)
         if self.orient == "y":
-            self.add_gutters(new_y_data, center, log_scale=log_scale)
+            self.add_gutters(new_y_data, center, t_fwd, t_inv)
         else:
-            self.add_gutters(new_x_data, center, log_scale=log_scale)
+            self.add_gutters(new_x_data, center, t_fwd, t_inv)
 
         # Reposition the points so they do not overlap
         if self.orient == "y":
@@ -3330,20 +3331,14 @@ class Beeswarm:
             "No non-overlapping candidates found. This should not happen."
         )
 
-    def add_gutters(self, points, center, log_scale=False):
+    def add_gutters(self, points, center, trans_fwd, trans_inv):
         """Stop points from extending beyond their territory."""
         half_width = self.width / 2
-        if log_scale:
-            low_gutter = 10 ** (np.log10(center) - half_width)
-        else:
-            low_gutter = center - half_width
+        low_gutter = trans_inv(trans_fwd(center) - half_width)
         off_low = points < low_gutter
         if off_low.any():
             points[off_low] = low_gutter
-        if log_scale:
-            high_gutter = 10 ** (np.log10(center) + half_width)
-        else:
-            high_gutter = center + half_width
+        high_gutter = trans_inv(trans_fwd(center) + half_width)
         off_high = points > high_gutter
         if off_high.any():
             points[off_high] = high_gutter
