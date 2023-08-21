@@ -54,14 +54,7 @@ class PlotData:
         variables: dict[str, VariableSpec],
     ):
 
-        if isinstance(data, pd.DataFrame) or hasattr(data, "__dataframe__"):
-            # Check for pd.DataFrame inheritance could be removed once
-            # minimal pandas version supports dataframe interchange (1.5.0).
-            data = convert_dataframe_to_pandas(data)
-        elif data is not None and not isinstance(data, Mapping):
-            err = f"Data source must be a DataFrame or Mapping, not {type(data)!r}."
-            raise TypeError(err)
-
+        data = handle_data_source(data)
         frame, names, ids = self._assign_variables(data, variables)
 
         self.frame = frame
@@ -269,10 +262,24 @@ class PlotData:
         return frame, names, ids
 
 
+def handle_data_source(data: object) -> pd.DataFrame | Mapping | None:
+    """Convert the data source object to a common union representation."""
+    if isinstance(data, pd.DataFrame) or hasattr(data, "__dataframe__"):
+        # Check for pd.DataFrame inheritance could be removed once
+        # minimal pandas version supports dataframe interchange (1.5.0).
+        data = convert_dataframe_to_pandas(data)
+    elif data is not None and not isinstance(data, Mapping):
+        err = f"Data source must be a DataFrame or Mapping, not {type(data)!r}."
+        raise TypeError(err)
+
+    return data
+
+
 def convert_dataframe_to_pandas(data: object) -> pd.DataFrame:
     """Use the DataFrame exchange protocol, or fail gracefully."""
     if isinstance(data, pd.DataFrame):
         return data
+
     if not hasattr(pd.api, "interchange"):
         msg = (
             "Support for non-pandas DataFrame objects requires a version of pandas "
