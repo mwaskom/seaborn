@@ -10,6 +10,7 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 
 from ._base import VectorPlotter, variable_type, categorical_order
+from ._core.data import handle_data_source
 from ._compat import share_axis, get_legend_handles
 from . import utils
 from .utils import (
@@ -374,6 +375,7 @@ class FacetGrid(Grid):
     ):
 
         super().__init__()
+        data = handle_data_source(data)
 
         # Determine the hue facet layer information
         hue_var = hue
@@ -1240,6 +1242,7 @@ class PairGrid(Grid):
         """
 
         super().__init__()
+        data = handle_data_source(data)
 
         # Sort out the variables that define the grid
         numeric_cols = self._find_numeric_cols(data)
