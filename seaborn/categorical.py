@@ -2593,10 +2593,10 @@ def countplot(
 
     if x is None and y is not None:
         orient = "y"
-        x = 1
+        x = 1 if list(y) else None
     elif x is not None and y is None:
         orient = "x"
-        y = 1
+        y = 1 if list(x) else None
     elif x is not None and y is not None:
         raise TypeError("Cannot pass values for both `x` and `y`.")
 
