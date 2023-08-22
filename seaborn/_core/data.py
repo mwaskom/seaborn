@@ -304,6 +304,12 @@ def convert_dataframe_to_pandas(data: object) -> pd.DataFrame:
         warnings.warn(msg, stacklevel=2)
 
     try:
+        # This is going to convert all columns in the input dataframe, even though
+        # we may only need one or two of them. It would be more efficient to select
+        # the columns that are going to be used in the plot prior to interchange.
+        # Solving that in general is a hard problem, especially with the objects
+        # interface where variables passed in Plot() may only be referenced later
+        # in Plot.add(). But noting here in case this seems to be a bottleneck.
         return pd.api.interchange.from_dataframe(data)
     except Exception as err:
         msg = (
