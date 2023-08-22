@@ -703,6 +703,9 @@ class VectorPlotter:
                 data, **variables,
             )
         else:
+            # When dealing with long-form input, use the newer PlotData
+            # object (internal but introduced for the objects interface)
+            # to centralize / standardize data consumption logic.
             self.input_format = "long"
             plot_data = PlotData(data, variables)
             frame = plot_data.frame
