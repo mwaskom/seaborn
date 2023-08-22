@@ -757,7 +757,7 @@ class TestVectorPlotter:
         p = VectorPlotter()
         p.assign_variables(data=long_df, variables={"x": name})
         assert_array_equal(p.plot_data["x"], long_df[name])
-        assert p.variables["x"] == name
+        assert p.variables["x"] == str(name)
 
     def test_long_hierarchical_index(self, rng):
 
@@ -771,7 +771,7 @@ class TestVectorPlotter:
         p = VectorPlotter()
         p.assign_variables(data=df, variables={var: name})
         assert_array_equal(p.plot_data[var], df[name])
-        assert p.variables[var] == name
+        assert p.variables[var] == str(name)
 
     def test_long_scalar_and_data(self, long_df):
 
@@ -788,7 +788,7 @@ class TestVectorPlotter:
 
     def test_long_unknown_error(self, long_df):
 
-        err = "Could not interpret value `what` for parameter `hue`"
+        err = "Could not interpret value `what` for `hue`"
         with pytest.raises(ValueError, match=err):
             VectorPlotter(data=long_df, variables={"x": "x", "hue": "what"})
 

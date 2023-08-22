@@ -11,14 +11,15 @@ import numpy as np
 import pandas as pd
 import matplotlib as mpl
 
-from ._decorators import (
+from seaborn._core.data import PlotData
+from seaborn._decorators import (
     share_init_params_with_map,
 )
-from .palettes import (
+from seaborn.palettes import (
     QUAL_PALETTES,
     color_palette,
 )
-from .utils import (
+from seaborn.utils import (
     _check_argument,
     desaturate,
     get_color_cycle,
@@ -698,23 +699,23 @@ class VectorPlotter:
 
         if x is None and y is None:
             self.input_format = "wide"
-            plot_data, variables = self._assign_variables_wideform(
+            frame, names = self._assign_variables_wideform(
                 data, **variables,
             )
         else:
             self.input_format = "long"
-            plot_data, variables = self._assign_variables_longform(
-                data, **variables,
-            )
+            plot_data = PlotData(data, variables)
+            frame = plot_data.frame
+            names = plot_data.names
 
-        self.plot_data = plot_data
-        self.variables = variables
+        self.plot_data = frame
+        self.variables = names
         self.var_types = {
             v: variable_type(
-                plot_data[v],
+                frame[v],
                 boolean_type="numeric" if v in "xy" else "categorical"
             )
-            for v in variables
+            for v in names
         }
 
         return self
@@ -858,120 +859,6 @@ class VectorPlotter:
 
             # Remove redundant columns from plot_data
             plot_data = plot_data[list(variables)]
-
-        return plot_data, variables
-
-    def _assign_variables_longform(self, data=None, **kwargs):
-        """Define plot variables given long-form data and/or vector inputs.
-
-        Parameters
-        ----------
-        data : dict-like collection of vectors
-            Input data where variable names map to vector values.
-        kwargs : variable -> data mappings
-            Keys are seaborn variables (x, y, hue, ...) and values are vectors
-            in any format that can construct a :class:`pandas.DataFrame` or
-            names of columns or index levels in ``data``.
-
-        Returns
-        -------
-        plot_data : :class:`pandas.DataFrame`
-            Long-form data object mapping seaborn variables (x, y, hue, ...)
-            to data vectors.
-        variables : dict
-            Keys are defined seaborn variables; values are names inferred from
-            the inputs (or None when no name can be determined).
-
-        Raises
-        ------
-        ValueError
-            When variables are strings that don't appear in ``data``.
-
-        """
-        plot_data = {}
-        variables = {}
-
-        # Data is optional; all variables can be defined as vectors
-        if data is None:
-            data = {}
-
-        # TODO should we try a data.to_dict() or similar here to more
-        # generally accept objects with that interface?
-        # Note that dict(df) also works for pandas, and gives us what we
-        # want, whereas DataFrame.to_dict() gives a nested dict instead of
-        # a dict of series.
-
-        # Variables can also be extracted from the index attribute
-        # TODO is this the most general way to enable it?
-        # There is no index.to_dict on multiindex, unfortunately
-        try:
-            index = data.index.to_frame()
-        except AttributeError:
-            index = {}
-
-        # The caller will determine the order of variables in plot_data
-        for key, val in kwargs.items():
-
-            # First try to treat the argument as a key for the data collection.
-            # But be flexible about what can be used as a key.
-            # Usually it will be a string, but allow numbers or tuples too when
-            # taking from the main data object. Only allow strings to reference
-            # fields in the index, because otherwise there is too much ambiguity.
-            try:
-                val_as_data_key = (
-                    val in data
-                    or (isinstance(val, (str, bytes)) and val in index)
-                )
-            except (KeyError, TypeError):
-                val_as_data_key = False
-
-            if val_as_data_key:
-
-                # We know that __getitem__ will work
-
-                if val in data:
-                    plot_data[key] = data[val]
-                elif val in index:
-                    plot_data[key] = index[val]
-                variables[key] = val
-
-            elif isinstance(val, (str, bytes)):
-
-                # This looks like a column name but we don't know what it means!
-
-                err = f"Could not interpret value `{val}` for parameter `{key}`"
-                raise ValueError(err)
-
-            else:
-
-                # Otherwise, assume the value is itself data
-
-                # Raise when data object is present and a vector can't matched
-                if isinstance(data, pd.DataFrame) and not isinstance(val, pd.Series):
-                    if np.ndim(val) and len(data) != len(val):
-                        val_cls = val.__class__.__name__
-                        err = (
-                            f"Length of {val_cls} vectors must match length of `data`"
-                            f" when both are used, but `data` has length {len(data)}"
-                            f" and the vector passed to `{key}` has length {len(val)}."
-                        )
-                        raise ValueError(err)
-
-                plot_data[key] = val
-
-                # Try to infer the name of the variable
-                variables[key] = getattr(val, "name", None)
-
-        # Construct a tidy plot DataFrame. This will convert a number of
-        # types automatically, aligning on index in case of pandas objects
-        plot_data = pd.DataFrame(plot_data)
-
-        # Reduce the variables dictionary to fields with valid data
-        variables = {
-            var: name
-            for var, name in variables.items()
-            if plot_data[var].notnull().any()
-        }
 
         return plot_data, variables
 

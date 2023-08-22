@@ -61,7 +61,12 @@ class PlotData:
         self.names = names
         self.ids = ids
 
-        self.frames = {}  # TODO this is a hack, remove
+        # The reason we possibly have a dictionary of frames is to support the
+        # Plot.pair operation, post scaling, where each x/y variable needs its
+        # own frame. This feels pretty clumsy and there are a bunch of places in
+        # the client code with awkard if frame / elif frames constructions.
+        # It would be great to have a cleaner abstraction here.
+        self.frames = {}
 
         self.source_data = data
         self.source_vars = variables

@@ -2012,6 +2012,7 @@ def rugplot(
             x = data
         elif axis == "y":
             y = data
+        data = None
         msg = textwrap.dedent(f"""\n
         The `axis` parameter has been deprecated; use the `{axis}` parameter instead.
         Please update your code; this will become an error in seaborn v0.13.0.
