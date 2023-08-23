@@ -707,6 +707,19 @@ class TestFacetGrid:
                     assert mpl.colors.same_color(tick.tick2line.get_color(), color)
                     assert tick.get_pad() == pad
 
+    @pytest.mark.skipif(
+        condition=not hasattr(pd.api, "interchange"),
+        reason="Tests behavior assuming support for dataframe interchange"
+    )
+    def test_data_interchange(self, mock_long_df, long_df):
+
+        g = ag.FacetGrid(mock_long_df, col="a", row="b")
+        g.map(scatterplot, "x", "y")
+
+        assert g.axes.shape == (long_df["b"].nunique(), long_df["a"].nunique())
+        for ax in g.axes.flat:
+            assert len(ax.collections) == 1
+
 
 class TestPairGrid:
 
@@ -1461,6 +1474,18 @@ class TestPairGrid:
                     assert mpl.colors.same_color(tick.tick1line.get_color(), color)
                     assert mpl.colors.same_color(tick.tick2line.get_color(), color)
                     assert tick.get_pad() == pad
+
+    @pytest.mark.skipif(
+        condition=not hasattr(pd.api, "interchange"),
+        reason="Tests behavior assuming support for dataframe interchange"
+    )
+    def test_data_interchange(self, mock_long_df, long_df):
+
+        g = ag.PairGrid(mock_long_df, vars=["x", "y", "z"], hue="a")
+        g.map(scatterplot)
+        assert g.axes.shape == (3, 3)
+        for ax in g.axes.flat:
+            assert len(ax.collections) == long_df["a"].nunique() + 1
 
 
 class TestJointGrid:

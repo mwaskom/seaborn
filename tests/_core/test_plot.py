@@ -170,6 +170,15 @@ class TestInit:
         assert p._data.source_data is None
         assert list(p._data.source_vars) == ["x"]
 
+    @pytest.mark.skipif(
+        condition=not hasattr(pd.api, "interchange"),
+        reason="Tests behavior assuming support for dataframe interchange"
+    )
+    def test_positional_interchangeable_dataframe(self, mock_long_df, long_df):
+
+        p = Plot(mock_long_df, x="x")
+        assert_frame_equal(p._data.source_data, long_df)
+
     def test_positional_too_many(self, long_df):
 
         err = r"Plot\(\) accepts no more than 3 positional arguments \(data, x, y\)"

@@ -178,3 +178,19 @@ def object_df(rng, long_df):
 def null_series(flat_series):
 
     return pd.Series(index=flat_series.index, dtype='float64')
+
+
+class MockInterchangeableDataFrame:
+    # Mock object that is not a pandas.DataFrame but that can
+    # be converted to one via the DataFrame exchange protocol
+    def __init__(self, data):
+        self._data = data
+
+    def __dataframe__(self, *args, **kwargs):
+        return self._data.__dataframe__(*args, **kwargs)
+
+
+@pytest.fixture
+def mock_long_df(long_df):
+
+    return MockInterchangeableDataFrame(long_df)
