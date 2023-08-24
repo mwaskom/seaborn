@@ -252,7 +252,7 @@ class _HeatMapper:
         height, width = self.annot_data.shape
         xpos, ypos = np.meshgrid(np.arange(width) + .5, np.arange(height) + .5)
         for x, y, m, color, val in zip(xpos.flat, ypos.flat,
-                                       mesh.get_array(), mesh.get_facecolors(),
+                                       mesh.get_array().flat, mesh.get_facecolors(),
                                        self.annot_data.flat):
             if m is not np.ma.masked:
                 lum = relative_luminance(color)

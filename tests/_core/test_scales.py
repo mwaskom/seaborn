@@ -191,9 +191,11 @@ class TestContinuous:
 
         n = 3
         a = self.setup_ticks(x, count=2, minor=n)
-        # I am not sure why matplotlib's minor ticks include the
-        # largest major location but exclude the smalllest one ...
-        expected = np.linspace(0, 1, n + 2)[1:]
+        expected = np.linspace(0, 1, n + 2)
+        if _version_predates(mpl, "3.8.0rc1"):
+            # I am not sure why matplotlib <3.8  minor ticks include the
+            # largest major location but exclude the smalllest one ...
+            expected = expected[1:]
         assert_array_equal(a.minor.locator(), expected)
 
     def test_log_tick_default(self, x):
