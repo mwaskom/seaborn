@@ -947,7 +947,7 @@ class VectorPlotter:
         if grouping_vars:
 
             grouped_data = data.groupby(
-                grouping_vars, sort=False, as_index=False
+                grouping_vars, sort=False, as_index=False, observed=False,
             )
 
             grouping_keys = []
