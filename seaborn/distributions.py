@@ -57,10 +57,10 @@ multiple : {{"layer", "stack", "fill"}}
     """,
     log_scale="""
 log_scale : bool or number, or pair of bools or numbers
-    Set axis scale(s) to log. A single value sets the data axis for univariate
-    distributions and both axes for bivariate distributions. A pair of values
-    sets each axis independently. Numeric values are interpreted as the desired
-    base (default 10). If `False`, defer to the existing Axes scale.
+    Set axis scale(s) to log. A single value sets the data axis for any numeric
+    axes in the plot. A pair of values sets each axis independently.
+    Numeric values are interpreted as the desired base (default 10).
+    When `None` or `False`, seaborn defers to the existing Axes scale.
     """,
     legend="""
 legend : bool

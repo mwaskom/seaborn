@@ -1127,6 +1127,24 @@ class TestVectorPlotter:
         assert ax.xaxis.get_scale() == "linear"
         assert ax.yaxis.get_scale() == "log"
 
+        _, ax = plt.subplots()
+        p = VectorPlotter(data=long_df, variables={"x": "a", "y": "y"})
+        p._attach(ax, log_scale=True)
+        assert ax.xaxis.get_scale() == "linear"
+        assert ax.yaxis.get_scale() == "log"
+
+        _, ax = plt.subplots()
+        p = VectorPlotter(data=long_df, variables={"x": "x", "y": "t"})
+        p._attach(ax, log_scale=True)
+        assert ax.xaxis.get_scale() == "log"
+        assert ax.yaxis.get_scale() == "linear"
+
+        _, ax = plt.subplots()
+        p = VectorPlotter(data=long_df, variables={"x": "a", "y": "b"})
+        p._attach(ax, log_scale=True)
+        assert ax.xaxis.get_scale() == "linear"
+        assert ax.yaxis.get_scale() == "linear"
+
     def test_attach_converters(self, long_df):
 
         _, ax = plt.subplots()

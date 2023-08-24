@@ -202,6 +202,15 @@ class SharedAxesLevelTests:
         self.func(long_df, x="a", y="y", hue="a", legend=True)
         assert ax.get_legend() is not None
 
+    @pytest.mark.parametrize("orient", ["x", "y"])
+    def test_log_scale(self, long_df, orient):
+
+        depvar = {"x": "y", "y": "x"}[orient]
+        variables = {orient: "a", depvar: "z"}
+        ax = self.func(long_df, **variables, log_scale=True)
+        assert getattr(ax, f"get_{orient}scale")() == "linear"
+        assert getattr(ax, f"get_{depvar}scale")() == "log"
+
 
 class SharedScatterTests(SharedAxesLevelTests):
     """Tests functionality common to stripplot and swarmplot."""

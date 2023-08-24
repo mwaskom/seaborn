@@ -1162,8 +1162,8 @@ class VectorPlotter:
             try:
                 scalex, scaley = log_scale
             except TypeError:
-                scalex = log_scale if "x" in self.variables else False
-                scaley = log_scale if "y" in self.variables else False
+                scalex = log_scale if self.var_types.get("x") == "numeric" else False
+                scaley = log_scale if self.var_types.get("y") == "numeric" else False
 
         # Now use it
         for axis, scale in zip("xy", (scalex, scaley)):
