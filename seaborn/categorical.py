@@ -1493,6 +1493,15 @@ _categorical_docs = dict(
 
         .. versionadded:: v0.13.0\
     """),
+    log_scale=dedent("""\
+    log_scale : bool or number, or pair of bools or numbers
+        Set axis scale(s) to log. A single value sets the data axis for any numeric
+        axes in the plot. A pair of values sets each axis independently.
+        Numeric values are interpreted as the desired base (default 10).
+        When 'None' or `False`, seaborn defers to the existing Axes scale.
+
+        .. versionadded:: v0.13.0\
+    """),
     native_scale=dedent("""\
     native_scale : bool
         When True, numeric or datetime values on the categorical axis will maintain
@@ -1572,7 +1581,7 @@ def boxplot(
     data=None, *, x=None, y=None, hue=None, order=None, hue_order=None,
     orient=None, color=None, palette=None, saturation=.75, fill=True,
     dodge="auto", width=.8, gap=0, whis=1.5, linecolor=None, linewidth=None,
-    fliersize=None, hue_norm=None, native_scale=False, formatter=None,
+    fliersize=None, hue_norm=None, native_scale=False, log_scale=None, formatter=None,
     legend="auto", ax=None, **kwargs
 ):
 
@@ -1598,7 +1607,7 @@ def boxplot(
     if p.var_types.get(p.orient) == "categorical" or not native_scale:
         p.scale_categorical(p.orient, order=order, formatter=formatter)
 
-    p._attach(ax)
+    p._attach(ax, log_scale=log_scale)
 
     # Deprecations to remove in v0.14.0.
     hue_order = p._palette_without_hue_backcompat(palette, hue_order)
@@ -1665,6 +1674,7 @@ boxplot.__doc__ = dedent("""\
     fliersize : float
         Size of the markers used to indicate outlier observations.
     {hue_norm}
+    {log_scale}
     {native_scale}
     {formatter}
     {legend}
@@ -1697,8 +1707,8 @@ def violinplot(
     inner="box", split=False, width=.8, dodge="auto", gap=0,
     linewidth=None, linecolor=None, cut=2, gridsize=100,
     bw_method="scott", bw_adjust=1, density_norm="area", common_norm=False,
-    hue_norm=None, formatter=None, native_scale=False, legend="auto",
-    scale=deprecated, scale_hue=deprecated, bw=deprecated,
+    hue_norm=None, formatter=None, log_scale=None, native_scale=False,
+    legend="auto", scale=deprecated, scale_hue=deprecated, bw=deprecated,
     inner_kws=None, ax=None, **kwargs,
 ):
 
@@ -1724,7 +1734,7 @@ def violinplot(
     if p.var_types.get(p.orient) == "categorical" or not native_scale:
         p.scale_categorical(p.orient, order=order, formatter=formatter)
 
-    p._attach(ax)
+    p._attach(ax, log_scale=log_scale)
 
     # Deprecations to remove in v0.14.0.
     hue_order = p._palette_without_hue_backcompat(palette, hue_order)
@@ -1834,6 +1844,7 @@ violinplot.__doc__ = dedent("""\
         .. versionadded:: v0.13.0
     {hue_norm}
     {formatter}
+    {log_scale}
     {native_scale}
     {legend}
     scale : {{"area", "count", "width"}}
@@ -1884,7 +1895,7 @@ def boxenplot(
     orient=None, color=None, palette=None, saturation=.75, fill=True,
     dodge="auto", width=.8, gap=0, linewidth=None, linecolor=None,
     width_method="exponential", k_depth="tukey", outlier_prop=0.007, trust_alpha=0.05,
-    showfliers=True, hue_norm=None, native_scale=False, formatter=None,
+    showfliers=True, hue_norm=None, log_scale=None, native_scale=False, formatter=None,
     legend="auto", scale=deprecated, box_kws=None, flier_kws=None, line_kws=None,
     ax=None, **kwargs,
 ):
@@ -1911,7 +1922,7 @@ def boxenplot(
     if p.var_types.get(p.orient) == "categorical" or not native_scale:
         p.scale_categorical(p.orient, order=order, formatter=formatter)
 
-    p._attach(ax)
+    p._attach(ax, log_scale=log_scale)
 
     # Deprecations to remove in v0.14.0.
     hue_order = p._palette_without_hue_backcompat(palette, hue_order)
@@ -2001,6 +2012,7 @@ boxenplot.__doc__ = dedent("""\
     showfliers : bool
         If False, suppress the plotting of outliers.
     {hue_norm}
+    {log_scale}
     {native_scale}
     {formatter}
     {legend}
@@ -2051,7 +2063,7 @@ def stripplot(
     data=None, *, x=None, y=None, hue=None, order=None, hue_order=None,
     jitter=True, dodge=False, orient=None, color=None, palette=None,
     size=5, edgecolor="gray", linewidth=0,
-    hue_norm=None, native_scale=False, formatter=None, legend="auto",
+    hue_norm=None, log_scale=None, native_scale=False, formatter=None, legend="auto",
     ax=None, **kwargs
 ):
 
@@ -2073,7 +2085,7 @@ def stripplot(
     if p.var_types.get(p.orient) == "categorical" or not native_scale:
         p.scale_categorical(p.orient, order=order, formatter=formatter)
 
-    p._attach(ax)
+    p._attach(ax, log_scale=log_scale)
 
     # Deprecations to remove in v0.14.0.
     hue_order = p._palette_without_hue_backcompat(palette, hue_order)
@@ -2147,6 +2159,7 @@ stripplot.__doc__ = dedent("""\
         so edge colors are only visible with nonzero line width.
     {linewidth}
     {hue_norm}
+    {log_scale}
     {native_scale}
     {formatter}
     {legend}
@@ -2176,7 +2189,7 @@ stripplot.__doc__ = dedent("""\
 def swarmplot(
     data=None, *, x=None, y=None, hue=None, order=None, hue_order=None,
     dodge=False, orient=None, color=None, palette=None,
-    size=5, edgecolor="gray", linewidth=0, hue_norm=None,
+    size=5, edgecolor="gray", linewidth=0, hue_norm=None, log_scale=None,
     native_scale=False, formatter=None, legend="auto", warn_thresh=.05,
     ax=None, **kwargs
 ):
@@ -2199,7 +2212,7 @@ def swarmplot(
     if p.var_types.get(p.orient) == "categorical" or not native_scale:
         p.scale_categorical(p.orient, order=order, formatter=formatter)
 
-    p._attach(ax)
+    p._attach(ax, log_scale=log_scale)
 
     if not p.has_xy_data:
         return ax
@@ -2273,6 +2286,7 @@ swarmplot.__doc__ = dedent("""\
         brightness is determined by the color palette used for the body
         of the points.
     {linewidth}
+    {log_scale}
     {native_scale}
     {formatter}
     {legend}
@@ -2303,9 +2317,9 @@ def barplot(
     data=None, *, x=None, y=None, hue=None, order=None, hue_order=None,
     estimator="mean", errorbar=("ci", 95), n_boot=1000, units=None, seed=None,
     orient=None, color=None, palette=None, saturation=.75, fill=True, hue_norm=None,
-    width=.8, dodge="auto", gap=0, native_scale=False, formatter=None, legend="auto",
-    capsize=0, err_kws=None, ci=deprecated, errcolor=deprecated, errwidth=deprecated,
-    ax=None, **kwargs,
+    width=.8, dodge="auto", gap=0, log_scale=None, native_scale=False, formatter=None,
+    legend="auto", capsize=0, err_kws=None,
+    ci=deprecated, errcolor=deprecated, errwidth=deprecated, ax=None, **kwargs,
 ):
 
     errorbar = utils._deprecate_ci(errorbar, ci)
@@ -2337,7 +2351,7 @@ def barplot(
     if p.var_types.get(p.orient) == "categorical" or not native_scale:
         p.scale_categorical(p.orient, order=order, formatter=formatter)
 
-    p._attach(ax)
+    p._attach(ax, log_scale=log_scale)
 
     # Deprecations to remove in v0.14.0.
     hue_order = p._palette_without_hue_backcompat(palette, hue_order)
@@ -2397,6 +2411,7 @@ barplot.__doc__ = dedent("""\
     {width}
     {dodge}
     {gap}
+    {log_scale}
     {native_scale}
     {formatter}
     {legend}
@@ -2443,7 +2458,7 @@ def pointplot(
     data=None, *, x=None, y=None, hue=None, order=None, hue_order=None,
     estimator="mean", errorbar=("ci", 95), n_boot=1000, units=None, seed=None,
     color=None, palette=None, hue_norm=None, markers=default, linestyles=default,
-    dodge=False, native_scale=False, orient=None, capsize=0,
+    dodge=False, log_scale=None, native_scale=False, orient=None, capsize=0,
     formatter=None, legend="auto", err_kws=None,
     ci=deprecated, errwidth=deprecated, join=deprecated, scale=deprecated,
     ax=None,
@@ -2470,7 +2485,7 @@ def pointplot(
     if p.var_types.get(p.orient) == "categorical" or not native_scale:
         p.scale_categorical(p.orient, order=order, formatter=formatter)
 
-    p._attach(ax)
+    p._attach(ax, log_scale=log_scale)
 
     # Deprecations to remove in v0.14.0.
     hue_order = p._palette_without_hue_backcompat(palette, hue_order)
@@ -2536,6 +2551,7 @@ pointplot.__doc__ = dedent("""\
     dodge : bool or float
         Amount to separate the points for each level of the `hue` variable along
         the categorical axis. Setting to `True` will apply a small default.
+    {log_scale}
     {native_scale}
     {orient}
     {capsize}
@@ -2587,8 +2603,8 @@ pointplot.__doc__ = dedent("""\
 def countplot(
     data=None, *, x=None, y=None, hue=None, order=None, hue_order=None,
     orient=None, color=None, palette=None, saturation=.75, fill=True, hue_norm=None,
-    stat="count", width=.8, dodge="auto", gap=0, native_scale=False, formatter=None,
-    legend="auto", ax=None, **kwargs
+    stat="count", width=.8, dodge="auto", gap=0, log_scale=None, native_scale=False,
+    formatter=None, legend="auto", ax=None, **kwargs
 ):
 
     if x is None and y is not None:
@@ -2622,7 +2638,7 @@ def countplot(
     if p.var_types.get(p.orient) == "categorical" or not native_scale:
         p.scale_categorical(p.orient, order=order, formatter=formatter)
 
-    p._attach(ax)
+    p._attach(ax, log_scale=log_scale)
 
     # Deprecations to remove in v0.14.0.
     hue_order = p._palette_without_hue_backcompat(palette, hue_order)
@@ -2691,6 +2707,7 @@ countplot.__doc__ = dedent("""\
         .. versionadded:: v0.13.0
     {width}
     {dodge}
+    {log_scale}
     {native_scale}
     {formatter}
     {legend}
@@ -2719,10 +2736,10 @@ def catplot(
     data=None, *, x=None, y=None, hue=None, row=None, col=None, kind="strip",
     estimator="mean", errorbar=("ci", 95), n_boot=1000, units=None, seed=None,
     order=None, hue_order=None, row_order=None, col_order=None, col_wrap=None,
-    height=5, aspect=1, native_scale=False, formatter=None, orient=None,
-    color=None, palette=None, hue_norm=None, legend="auto", legend_out=True,
-    sharex=True, sharey=True, margin_titles=False, facet_kws=None, ci=deprecated,
-    **kwargs
+    height=5, aspect=1, log_scale=None, native_scale=False, formatter=None,
+    orient=None, color=None, palette=None, hue_norm=None, legend="auto",
+    legend_out=True, sharex=True, sharey=True, margin_titles=False, facet_kws=None,
+    ci=deprecated, **kwargs
 ):
 
     # Check for attempt to plot onto specific axes and warn
@@ -2792,7 +2809,7 @@ def catplot(
     if not native_scale or p.var_types[p.orient] == "categorical":
         p.scale_categorical(p.orient, order=order, formatter=formatter)
 
-    p._attach(g)
+    p._attach(g, log_scale=log_scale)
 
     if not has_xy_data:
         return g
