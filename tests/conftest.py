@@ -159,6 +159,7 @@ def null_df(rng, long_df):
 
     df = long_df.copy()
     for col in df:
+        df[col] = df[col].astype(float)
         idx = rng.permutation(df.index)[:10]
         df.loc[idx, col] = np.nan
     return df
