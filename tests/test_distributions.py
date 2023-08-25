@@ -41,9 +41,9 @@ from seaborn._testing import (
 
 
 def get_contour_coords(c, filter_empty=False):
-    """Provide compatability for change in contour artist type in mpl3.5."""
-    # See https://github.com/matplotlib/matplotlib/issues/20906
+    """Provide compatability for change in contour artist types."""
     if isinstance(c, mpl.collections.LineCollection):
+        # See https://github.com/matplotlib/matplotlib/issues/20906
         return c.get_segments()
     elif isinstance(c, (mpl.collections.PathCollection, mpl.contour.QuadContourSet)):
         return [
@@ -53,9 +53,9 @@ def get_contour_coords(c, filter_empty=False):
 
 
 def get_contour_color(c):
-    """Provide compatability for change in contour artist type in mpl3.5."""
-    # See https://github.com/matplotlib/matplotlib/issues/20906
+    """Provide compatability for change in contour artist types."""
     if isinstance(c, mpl.collections.LineCollection):
+        # See https://github.com/matplotlib/matplotlib/issues/20906
         return c.get_color()
     elif isinstance(c, (mpl.collections.PathCollection, mpl.contour.QuadContourSet)):
         if c.get_facecolor().size:
@@ -2437,14 +2437,20 @@ class TestDisPlot:
         x, y = rng.normal(0, 1, (2, 100))
         z = [0] * 80 + [1] * 20
 
+        def count_contours(ax):
+            if _version_predates(mpl, "3.8.0rc1"):
+                return sum(bool(get_contour_coords(c)) for c in ax.collections)
+            else:
+                return sum(bool(p.vertices.size) for p in ax.collections[0].get_paths())
+
         g = displot(x=x, y=y, col=z, kind="kde", levels=10)
-        l1 = sum(bool(get_contour_coords(c)) for c in g.axes.flat[0].collections)
-        l2 = sum(bool(get_contour_coords(c)) for c in g.axes.flat[1].collections)
+        l1 = count_contours(g.axes.flat[0])
+        l2 = count_contours(g.axes.flat[1])
         assert l1 > l2
 
         g = displot(x=x, y=y, col=z, kind="kde", levels=10, common_norm=False)
-        l1 = sum(bool(get_contour_coords(c)) for c in g.axes.flat[0].collections)
-        l2 = sum(bool(get_contour_coords(c)) for c in g.axes.flat[1].collections)
+        l1 = count_contours(g.axes.flat[0])
+        l2 = count_contours(g.axes.flat[1])
         assert l1 == l2
 
     def test_bivariate_hist_norm(self, rng):
