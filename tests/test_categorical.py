@@ -2390,7 +2390,8 @@ class TestPointPlot(SharedAggTests):
         assert_array_equal(line.get_xdata(), x)
         assert_array_equal(line.get_ydata(), y)
 
-    @pytest.mark.parametrize("estimator", ["mean", np.mean])
+    # Use lambda around np.mean to avoid uninformative pandas deprecation warning
+    @pytest.mark.parametrize("estimator", ["mean", lambda x: np.mean(x)])
     def test_estimate(self, long_df, estimator):
 
         agg_var, val_var = "a", "y"
