@@ -676,7 +676,7 @@ class Color(Property):
         colors = self._get_values(scale, levels)
 
         def mapping(x):
-            ixs = np.asarray(x, np.intp)
+            ixs = np.asarray(np.nan_to_num(x), np.intp)
             use = np.isfinite(x)
             out = np.full((len(ixs), colors.shape[1]), np.nan)
             out[use] = np.take(colors, ixs[use], axis=0)
