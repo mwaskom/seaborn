@@ -367,7 +367,7 @@ class ObjectProperty(Property):
             values = values[::-1]
 
         def mapping(x):
-            ixs = np.asarray(x, np.intp)
+            ixs = np.asarray(np.nan_to_num(x), np.intp)
             return [
                 values[ix] if np.isfinite(x_i) else self.null_value
                 for x_i, ix in zip(x, ixs)
@@ -691,7 +691,7 @@ class Color(Property):
         def mapping(x):
 
             use = np.isfinite(x)
-            x = np.asarray(x).astype(bool)
+            x = np.asarray(np.nan_to_num(x)).astype(bool)
             out = np.full((len(x), colors.shape[1]), np.nan)
             out[x & use] = colors[0]
             out[~x & use] = colors[1]
@@ -772,7 +772,7 @@ class Fill(Property):
             values = values[::-1]
 
         def mapping(x):
-            ixs = np.asarray(x, np.intp)
+            ixs = np.asarray(np.nan_to_num(x), np.intp)
             return [
                 values[ix] if np.isfinite(x_i) else False
                 for x_i, ix in zip(x, ixs)
