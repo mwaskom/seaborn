@@ -1654,10 +1654,7 @@ def categorical_order(vector, order=None):
                 order = vector.cat.categories
             except (TypeError, AttributeError):
 
-                try:
-                    order = vector.unique()
-                except AttributeError:
-                    order = pd.unique(vector)
+                order = pd.Series(vector).unique()
 
                 if variable_type(vector) == "numeric":
                     order = np.sort(order)
