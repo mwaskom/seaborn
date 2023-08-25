@@ -35,11 +35,10 @@ class Count(Stat):
         self, data: DataFrame, groupby: GroupBy, orient: str, scales: dict[str, Scale],
     ) -> DataFrame:
 
-        var = {"x": "y", "y": "x"}.get(orient)
-        data[var] = data[orient]
+        var = {"x": "y", "y": "x"}[orient]
         res = (
             groupby
-            .agg(data, {var: len})
+            .agg(data.assign(**{var: data[orient]}), {var: len})
             .dropna(subset=["x", "y"])
             .reset_index(drop=True)
         )
