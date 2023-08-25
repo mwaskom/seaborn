@@ -159,6 +159,8 @@ def null_df(rng, long_df):
 
     df = long_df.copy()
     for col in df:
+        if pd.api.types.is_integer_dtype(df[col]):
+            df[col] = df[col].astype(float)
         idx = rng.permutation(df.index)[:10]
         df.loc[idx, col] = np.nan
     return df

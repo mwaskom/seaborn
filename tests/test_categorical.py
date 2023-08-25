@@ -1757,7 +1757,6 @@ class TestViolinPlot(SharedAxesLevelTests):
             dict(data="long", x="a", y="y", inner="points"),
             dict(data="long", x="a", y="y", hue="b", inner="quartiles", split=True),
             dict(data="long", x="a", y="y", density_norm="count", common_norm=True),
-            dict(data="long", x="a", y="y", bw=2),
             dict(data="long", x="a", y="y", bw_adjust=2),
         ]
     )
@@ -2391,7 +2390,8 @@ class TestPointPlot(SharedAggTests):
         assert_array_equal(line.get_xdata(), x)
         assert_array_equal(line.get_ydata(), y)
 
-    @pytest.mark.parametrize("estimator", ["mean", np.mean])
+    # Use lambda around np.mean to avoid uninformative pandas deprecation warning
+    @pytest.mark.parametrize("estimator", ["mean", lambda x: np.mean(x)])
     def test_estimate(self, long_df, estimator):
 
         agg_var, val_var = "a", "y"

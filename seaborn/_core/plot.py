@@ -1618,7 +1618,9 @@ class Plotter:
                         yield subplot_keys, axes_df.copy(), view["ax"]
                     continue
 
-                grouped_df = axes_df.groupby(grouping_vars, sort=False, as_index=False)
+                grouped_df = axes_df.groupby(
+                    grouping_vars, sort=False, as_index=False, observed=False,
+                )
 
                 for key in itertools.product(*grouping_keys):
 

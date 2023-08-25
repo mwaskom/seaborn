@@ -61,3 +61,8 @@ Docs = "http://seaborn.pydata.org"
 
 [tool.flit.sdist]
 exclude = ["doc/_static/*.svg"]
+
+[tool.pytest.ini_options]
+filterwarnings = [
+   "ignore:The --rsyncdir command line argument and rsyncdirs config variable are deprecated.:DeprecationWarning",
+ ]

@@ -195,7 +195,7 @@ class TestKDE:
 
         val, ori = "xy"
         df["weight"] = 1
-        df = df[[ori, "weight"]]
+        df = df[[ori, "weight"]].astype(float)
         df.loc[:4, col] = np.nan
         gb = self.get_groupby(df, ori)
         res = KDE()(df, gb, ori, {})

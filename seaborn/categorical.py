@@ -960,12 +960,15 @@ class _CategoricalPlotter(_RelationalPlotter):
             max_density = {key: common_max_density for key in norm_keys}
             max_count = {key: common_max_count for key in norm_keys}
         else:
-            max_density = {
-                key: np.nanmax([
-                    v["density"].max() for v in violin_data
-                    if vars_to_key(v["sub_vars"]) == key
-                ]) for key in norm_keys
-            }
+            with warnings.catch_warnings():
+                # Ignore warning when all violins are singular; it's not important
+                warnings.filterwarnings('ignore', "All-NaN (slice|axis) encountered")
+                max_density = {
+                    key: np.nanmax([
+                        v["density"].max() for v in violin_data
+                        if vars_to_key(v["sub_vars"]) == key
+                    ]) for key in norm_keys
+                }
             max_count = {
                 key: np.nanmax([
                     len(v["observations"]) for v in violin_data
