@@ -654,18 +654,6 @@ class VectorPlotter:
             # Call the mapping function to initialize with default values
             getattr(self, f"map_{var}")()
 
-    @classmethod
-    def get_semantics(cls, kwargs, semantics=None):
-        """Subset a dictionary arguments with known semantic variables."""
-        # TODO this should be get_variables since we have included x and y
-        if semantics is None:
-            semantics = cls.semantics
-        variables = {}
-        for key, val in kwargs.items():
-            if key in semantics and val is not None:
-                variables[key] = val
-        return variables
-
     @property
     def has_xy_data(self):
         """Return True at least one of x or y is defined."""

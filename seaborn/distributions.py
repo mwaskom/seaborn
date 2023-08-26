@@ -1353,11 +1353,6 @@ class _DistributionPlotter(VectorPlotter):
         ax.autoscale_view(scalex=var == "x", scaley=var == "y")
 
 
-class _DistributionFacetPlotter(_DistributionPlotter):
-
-    semantics = _DistributionPlotter.semantics + ("col", "row")
-
-
 # ==================================================================================== #
 # External API
 # ==================================================================================== #
@@ -1385,7 +1380,7 @@ def histplot(
 
     p = _DistributionPlotter(
         data=data,
-        variables=_DistributionPlotter.get_semantics(locals())
+        variables=dict(x=x, y=y, hue=hue, weights=weights),
     )
 
     p.map_hue(palette=palette, order=hue_order, norm=hue_norm)
@@ -1675,7 +1670,7 @@ def kdeplot(
 
     p = _DistributionPlotter(
         data=data,
-        variables=_DistributionPlotter.get_semantics(locals()),
+        variables=dict(x=x, y=y, hue=hue, weights=weights),
     )
 
     p.map_hue(palette=palette, order=hue_order, norm=hue_norm)
@@ -1881,7 +1876,7 @@ def ecdfplot(
 
     p = _DistributionPlotter(
         data=data,
-        variables=_DistributionPlotter.get_semantics(locals())
+        variables=dict(x=x, y=y, hue=hue, weights=weights),
     )
 
     p.map_hue(palette=palette, order=hue_order, norm=hue_norm)
@@ -2035,10 +2030,9 @@ def rugplot(
 
     # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - #
 
-    weights = None
     p = _DistributionPlotter(
         data=data,
-        variables=_DistributionPlotter.get_semantics(locals()),
+        variables=dict(x=x, y=y, hue=hue),
     )
     p.map_hue(palette=palette, order=hue_order, norm=hue_norm)
 
@@ -2114,9 +2108,9 @@ def displot(
     **kwargs,
 ):
 
-    p = _DistributionFacetPlotter(
+    p = _DistributionPlotter(
         data=data,
-        variables=_DistributionFacetPlotter.get_semantics(locals())
+        variables=dict(x=x, y=y, hue=hue, weights=weights, row=row, col=col),
     )
 
     p.map_hue(palette=palette, order=hue_order, norm=hue_norm)

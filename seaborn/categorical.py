@@ -1348,15 +1348,6 @@ class _CategoricalAggPlotter(_CategoricalPlotter):
     flat_structure = {"x": "@index", "y": "@values"}
 
 
-class _CategoricalFacetPlotter(_CategoricalPlotter):
-    semantics = _CategoricalPlotter.semantics + ("col", "row")
-
-
-class _CategoricalAggFacetPlotter(_CategoricalAggPlotter, _CategoricalFacetPlotter):
-    # Ugh, this is messy
-    pass
-
-
 _categorical_docs = dict(
 
     # Shared narrative docs
@@ -1590,7 +1581,7 @@ def boxplot(
 
     p = _CategoricalPlotter(
         data=data,
-        variables=_CategoricalPlotter.get_semantics(locals()),
+        variables=dict(x=x, y=y, hue=hue),
         order=order,
         orient=orient,
         require_numeric=False,
@@ -1717,7 +1708,7 @@ def violinplot(
 
     p = _CategoricalPlotter(
         data=data,
-        variables=_CategoricalPlotter.get_semantics(locals()),
+        variables=dict(x=x, y=y, hue=hue),
         order=order,
         orient=orient,
         require_numeric=False,
@@ -1905,7 +1896,7 @@ def boxenplot(
 
     p = _CategoricalPlotter(
         data=data,
-        variables=_CategoricalPlotter.get_semantics(locals()),
+        variables=dict(x=x, y=y, hue=hue),
         order=order,
         orient=orient,
         require_numeric=False,
@@ -2072,7 +2063,7 @@ def stripplot(
 
     p = _CategoricalPlotter(
         data=data,
-        variables=_CategoricalPlotter.get_semantics(locals()),
+        variables=dict(x=x, y=y, hue=hue),
         order=order,
         orient=orient,
         require_numeric=False,
@@ -2199,7 +2190,7 @@ def swarmplot(
 
     p = _CategoricalPlotter(
         data=data,
-        variables=_CategoricalPlotter.get_semantics(locals()),
+        variables=dict(x=x, y=y, hue=hue),
         order=order,
         orient=orient,
         require_numeric=False,
@@ -2334,7 +2325,7 @@ def barplot(
 
     p = _CategoricalAggPlotter(
         data=data,
-        variables=_CategoricalAggPlotter.get_semantics(locals()),
+        variables=dict(x=x, y=y, hue=hue, units=units),
         order=order,
         orient=orient,
         require_numeric=False,
@@ -2472,7 +2463,7 @@ def pointplot(
 
     p = _CategoricalAggPlotter(
         data=data,
-        variables=_CategoricalAggPlotter.get_semantics(locals()),
+        variables=dict(x=x, y=y, hue=hue, units=units),
         order=order,
         orient=orient,
         require_numeric=False,
@@ -2621,7 +2612,7 @@ def countplot(
 
     p = _CategoricalAggPlotter(
         data=data,
-        variables=_CategoricalAggPlotter.get_semantics(locals()),
+        variables=dict(x=x, y=y, hue=hue),
         order=order,
         orient=orient,
         require_numeric=False,
@@ -2756,9 +2747,9 @@ def catplot(
     undodged_kinds = ["strip", "swarm", "point"]
 
     if kind in ["bar", "point", "count"]:
-        Plotter = _CategoricalAggFacetPlotter
+        Plotter = _CategoricalAggPlotter
     else:
-        Plotter = _CategoricalFacetPlotter
+        Plotter = _CategoricalPlotter
 
     if kind == "count":
         if x is None and y is not None:
@@ -2772,7 +2763,7 @@ def catplot(
 
     p = Plotter(
         data=data,
-        variables=Plotter.get_semantics(locals()),
+        variables=dict(x=x, y=y, hue=hue, row=row, col=col, units=units),
         order=order,
         orient=orient,
         require_numeric=False,
