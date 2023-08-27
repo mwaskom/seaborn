@@ -54,7 +54,7 @@ def _convert_colors(colors):
         return list(map(to_rgb, colors))
     except ValueError:
         # If we get here, we have nested lists
-        return [list(map(to_rgb, l)) for l in colors]
+        return [list(map(to_rgb, color_list)) for color_list in colors]
 
 
 def _matrix_mask(data, mask):

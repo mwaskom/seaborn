@@ -474,9 +474,9 @@ def dark_palette(color, n_colors=6, reverse=False, as_cmap=False, input="rgb"):
 
     """
     rgb = _color_to_rgb(color, input)
-    h, s, l = husl.rgb_to_husl(*rgb)
-    gray_s, gray_l = .15 * s, 15
-    gray = _color_to_rgb((h, gray_s, gray_l), input="husl")
+    hue, sat, _ = husl.rgb_to_husl(*rgb)
+    gray_s, gray_l = .15 * sat, 15
+    gray = _color_to_rgb((hue, gray_s, gray_l), input="husl")
     colors = [rgb, gray] if reverse else [gray, rgb]
     return blend_palette(colors, n_colors, as_cmap)
 
@@ -522,9 +522,9 @@ def light_palette(color, n_colors=6, reverse=False, as_cmap=False, input="rgb"):
 
     """
     rgb = _color_to_rgb(color, input)
-    h, s, l = husl.rgb_to_husl(*rgb)
-    gray_s, gray_l = .15 * s, 95
-    gray = _color_to_rgb((h, gray_s, gray_l), input="husl")
+    hue, sat, _ = husl.rgb_to_husl(*rgb)
+    gray_s, gray_l = .15 * sat, 95
+    gray = _color_to_rgb((hue, gray_s, gray_l), input="husl")
     colors = [rgb, gray] if reverse else [gray, rgb]
     return blend_palette(colors, n_colors, as_cmap)
 

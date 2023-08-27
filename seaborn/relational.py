@@ -275,7 +275,9 @@ class _RelationalPlotter(VectorPlotter):
     ):
 
         brief_ticks = 6
-        mapper = getattr(self, f"_{var}_map")
+        mapper = getattr(self, f"_{var}_map", None)
+        if mapper is None:
+            return
 
         brief = mapper.map_type == "numeric" and (
             verbosity == "brief"
@@ -587,9 +589,9 @@ def lineplot(
     # Handle deprecation of ci parameter
     errorbar = _deprecate_ci(errorbar, ci)
 
-    variables = _LinePlotter.get_semantics(locals())
     p = _LinePlotter(
-        data=data, variables=variables,
+        data=data,
+        variables=dict(x=x, y=y, hue=hue, size=size, style=style, units=units),
         estimator=estimator, n_boot=n_boot, seed=seed, errorbar=errorbar,
         sort=sort, orient=orient, err_style=err_style, err_kws=err_kws,
         legend=legend,
@@ -711,8 +713,11 @@ def scatterplot(
     **kwargs
 ):
 
-    variables = _ScatterPlotter.get_semantics(locals())
-    p = _ScatterPlotter(data=data, variables=variables, legend=legend)
+    p = _ScatterPlotter(
+        data=data,
+        variables=dict(x=x, y=y, hue=hue, size=size, style=style),
+        legend=legend
+    )
 
     p.map_hue(palette=palette, order=hue_order, norm=hue_norm)
     p.map_size(sizes=sizes, order=size_order, norm=size_norm)
@@ -808,13 +813,13 @@ def relplot(
 
     if kind == "scatter":
 
-        plotter = _ScatterPlotter
+        Plotter = _ScatterPlotter
         func = scatterplot
         markers = True if markers is None else markers
 
     elif kind == "line":
 
-        plotter = _LinePlotter
+        Plotter = _LinePlotter
         func = lineplot
         dashes = True if dashes is None else dashes
 
@@ -832,9 +837,9 @@ def relplot(
         kwargs.pop("ax")
 
     # Use the full dataset to map the semantics
-    p = plotter(
+    p = Plotter(
         data=data,
-        variables=plotter.get_semantics(locals()),
+        variables=dict(x=x, y=y, hue=hue, size=size, style=style, units=units),
         legend=legend,
     )
     p.map_hue(palette=palette, order=hue_order, norm=hue_norm)
@@ -870,7 +875,6 @@ def relplot(
     # Now extract the data that would be used to draw a single plot
     variables = p.variables
     plot_data = p.plot_data
-    plot_semantics = p.semantics
 
     # Define the common plotting parameters
     plot_kws = dict(
@@ -885,7 +889,6 @@ def relplot(
 
     # Add the grid semantics onto the plotter
     grid_semantics = "row", "col"
-    p.semantics = plot_semantics + grid_semantics
     p.assign_variables(
         data=data,
         variables=dict(
@@ -1040,5 +1043,4 @@ Examples
     narrative=_relational_narrative,
     params=_param_docs,
     returns=_core_docs["returns"],
-    seealso=_core_docs["seealso"],
 )
