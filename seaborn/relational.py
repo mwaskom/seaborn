@@ -875,7 +875,6 @@ def relplot(
     # Now extract the data that would be used to draw a single plot
     variables = p.variables
     plot_data = p.plot_data
-    plot_semantics = p.semantics
 
     # Define the common plotting parameters
     plot_kws = dict(
@@ -890,7 +889,6 @@ def relplot(
 
     # Add the grid semantics onto the plotter
     grid_semantics = "row", "col"
-    p.semantics = plot_semantics + grid_semantics
     p.assign_variables(
         data=data,
         variables=dict(

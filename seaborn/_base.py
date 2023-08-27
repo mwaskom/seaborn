@@ -604,9 +604,6 @@ class StyleMapping(SemanticMapping):
 class VectorPlotter:
     """Base class for objects underlying *plot functions."""
 
-    # TODO units is another example of a non-mapping "semantic"
-    # we need a general name for this and separate handling
-    semantics = "x", "y", "hue", "size", "style", "units"
     wide_structure = {
         "x": "@index", "y": "@values", "hue": "@columns", "style": "@columns",
     }

@@ -43,8 +43,6 @@ __all__ = [
 # but probably should move that more centrally
 class _CategoricalPlotter(_RelationalPlotter):
 
-    semantics = "x", "y", "hue", "units"
-
     wide_structure = {"x": "@columns", "y": "@values"}
     flat_structure = {"y": "@values"}
 

@@ -98,8 +98,6 @@ _param_docs = DocstringComponents.from_nested_components(
 
 class _DistributionPlotter(VectorPlotter):
 
-    semantics = "x", "y", "hue", "weights"
-
     wide_structure = {"x": "@values", "hue": "@columns"}
     flat_structure = {"x": "@values"}
 
