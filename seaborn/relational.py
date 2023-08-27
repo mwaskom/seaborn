@@ -837,9 +837,12 @@ def relplot(
         kwargs.pop("ax")
 
     # Use the full dataset to map the semantics
+    variables = dict(x=x, y=y, hue=hue, size=size, style=style)
+    if kind == "line":
+        variables["units"] = units
     p = Plotter(
         data=data,
-        variables=dict(x=x, y=y, hue=hue, size=size, style=style, units=units),
+        variables=variables,
         legend=legend,
     )
     p.map_hue(palette=palette, order=hue_order, norm=hue_norm)
@@ -888,15 +891,13 @@ def relplot(
         plot_kws.pop("dashes")
 
     # Add the grid semantics onto the plotter
-    grid_semantics = "row", "col"
-    p.assign_variables(
-        data=data,
-        variables=dict(
-            x=x, y=y,
-            hue=hue, size=size, style=style, units=units,
-            row=row, col=col,
-        ),
+    grid_variables = dict(
+        x=x, y=y, row=row, col=col,
+        hue=hue, size=size, style=style,
     )
+    if kind == "line":
+        grid_variables["units"] = units
+    p.assign_variables(data, grid_variables)
 
     # Define the named variables for plotting on each facet
     # Rename the variables with a leading underscore to avoid
@@ -910,7 +911,7 @@ def relplot(
         # Handle faceting variables that lack name information
         if var in p.variables and p.variables[var] is None:
             p.variables[var] = f"_{var}_"
-    grid_kws = {v: p.variables.get(v) for v in grid_semantics}
+    grid_kws = {v: p.variables.get(v) for v in ["row", "col"]}
 
     # Rename the columns of the plot_data structure appropriately
     new_cols = plot_variables.copy()

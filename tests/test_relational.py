@@ -666,6 +666,11 @@ class TestRelationalPlotter(Helpers):
         )
         assert g.axes.shape == (1, len(col_data.unique()))
 
+    def test_relplot_scatter_units(self, long_df):
+
+        g = relplot(long_df, x="x", y="y", units="a")
+        assert g.ax is not None
+
     def test_ax_kwarg_removal(self, long_df):
 
         f, ax = plt.subplots()
