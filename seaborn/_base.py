@@ -108,6 +108,15 @@ class HueMapping(SemanticMapping):
 
         data = plotter.plot_data.get("hue", pd.Series(dtype=float))
 
+        if isinstance(palette, np.ndarray):
+            msg = (
+                "Numpy array is not a supported type for `palette`. "
+                "Please convert your palette to a list. "
+                "This will become an error in v0.14"
+            )
+            warnings.warn(msg, stacklevel=4)
+            palette = palette.tolist()
+
         if data.isna().all():
             if palette is not None:
                 msg = "Ignoring `palette` because no `hue` variable has been assigned."

@@ -451,6 +451,14 @@ class TestSizeMapping:
         with pytest.raises(ValueError):
             SizeMapping(p, sizes="bad_size")
 
+    def test_array_palette_deprecation(self, long_df):
+
+        p = VectorPlotter(long_df, {"y": "y", "hue": "s"})
+        pal = mpl.cm.Blues([.3, .8])[:, :3]
+        with pytest.warns(UserWarning, match="Numpy array is not a supported type"):
+            m = HueMapping(p, pal)
+        assert m.palette == pal.tolist()
+
 
 class TestStyleMapping:
 
