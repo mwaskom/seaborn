@@ -668,7 +668,8 @@ class TestRelationalPlotter(Helpers):
 
     def test_relplot_scatter_units(self, long_df):
 
-        g = relplot(long_df, x="x", y="y", units="a")
+        with pytest.warns(UserWarning, match="The `units` parameter"):
+            g = relplot(long_df, x="x", y="y", units="a")
         assert g.ax is not None
 
     def test_ax_kwarg_removal(self, long_df):

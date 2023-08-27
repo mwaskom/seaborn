@@ -840,6 +840,9 @@ def relplot(
     variables = dict(x=x, y=y, hue=hue, size=size, style=style)
     if kind == "line":
         variables["units"] = units
+    elif units is not None:
+        msg = "The `units` parameter of `relplot` has no effect with kind='scatter'"
+        warnings.warn(msg, stacklevel=2)
     p = Plotter(
         data=data,
         variables=variables,
