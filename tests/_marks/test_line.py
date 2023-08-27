@@ -181,7 +181,7 @@ class TestPaths:
 
         assert same_color(lines.get_color().squeeze(), m.color)
         assert lines.get_linewidth().item() == m.linewidth
-        assert lines.get_linestyle()[0] == (0, list(m.linestyle))
+        assert lines.get_dashes()[0] == (0, list(m.linestyle))
 
     def test_mapped_properties(self):
 
