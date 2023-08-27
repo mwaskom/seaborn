@@ -669,6 +669,12 @@ class TestRegressionPlots:
         x, y = ax.lines[1].get_xydata().T
         npt.assert_array_equal(x, np.sort(self.df.x))
 
+    @pytest.mark.parametrize("option", ["robust", "lowess"])
+    @pytest.mark.skipif(not _no_statsmodels, reason="statsmodels installed")
+    def test_residplot_statsmodels_missing_errors(self, long_df, option):
+        with pytest.raises(RuntimeError, match=rf"`{option}=True` requires"):
+            lm.residplot(long_df, x="x", y="y", **{option: True})
+
     def test_three_point_colors(self):
 
         x, y = np.random.randn(2, 3)
