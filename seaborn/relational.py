@@ -275,7 +275,9 @@ class _RelationalPlotter(VectorPlotter):
     ):
 
         brief_ticks = 6
-        mapper = getattr(self, f"_{var}_map")
+        mapper = getattr(self, f"_{var}_map", None)
+        if mapper is None:
+            return
 
         brief = mapper.map_type == "numeric" and (
             verbosity == "brief"

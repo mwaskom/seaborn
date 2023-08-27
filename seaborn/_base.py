@@ -1,7 +1,6 @@
 import warnings
 import itertools
 from copy import copy
-from functools import partial
 from collections import UserString
 from collections.abc import Iterable, Sequence, Mapping
 from numbers import Number
@@ -12,9 +11,6 @@ import pandas as pd
 import matplotlib as mpl
 
 from seaborn._core.data import PlotData
-from seaborn._decorators import (
-    share_init_params_with_map,
-)
 from seaborn.palettes import (
     QUAL_PALETTES,
     color_palette,
@@ -49,12 +45,6 @@ class SemanticMapping:
         # kind of plot they're going to be used to draw.
         # Fully achieving that is going to take some thinking.
         self.plotter = plotter
-
-    def map(cls, plotter, *args, **kwargs):
-        # This method is assigned the __init__ docstring
-        method_name = f"_{cls.__name__[:-7].lower()}_map"
-        setattr(plotter, method_name, cls(plotter, *args, **kwargs))
-        return plotter
 
     def _check_list_length(self, levels, values, variable):
         """Input check when values are provided as a list."""
@@ -92,7 +82,6 @@ class SemanticMapping:
             return self._lookup_single(key, *args, **kwargs)
 
 
-@share_init_params_with_map
 class HueMapping(SemanticMapping):
     """Mapping that sets artist colors according to data values."""
     # A specification of the colors that should appear in the plot
@@ -294,7 +283,6 @@ class HueMapping(SemanticMapping):
         return levels, lookup_table, norm, cmap
 
 
-@share_init_params_with_map
 class SizeMapping(SemanticMapping):
     """Mapping that sets artist sizes according to data values."""
     # An object that normalizes data values to [0, 1] range
@@ -516,16 +504,13 @@ class SizeMapping(SemanticMapping):
         return levels, lookup_table, norm, size_range
 
 
-@share_init_params_with_map
 class StyleMapping(SemanticMapping):
     """Mapping that sets artist style according to data values."""
 
     # Style mapping is always treated as categorical
     map_type = "categorical"
 
-    def __init__(
-        self, plotter, markers=None, dashes=None, order=None,
-    ):
+    def __init__(self, plotter, markers=None, dashes=None, order=None):
         """Map the levels of the `style` variable to distinct values.
 
         Parameters
@@ -619,12 +604,6 @@ class StyleMapping(SemanticMapping):
 class VectorPlotter:
     """Base class for objects underlying *plot functions."""
 
-    _semantic_mappings = {
-        "hue": HueMapping,
-        "size": SizeMapping,
-        "style": StyleMapping,
-    }
-
     # TODO units is another example of a non-mapping "semantic"
     # we need a general name for this and separate handling
     semantics = "x", "y", "hue", "size", "style", "units"
@@ -645,14 +624,12 @@ class VectorPlotter:
         self._var_ordered = {"x": False, "y": False}  # alt., used DefaultDict
         self.assign_variables(data, variables)
 
-        for var, cls in self._semantic_mappings.items():
-
-            # Create the mapping function
-            map_func = partial(cls.map, plotter=self)
-            setattr(self, f"map_{var}", map_func)
-
-            # Call the mapping function to initialize with default values
-            getattr(self, f"map_{var}")()
+        # TODO Lots of tests assume that these are called to initialize the
+        # mappings to default values on class initialization. I'd prefer to
+        # move away from that and only have a mapping when explicitly called.
+        for var in ["hue", "size", "style"]:
+            if var in variables:
+                getattr(self, f"map_{var}")()
 
     @property
     def has_xy_data(self):
@@ -673,11 +650,8 @@ class VectorPlotter:
 
         """
         for var in self.variables:
-            try:
-                map_obj = getattr(self, f"_{var}_map")
+            if (map_obj := getattr(self, f"_{var}_map", None)) is not None:
                 self._var_levels[var] = map_obj.levels
-            except AttributeError:
-                pass
         return self._var_levels
 
     def assign_variables(self, data=None, variables={}):
@@ -687,9 +661,7 @@ class VectorPlotter:
 
         if x is None and y is None:
             self.input_format = "wide"
-            frame, names = self._assign_variables_wideform(
-                data, **variables,
-            )
+            frame, names = self._assign_variables_wideform(data, **variables)
         else:
             # When dealing with long-form input, use the newer PlotData
             # object (internal but introduced for the objects interface)
@@ -852,6 +824,18 @@ class VectorPlotter:
             plot_data = plot_data[list(variables)]
 
         return plot_data, variables
+
+    def map_hue(self, palette=None, order=None, norm=None, saturation=1):
+        mapping = HueMapping(self, palette, order, norm, saturation)
+        self._hue_map = mapping
+
+    def map_size(self, sizes=None, order=None, norm=None):
+        mapping = SizeMapping(self, sizes, order, norm)
+        self._size_map = mapping
+
+    def map_style(self, markers=None, dashes=None, order=None):
+        mapping = StyleMapping(self, markers, dashes, order)
+        self._style_map = mapping
 
     def iter_data(
         self, grouping_vars=None, *,

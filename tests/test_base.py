@@ -57,26 +57,13 @@ class TestSemanticMapping:
 
 class TestHueMapping:
 
-    def test_init_from_map(self, long_df):
-
-        p_orig = VectorPlotter(
-            data=long_df,
-            variables=dict(x="x", y="y", hue="a")
-        )
-        palette = "Set2"
-        p = HueMapping.map(p_orig, palette=palette)
-        assert p is p_orig
-        assert isinstance(p._hue_map, HueMapping)
-        assert p._hue_map.palette == palette
-
     def test_plotter_default_init(self, long_df):
 
         p = VectorPlotter(
             data=long_df,
             variables=dict(x="x", y="y"),
         )
-        assert isinstance(p._hue_map, HueMapping)
-        assert p._hue_map.map_type is None
+        assert not hasattr(p, "_hue_map")
 
         p = VectorPlotter(
             data=long_df,
@@ -85,16 +72,15 @@ class TestHueMapping:
         assert isinstance(p._hue_map, HueMapping)
         assert p._hue_map.map_type == p.var_types["hue"]
 
-    def test_plotter_reinit(self, long_df):
+    def test_plotter_customization(self, long_df):
 
-        p_orig = VectorPlotter(
+        p = VectorPlotter(
             data=long_df,
             variables=dict(x="x", y="y", hue="a"),
         )
         palette = "muted"
         hue_order = ["b", "a", "c"]
-        p = p_orig.map_hue(palette=palette, order=hue_order)
-        assert p is p_orig
+        p.map_hue(palette=palette, order=hue_order)
         assert p._hue_map.palette == palette
         assert p._hue_map.levels == hue_order
 
@@ -333,27 +319,13 @@ class TestHueMapping:
 
 class TestSizeMapping:
 
-    def test_init_from_map(self, long_df):
-
-        p_orig = VectorPlotter(
-            data=long_df,
-            variables=dict(x="x", y="y", size="a")
-        )
-        sizes = 1, 6
-        p = SizeMapping.map(p_orig, sizes=sizes)
-        assert p is p_orig
-        assert isinstance(p._size_map, SizeMapping)
-        assert min(p._size_map.lookup_table.values()) == sizes[0]
-        assert max(p._size_map.lookup_table.values()) == sizes[1]
-
     def test_plotter_default_init(self, long_df):
 
         p = VectorPlotter(
             data=long_df,
             variables=dict(x="x", y="y"),
         )
-        assert isinstance(p._size_map, SizeMapping)
-        assert p._size_map.map_type is None
+        assert not hasattr(p, "_size_map")
 
         p = VectorPlotter(
             data=long_df,
@@ -362,16 +334,15 @@ class TestSizeMapping:
         assert isinstance(p._size_map, SizeMapping)
         assert p._size_map.map_type == p.var_types["size"]
 
-    def test_plotter_reinit(self, long_df):
+    def test_plotter_customization(self, long_df):
 
-        p_orig = VectorPlotter(
+        p = VectorPlotter(
             data=long_df,
             variables=dict(x="x", y="y", size="a"),
         )
         sizes = [1, 4, 2]
         size_order = ["b", "a", "c"]
-        p = p_orig.map_size(sizes=sizes, order=size_order)
-        assert p is p_orig
+        p.map_size(sizes=sizes, order=size_order)
         assert p._size_map.lookup_table == dict(zip(size_order, sizes))
         assert p._size_map.levels == size_order
 
@@ -483,25 +454,13 @@ class TestSizeMapping:
 
 class TestStyleMapping:
 
-    def test_init_from_map(self, long_df):
-
-        p_orig = VectorPlotter(
-            data=long_df,
-            variables=dict(x="x", y="y", style="a")
-        )
-        markers = ["s", "p", "h"]
-        p = StyleMapping.map(p_orig, markers=markers)
-        assert p is p_orig
-        assert isinstance(p._style_map, StyleMapping)
-        assert p._style_map(p._style_map.levels, "marker") == markers
-
     def test_plotter_default_init(self, long_df):
 
         p = VectorPlotter(
             data=long_df,
             variables=dict(x="x", y="y"),
         )
-        assert isinstance(p._style_map, StyleMapping)
+        assert not hasattr(p, "_map_style")
 
         p = VectorPlotter(
             data=long_df,
@@ -509,16 +468,15 @@ class TestStyleMapping:
         )
         assert isinstance(p._style_map, StyleMapping)
 
-    def test_plotter_reinit(self, long_df):
+    def test_plotter_customization(self, long_df):
 
-        p_orig = VectorPlotter(
+        p = VectorPlotter(
             data=long_df,
             variables=dict(x="x", y="y", style="a"),
         )
         markers = ["s", "p", "h"]
         style_order = ["b", "a", "c"]
-        p = p_orig.map_style(markers=markers, order=style_order)
-        assert p is p_orig
+        p.map_style(markers=markers, order=style_order)
         assert p._style_map.levels == style_order
         assert p._style_map(style_order, "marker") == markers
 
@@ -823,6 +781,7 @@ class TestVectorPlotter:
                 data=long_df,
                 variables={"x": "x", "y": "y", semantic: var},
             )
+            getattr(p, f"map_{semantic}")()
             out = p.iter_data(semantics)
             assert len(list(out)) == n_subsets
 
@@ -833,6 +792,8 @@ class TestVectorPlotter:
             data=long_df,
             variables=dict(x="x", y="y", hue=var, style=var),
         )
+        p.map_hue()
+        p.map_style()
         out = p.iter_data(semantics)
         assert len(list(out)) == n_subsets
 
@@ -851,6 +812,8 @@ class TestVectorPlotter:
             data=long_df,
             variables=dict(x="x", y="y", hue=var1, style=var2),
         )
+        p.map_hue()
+        p.map_style()
         out = p.iter_data(["hue"])
         assert len(list(out)) == n_subsets
 
@@ -860,6 +823,8 @@ class TestVectorPlotter:
             data=long_df,
             variables=dict(x="x", y="y", hue=var1, style=var2),
         )
+        p.map_hue()
+        p.map_style()
         out = p.iter_data(semantics)
         assert len(list(out)) == n_subsets
 
@@ -867,6 +832,9 @@ class TestVectorPlotter:
             data=long_df,
             variables=dict(x="x", y="y", hue=var1, size=var2, style=var1),
         )
+        p.map_hue()
+        p.map_size()
+        p.map_style()
         out = p.iter_data(semantics)
         assert len(list(out)) == n_subsets
 
@@ -880,6 +848,9 @@ class TestVectorPlotter:
             data=long_df,
             variables=dict(x="x", y="y", hue=var1, size=var2, style=var3),
         )
+        p.map_hue()
+        p.map_size()
+        p.map_style()
         out = p.iter_data(semantics)
         assert len(list(out)) == n_subsets
 
@@ -991,6 +962,7 @@ class TestVectorPlotter:
             data=null_df,
             variables=dict(x="x", y="y", hue="a")
         )
+        p.map_hue()
         for _, sub_df in p.iter_data("hue"):
             assert not sub_df.isna().any().any()
 
