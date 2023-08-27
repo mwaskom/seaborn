@@ -88,7 +88,8 @@ class Mappable:
         """Get the default value for this feature, or access the relevant rcParam."""
         if self._val is not None:
             return self._val
-        return mpl.rcParams.get(self._rc)
+        elif self._rc is not None:
+            return mpl.rcParams.get(self._rc)
 
 
 # TODO where is the right place to put this kind of type aliasing?

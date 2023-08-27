@@ -1043,5 +1043,4 @@ Examples
     narrative=_relational_narrative,
     params=_param_docs,
     returns=_core_docs["returns"],
-    seealso=_core_docs["seealso"],
 )

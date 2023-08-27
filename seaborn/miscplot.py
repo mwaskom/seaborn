@@ -18,7 +18,7 @@ def palplot(pal, size=1):
 
     """
     n = len(pal)
-    f, ax = plt.subplots(1, 1, figsize=(n * size, size))
+    _, ax = plt.subplots(1, 1, figsize=(n * size, size))
     ax.imshow(np.arange(n).reshape(1, n),
               cmap=mpl.colors.ListedColormap(list(pal)),
               interpolation="nearest", aspect="auto")
@@ -32,10 +32,7 @@ def palplot(pal, size=1):
 
 def dogplot(*_, **__):
     """Who's a good boy?"""
-    try:
-        from urllib.request import urlopen
-    except ImportError:
-        from urllib2 import urlopen
+    from urllib.request import urlopen
     from io import BytesIO
 
     url = "https://github.com/mwaskom/seaborn-data/raw/master/png/img{}.png"

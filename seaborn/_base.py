@@ -29,7 +29,7 @@ class SemanticMapping:
     # -- Default attributes that all SemanticMapping subclasses must set
 
     # Whether the mapping is numeric, categorical, or datetime
-    map_type = None
+    map_type: str | None = None
 
     # Ordered list of unique values in the input data
     levels = None

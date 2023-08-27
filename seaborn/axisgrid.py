@@ -14,7 +14,11 @@ from ._core.data import handle_data_source
 from ._compat import share_axis, get_legend_handles
 from . import utils
 from .utils import (
-    adjust_legend_subtitles, _check_argument, _draw_figure, _disable_autolayout
+    adjust_legend_subtitles,
+    set_hls_values,
+    _check_argument,
+    _draw_figure,
+    _disable_autolayout
 )
 from .palettes import color_palette, blend_palette
 from ._docstrings import (
@@ -157,7 +161,7 @@ class Grid(_BaseGrid):
                 label_order = list(map(utils.to_utf8, self.hue_names))
 
         blank_handle = mpl.patches.Patch(alpha=0, linewidth=0)
-        handles = [legend_data.get(l, blank_handle) for l in label_order]
+        handles = [legend_data.get(lab, blank_handle) for lab in label_order]
         title = self._hue_var if title is None else title
         title_size = mpl.rcParams["legend.title_fontsize"]
 
@@ -232,10 +236,10 @@ class Grid(_BaseGrid):
         if ax.legend_ is not None and self._extract_legend_handles:
             handles = get_legend_handles(ax.legend_)
             labels = [t.get_text() for t in ax.legend_.texts]
-            data.update({l: h for h, l in zip(handles, labels)})
+            data.update({label: handle for handle, label in zip(handles, labels)})
 
         handles, labels = ax.get_legend_handles_labels()
-        data.update({l: h for h, l in zip(handles, labels)})
+        data.update({label: handle for handle, label in zip(handles, labels)})
 
         self._legend_data.update(data)
 
@@ -915,7 +919,7 @@ class FacetGrid(Grid):
             curr_ticks = ax.get_xticks()
             ax.set_xticks(curr_ticks)
             if labels is None:
-                curr_labels = [l.get_text() for l in ax.get_xticklabels()]
+                curr_labels = [label.get_text() for label in ax.get_xticklabels()]
                 if step is not None:
                     xticks = ax.get_xticks()[::step]
                     curr_labels = curr_labels[::step]
@@ -931,14 +935,13 @@ class FacetGrid(Grid):
             curr_ticks = ax.get_yticks()
             ax.set_yticks(curr_ticks)
             if labels is None:
-                curr_labels = [l.get_text() for l in ax.get_yticklabels()]
+                curr_labels = [label.get_text() for label in ax.get_yticklabels()]
                 ax.set_yticklabels(curr_labels, **kwargs)
             else:
                 ax.set_yticklabels(labels, **kwargs)
         return self
 
-    def set_titles(self, template=None, row_template=None, col_template=None,
-                   **kwargs):
+    def set_titles(self, template=None, row_template=None, col_template=None, **kwargs):
         """Draw titles either above each facet or on the grid margins.
 
         Parameters
@@ -2000,7 +2003,6 @@ Examples
 
 """.format(
     params=_param_docs,
-    returns=_core_docs["returns"],
     seealso=_core_docs["seealso"],
 )
 
@@ -2222,9 +2224,7 @@ def jointplot(
 
     # Raise early if using `hue` with a kind that does not support it
     if hue is not None and kind in ["hex", "reg", "resid"]:
-        msg = (
-            f"Use of `hue` with `kind='{kind}'` is not currently supported."
-        )
+        msg = f"Use of `hue` with `kind='{kind}'` is not currently supported."
         raise ValueError(msg)
 
     # Make a colormap based off the plot color
@@ -2232,8 +2232,7 @@ def jointplot(
     if color is None:
         color = "C0"
     color_rgb = mpl.colors.colorConverter.to_rgb(color)
-    colors = [utils.set_hls_values(color_rgb, l=l)  # noqa
-              for l in np.linspace(1, 0, 12)]
+    colors = [set_hls_values(color_rgb, l=val) for val in np.linspace(1, 0, 12)]
     cmap = blend_palette(colors, as_cmap=True)
 
     # Matplotlib's hexbin plot is not na-robust
