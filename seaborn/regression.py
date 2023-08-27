@@ -750,6 +750,15 @@ def regplot(
     scatter_kws=None, line_kws=None, ax=None
 ):
 
+    if not _has_statsmodels:
+        err = "`{}=True` requires statsmodels, an optional dependency, to be installed."
+        if logistic:
+            raise RuntimeError(err.format("logistic"))
+        elif robust:
+            raise RuntimeError(err.format("robust"))
+        elif lowess:
+            raise RuntimeError(err.format("lowess"))
+
     plotter = _RegressionPlotter(x, y, data, x_estimator, x_bins, x_ci,
                                  scatter, fit_reg, ci, n_boot, units, seed,
                                  order, logistic, lowess, robust, logx,

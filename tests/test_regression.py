@@ -212,6 +212,12 @@ class TestRegressionPlotter:
         # Compare the vector of y_hat values
         npt.assert_array_almost_equal(yhat_poly, yhat_smod)
 
+    @pytest.mark.parametrize("option", ["logistic", "robust", "lowess"])
+    @pytest.mark.skipif(not _no_statsmodels, reason="statsmodels installed")
+    def test_statsmodels_missing_errors(self, long_df, option):
+        with pytest.raises(RuntimeError, match=rf"`{option}=True` requires"):
+            lm.regplot(long_df, x="x", y="y", **{option: True})
+
     def test_regress_logx(self):
 
         x = np.arange(1, 10)
