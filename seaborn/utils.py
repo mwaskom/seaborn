@@ -460,6 +460,13 @@ def move_legend(obj, loc, **kwargs):
     handles = get_legend_handles(old_legend)
     labels = [t.get_text() for t in old_legend.get_texts()]
 
+    # Handle the case where the user is trying to override the labels
+    if (new_labels := kwargs.pop("labels", None)) is not None:
+        if len(new_labels) != len(labels):
+            err = "Length of new labels does not match existing legend."
+            raise ValueError(err)
+        labels = new_labels
+
     # Extract legend properties that can be passed to the recreation method
     # (Vexingly, these don't all round-trip)
     legend_kws = inspect.signature(mpl.legend.Legend).parameters

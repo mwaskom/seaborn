@@ -20,7 +20,7 @@ from pandas.testing import (
     assert_frame_equal,
 )
 
-from seaborn import utils, rcmod
+from seaborn import utils, rcmod, scatterplot
 from seaborn.utils import (
     get_dataset_names,
     get_color_cycle,
@@ -428,6 +428,28 @@ def test_move_legend_input_checks():
 
     with pytest.raises(ValueError):
         utils.move_legend(ax.figure, "best")
+
+
+def test_move_legend_with_labels(long_df):
+
+    order = long_df["a"].unique()
+    labels = [s.capitalize() for s in order]
+    ax = scatterplot(long_df, x="x", y="y", hue="a", hue_order=order)
+
+    handles_before = get_legend_handles(ax.get_legend())
+    colors_before = [tuple(h.get_facecolor().squeeze()) for h in handles_before]
+    utils.move_legend(ax, "best", labels=labels)
+    _draw_figure(ax.figure)
+
+    texts = [t.get_text() for t in ax.get_legend().get_texts()]
+    assert texts == labels
+
+    handles_after = get_legend_handles(ax.get_legend())
+    colors_after = [tuple(h.get_facecolor().squeeze()) for h in handles_after]
+    assert colors_before == colors_after
+
+    with pytest.raises(ValueError, match="Length of new labels"):
+        utils.move_legend(ax, "best", labels=labels[:-1])
 
 
 def check_load_dataset(name):
