@@ -1702,22 +1702,20 @@ class Plotter:
         # Input list has an entry for each distinct variable in each layer
         # Output dict has an entry for each distinct variable
         merged_contents: dict[
-            tuple[str, str | int], tuple[list[Artist], list[str]],
+            tuple[str, str | int], tuple[list[tuple[Artist, ...]], list[str]],
         ] = {}
         for key, new_artists, labels in self._legend_contents:
             # Key is (name, id); we need the id to resolve variable uniqueness,
             # but will need the name in the next step to title the legend
-            if key in merged_contents:
-                # Copy so inplace updates don't propagate back to legend_contents
+            if key not in merged_contents:
+                # Simplify typing and ensure inplace updates don't propagate back
+                # Matplotlib accepts a tuple of artists and will overlay them
+                new_artist_tuples = [tuple([a]) for a in new_artists]
+                merged_contents[key] = new_artist_tuples, labels
+            else:
                 existing_artists = merged_contents[key][0]
                 for i, artist in enumerate(existing_artists):
-                    # Matplotlib accepts a tuple of artists and will overlay them
-                    if isinstance(artist, tuple):
-                        artist += new_artists[i],
-                    else:
-                        existing_artists[i] = artist, new_artists[i]
-            else:
-                merged_contents[key] = new_artists.copy(), labels
+                    artist += new_artists[i],
 
         # TODO explain
         loc = "center right" if self._pyplot else "center left"
@@ -1727,7 +1725,7 @@ class Plotter:
 
             legend = mpl.legend.Legend(
                 self._figure,
-                handles,
+                handles,  # type: ignore  # matplotlib/issues/26639
                 labels,
                 title=name,
                 loc=loc,
