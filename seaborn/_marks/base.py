@@ -224,7 +224,7 @@ class Mark:
 
     def _legend_artist(
         self, variables: list[str], value: Any, scales: dict[str, Scale],
-    ) -> Artist:
+    ) -> Artist | None:
 
         return None
 
