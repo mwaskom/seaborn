@@ -519,7 +519,7 @@ class Plot:
         legend : bool
             Option to suppress the mark/mappings for this layer from the legend.
         label : str
-            A label representing the layer, irrespective of any scales.
+            A label to use for the layer in the legend, independent of any mappings.
         data : DataFrame or dict
             Data source to override the global source provided in the constructor.
         variables : data vectors or identifiers
@@ -792,6 +792,7 @@ class Plot:
         while `col=` and/or `row=` add a label for the faceting variable.
 
         When using a single subplot, `title=` sets its title.
+
         The `legend=` parameter sets the title for the "layer" legend
         (i.e., when using `label` in :meth:`Plot.add`).
 
