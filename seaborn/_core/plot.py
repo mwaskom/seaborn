@@ -66,6 +66,7 @@ class Layer(TypedDict, total=False):
     vars: dict[str, VariableSpec]
     orient: str
     legend: bool
+    label: str | None
 
 
 class FacetSpec(TypedDict, total=False):
@@ -490,6 +491,7 @@ class Plot:
         *transforms: Stat | Move,
         orient: str | None = None,
         legend: bool = True,
+        label: str | None = None,
         data: DataSource = None,
         **variables: VariableSpec,
     ) -> Plot:
@@ -516,6 +518,8 @@ class Plot:
             orientation will be inferred from characteristics of the data and scales.
         legend : bool
             Option to suppress the mark/mappings for this layer from the legend.
+        label : str
+            A label to use for the layer in the legend, independent of any mappings.
         data : DataFrame or dict
             Data source to override the global source provided in the constructor.
         variables : data vectors or identifiers
@@ -568,6 +572,7 @@ class Plot:
             "vars": variables,
             "source": data,
             "legend": legend,
+            "label": label,
             "orient": {"v": "x", "h": "y"}.get(orient, orient),  # type: ignore
         })
 
@@ -766,7 +771,12 @@ class Plot:
         new._limits.update(limits)
         return new
 
-    def label(self, *, title=None, **variables: str | Callable[[str], str]) -> Plot:
+    def label(
+        self, *,
+        title: str | None = None,
+        legend: str | None = None,
+        **variables: str | Callable[[str], str]
+    ) -> Plot:
         """
         Control the labels and titles for axes, legends, and subplots.
 
@@ -780,7 +790,11 @@ class Plot:
         For semantic variables, the value sets the legend title.
         For faceting variables, `title=` modifies the subplot-specific label,
         while `col=` and/or `row=` add a label for the faceting variable.
+
         When using a single subplot, `title=` sets its title.
+
+        The `legend=` parameter sets the title for the "layer" legend
+        (i.e., when using `label` in :meth:`Plot.add`).
 
         Examples
         --------
@@ -791,6 +805,8 @@ class Plot:
         new = self._clone()
         if title is not None:
             new._labels["title"] = title
+        if legend is not None:
+            new._labels["legend"] = legend
         new._labels.update(variables)
         return new
 
@@ -1478,7 +1494,7 @@ class Plotter:
             view["ax"].autoscale_view()
 
         if layer["legend"]:
-            self._update_legend_contents(p, mark, data, scales)
+            self._update_legend_contents(p, mark, data, scales, layer["label"])
 
     def _unscale_coords(
         self, subplots: list[dict], df: DataFrame, orient: str,
@@ -1654,6 +1670,7 @@ class Plotter:
         mark: Mark,
         data: PlotData,
         scales: dict[str, Scale],
+        layer_label: str | None,
     ) -> None:
         """Add legend artists / labels for one layer in the plot."""
         if data.frame.empty and data.frames:
@@ -1664,9 +1681,24 @@ class Plotter:
         else:
             legend_vars = list(data.frame.columns.intersection(list(scales)))
 
+        # First handle layer legends, which occupy a single entry in legend_contents.
+        if layer_label is not None:
+            legend_title = str(p._labels.get("legend", ""))
+            layer_key = (legend_title, -1)
+            artist = mark._legend_artist([], None, {})
+            if artist is not None:
+                for content in self._legend_contents:
+                    if content[0] == layer_key:
+                        content[1].append(artist)
+                        content[2].append(layer_label)
+                        break
+                else:
+                    self._legend_contents.append((layer_key, [artist], [layer_label]))
+
+        # Then handle the scale legends
         # First pass: Identify the values that will be shown for each variable
         schema: list[tuple[
-            tuple[str, str | int], list[str], tuple[list, list[str]]
+            tuple[str, str | int], list[str], tuple[list[Any], list[str]]
         ]] = []
         schema = []
         for var in legend_vars:
@@ -1702,24 +1734,24 @@ class Plotter:
         # Input list has an entry for each distinct variable in each layer
         # Output dict has an entry for each distinct variable
         merged_contents: dict[
-            tuple[str, str | int], tuple[list[Artist], list[str]],
+            tuple[str, str | int], tuple[list[tuple[Artist, ...]], list[str]],
         ] = {}
         for key, new_artists, labels in self._legend_contents:
             # Key is (name, id); we need the id to resolve variable uniqueness,
             # but will need the name in the next step to title the legend
-            if key in merged_contents:
-                # Copy so inplace updates don't propagate back to legend_contents
-                existing_artists = merged_contents[key][0]
-                for i, artist in enumerate(existing_artists):
-                    # Matplotlib accepts a tuple of artists and will overlay them
-                    if isinstance(artist, tuple):
-                        artist += new_artists[i],
-                    else:
-                        existing_artists[i] = artist, new_artists[i]
+            if key not in merged_contents:
+                # Matplotlib accepts a tuple of artists and will overlay them
+                new_artist_tuples = [tuple([a]) for a in new_artists]
+                merged_contents[key] = new_artist_tuples, labels
             else:
-                merged_contents[key] = new_artists.copy(), labels
+                existing_artists = merged_contents[key][0]
+                for i, new_artist in enumerate(new_artists):
+                    existing_artists[i] += tuple([new_artist])
 
-        # TODO explain
+        # When using pyplot, an "external" legend won't be shown, so this
+        # keeps it inside the axes (though still attached to the figure)
+        # This is necessary because matplotlib layout engines currently don't
+        # support figure legends — ideally this will change.
         loc = "center right" if self._pyplot else "center left"
 
         base_legend = None
@@ -1727,7 +1759,7 @@ class Plotter:
 
             legend = mpl.legend.Legend(
                 self._figure,
-                handles,
+                handles,  # type: ignore  # matplotlib/issues/26639
                 labels,
                 title=name,
                 loc=loc,

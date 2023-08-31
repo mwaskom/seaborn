@@ -2127,6 +2127,30 @@ class TestLegend:
         for text in legend.texts:
             assert float(text.get_text()) > 1e7
 
+    def test_layer_legend(self, xy):
+
+        p = Plot(**xy).add(MockMark(), label="a").add(MockMark(), label="b").plot()
+        legend = p._figure.legends[0]
+        assert legend.texts
+        for text, expected in zip(legend.texts, "ab"):
+            assert text.get_text() == expected
+
+    def test_layer_legend_with_scale_legend(self, xy):
+
+        s = pd.Series(["a", "b", "a", "c"], name="s")
+        p = Plot(**xy, color=s).add(MockMark(), label="x").plot()
+
+        legend = p._figure.legends[0]
+        texts = [t.get_text() for t in legend.findobj(mpl.text.Text)]
+        assert "x" in texts
+        for val in s.unique():
+            assert val in texts
+
+    def test_layer_legend_title(self, xy):
+
+        p = Plot(**xy).add(MockMark(), label="x").label(legend="layer").plot()
+        assert p._figure.legends[0].get_title().get_text() == "layer"
+
 
 class TestDefaultObject:
 
