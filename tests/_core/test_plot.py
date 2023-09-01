@@ -1751,9 +1751,14 @@ class TestPairInterface:
 
     def test_labels(self, long_df):
 
-        label = "Z"
-        p = Plot(long_df, y="y").pair(x=["x", "z"]).label(x1=label).plot()
-        ax1 = p._figure.axes[1]
+        label = "zed"
+        p = (
+            Plot(long_df, y="y")
+            .pair(x=["x", "z"])
+            .label(x=str.capitalize, x1=label)
+        )
+        ax0, ax1 = p.plot()._figure.axes
+        assert ax0.get_xlabel() == "X"
         assert ax1.get_xlabel() == label
 
 
