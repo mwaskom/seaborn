@@ -1088,9 +1088,14 @@ class Plotter:
 
     def _resolve_label(self, p: Plot, var: str, auto_label: str | None) -> str:
 
+        if re.match(r"[xy]\d+", var):
+            key = var if var in p._labels else var[0]
+        else:
+            key = var
+
         label: str
-        if var in p._labels:
-            manual_label = p._labels[var]
+        if key in p._labels:
+            manual_label = p._labels[key]
             if callable(manual_label) and auto_label is not None:
                 label = manual_label(auto_label)
             else:
