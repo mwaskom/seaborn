@@ -1256,11 +1256,16 @@ class Plotter:
                     data.frame = res
 
     def _get_scale(
-        self, spec: Plot, var: str, prop: Property, values: Series
+        self, p: Plot, var: str, prop: Property, values: Series
     ) -> Scale:
 
-        if var in spec._scales:
-            arg = spec._scales[var]
+        if re.match(r"[xy]\d+", var):
+            key = var if var in p._scales else var[0]
+        else:
+            key = var
+
+        if key in p._scales:
+            arg = p._scales[key]
             if arg is None or isinstance(arg, Scale):
                 scale = arg
             else:
@@ -1293,7 +1298,8 @@ class Plotter:
         return seed_values
 
     def _setup_scales(
-        self, p: Plot,
+        self,
+        p: Plot,
         common: PlotData,
         layers: list[Layer],
         variables: list[str] | None = None,
@@ -1786,9 +1792,9 @@ class Plotter:
                 axis_obj = getattr(ax, f"{axis}axis")
 
                 # Axis limits
-                if axis_key in p._limits:
+                if axis_key in p._limits or axis in p._limits:
                     convert_units = getattr(ax, f"{axis}axis").convert_units
-                    a, b = p._limits[axis_key]
+                    a, b = p._limits.get(axis_key) or p._limits[axis]
                     lo = a if a is None else convert_units(a)
                     hi = b if b is None else convert_units(b)
                     if isinstance(a, str):
