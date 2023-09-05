@@ -1,3 +1,4 @@
+from functools import partial
 import warnings
 
 import numpy as np
@@ -253,9 +254,8 @@ class _RelationalPlotter(VectorPlotter):
             for attr in use_attrs:
                 if attr in kws:
                     level_kws[attr] = kws[attr]
-            artist = func([], [], label=label, **{**common_kws, **level_kws})
-            if func.__name__ == "plot":
-                artist = artist[0]
+            artist = func(label=label, **{**common_kws, **level_kws})
+            ax.add_artist(artist)
             legend_data[key] = artist
             legend_order.append(key)
 
@@ -484,7 +484,8 @@ class _LinePlotter(_RelationalPlotter):
         # Finalize the axes details
         self._add_axis_labels(ax)
         if self.legend:
-            self.add_legend_data(ax)
+            artist_func = partial(mpl.lines.Line2D, xdata=[], ydata=[])
+            self.add_legend_data(ax, func=artist_func, common_kws=kws)
             handles, _ = ax.get_legend_handles_labels()
             if handles:
                 legend = ax.legend(title=self.legend_title)
