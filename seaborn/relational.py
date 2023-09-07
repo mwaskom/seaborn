@@ -195,7 +195,6 @@ class _RelationalPlotter(VectorPlotter):
 class _LinePlotter(_RelationalPlotter):
 
     _legend_attributes = ["color", "linewidth", "marker", "dashes"]
-    _legend_func = "plot"
 
     def __init__(
         self, *,
@@ -370,11 +369,13 @@ class _LinePlotter(_RelationalPlotter):
                 legend = ax.legend(title=self.legend_title)
                 adjust_legend_subtitles(legend)
 
+    def _legend_func(self, **kwargs):
+        return mpl.lines.Line2D([], [], **kwargs)
+
 
 class _ScatterPlotter(_RelationalPlotter):
 
     _legend_attributes = ["color", "s", "marker"]
-    _legend_func = "scatter"
 
     def __init__(self, *, data=None, variables={}, legend=None):
 
@@ -453,6 +454,15 @@ class _ScatterPlotter(_RelationalPlotter):
             if handles:
                 legend = ax.legend(title=self.legend_title)
                 adjust_legend_subtitles(legend)
+
+    def _legend_func(self, **kwargs):
+        kwargs.setdefault("marker", "o")
+        kwargs.pop("linewidth", None)  # TODO actually use
+        kwargs.update(
+            # TODO fix this elsewhere so we're not passing `s`
+            ms=np.sqrt(kwargs.pop("s", mpl.rcParams["lines.markersize"] ** 2)),
+        )
+        return mpl.lines.Line2D([], [], linestyle="", **kwargs)
 
 
 def lineplot(

@@ -1244,7 +1244,7 @@ class VectorPlotter:
             )
 
         if func is None:
-            func = getattr(ax, self._legend_func)
+            func = self._legend_func
 
         legend_data = {}
         legend_order = []
