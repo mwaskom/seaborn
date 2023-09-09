@@ -821,11 +821,28 @@ def relplot(
         # Replace the original plot data so the legend uses numeric data with
         # the correct type, since we force a categorical mapping above.
         p.plot_data = plot_data
-        legend_artist = (
-            _scatter_legend_artist if kind == "scatter"
-            else partial(mpl.lines.Line2D, xdata=[], ydata=[])
-        )
-        p.add_legend_data(g.axes.flat[0], legend_artist)
+
+        # Handle the additional non-semantic keyword arguments out here.
+        # We're selective because some kwargs may be seaborn function specific
+        # and not relevant to the matplotlib artists going into the legend.
+        # Ideally, we will have a better solution where we don't need to re-make
+        # the legend out here and will have parity with the axes-level functions.
+        keys = ["c", "color", "alpha", "m", "marker"]
+        if kind == "scatter":
+            legend_artist = _scatter_legend_artist
+            keys += ["s", "facecolor", "fc", "edgecolor", "ec"]
+        else:
+            legend_artist = partial(mpl.lines.Line2D, xdata=[], ydata=[])
+            keys += [
+                "markersize", "ms",
+                "markeredgewidth", "mew",
+                "markeredgecolor", "mec",
+                "linestyle", "ls",
+                "linewidth", "lw",
+            ]
+
+        common_kws = {k: v for k, v in kwargs.items() if k in keys}
+        p.add_legend_data(g.axes.flat[0], legend_artist, common_kws)
         if p.legend_data:
             g.add_legend(legend_data=p.legend_data,
                          label_order=p.legend_order,
