@@ -24,6 +24,7 @@ from seaborn.utils import (
     _default_color,
     _get_transform_functions,
     _normalize_kwargs,
+    _scatter_legend_artist,
     _version_predates,
 )
 from seaborn._statistics import EstimateAggregator, LetterValues
@@ -488,7 +489,7 @@ class _CategoricalPlotter(_RelationalPlotter):
             if "hue" in self.variables:
                 points.set_facecolors(self._hue_map(sub_data["hue"]))
 
-        self._configure_legend(ax, ax.scatter)
+        self._configure_legend(ax, _scatter_legend_artist, common_kws=plot_kws)
 
     def plot_swarms(
         self,

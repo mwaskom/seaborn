@@ -901,3 +901,18 @@ def _disable_autolayout():
 def _version_predates(lib: ModuleType, version: str) -> bool:
     """Helper function for checking version compatibility."""
     return Version(lib.__version__) < Version(version)
+
+
+def _scatter_legend_artist(**kws):
+
+    rc = mpl.rcParams
+    line_kws = {
+        "linestyle": "",
+        "marker": kws.pop("marker", "o"),
+        "markersize": np.sqrt(kws.pop("s", rc["lines.markersize"] ** 2)),
+        "markeredgecolor": kws.pop("edgecolor"),
+        "markeredgewidth": kws.pop("linewidth"),
+        **kws,
+    }
+
+    return mpl.lines.Line2D([], [], **line_kws)
