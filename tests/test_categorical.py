@@ -673,6 +673,7 @@ class SharedScatterTests(SharedAxesLevelTests):
             dict(data="long", x="x", color="C3"),
             dict(data="long", y="y", hue="a", jitter=False),
             dict(data="long", x="a", y="y", hue="z", edgecolor="w", linewidth=.5),
+            dict(data="long", x="a", y="y", hue="z", edgecolor="auto", linewidth=.5),
             dict(data="long", x="a_cat", y="y", hue="z"),
             dict(data="long", x="y", y="s", hue="c", orient="h", dodge=True),
             dict(data="long", x="s", y="y", hue="c", native_scale=True),
@@ -990,6 +991,11 @@ class TestBoxPlot(SharedAxesLevelTests):
             assert same_color(box.get_edgecolor(), color)
         for flier in bxp.fliers:
             assert same_color(flier.get_markeredgecolor(), color)
+
+    def test_linecolor_gray_warning(self, long_df):
+
+        with pytest.warns(FutureWarning, match="Use \"auto\" to set automatic"):
+            boxplot(long_df, x="y", linecolor="gray")
 
     def test_saturation(self, long_df):
 
