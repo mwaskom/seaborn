@@ -559,7 +559,7 @@ class _CategoricalPlotter(_RelationalPlotter):
                 points.draw = draw.__get__(points)
 
         _draw_figure(ax.figure)
-        self._configure_legend(ax, ax.scatter)
+        self._configure_legend(ax, _scatter_legend_artist, plot_kws)
 
     def plot_boxes(
         self,
