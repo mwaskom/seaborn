@@ -2042,7 +2042,7 @@ boxenplot.__doc__ = dedent("""\
 def stripplot(
     data=None, *, x=None, y=None, hue=None, order=None, hue_order=None,
     jitter=True, dodge=False, orient=None, color=None, palette=None,
-    size=5, edgecolor="face", linewidth=0,
+    size=5, edgecolor=default, linewidth=0,
     hue_norm=None, log_scale=None, native_scale=False, formatter=None, legend="auto",
     ax=None, **kwargs
 ):
@@ -2811,8 +2811,7 @@ def catplot(
         if saturation < 1:
             color = desaturate(color, saturation)
 
-    edgecolor = kwargs.pop("edgecolor", "face" if kind == "strip" else "auto")
-    edgecolor = p._complement_color(edgecolor, color, p._hue_map)
+    edgecolor = p._complement_color(kwargs.pop("edgecolor", default), color, p._hue_map)
 
     width = kwargs.pop("width", 0.8)
     dodge = kwargs.pop("dodge", False if kind in undodged_kinds else "auto")

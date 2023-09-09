@@ -905,11 +905,16 @@ def _version_predates(lib: ModuleType, version: str) -> bool:
 
 def _scatter_legend_artist(**kws):
 
+    kws = _normalize_kwargs(kws, mpl.collections.PathCollection)
+    if kws["edgecolor"] == "face":
+        kws["edgecolor"] = kws.get("facecolor", kws["color"])
+
     rc = mpl.rcParams
     line_kws = {
         "linestyle": "",
         "marker": kws.pop("marker", "o"),
         "markersize": np.sqrt(kws.pop("s", rc["lines.markersize"] ** 2)),
+        "markerfacecolor": kws.pop("facecolor", kws.get("color")),
         "markeredgecolor": kws.pop("edgecolor"),
         "markeredgewidth": kws.pop("linewidth"),
         **kws,
