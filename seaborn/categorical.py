@@ -22,6 +22,7 @@ from seaborn.utils import (
     _check_argument,
     _draw_figure,
     _default_color,
+    _get_patch_legend_artist,
     _get_transform_functions,
     _normalize_kwargs,
     _scatter_legend_artist,
@@ -713,12 +714,8 @@ class _CategoricalPlotter(_RelationalPlotter):
 
             ax.add_container(BoxPlotContainer(artists))
 
-        patch_kws = props["box"].copy()
-        if not fill:
-            patch_kws["facecolor"] = (1, 1, 1, 0)
-        else:
-            patch_kws["edgecolor"] = linecolor
-        self._configure_legend(ax, ax.fill_between, patch_kws)
+        legend_artist = _get_patch_legend_artist(fill)
+        self._configure_legend(ax, legend_artist, boxprops)
 
     def plot_boxens(
         self,
@@ -857,12 +854,9 @@ class _CategoricalPlotter(_RelationalPlotter):
 
         ax.autoscale_view(scalex=self.orient == "y", scaley=self.orient == "x")
 
-        patch_kws = box_kws.copy()
-        if not fill:
-            patch_kws["facecolor"] = (1, 1, 1, 0)
-        else:
-            patch_kws["edgecolor"] = linecolor
-        self._configure_legend(ax, ax.fill_between, patch_kws)
+        legend_artist = _get_patch_legend_artist(fill)
+        common_kws = {**box_kws, "linewidth": linewidth, "edgecolor": linecolor}
+        self._configure_legend(ax, legend_artist, common_kws)
 
     def plot_violins(
         self,
@@ -1136,7 +1130,9 @@ class _CategoricalPlotter(_RelationalPlotter):
                 }
                 ax.plot(invx(x2), invy(y2), **dot_kws)
 
-        self._configure_legend(ax, ax.fill_between)  # TODO, patch_kws)
+        legend_artist = _get_patch_legend_artist(fill)
+        common_kws = {**plot_kws, "linewidth": linewidth, "edgecolor": linecolor}
+        self._configure_legend(ax, legend_artist, common_kws)
 
     def plot_points(
         self,
@@ -1213,8 +1209,9 @@ class _CategoricalPlotter(_RelationalPlotter):
             if aggregator.error_method is not None:
                 self.plot_errorbars(ax, agg_data, capsize, sub_err_kws)
 
+        legend_artist = partial(mpl.lines.Line2D, [], [])
         semantic_kws = {"hue": {"marker": markers, "linestyle": linestyles}}
-        self._configure_legend(ax, ax.plot, sub_kws, semantic_kws)
+        self._configure_legend(ax, legend_artist, sub_kws, semantic_kws)
 
     def plot_bars(
         self,
@@ -1295,7 +1292,8 @@ class _CategoricalPlotter(_RelationalPlotter):
                     {"color": ".26" if fill else main_color, **err_kws}
                 )
 
-        self._configure_legend(ax, ax.fill_between)
+        legend_artist = _get_patch_legend_artist(fill)
+        self._configure_legend(ax, legend_artist, plot_kws)
 
     def plot_errorbars(self, ax, data, capsize, err_kws):
 

@@ -1891,7 +1891,7 @@ class TestBarPlot(SharedAggTests):
         x, y = ["a", "b", "c"], [1, 2, 3]
         hue = ["x", "x", "y"]
 
-        ax = barplot(x=x, y=y, hue=hue, saturation=1)
+        ax = barplot(x=x, y=y, hue=hue, saturation=1, legend=False)
         for i, bar in enumerate(ax.patches):
             assert bar.get_x() + bar.get_width() / 2 == approx(i)
             assert bar.get_y() == 0
@@ -1916,7 +1916,7 @@ class TestBarPlot(SharedAggTests):
         y = [1, 2, 3, 4]
         hue = ["x", "x", "y", "y"]
 
-        ax = barplot(x=x, y=y, hue=hue, saturation=1)
+        ax = barplot(x=x, y=y, hue=hue, saturation=1, legend=False)
         for i, bar in enumerate(ax.patches):
             sign = 1 if i // 2 else -1
             assert (
@@ -1934,7 +1934,7 @@ class TestBarPlot(SharedAggTests):
         y = [1, 2, 3, 4]
         hue = ["x", "x", "y", "y"]
 
-        ax = barplot(x=x, y=y, hue=hue, gap=.25)
+        ax = barplot(x=x, y=y, hue=hue, gap=.25, legend=False)
         for i, bar in enumerate(ax.patches):
             assert bar.get_width() == approx(0.8 / 2 * .75)
 
@@ -1944,7 +1944,7 @@ class TestBarPlot(SharedAggTests):
         y = [1, 2, 3, 4]
         hue = ["x", "x", "y", "y"]
 
-        ax = barplot(x=x, y=y, hue=hue, saturation=1, dodge=False)
+        ax = barplot(x=x, y=y, hue=hue, saturation=1, dodge=False, legend=False)
         for i, bar in enumerate(ax.patches):
             assert bar.get_x() + bar.get_width() / 2 == approx(i % 2)
             assert bar.get_y() == 0
@@ -1978,7 +1978,7 @@ class TestBarPlot(SharedAggTests):
         y = [1, 2, 3, 4]
         hue = ["x", "x", "y", "y"]
 
-        ax = barplot(x=x, y=y, hue=hue, fill=False)
+        ax = barplot(x=x, y=y, hue=hue, fill=False, legend=False)
         for i, bar in enumerate(ax.patches):
             assert same_color(bar.get_edgecolor(), f"C{i // 2}")
             assert same_color(bar.get_facecolor(), (0, 0, 0, 0))
@@ -2729,7 +2729,7 @@ class TestCountPlot:
         hue = ["x", "y", "y", "x", "x", "x"]
         counts = [1, 3, 2, 0]
 
-        ax = countplot(x=vals, hue=hue, saturation=1)
+        ax = countplot(x=vals, hue=hue, saturation=1, legend=False)
         for i, bar in enumerate(ax.patches):
             sign = 1 if i // 2 else -1
             assert (
@@ -2869,8 +2869,8 @@ class TestCatPlot(CategoricalFixture):
         assert len(g.ax.lines) == want_elements
 
         g = cat.catplot(x="g", y="y", hue="h", data=self.df, kind="bar")
-        want_elements = self.g.unique().size * self.h.unique().size
-        assert len(g.ax.patches) == want_elements
+        want_elements = self.g.nunique() * self.h.nunique()
+        assert len(g.ax.patches) == (want_elements + self.h.nunique())
         assert len(g.ax.lines) == want_elements
 
         g = cat.catplot(x="g", data=self.df, kind="count")
@@ -2879,7 +2879,7 @@ class TestCatPlot(CategoricalFixture):
         assert len(g.ax.lines) == 0
 
         g = cat.catplot(x="g", hue="h", data=self.df, kind="count")
-        want_elements = self.g.unique().size * self.h.unique().size
+        want_elements = self.g.nunique() * self.h.nunique() + self.h.nunique()
         assert len(g.ax.patches) == want_elements
         assert len(g.ax.lines) == 0
 
@@ -2892,7 +2892,7 @@ class TestCatPlot(CategoricalFixture):
         assert len(self.get_box_artists(g.ax)) == want_artists
 
         g = cat.catplot(x="g", y="y", hue="h", data=self.df, kind="box")
-        want_artists = self.g.unique().size * self.h.unique().size
+        want_artists = self.g.nunique() * self.h.nunique()
         assert len(self.get_box_artists(g.ax)) == want_artists
 
         g = cat.catplot(x="g", y="y", data=self.df,
@@ -2902,8 +2902,8 @@ class TestCatPlot(CategoricalFixture):
 
         g = cat.catplot(x="g", y="y", hue="h", data=self.df,
                         kind="violin", inner=None)
-        want_elements = self.g.unique().size * self.h.unique().size
-        assert len(g.ax.collections) == want_elements + self.h.unique().size
+        want_elements = self.g.nunique() * self.h.nunique()
+        assert len(g.ax.collections) == want_elements
 
         g = cat.catplot(x="g", y="y", data=self.df, kind="strip")
         want_elements = self.g.unique().size
@@ -2912,7 +2912,7 @@ class TestCatPlot(CategoricalFixture):
             assert same_color(strip.get_facecolors(), "C0")
 
         g = cat.catplot(x="g", y="y", hue="h", data=self.df, kind="strip")
-        want_elements = self.g.unique().size + self.h.unique().size
+        want_elements = self.g.nunique()
         assert len(g.ax.collections) == want_elements
 
     def test_bad_plot_kind_error(self):
@@ -2954,13 +2954,15 @@ class TestCatPlot(CategoricalFixture):
         plt.close("all")
 
         ax = cat.pointplot(x="g", y="y", data=self.df, color="purple")
-        g = cat.catplot(x="g", y="y", data=self.df, color="purple")
+        g = cat.catplot(x="g", y="y", data=self.df, color="purple", kind="point")
         for l1, l2 in zip(ax.lines, g.ax.lines):
             assert l1.get_color() == l2.get_color()
         plt.close("all")
 
         ax = cat.pointplot(x="g", y="y", data=self.df, palette="Set2", hue="h")
-        g = cat.catplot(x="g", y="y", data=self.df, palette="Set2", hue="h")
+        g = cat.catplot(
+            x="g", y="y", data=self.df, palette="Set2", hue="h", kind="point"
+        )
         for l1, l2 in zip(ax.lines, g.ax.lines):
             assert l1.get_color() == l2.get_color()
         plt.close("all")
