@@ -14,6 +14,7 @@ from .utils import (
     _default_color,
     _deprecate_ci,
     _get_transform_functions,
+    _scatter_legend_artist,
 )
 from ._statistics import EstimateAggregator
 from .axisgrid import FacetGrid, _facet_docs
@@ -362,15 +363,12 @@ class _LinePlotter(_RelationalPlotter):
         # Finalize the axes details
         self._add_axis_labels(ax)
         if self.legend:
-            artist_func = partial(mpl.lines.Line2D, xdata=[], ydata=[])
-            self.add_legend_data(ax, func=artist_func, common_kws=kws)
+            legend_artist = partial(mpl.lines.Line2D, xdata=[], ydata=[])
+            self.add_legend_data(ax, legend_artist, common_kws=kws)
             handles, _ = ax.get_legend_handles_labels()
             if handles:
                 legend = ax.legend(title=self.legend_title)
                 adjust_legend_subtitles(legend)
-
-    def _legend_func(self, **kwargs):
-        return mpl.lines.Line2D([], [], **kwargs)
 
 
 class _ScatterPlotter(_RelationalPlotter):
@@ -444,25 +442,18 @@ class _ScatterPlotter(_RelationalPlotter):
 
         if "linewidth" not in kws:
             sizes = points.get_sizes()
-            points.set_linewidths(.08 * np.sqrt(np.percentile(sizes, 10)))
+            linewidth = .08 * np.sqrt(np.percentile(sizes, 10))
+            points.set_linewidths(linewidth)
+            kws["linewidth"] = linewidth
 
         # Finalize the axes details
         self._add_axis_labels(ax)
         if self.legend:
-            self.add_legend_data(ax)
+            self.add_legend_data(ax, _scatter_legend_artist, kws)
             handles, _ = ax.get_legend_handles_labels()
             if handles:
                 legend = ax.legend(title=self.legend_title)
                 adjust_legend_subtitles(legend)
-
-    def _legend_func(self, **kwargs):
-        kwargs.setdefault("marker", "o")
-        kwargs.pop("linewidth", None)  # TODO actually use
-        kwargs.update(
-            # TODO fix this elsewhere so we're not passing `s`
-            ms=np.sqrt(kwargs.pop("s", mpl.rcParams["lines.markersize"] ** 2)),
-        )
-        return mpl.lines.Line2D([], [], linestyle="", **kwargs)
 
 
 def lineplot(
@@ -621,8 +612,6 @@ def scatterplot(
 
     p._attach(ax)
 
-    # Other functions have color as an explicit param,
-    # and we should probably do that here too
     color = kwargs.pop("color", None)
     kwargs["color"] = _default_color(ax.scatter, hue, color, kwargs)
 
@@ -828,12 +817,15 @@ def relplot(
     # Pass "" when the variable name is None to overwrite internal variables
     g.set_axis_labels(variables.get("x") or "", variables.get("y") or "")
 
-    # Show the legend
     if legend:
-        # Replace the original plot data so the legend uses
-        # numeric data with the correct type
+        # Replace the original plot data so the legend uses numeric data with
+        # the correct type, since we force a categorical mapping above.
         p.plot_data = plot_data
-        p.add_legend_data(g.axes.flat[0])
+        legend_artist = (
+            _scatter_legend_artist if kind == "scatter"
+            else partial(mpl.lines.Line2D, xdata=[], ydata=[])
+        )
+        p.add_legend_data(g.axes.flat[0], legend_artist)
         if p.legend_data:
             g.add_legend(legend_data=p.legend_data,
                          label_order=p.legend_order,

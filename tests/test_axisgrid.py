@@ -1428,8 +1428,8 @@ class TestPairGrid:
         vars = ["x", "y", "z"]
         markers = ["o", "X", "s"]
         g = ag.pairplot(self.df, hue="a", vars=vars, markers=markers)
-        m1 = get_legend_handles(g._legend)[0].get_paths()[0]
-        m2 = get_legend_handles(g._legend)[1].get_paths()[0]
+        m1 = get_legend_handles(g._legend)[0].get_marker()
+        m2 = get_legend_handles(g._legend)[1].get_marker()
         assert m1 != m2
 
         with pytest.warns(UserWarning):
@@ -1485,7 +1485,8 @@ class TestPairGrid:
         g.map(scatterplot)
         assert g.axes.shape == (3, 3)
         for ax in g.axes.flat:
-            assert len(ax.collections) == long_df["a"].nunique() + 1
+            pts = ax.collections[0].get_offsets()
+            assert len(pts) == len(long_df)
 
 
 class TestJointGrid:

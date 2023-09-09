@@ -437,7 +437,7 @@ def test_move_legend_with_labels(long_df):
     ax = scatterplot(long_df, x="x", y="y", hue="a", hue_order=order)
 
     handles_before = get_legend_handles(ax.get_legend())
-    colors_before = [tuple(h.get_facecolor().squeeze()) for h in handles_before]
+    colors_before = [h.get_markerfacecolor() for h in handles_before]
     utils.move_legend(ax, "best", labels=labels)
     _draw_figure(ax.figure)
 
@@ -445,7 +445,7 @@ def test_move_legend_with_labels(long_df):
     assert texts == labels
 
     handles_after = get_legend_handles(ax.get_legend())
-    colors_after = [tuple(h.get_facecolor().squeeze()) for h in handles_after]
+    colors_after = [h.get_markerfacecolor() for h in handles_after]
     assert colors_before == colors_after
 
     with pytest.raises(ValueError, match="Length of new labels"):

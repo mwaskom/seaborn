@@ -1212,8 +1212,8 @@ class VectorPlotter:
 
         keys = []
         legend_kws = {}
-        common_kws = {} if common_kws is None else common_kws
-        semantic_kws = {} if semantic_kws is None else semantic_kws
+        common_kws = {} if common_kws is None else common_kws.copy()
+        semantic_kws = {} if semantic_kws is None else semantic_kws.copy()
 
         # Assign a legend title if there is only going to be one sub-legend,
         # otherwise, subtitles will be inserted into the texts list with an
@@ -1249,11 +1249,14 @@ class VectorPlotter:
         legend_data = {}
         legend_order = []
 
+        # Don't allow color=None so we can set a neutral color for size/style legends
+        if common_kws.get("color", False) is None:
+            common_kws.pop("color")
+
         for key in keys:
 
             _, label = key
             kws = legend_kws[key]
-            kws.setdefault("color", ".2")
             level_kws = {}
             use_attrs = [
                 *self._legend_attributes,
@@ -1263,7 +1266,7 @@ class VectorPlotter:
             for attr in use_attrs:
                 if attr in kws:
                     level_kws[attr] = kws[attr]
-            artist = func(label=label, **{**common_kws, **level_kws})
+            artist = func(label=label, **{"color": ".2", **common_kws, **level_kws})
             ax.add_artist(artist)
             legend_data[key] = artist
             legend_order.append(key)

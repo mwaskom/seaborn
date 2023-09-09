@@ -1141,8 +1141,8 @@ class TestLinePlotter(SharedAxesLevelTests, Helpers):
 
     def test_lineplot_vs_relplot(self, long_df, long_semantics):
 
-        ax = lineplot(data=long_df, **long_semantics)
-        g = relplot(data=long_df, kind="line", **long_semantics)
+        ax = lineplot(data=long_df, legend=False, **long_semantics)
+        g = relplot(data=long_df, kind="line", legend=False, **long_semantics)
 
         lin_lines = ax.lines
         rel_lines = g.ax.lines
