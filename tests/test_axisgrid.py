@@ -14,6 +14,7 @@ from seaborn.palettes import color_palette
 from seaborn.relational import scatterplot
 from seaborn.distributions import histplot, kdeplot, distplot
 from seaborn.categorical import pointplot
+from seaborn.utils import _version_predates
 from seaborn import axisgrid as ag
 from seaborn._testing import (
     assert_plots_equal,
@@ -1423,6 +1424,7 @@ class TestPairGrid:
 
         assert_plots_equal(ax1, ax2, labels=False)
 
+    @pytest.mark.skipif(_version_predates(mpl, "3.7.0"), reason="Matplotlib bug")
     def test_pairplot_markers(self):
 
         vars = ["x", "y", "z"]

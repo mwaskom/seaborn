@@ -18,6 +18,7 @@ from seaborn.palettes import (
 )
 from seaborn.utils import (
     _check_argument,
+    _version_predates,
     desaturate,
     locator_to_legend_entries,
     get_color_cycle,
@@ -1270,7 +1271,15 @@ class VectorPlotter:
                 if attr in kws:
                     level_kws[attr] = kws[attr]
             artist = func(label=label, **{"color": ".2", **common_kws, **level_kws})
-            ax.add_artist(artist)
+            if _version_predates(mpl, "3.5.0"):
+                if isinstance(artist, mpl.lines.Line2D):
+                    ax.add_line(artist)
+                elif isinstance(artist, mpl.patches.Patch):
+                    ax.add_patch(artist)
+                elif isinstance(artist, mpl.collections.Collection):
+                    ax.add_collection(artist)
+            else:
+                ax.add_artist(artist)
             legend_data[key] = artist
             legend_order.append(key)
 
