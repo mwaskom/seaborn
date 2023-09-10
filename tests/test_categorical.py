@@ -608,6 +608,14 @@ class SharedScatterTests(SharedAxesLevelTests):
         vals = [float(t.get_text()) for t in ax.legend_.texts]
         assert (vals[1] - vals[0]) == approx(vals[2] - vals[1])
 
+    def test_legend_attributes(self, long_df):
+
+        kws = {"edgecolor": "r", "linewidth": 1}
+        ax = self.func(data=long_df, x="x", y="y", hue="a", **kws)
+        for pt in get_legend_handles(ax.get_legend()):
+            assert same_color(pt.get_markeredgecolor(), kws["edgecolor"])
+            assert pt.get_markeredgewidth() == kws["linewidth"]
+
     def test_legend_disabled(self, long_df):
 
         ax = self.func(data=long_df, x="y", y="a", hue="b", legend=False)
@@ -725,6 +733,33 @@ class SharedAggTests(SharedAxesLevelTests):
             assert label == level
 
 
+class SharedPatchArtistTests:
+
+    @pytest.mark.parametrize("fill", [True, False])
+    def test_legend_fill(self, long_df, fill):
+
+        palette = color_palette()
+        ax = self.func(
+            long_df, x="x", y="y", hue="a",
+            saturation=1, linecolor="k", fill=fill,
+        )
+        for i, patch in enumerate(get_legend_handles(ax.get_legend())):
+            fc = patch.get_facecolor()
+            ec = patch.get_edgecolor()
+            if fill:
+                assert same_color(fc, palette[i])
+                assert same_color(ec, "k")
+            else:
+                assert fc == (0, 0, 0, 0)
+                assert same_color(ec, palette[i])
+
+    def test_legend_attributes(self, long_df):
+
+        ax = self.func(long_df, x="x", y="y", hue="a", linewidth=3)
+        for patch in get_legend_handles(ax.get_legend()):
+            assert patch.get_linewidth() == 3
+
+
 class TestStripPlot(SharedScatterTests):
 
     func = staticmethod(stripplot)
@@ -787,7 +822,7 @@ class TestSwarmPlot(SharedScatterTests):
     func = staticmethod(partial(swarmplot, warn_thresh=1))
 
 
-class TestBoxPlot(SharedAxesLevelTests):
+class TestBoxPlot(SharedAxesLevelTests, SharedPatchArtistTests):
 
     func = staticmethod(boxplot)
 
@@ -1113,7 +1148,7 @@ class TestBoxPlot(SharedAxesLevelTests):
         assert_plots_equal(ax, g.ax)
 
 
-class TestBoxenPlot(SharedAxesLevelTests):
+class TestBoxenPlot(SharedAxesLevelTests, SharedPatchArtistTests):
 
     func = staticmethod(boxenplot)
 
@@ -1410,7 +1445,7 @@ class TestBoxenPlot(SharedAxesLevelTests):
         assert_plots_equal(ax, g.ax)
 
 
-class TestViolinPlot(SharedAxesLevelTests):
+class TestViolinPlot(SharedAxesLevelTests, SharedPatchArtistTests):
 
     func = staticmethod(violinplot)
 
@@ -1687,7 +1722,7 @@ class TestViolinPlot(SharedAxesLevelTests):
 
     def test_common_norm(self, long_df):
 
-        ax = violinplot(long_df, x="a", y="y", hue="c", common_norm=True, legend=False)
+        ax = violinplot(long_df, x="a", y="y", hue="c", common_norm=True)
         widths = []
         for poly in ax.collections:
             widths.append(self.violin_width(poly))
@@ -2199,6 +2234,26 @@ class TestBarPlot(SharedAggTests):
             assert bar.get_linewidth() == kwargs["linewidth"]
             assert bar.get_facecolor() == kwargs["facecolor"]
             assert bar.get_rasterized() == kwargs["rasterized"]
+
+    def test_legend_attributes(self, long_df):
+
+        palette = color_palette()
+        ax = barplot(
+            long_df, x="a", y="y", hue="c", saturation=1, edgecolor="k", linewidth=3
+        )
+        for i, patch in enumerate(get_legend_handles(ax.get_legend())):
+            assert same_color(patch.get_facecolor(), palette[i])
+            assert same_color(patch.get_edgecolor(), "k")
+            assert patch.get_linewidth() == 3
+
+    def test_legend_unfilled(self, long_df):
+
+        palette = color_palette()
+        ax = barplot(long_df, x="a", y="y", hue="c", fill=False, linewidth=3)
+        for i, patch in enumerate(get_legend_handles(ax.get_legend())):
+            assert patch.get_facecolor() == (0, 0, 0, 0)
+            assert same_color(patch.get_edgecolor(), palette[i])
+            assert patch.get_linewidth() == 3
 
     @pytest.mark.parametrize("fill", [True, False])
     def test_err_kws(self, fill):
