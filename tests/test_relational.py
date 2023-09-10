@@ -693,6 +693,35 @@ class TestRelationalPlotter(Helpers):
         for line in ax.get_lines():
             assert line.is_dashed()
 
+    def test_legend_attributes_hue(self, long_df):
+
+        kws = {"s": 50, "linewidth": 1, "marker": "X"}
+        g = relplot(long_df, x="x", y="y", hue="a", **kws)
+        palette = color_palette()
+        for i, pt in enumerate(get_legend_handles(g.legend)):
+            assert same_color(pt.get_color(), palette[i])
+            assert pt.get_markersize() == np.sqrt(kws["s"])
+            assert pt.get_markeredgewidth() == kws["linewidth"]
+            assert pt.get_marker() == kws["marker"]
+
+    def test_legend_attributes_style(self, long_df):
+
+        kws = {"s": 50, "linewidth": 1, "color": "r"}
+        g = relplot(long_df, x="x", y="y", style="a", **kws)
+        for pt in get_legend_handles(g.legend):
+            assert pt.get_markersize() == np.sqrt(kws["s"])
+            assert pt.get_markeredgewidth() == kws["linewidth"]
+            assert same_color(pt.get_color(), "r")
+
+    def test_legend_attributes_hue_and_style(self, long_df):
+
+        kws = {"s": 50, "linewidth": 1}
+        g = relplot(long_df, x="x", y="y", hue="a", style="b", **kws)
+        for pt in get_legend_handles(g.legend):
+            if pt.get_label() not in ["a", "b"]:
+                assert pt.get_markersize() == np.sqrt(kws["s"])
+                assert pt.get_markeredgewidth() == kws["linewidth"]
+
 
 class TestLinePlotter(SharedAxesLevelTests, Helpers):
 
@@ -1139,6 +1168,34 @@ class TestLinePlotter(SharedAxesLevelTests, Helpers):
         ax = lineplot(data=wide_df, ax=ax1)
         assert ax is ax1
 
+    def test_legend_attributes_with_hue(self, long_df):
+
+        kws = {"marker": "o", "linewidth": 3}
+        ax = lineplot(long_df, x="x", y="y", hue="a", **kws)
+        palette = color_palette()
+        for i, line in enumerate(get_legend_handles(ax.get_legend())):
+            assert same_color(line.get_color(), palette[i])
+            assert line.get_linewidth() == kws["linewidth"]
+            assert line.get_marker() == kws["marker"]
+
+    def test_legend_attributes_with_style(self, long_df):
+
+        kws = {"color": "r", "marker": "o", "linewidth": 3}
+        ax = lineplot(long_df, x="x", y="y", style="a", **kws)
+        for line in get_legend_handles(ax.get_legend()):
+            assert same_color(line.get_color(), kws["color"])
+            assert line.get_marker() == kws["marker"]
+            assert line.get_linewidth() == kws["linewidth"]
+
+    def test_legend_attributes_with_hue_and_style(self, long_df):
+
+        kws = {"marker": "o", "linewidth": 3}
+        ax = lineplot(long_df, x="x", y="y", hue="a", style="b", **kws)
+        for line in get_legend_handles(ax.get_legend()):
+            if line.get_label() not in ["a", "b"]:
+                assert line.get_marker() == kws["marker"]
+                assert line.get_linewidth() == kws["linewidth"]
+
     def test_lineplot_vs_relplot(self, long_df, long_semantics):
 
         ax = lineplot(data=long_df, legend=False, **long_semantics)
@@ -1402,6 +1459,35 @@ class TestScatterPlotter(SharedAxesLevelTests, Helpers):
         ax = scatterplot(x=x, y=y, size=z, legend="brief")
         _, labels = ax.get_legend_handles_labels()
         assert len(labels) < len(set(z))
+
+    def test_legend_attributes_hue(self, long_df):
+
+        kws = {"s": 50, "linewidth": 1, "marker": "X"}
+        ax = scatterplot(long_df, x="x", y="y", hue="a", **kws)
+        palette = color_palette()
+        for i, pt in enumerate(get_legend_handles(ax.get_legend())):
+            assert same_color(pt.get_color(), palette[i])
+            assert pt.get_markersize() == np.sqrt(kws["s"])
+            assert pt.get_markeredgewidth() == kws["linewidth"]
+            assert pt.get_marker() == kws["marker"]
+
+    def test_legend_attributes_style(self, long_df):
+
+        kws = {"s": 50, "linewidth": 1, "color": "r"}
+        ax = scatterplot(long_df, x="x", y="y", style="a", **kws)
+        for pt in get_legend_handles(ax.get_legend()):
+            assert pt.get_markersize() == np.sqrt(kws["s"])
+            assert pt.get_markeredgewidth() == kws["linewidth"]
+            assert same_color(pt.get_color(), "r")
+
+    def test_legend_attributes_hue_and_style(self, long_df):
+
+        kws = {"s": 50, "linewidth": 1}
+        ax = scatterplot(long_df, x="x", y="y", hue="a", style="b", **kws)
+        for pt in get_legend_handles(ax.get_legend()):
+            if pt.get_label() not in ["a", "b"]:
+                assert pt.get_markersize() == np.sqrt(kws["s"])
+                assert pt.get_markeredgewidth() == kws["linewidth"]
 
     def test_legend_value_error(self, long_df):
 

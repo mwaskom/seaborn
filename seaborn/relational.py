@@ -830,7 +830,7 @@ def relplot(
         keys = ["c", "color", "alpha", "m", "marker"]
         if kind == "scatter":
             legend_artist = _scatter_legend_artist
-            keys += ["s", "facecolor", "fc", "edgecolor", "ec"]
+            keys += ["s", "facecolor", "fc", "edgecolor", "ec", "linewidth", "lw"]
         else:
             legend_artist = partial(mpl.lines.Line2D, xdata=[], ydata=[])
             keys += [
