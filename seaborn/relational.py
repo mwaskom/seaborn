@@ -364,7 +364,8 @@ class _LinePlotter(_RelationalPlotter):
         self._add_axis_labels(ax)
         if self.legend:
             legend_artist = partial(mpl.lines.Line2D, xdata=[], ydata=[])
-            self.add_legend_data(ax, legend_artist, common_kws=kws)
+            attrs = {"hue": "color", "size": "linewidth", "style": None}
+            self.add_legend_data(ax, legend_artist, kws, attrs)
             handles, _ = ax.get_legend_handles_labels()
             if handles:
                 legend = ax.legend(title=self.legend_title)
@@ -449,7 +450,8 @@ class _ScatterPlotter(_RelationalPlotter):
         # Finalize the axes details
         self._add_axis_labels(ax)
         if self.legend:
-            self.add_legend_data(ax, _scatter_legend_artist, kws)
+            attrs = {"hue": "color", "size": "s", "style": None}
+            self.add_legend_data(ax, _scatter_legend_artist, kws, attrs)
             handles, _ = ax.get_legend_handles_labels()
             if handles:
                 legend = ax.legend(title=self.legend_title)
@@ -842,7 +844,12 @@ def relplot(
             ]
 
         common_kws = {k: v for k, v in kwargs.items() if k in keys}
-        p.add_legend_data(g.axes.flat[0], legend_artist, common_kws)
+        attrs = {"hue": "color", "style": None}
+        if kind == "scatter":
+            attrs["size"] = "s"
+        elif kind == "line":
+            attrs["size"] = "linewidth"
+        p.add_legend_data(g.axes.flat[0], legend_artist, common_kws, attrs)
         if p.legend_data:
             g.add_legend(legend_data=p.legend_data,
                          label_order=p.legend_order,

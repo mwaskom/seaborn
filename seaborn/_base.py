@@ -1201,7 +1201,9 @@ class VectorPlotter:
             y_visible = any(t.get_visible() for t in ax.get_yticklabels())
             ax.set_ylabel(self.variables.get("y", default_y), visible=y_visible)
 
-    def add_legend_data(self, ax, func=None, common_kws=None, semantic_kws=None):
+    def add_legend_data(
+        self, ax, func=None, common_kws=None, attrs=None, semantic_kws=None,
+    ):
         """Add labeled artists to represent the different plot semantics."""
         verbosity = self.legend
         if isinstance(verbosity, str) and verbosity not in ["auto", "brief", "full"]:
@@ -1237,8 +1239,9 @@ class VectorPlotter:
                 keys.append(key)
                 legend_kws[key] = dict(**kws)
 
-        legend_attrs = {"hue": "color", "size": ["linewidth", "s"], "style": None}
-        for var, names in legend_attrs.items():
+        if attrs is None:
+            attrs = {"hue": "color", "size": ["linewidth", "s"], "style": None}
+        for var, names in attrs.items():
             self._update_legend_data(
                 update, var, verbosity, title, title_kws, names, semantic_kws.get(var),
             )
