@@ -13,9 +13,8 @@ from matplotlib.patches import Rectangle
 import matplotlib.pyplot as plt
 
 from seaborn._core.typing import default, deprecated
-from seaborn._base import infer_orient, categorical_order
+from seaborn._base import VectorPlotter, infer_orient, categorical_order
 from seaborn._stats.density import KDE
-from seaborn.relational import _RelationalPlotter
 from seaborn import utils
 from seaborn.utils import (
     desaturate,
@@ -41,9 +40,7 @@ __all__ = [
 ]
 
 
-# Subclassing _RelationalPlotter for the legend machinery,
-# but probably should move that more centrally
-class _CategoricalPlotter(_RelationalPlotter):
+class _CategoricalPlotter(VectorPlotter):
 
     wide_structure = {"x": "@columns", "y": "@values"}
     flat_structure = {"y": "@values"}
@@ -65,13 +62,13 @@ class _CategoricalPlotter(_RelationalPlotter):
 
         # This method takes care of some bookkeeping that is necessary because the
         # original categorical plots (prior to the 2021 refactor) had some rules that
-        # don't fit exactly into the logic of _core. It may be wise to have a second
+        # don't fit exactly into VectorPlotter logic. It may be wise to have a second
         # round of refactoring that moves the logic deeper, but this will keep things
         # relatively sensible for now.
 
         # For wide data, orient determines assignment to x/y differently from the
-        # wide_structure rules in _core. If we do decide to make orient part of the
-        # _core variable assignment, we'll want to figure out how to express that.
+        # default VectorPlotter rules. If we do decide to make orient part of the
+        # _base variable assignment, we'll want to figure out how to express that.
         if self.input_format == "wide" and orient in ["h", "y"]:
             self.plot_data = self.plot_data.rename(columns={"x": "y", "y": "x"})
             orig_variables = set(self.variables)
@@ -87,7 +84,7 @@ class _CategoricalPlotter(_RelationalPlotter):
                 self.var_types["x"] = orig_y_type
 
         # The concept of an "orientation" is important to the original categorical
-        # plots, but there's no provision for it in _core, so we need to do it here.
+        # plots, but there's no provision for it in VectorPlotter, so we need it here.
         # Note that it could be useful for the other functions in at least two ways
         # (orienting a univariate distribution plot from long-form data and selecting
         # the aggregation axis in lineplot), so we may want to eventually refactor it.
