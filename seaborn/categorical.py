@@ -402,7 +402,7 @@ class _CategoricalPlotter(VectorPlotter):
             show_legend = bool(self.legend)
 
         if show_legend:
-            self.add_legend_data(ax, func, common_kws, semantic_kws)
+            self.add_legend_data(ax, func, common_kws, semantic_kws=semantic_kws)
             handles, _ = ax.get_legend_handles_labels()
             if handles:
                 ax.legend(title=self.legend_title)
