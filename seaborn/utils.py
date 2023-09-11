@@ -901,3 +901,44 @@ def _disable_autolayout():
 def _version_predates(lib: ModuleType, version: str) -> bool:
     """Helper function for checking version compatibility."""
     return Version(lib.__version__) < Version(version)
+
+
+def _scatter_legend_artist(**kws):
+
+    kws = _normalize_kwargs(kws, mpl.collections.PathCollection)
+
+    edgecolor = kws.pop("edgecolor", None)
+    rc = mpl.rcParams
+    line_kws = {
+        "linestyle": "",
+        "marker": kws.pop("marker", "o"),
+        "markersize": np.sqrt(kws.pop("s", rc["lines.markersize"] ** 2)),
+        "markerfacecolor": kws.pop("facecolor", kws.get("color")),
+        "markeredgewidth": kws.pop("linewidth", 0),
+        **kws,
+    }
+
+    if edgecolor is not None:
+        if edgecolor == "face":
+            line_kws["markeredgecolor"] = line_kws["markerfacecolor"]
+        else:
+            line_kws["markeredgecolor"] = edgecolor
+
+    return mpl.lines.Line2D([], [], **line_kws)
+
+
+def _get_patch_legend_artist(fill):
+
+    def legend_artist(**kws):
+
+        color = kws.pop("color", None)
+        if color is not None:
+            if fill:
+                kws["facecolor"] = color
+            else:
+                kws["edgecolor"] = color
+                kws["facecolor"] = "none"
+
+        return mpl.patches.Rectangle((0, 0), 0, 0, **kws)
+
+    return legend_artist

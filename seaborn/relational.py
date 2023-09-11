@@ -1,3 +1,4 @@
+from functools import partial
 import warnings
 
 import numpy as np
@@ -9,11 +10,11 @@ from ._base import (
     VectorPlotter,
 )
 from .utils import (
-    locator_to_legend_entries,
     adjust_legend_subtitles,
     _default_color,
     _deprecate_ci,
     _get_transform_functions,
+    _scatter_legend_artist,
 )
 from ._statistics import EstimateAggregator
 from .axisgrid import FacetGrid, _facet_docs
@@ -191,132 +192,10 @@ class _RelationalPlotter(VectorPlotter):
     # TODO where best to define default parameters?
     sort = True
 
-    def add_legend_data(self, ax, func=None, common_kws=None, semantic_kws=None):
-        """Add labeled artists to represent the different plot semantics."""
-        verbosity = self.legend
-        if isinstance(verbosity, str) and verbosity not in ["auto", "brief", "full"]:
-            err = "`legend` must be 'auto', 'brief', 'full', or a boolean."
-            raise ValueError(err)
-        elif verbosity is True:
-            verbosity = "auto"
-
-        keys = []
-        legend_kws = {}
-        common_kws = {} if common_kws is None else common_kws
-        semantic_kws = {} if semantic_kws is None else semantic_kws
-
-        # Assign a legend title if there is only going to be one sub-legend,
-        # otherwise, subtitles will be inserted into the texts list with an
-        # invisible handle (which is a hack)
-        titles = {
-            title for title in
-            (self.variables.get(v, None) for v in ["hue", "size", "style"])
-            if title is not None
-        }
-        title = "" if len(titles) != 1 else titles.pop()
-        title_kws = dict(
-            visible=False, color="w", s=0, linewidth=0, marker="", dashes=""
-        )
-
-        def update(var_name, val_name, **kws):
-
-            key = var_name, val_name
-            if key in legend_kws:
-                legend_kws[key].update(**kws)
-            else:
-                keys.append(key)
-                legend_kws[key] = dict(**kws)
-
-        legend_attrs = {"hue": "color", "size": ["linewidth", "s"], "style": None}
-        for var, names in legend_attrs.items():
-            self._update_legend_data(
-                update, var, verbosity, title, title_kws, names, semantic_kws.get(var),
-            )
-
-        if func is None:
-            func = getattr(ax, self._legend_func)
-
-        legend_data = {}
-        legend_order = []
-
-        for key in keys:
-
-            _, label = key
-            kws = legend_kws[key]
-            kws.setdefault("color", ".2")
-            level_kws = {}
-            use_attrs = [
-                *self._legend_attributes,
-                *common_kws,
-                *[attr for var_attrs in semantic_kws.values() for attr in var_attrs],
-            ]
-            for attr in use_attrs:
-                if attr in kws:
-                    level_kws[attr] = kws[attr]
-            artist = func([], [], label=label, **{**common_kws, **level_kws})
-            if func.__name__ == "plot":
-                artist = artist[0]
-            legend_data[key] = artist
-            legend_order.append(key)
-
-        self.legend_title = title
-        self.legend_data = legend_data
-        self.legend_order = legend_order
-
-    def _update_legend_data(
-        self,
-        update,
-        var,
-        verbosity,
-        title,
-        title_kws,
-        attr_names,
-        other_props,
-    ):
-
-        brief_ticks = 6
-        mapper = getattr(self, f"_{var}_map", None)
-        if mapper is None:
-            return
-
-        brief = mapper.map_type == "numeric" and (
-            verbosity == "brief"
-            or (verbosity == "auto" and len(mapper.levels) > brief_ticks)
-        )
-        if brief:
-            if isinstance(mapper.norm, mpl.colors.LogNorm):
-                locator = mpl.ticker.LogLocator(numticks=brief_ticks)
-            else:
-                locator = mpl.ticker.MaxNLocator(nbins=brief_ticks)
-            limits = min(mapper.levels), max(mapper.levels)
-            levels, formatted_levels = locator_to_legend_entries(
-                locator, limits, self.plot_data[var].infer_objects().dtype
-            )
-        elif mapper.levels is None:
-            levels = formatted_levels = []
-        else:
-            levels = formatted_levels = mapper.levels
-
-        if not title and self.variables.get(var, None) is not None:
-            update((self.variables[var], "title"), self.variables[var], **title_kws)
-
-        other_props = {} if other_props is None else other_props
-
-        for level, formatted_level in zip(levels, formatted_levels):
-            if level is not None:
-                attr = mapper(level)
-                if isinstance(attr_names, list):
-                    attr = {name: attr for name in attr_names}
-                elif attr_names is not None:
-                    attr = {attr_names: attr}
-                attr.update({k: v[level] for k, v in other_props.items() if level in v})
-                update(self.variables[var], formatted_level, **attr)
-
 
 class _LinePlotter(_RelationalPlotter):
 
     _legend_attributes = ["color", "linewidth", "marker", "dashes"]
-    _legend_func = "plot"
 
     def __init__(
         self, *,
@@ -484,7 +363,9 @@ class _LinePlotter(_RelationalPlotter):
         # Finalize the axes details
         self._add_axis_labels(ax)
         if self.legend:
-            self.add_legend_data(ax)
+            legend_artist = partial(mpl.lines.Line2D, xdata=[], ydata=[])
+            attrs = {"hue": "color", "size": "linewidth", "style": None}
+            self.add_legend_data(ax, legend_artist, kws, attrs)
             handles, _ = ax.get_legend_handles_labels()
             if handles:
                 legend = ax.legend(title=self.legend_title)
@@ -494,7 +375,6 @@ class _LinePlotter(_RelationalPlotter):
 class _ScatterPlotter(_RelationalPlotter):
 
     _legend_attributes = ["color", "s", "marker"]
-    _legend_func = "scatter"
 
     def __init__(self, *, data=None, variables={}, legend=None):
 
@@ -563,12 +443,15 @@ class _ScatterPlotter(_RelationalPlotter):
 
         if "linewidth" not in kws:
             sizes = points.get_sizes()
-            points.set_linewidths(.08 * np.sqrt(np.percentile(sizes, 10)))
+            linewidth = .08 * np.sqrt(np.percentile(sizes, 10))
+            points.set_linewidths(linewidth)
+            kws["linewidth"] = linewidth
 
         # Finalize the axes details
         self._add_axis_labels(ax)
         if self.legend:
-            self.add_legend_data(ax)
+            attrs = {"hue": "color", "size": "s", "style": None}
+            self.add_legend_data(ax, _scatter_legend_artist, kws, attrs)
             handles, _ = ax.get_legend_handles_labels()
             if handles:
                 legend = ax.legend(title=self.legend_title)
@@ -731,8 +614,6 @@ def scatterplot(
 
     p._attach(ax)
 
-    # Other functions have color as an explicit param,
-    # and we should probably do that here too
     color = kwargs.pop("color", None)
     kwargs["color"] = _default_color(ax.scatter, hue, color, kwargs)
 
@@ -938,12 +819,37 @@ def relplot(
     # Pass "" when the variable name is None to overwrite internal variables
     g.set_axis_labels(variables.get("x") or "", variables.get("y") or "")
 
-    # Show the legend
     if legend:
-        # Replace the original plot data so the legend uses
-        # numeric data with the correct type
+        # Replace the original plot data so the legend uses numeric data with
+        # the correct type, since we force a categorical mapping above.
         p.plot_data = plot_data
-        p.add_legend_data(g.axes.flat[0])
+
+        # Handle the additional non-semantic keyword arguments out here.
+        # We're selective because some kwargs may be seaborn function specific
+        # and not relevant to the matplotlib artists going into the legend.
+        # Ideally, we will have a better solution where we don't need to re-make
+        # the legend out here and will have parity with the axes-level functions.
+        keys = ["c", "color", "alpha", "m", "marker"]
+        if kind == "scatter":
+            legend_artist = _scatter_legend_artist
+            keys += ["s", "facecolor", "fc", "edgecolor", "ec", "linewidth", "lw"]
+        else:
+            legend_artist = partial(mpl.lines.Line2D, xdata=[], ydata=[])
+            keys += [
+                "markersize", "ms",
+                "markeredgewidth", "mew",
+                "markeredgecolor", "mec",
+                "linestyle", "ls",
+                "linewidth", "lw",
+            ]
+
+        common_kws = {k: v for k, v in kwargs.items() if k in keys}
+        attrs = {"hue": "color", "style": None}
+        if kind == "scatter":
+            attrs["size"] = "s"
+        elif kind == "line":
+            attrs["size"] = "linewidth"
+        p.add_legend_data(g.axes.flat[0], legend_artist, common_kws, attrs)
         if p.legend_data:
             g.add_legend(legend_data=p.legend_data,
                          label_order=p.legend_order,

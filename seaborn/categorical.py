@@ -13,17 +13,18 @@ from matplotlib.patches import Rectangle
 import matplotlib.pyplot as plt
 
 from seaborn._core.typing import default, deprecated
-from seaborn._base import infer_orient, categorical_order
+from seaborn._base import VectorPlotter, infer_orient, categorical_order
 from seaborn._stats.density import KDE
-from seaborn.relational import _RelationalPlotter
 from seaborn import utils
 from seaborn.utils import (
     desaturate,
     _check_argument,
     _draw_figure,
     _default_color,
+    _get_patch_legend_artist,
     _get_transform_functions,
     _normalize_kwargs,
+    _scatter_legend_artist,
     _version_predates,
 )
 from seaborn._statistics import EstimateAggregator, LetterValues
@@ -39,14 +40,11 @@ __all__ = [
 ]
 
 
-# Subclassing _RelationalPlotter for the legend machinery,
-# but probably should move that more centrally
-class _CategoricalPlotter(_RelationalPlotter):
+class _CategoricalPlotter(VectorPlotter):
 
     wide_structure = {"x": "@columns", "y": "@values"}
     flat_structure = {"y": "@values"}
 
-    _legend_func = "scatter"
     _legend_attributes = ["color"]
 
     def __init__(
@@ -63,13 +61,13 @@ class _CategoricalPlotter(_RelationalPlotter):
 
         # This method takes care of some bookkeeping that is necessary because the
         # original categorical plots (prior to the 2021 refactor) had some rules that
-        # don't fit exactly into the logic of _core. It may be wise to have a second
+        # don't fit exactly into VectorPlotter logic. It may be wise to have a second
         # round of refactoring that moves the logic deeper, but this will keep things
         # relatively sensible for now.
 
         # For wide data, orient determines assignment to x/y differently from the
-        # wide_structure rules in _core. If we do decide to make orient part of the
-        # _core variable assignment, we'll want to figure out how to express that.
+        # default VectorPlotter rules. If we do decide to make orient part of the
+        # _base variable assignment, we'll want to figure out how to express that.
         if self.input_format == "wide" and orient in ["h", "y"]:
             self.plot_data = self.plot_data.rename(columns={"x": "y", "y": "x"})
             orig_variables = set(self.variables)
@@ -85,7 +83,7 @@ class _CategoricalPlotter(_RelationalPlotter):
                 self.var_types["x"] = orig_y_type
 
         # The concept of an "orientation" is important to the original categorical
-        # plots, but there's no provision for it in _core, so we need to do it here.
+        # plots, but there's no provision for it in VectorPlotter, so we need it here.
         # Note that it could be useful for the other functions in at least two ways
         # (orienting a univariate distribution plot from long-form data and selecting
         # the aggregation axis in lineplot), so we may want to eventually refactor it.
@@ -403,7 +401,7 @@ class _CategoricalPlotter(_RelationalPlotter):
             show_legend = bool(self.legend)
 
         if show_legend:
-            self.add_legend_data(ax, func, common_kws, semantic_kws)
+            self.add_legend_data(ax, func, common_kws, semantic_kws=semantic_kws)
             handles, _ = ax.get_legend_handles_labels()
             if handles:
                 ax.legend(title=self.legend_title)
@@ -488,7 +486,7 @@ class _CategoricalPlotter(_RelationalPlotter):
             if "hue" in self.variables:
                 points.set_facecolors(self._hue_map(sub_data["hue"]))
 
-        self._configure_legend(ax, ax.scatter)
+        self._configure_legend(ax, _scatter_legend_artist, common_kws=plot_kws)
 
     def plot_swarms(
         self,
@@ -558,7 +556,7 @@ class _CategoricalPlotter(_RelationalPlotter):
                 points.draw = draw.__get__(points)
 
         _draw_figure(ax.figure)
-        self._configure_legend(ax, ax.scatter)
+        self._configure_legend(ax, _scatter_legend_artist, plot_kws)
 
     def plot_boxes(
         self,
@@ -712,12 +710,8 @@ class _CategoricalPlotter(_RelationalPlotter):
 
             ax.add_container(BoxPlotContainer(artists))
 
-        patch_kws = props["box"].copy()
-        if not fill:
-            patch_kws["facecolor"] = (1, 1, 1, 0)
-        else:
-            patch_kws["edgecolor"] = linecolor
-        self._configure_legend(ax, ax.fill_between, patch_kws)
+        legend_artist = _get_patch_legend_artist(fill)
+        self._configure_legend(ax, legend_artist, boxprops)
 
     def plot_boxens(
         self,
@@ -856,12 +850,9 @@ class _CategoricalPlotter(_RelationalPlotter):
 
         ax.autoscale_view(scalex=self.orient == "y", scaley=self.orient == "x")
 
-        patch_kws = box_kws.copy()
-        if not fill:
-            patch_kws["facecolor"] = (1, 1, 1, 0)
-        else:
-            patch_kws["edgecolor"] = linecolor
-        self._configure_legend(ax, ax.fill_between, patch_kws)
+        legend_artist = _get_patch_legend_artist(fill)
+        common_kws = {**box_kws, "linewidth": linewidth, "edgecolor": linecolor}
+        self._configure_legend(ax, legend_artist, common_kws)
 
     def plot_violins(
         self,
@@ -1135,7 +1126,9 @@ class _CategoricalPlotter(_RelationalPlotter):
                 }
                 ax.plot(invx(x2), invy(y2), **dot_kws)
 
-        self._configure_legend(ax, ax.fill_between)  # TODO, patch_kws)
+        legend_artist = _get_patch_legend_artist(fill)
+        common_kws = {**plot_kws, "linewidth": linewidth, "edgecolor": linecolor}
+        self._configure_legend(ax, legend_artist, common_kws)
 
     def plot_points(
         self,
@@ -1212,8 +1205,9 @@ class _CategoricalPlotter(_RelationalPlotter):
             if aggregator.error_method is not None:
                 self.plot_errorbars(ax, agg_data, capsize, sub_err_kws)
 
+        legend_artist = partial(mpl.lines.Line2D, [], [])
         semantic_kws = {"hue": {"marker": markers, "linestyle": linestyles}}
-        self._configure_legend(ax, ax.plot, sub_kws, semantic_kws)
+        self._configure_legend(ax, legend_artist, sub_kws, semantic_kws)
 
     def plot_bars(
         self,
@@ -1294,7 +1288,8 @@ class _CategoricalPlotter(_RelationalPlotter):
                     {"color": ".26" if fill else main_color, **err_kws}
                 )
 
-        self._configure_legend(ax, ax.fill_between)
+        legend_artist = _get_patch_legend_artist(fill)
+        self._configure_legend(ax, legend_artist, plot_kws)
 
     def plot_errorbars(self, ax, data, capsize, err_kws):
 
@@ -2041,7 +2036,7 @@ boxenplot.__doc__ = dedent("""\
 def stripplot(
     data=None, *, x=None, y=None, hue=None, order=None, hue_order=None,
     jitter=True, dodge=False, orient=None, color=None, palette=None,
-    size=5, edgecolor="face", linewidth=0,
+    size=5, edgecolor=default, linewidth=0,
     hue_norm=None, log_scale=None, native_scale=False, formatter=None, legend="auto",
     ax=None, **kwargs
 ):
@@ -2810,8 +2805,7 @@ def catplot(
         if saturation < 1:
             color = desaturate(color, saturation)
 
-    edgecolor = kwargs.pop("edgecolor", "face" if kind == "strip" else "auto")
-    edgecolor = p._complement_color(edgecolor, color, p._hue_map)
+    edgecolor = p._complement_color(kwargs.pop("edgecolor", default), color, p._hue_map)
 
     width = kwargs.pop("width", 0.8)
     dodge = kwargs.pop("dodge", False if kind in undodged_kinds else "auto")
