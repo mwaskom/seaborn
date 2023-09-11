@@ -45,7 +45,6 @@ class _CategoricalPlotter(VectorPlotter):
     wide_structure = {"x": "@columns", "y": "@values"}
     flat_structure = {"y": "@values"}
 
-    _legend_func = "scatter"
     _legend_attributes = ["color"]
 
     def __init__(

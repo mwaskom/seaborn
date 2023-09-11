@@ -1203,7 +1203,7 @@ class VectorPlotter:
             ax.set_ylabel(self.variables.get("y", default_y), visible=y_visible)
 
     def add_legend_data(
-        self, ax, func=None, common_kws=None, attrs=None, semantic_kws=None,
+        self, ax, func, common_kws=None, attrs=None, semantic_kws=None,
     ):
         """Add labeled artists to represent the different plot semantics."""
         verbosity = self.legend
@@ -1246,9 +1246,6 @@ class VectorPlotter:
             self._update_legend_data(
                 update, var, verbosity, title, title_kws, names, semantic_kws.get(var),
             )
-
-        if func is None:
-            func = self._legend_func
 
         legend_data = {}
         legend_order = []
