@@ -14,6 +14,7 @@ from .utils import (
     _default_color,
     _deprecate_ci,
     _get_transform_functions,
+    _normalize_kwargs,
     _scatter_legend_artist,
 )
 from ._statistics import EstimateAggregator
@@ -236,8 +237,9 @@ class _LinePlotter(_RelationalPlotter):
         # gotten from the corresponding matplotlib function, and calling the
         # function will advance the axes property cycle.
 
-        kws.setdefault("markeredgewidth", kws.pop("mew", .75))
-        kws.setdefault("markeredgecolor", kws.pop("mec", "w"))
+        kws = _normalize_kwargs(kws, mpl.lines.Line2D)
+        kws.setdefault("markeredgewidth", 0.75)
+        kws.setdefault("markeredgecolor", "w")
 
         # Set default error kwargs
         err_kws = self.err_kws.copy()
@@ -396,6 +398,8 @@ class _ScatterPlotter(_RelationalPlotter):
         data = self.comp_data.dropna()
         if data.empty:
             return
+
+        kws = _normalize_kwargs(kws, mpl.collections.PathCollection)
 
         # Define the vectors of x and y positions
         empty = np.full(len(data), np.nan)

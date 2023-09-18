@@ -1732,6 +1732,12 @@ class TestScatterPlotter(SharedAxesLevelTests, Helpers):
             warnings.simplefilter("error")
             scatterplot(data=long_df, x="x", y="y", marker="+")
 
+    def test_short_form_kwargs(self, long_df):
+
+        ax = scatterplot(data=long_df, x="x", y="y", ec="g")
+        pts = ax.collections[0]
+        assert same_color(pts.get_edgecolors().squeeze(), "g")
+
     def test_scatterplot_vs_relplot(self, long_df, long_semantics):
 
         ax = scatterplot(data=long_df, **long_semantics)
