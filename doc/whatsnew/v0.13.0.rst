@@ -1,16 +1,129 @@
 v0.13.0 (Unreleased)
 --------------------
 
+Major enhancements to categorical plots
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Seaborn's :ref:`categorical functions <categorical_api>` have been completely rewritten for this release. This provided the opportunity to address some longstanding quirks as well as to add a number of smaller but much-desired features and enhancements.
+
+Support for numeric and date-time data
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+|Feature|
+
+The categorical functions have historically treated *all* data as categorical, even when it has a numeric or date-time type. This can now be controlled with the new `native_scale` parameter. The default remains `False` to preserve existing behavior. But with `native_scale=True`, values will be treated as they would by other seaborn or matplotlib functions. Element widths will be derived from the minimum distance between two unique values on the categorical axis.
+
+Additionally, while seaborn previously determined the mapping from categorical values to ordinal positions internally, it is now delegated to matplotlib. This should mostly be transparent to the user, but categorical plots (even with `native_scale=False`) will better align with artists added by other seaborn or matplotlib functions in most cases, and matplotlib's interactive machinery will work better.
+
+Changes to color defaults and specification
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+|API| |Defaults|
+
+The categorical functions now act more like the rest of seaborn in that they will produce a plot with a single main color unless the `hue` variable is assigned. Previously, there would be an implicit redundant color mapping (e.g., each box in a boxplot would get a separate color from the default palette). To retain the previous behavior, explicitly assign a redundant `hue` variable (e.g., `boxplot(data, x="x", y="y", hue="x")`).
+
+Two related idiosyncratic color specifications are deprecated, but they will continue to work (with a warning) for one release cycle:
+
+- Passing a `palette` without explicitly assigning `hue` is no longer supported (add an explicitly redundant `hue` assignment instead).
+
+- Passing a `color` while assigning `hue` to produce a gradient is no longer supported (use `palette="dark:{color}"` or `palette="light:{color}"` instead).
+
+Finally, like other seaborn functions, the default palette now depends on the variable type, and a sequential palette will be used with numeric data. To retain the previous behavior, pass the name of a qualitative palette (e.g., `palette="deep"` for seaborn's default). Accordingly, the functions have gained a parameter to control numeric color mappings (`hue_norm`).
+
+Other features, enhancements, and changes to categorical plots
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The following updates apply to multiple categorical functions.
+
+- |Feature| All functions now accept a `legend` parameter, which can be a boolean (to suppress the legend) or one of `{"auto", "brief"`, `"full"}` to control the amount of information shown in the legend for a numerical color mapping.
+
+- |Feature| All functions now accept a callable `formatter` parameter to control the string representation of the data.
+
+- |Feature| All functions that draw a solid patch now accept a boolean `fill` parameter, which when set to `False` will draw line-art elements.
+
+- |Feature| All functions that support dodging now have an additional `gap` parameter that can be set to a non-zero value to leave space between dodged elements.
+
+- |Feature| The :func:`boxplot`, :func:`boxenplot`, and :func:`violinplot` functions now support a single `linecolor` parameter.
+
+- |Enhancement| The default value for `dodge` has changed from `True` to `"auto"`. With `"auto"`, elements will dodge only when at least one set of elements would otherwise overlap.
+
+- |Enhancement| When the value axis of the plot has a non-linear scale, the statistical operations (e.g. an aggregation in :func:`pointplot` or the kernel density fit in :func:`violinplot`) are now applied in that scale space.
+
+- |Enhancement| All functions now accept a `log_scale` parameter. With a single argument, this will set the scale on the "value" axis (*opposite* the categorical axis). A tuple will set each axis directly (although setting a log scale categorical axis also requires `native_scale=True`).
+
+- |Enhancement| The `orient` parameter now accepts `"x"/"y"` to specify the categorical axis, matching the objects interface.
+
+- |Enhancement| The categorical functions are generally more deferential to the user's additional matplotlib keyword arguments.
+
+- |API| Using `"gray"` to select an automatic gray value that complements the main palette is now deprecated in favor of `"auto"`.
+
+The following updates are function-specific.
+
+- |API| |Feature| In :func:`pointplot`, a single :class:`matplotlib.lines.Line2D` artist is now used rather than adding separate :class:`matplotlib.collections.PathCollection` artist for the points. As a result, it is now possible to pass additional keyword arguments for complete customization the appearance of both the lines and markers; additionally, the legend representation is improved. Accordingly, parameters that previously allowed only partial customization (`scale`, `join`, and `errwidth`) are now deprecated. The old parameters will now trigger detailed warning messages with instructions for adapting existing code.
+
+- |API| |Feature| The bandwidth specification in :func:`violinplot` better aligns with :func:`kdeplot`, as the `bw` parameter is now deprecated in favor of `bw_method` and `bw_adjust`.
+
+- |API| |Enhancement| In :func:`boxenplot`, the boxen are now drawn with separate patch artists in each tail. This may have consequences for code that works with the underlying artists, but it produces a better result for low-alpha / unfilled plots and enables proper area/density scaling.
+
+- |API| |Enhancement| In :func:`barplot`, the `errcolor`` and `errwidth` parameters are now deprecated in favor of a more general `err_kws`` dictionary. The existing parameters will continue to work for two releases.
+
+- |API| In :func:`violinplot`, the `scale` and `scale_hue` parameters have been renamed to `density_norm` and `common_norm` for clarity and to reflect the fact that common normalization is now applied over both hue and faceting variables in :func:`catplot`.
+
+- |API| In :func:`boxenplot`, the `scale` parameter has been renamed to `width_method` as part of a broader effort to de-confound the meaning of "scale" in seaborn parameters.
+
+- |Defaults| |Enhancement| When passing a vector to the `data` parameter of :func:`barplot` or :func:`pointplot`, a bar or point will be drawn for each entry in the vector rather than plotting a single aggregated value. To retain the previous behavior, assign the vector to the `y` variable.
+
+- |Defaults| |Enhancement| In :func:`boxplot`, the default flier marker now follows the matplotlib rcparams so that it can be globally customized.
+
+- |Defaults| |Enhancement| When using `split=True` and `inner="box"` in :func:`violinplot`, a separate mini-box is now drawn for each split violin.
+
+- |Defaults| |Enhancement| In :func:`boxenplot`, all plots now use a consistent luminance ramp for the different box levels. This leads to a change in the appearance of existing plots, but reduces the chances of a misleading result.
+
+- |Defaults| |Enhancement| The `"area"` scaling in :func:`boxenplot` now approximates the density of the underlying observations, including for asymmetric distributions. This produces a substantial change in the appearance of plots with `width_method="area"`, although the existing behavior was poorly defined.
+
+- |Feature| In :func:`countplot`, the new `stat` parameter can be used to apply a normalization (e.g to show a `"percent"` or `"proportion"`).
+
+- |Feature| The `split` parameter in :func:`violinplot` is now more general and can be set to `True` regardless of the number of `hue` variable levels (or even without `hue`). This is probably most useful for showing half violins.
+
+- |Feature| In :func:`violinplot`, the new `inner_kws` parameter allows additional control over the interior artists.
+
+- |Enhancement| It is no longer required to use a `DataFrame` in :func:`catplot`, as data vectors can now be passed directly.
+
+- |Enhancement| In :func:`boxplot`, the artists that comprise each box plot are now packaged in a `BoxPlotContainer` for easier post-plotting access.
+
+Other changes
+^^^^^^^^^^^^^
+
+- |Feature| Nearly all functions / objects now use the `dataframe exchange protocol <https://data-apis.org/dataframe-protocol/latest/index.html>`_ to accept `DataFrame` objects from libraries other than `pandas` (e.g. `polars`). Note that seaborn will still convert the data object to pandas internally, but this feature will simplify code for users of other dataframe libraries (:pr:`3369`).
+
 - |Feature| Added control over the default theme to :class:`objects.Plot` (:pr:`3223`)
 
 - |Feature| Added control over the default notebook display to :class:`objects.Plot` (:pr:`3225`).
 
+- |Feature| Added the concept of a "layer legend" in :class:`objects.Plot` via the new `label` parameter in :meth:`objects.Plot.add` (:pr:`3456`).
+
+- |Enhancement| Improved the legend display for relational and categorical functions to better represent the user's additional keyword arguments (:pr:`3467`).
+
+- |Enhancement| In :meth:`objects.Plot.scale`, :meth:`objects.Plot.limit`, and :meth:`objects.Plot.label` the `x` / `y` parameters can be used to set a common scale / limit / label for paired subplots (:pr:`3458`).
+
 - |Enhancement| Updated :func:`load_dataset` to use an approach more compatible with `pyiodide` (:pr:`3234`).
 
-- |Fix| Fixed :class:`objects.Bar` and `objects.Bars` widths when using a nonlinear scale (:pr:`3217`).
+- |Enhancement| In :func:`ecdfplot`, `stat="percent"` is now a valid option (:pr:`3336`).
+
+- |Enhancement| Generalized support for performing statistics in the appropriate space based on axes scales; previously support for this was spotty and at best worked only for log scales (:pr:`3440`).
+
+- |API| Support for array-typed palettes is now deprecated. This was no previously documented as supported, but it worked by accident in a few places (:pr:`3452`).
+
+- |Fix| Fixed :class:`objects.Bar` and :class:`objects.Bars` widths when using a nonlinear scale (:pr:`3217`).
+
+- |Fix| Worked around an issue in matplotlib that caused incorrect results in :func:`move_legend` when `labels` were provided (:pr:`3454`).
 
 - |Fix| Fixed a bug introduced in v0.12.0 where :func:`histplot` added a stray empty `BarContainer` (:pr:`3246`).
 
 - |Fix| Fixed a bug where :meth:`objects.Plot.on` would override a figure's layout engine (:pr:`3216`).
 
 - |Fix| Fixed a bug introduced in v0.12.0 where :func:`lineplot` with a list of tuples for the keyword argument dashes caused a TypeError (:pr:`3316`).
+
+- |Fix| Fixed a bug in :class:`PairGrid` that caused an exception when the input dataframe had a column multiindex (:pr:`3407`).
+
+- |Fix| Improved a few edge cases when using pandas nullable dtypes (:pr:`3394`).
