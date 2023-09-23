@@ -1152,9 +1152,9 @@ class VectorPlotter:
                 for ax in ax_list:
                     set_scale = getattr(ax, f"set_{axis}scale")
                     if scale is True:
-                        set_scale("log")
+                        set_scale("log", nonpositive="mask")
                     else:
-                        set_scale("log", base=scale)
+                        set_scale("log", base=scale, nonpositive="mask")
 
         # For categorical y, we want the "first" level to be at the top of the axis
         if self.var_types.get("y", None) == "categorical":

@@ -120,7 +120,7 @@ class Hist(Stat):
 
     def _define_bin_edges(self, vals, weight, bins, binwidth, binrange, discrete):
         """Inner function that takes bin parameters as arguments."""
-        vals = vals.dropna()
+        vals = vals.replace(-np.inf, np.nan).replace(np.inf, np.nan).dropna()
 
         if binrange is None:
             start, stop = vals.min(), vals.max()

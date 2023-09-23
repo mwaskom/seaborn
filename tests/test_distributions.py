@@ -1445,6 +1445,13 @@ class TestHistPlotUnivariate(SharedAxesLevelTests):
             assert_array_almost_equal(start, wide_df[col].min())
             assert_array_almost_equal(stop, wide_df[col].max())
 
+    def test_range_with_inf(self, rng):
+
+        x = rng.normal(0, 1, 20)
+        ax = histplot([-np.inf, *x])
+        leftmost_edge = min(p.get_x() for p in ax.patches)
+        assert leftmost_edge == x.min()
+
     def test_weights_with_missing(self, null_df):
 
         ax = histplot(null_df, x="x", weights="s", bins=5)
