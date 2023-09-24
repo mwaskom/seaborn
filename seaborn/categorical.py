@@ -1184,7 +1184,8 @@ class _CategoricalPlotter(VectorPlotter):
 
             if dodge:
                 hue_idx = self._hue_map.levels.index(sub_vars["hue"])
-                offset = -dodge * (n_hue_levels - 1) / 2 + dodge * hue_idx
+                step_size = dodge / (n_hue_levels - 1)
+                offset = -dodge / 2 + step_size * hue_idx
                 agg_data[self.orient] += offset * self._native_width
 
             self._invert_scale(ax, agg_data)
