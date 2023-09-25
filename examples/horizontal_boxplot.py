@@ -17,12 +17,13 @@ ax.set_xscale("log")
 planets = sns.load_dataset("planets")
 
 # Plot the orbital period with horizontal boxes
-sns.boxplot(x="distance", y="method", data=planets,
-            whis=[0, 100], width=.6, palette="vlag")
+sns.boxplot(
+    planets, x="distance", y="method", hue="method",
+    whis=[0, 100], width=.6, palette="vlag"
+)
 
 # Add in points to show each observation
-sns.stripplot(x="distance", y="method", data=planets,
-              size=4, color=".3", linewidth=0)
+sns.stripplot(planets, x="distance", y="method", size=4, color=".3")
 
 # Tweak the visual presentation
 ax.xaxis.grid(True)
