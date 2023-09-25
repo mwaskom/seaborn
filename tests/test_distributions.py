@@ -1745,7 +1745,7 @@ class TestHistPlotUnivariate(SharedAxesLevelTests):
     def test_log_scale_explicit(self, rng):
 
         x = rng.lognormal(0, 2, 1000)
-        ax = histplot(x, log_scale=True, binwidth=1)
+        ax = histplot(x, log_scale=True, binrange=(-3, 3), binwidth=1)
 
         bar_widths = [b.get_width() for b in ax.patches]
         steps = np.divide(bar_widths[1:], bar_widths[:-1])
@@ -1757,7 +1757,7 @@ class TestHistPlotUnivariate(SharedAxesLevelTests):
 
         f, ax = plt.subplots()
         ax.set_xscale("log")
-        histplot(x, binwidth=1, ax=ax)
+        histplot(x, binrange=(-3, 3), binwidth=1, ax=ax)
 
         bar_widths = [b.get_width() for b in ax.patches]
         steps = np.divide(bar_widths[1:], bar_widths[:-1])

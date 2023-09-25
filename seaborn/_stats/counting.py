@@ -66,6 +66,8 @@ class Hist(Stat):
         of bins, or the bin breaks. Passed to :func:`numpy.histogram_bin_edges`.
     binwidth : float
         Width of each bin; overrides `bins` but can be used with `binrange`.
+        Note that if `binwidth` does not evenly divide the bin range, the actual
+        bin width used will be only approximately equal to the parameter value.
     binrange : (min, max)
         Lowest and highest value for bin edges; can be used with either
         `bins` (when a number) or `binwidth`. Defaults to data extremes.
@@ -129,10 +131,9 @@ class Hist(Stat):
 
         if discrete:
             bin_edges = np.arange(start - .5, stop + 1.5)
-        elif binwidth is not None:
-            step = binwidth
-            bin_edges = np.arange(start, stop + step, step)
         else:
+            if binwidth is not None:
+                bins = int(round((stop - start) / binwidth))
             bin_edges = np.histogram_bin_edges(vals, bins, binrange, weight)
 
         # TODO warning or cap on too many bins?
