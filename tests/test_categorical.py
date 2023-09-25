@@ -3076,6 +3076,14 @@ class TestCatPlot(CategoricalFixture):
         for ax in g.axes.flat:
             assert len(ax.collections) == len(self.df.g.unique())
 
+    def test_facetgrid_data(self, long_df):
+
+        g1 = catplot(data=long_df, x="a", y="y", col="c")
+        assert g1.data is long_df
+
+        g2 = catplot(x=long_df["a"], y=long_df["y"], col=long_df["c"])
+        assert g2.data.equals(long_df[["a", "y", "c"]])
+
     @pytest.mark.parametrize("var", ["col", "row"])
     def test_array_faceter(self, long_df, var):
 

@@ -2756,8 +2756,8 @@ def catplot(
             p.variables[var] = f"_{var}_"
 
     # Adapt the plot_data dataframe for use with FacetGrid
-    data = p.plot_data.rename(columns=p.variables)
-    data = data.loc[:, ~data.columns.duplicated()]
+    facet_data = p.plot_data.rename(columns=p.variables)
+    facet_data = facet_data.loc[:, ~facet_data.columns.duplicated()]
 
     col_name = p.variables.get("col", None)
     row_name = p.variables.get("row", None)
@@ -2766,7 +2766,7 @@ def catplot(
         facet_kws = {}
 
     g = FacetGrid(
-        data=data, row=row_name, col=col_name, col_wrap=col_wrap,
+        data=facet_data, row=row_name, col=col_name, col_wrap=col_wrap,
         row_order=row_order, col_order=col_order, sharex=sharex, sharey=sharey,
         legend_out=legend_out, margin_titles=margin_titles,
         height=height, aspect=aspect,
@@ -3073,6 +3073,10 @@ def catplot(
 
     if legend and "hue" in p.variables:
         g.add_legend(title=p.variables.get("hue"), label_order=hue_order)
+
+    if data is not None:
+        # Replace the dataframe on the FacetGrid for any subsequent maps
+        g.data = data
 
     return g
 
