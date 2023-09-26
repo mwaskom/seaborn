@@ -7,7 +7,10 @@ Citing seaborn
 --------------
 
 If seaborn is integral to a scientific publication, please cite it.
-A paper describing seaborn has been published in the `Journal of Open Source Software <https://joss.theoj.org/papers/10.21105/joss.03021>`_.
+A paper describing seaborn has been published in the `Journal of Open Source Software <https://joss.theoj.org/papers/10.21105/joss.03021>`_:
+
+    Waskom, M. L., (2021). seaborn: statistical data visualization. Journal of Open Source Software, 6(60), 3021, https://doi.org/10.21105/joss.03021.
+
 Here is a ready-made BibTeX entry:
 
 .. highlight:: none

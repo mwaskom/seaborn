@@ -1,19 +1,23 @@
 v0.13.0 (Unreleased)
 --------------------
 
+This is a major release with a number of important new features and changes. The highlight is a major overhaul to seaborn's categorical plotting functions, providing them with many new capabilities and better aligning their API with the rest of the library. There is also provisional support for alternate dataframe libraries like `polars <https://www.pola.rs>`_, a new theme and display configuration system for :class:`objects.Plot`, and many smaller bugfixes and enhancements.
+
+Updating is recommended, but users are encouraged to carefully check the outputs of existing code that uses the categorical functions, and they should be aware of some deprecations and intentional changes to the default appearance of the resulting plots (see notes below with |API| and |Defaults| tags).
+
 Major enhancements to categorical plots
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Seaborn's :ref:`categorical functions <categorical_api>` have been completely rewritten for this release. This provided the opportunity to address some longstanding quirks as well as to add a number of smaller but much-desired features and enhancements.
 
-Support for numeric and date-time data
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Support for numeric and datetime data
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 |Feature|
 
-The categorical functions have historically treated *all* data as categorical, even when it has a numeric or date-time type. This can now be controlled with the new `native_scale` parameter. The default remains `False` to preserve existing behavior. But with `native_scale=True`, values will be treated as they would by other seaborn or matplotlib functions. Element widths will be derived from the minimum distance between two unique values on the categorical axis.
+The categorical functions have historically treated *all* data as categorical, even when it has a numeric or datetime type. This can now be controlled with the new `native_scale` parameter. The default remains `False` to preserve existing behavior. But with `native_scale=True`, values will be treated as they would by other seaborn or matplotlib functions. Element widths will be derived from the minimum distance between two unique values on the categorical axis.
 
-Additionally, while seaborn previously determined the mapping from categorical values to ordinal positions internally, it is now delegated to matplotlib. This should mostly be transparent to the user, but categorical plots (even with `native_scale=False`) will better align with artists added by other seaborn or matplotlib functions in most cases, and matplotlib's interactive machinery will work better.
+Additionally, while seaborn previously determined the mapping from categorical values to ordinal positions internally, this is now delegated to matplotlib. The change should mostly be transparent to the user, but categorical plots (even with `native_scale=False`) will better align with artists added by other seaborn or matplotlib functions in most cases, and matplotlib's interactive machinery will work better.
 
 Changes to color defaults and specification
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -35,7 +39,7 @@ Other features, enhancements, and changes to categorical plots
 
 The following updates apply to multiple categorical functions.
 
-- |Feature| All functions now accept a `legend` parameter, which can be a boolean (to suppress the legend) or one of `{"auto", "brief"`, `"full"}` to control the amount of information shown in the legend for a numerical color mapping.
+- |Feature| All functions now accept a `legend` parameter, which can be a boolean (to suppress the legend) or one of `{"auto", "brief", "full"}` to control the amount of information shown in the legend for a numerical color mapping.
 
 - |Feature| All functions now accept a callable `formatter` parameter to control the string representation of the data.
 
@@ -65,7 +69,7 @@ The following updates are function-specific.
 
 - |API| |Enhancement| In :func:`boxenplot`, the boxen are now drawn with separate patch artists in each tail. This may have consequences for code that works with the underlying artists, but it produces a better result for low-alpha / unfilled plots and enables proper area/density scaling.
 
-- |API| |Enhancement| In :func:`barplot`, the `errcolor`` and `errwidth` parameters are now deprecated in favor of a more general `err_kws`` dictionary. The existing parameters will continue to work for two releases.
+- |API| |Enhancement| In :func:`barplot`, the `errcolor` and `errwidth` parameters are now deprecated in favor of a more general `err_kws`` dictionary. The existing parameters will continue to work for two releases.
 
 - |API| In :func:`violinplot`, the `scale` and `scale_hue` parameters have been renamed to `density_norm` and `common_norm` for clarity and to reflect the fact that common normalization is now applied over both hue and faceting variables in :func:`catplot`.
 
@@ -91,10 +95,13 @@ The following updates are function-specific.
 
 - |Enhancement| In :func:`boxplot`, the artists that comprise each box plot are now packaged in a `BoxPlotContainer` for easier post-plotting access.
 
-Other changes
-^^^^^^^^^^^^^
+Support for alternate dataframe libraries
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 - |Feature| Nearly all functions / objects now use the `dataframe exchange protocol <https://data-apis.org/dataframe-protocol/latest/index.html>`_ to accept `DataFrame` objects from libraries other than `pandas` (e.g. `polars`). Note that seaborn will still convert the data object to pandas internally, but this feature will simplify code for users of other dataframe libraries (:pr:`3369`).
+
+Improved configuration for the objects interface
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 - |Feature| Added control over the default theme to :class:`objects.Plot` (:pr:`3223`)
 
@@ -102,17 +109,26 @@ Other changes
 
 - |Feature| Added the concept of a "layer legend" in :class:`objects.Plot` via the new `label` parameter in :meth:`objects.Plot.add` (:pr:`3456`).
 
-- |Enhancement| Improved the legend display for relational and categorical functions to better represent the user's additional keyword arguments (:pr:`3467`).
-
 - |Enhancement| In :meth:`objects.Plot.scale`, :meth:`objects.Plot.limit`, and :meth:`objects.Plot.label` the `x` / `y` parameters can be used to set a common scale / limit / label for paired subplots (:pr:`3458`).
 
-- |Enhancement| Updated :func:`load_dataset` to use an approach more compatible with `pyiodide` (:pr:`3234`).
+Other updates
+^^^^^^^^^^^^^
+
+- |Enhancement| Improved the legend display for relational and categorical functions to better represent the user's additional keyword arguments (:pr:`3467`).
 
 - |Enhancement| In :func:`ecdfplot`, `stat="percent"` is now a valid option (:pr:`3336`).
 
-- |Enhancement| Generalized support for performing statistics in the appropriate space based on axes scales; previously support for this was spotty and at best worked only for log scales (:pr:`3440`).
+- |Enhancement| Data values outside the scale transform domain (e.g. non-positive values with a log scale) are now dropped prior to any statistical operations (:pr:`3488`).
 
-- |API| Support for array-typed palettes is now deprecated. This was no previously documented as supported, but it worked by accident in a few places (:pr:`3452`).
+- |Enhancement| In :func:`histplot`, infinite values are now ignored when choosing the default bin range (:pr:`3488`).
+
+- |Enhancement| There is now generalized support for performing statistics in the appropriate space based on axes scales; previously support for this was spotty and at best worked only for log scales (:pr:`3440`).
+
+- |Enhancement| Updated :func:`load_dataset` to use an approach more compatible with `pyiodide` (:pr:`3234`).
+
+- |API| Support for array-typed palettes is now deprecated. This was not previously documented as supported, but it worked by accident in a few places (:pr:`3452`).
+
+- |API| |Fix| In :func:`histplot`, treatment of the `binwidth` parameter has changed such that the actual bin width will be only approximately equal to the requested width when that value does not evenly divide the bin range. This fixes an issue where the largest data value was sometimes dropped due to floating point error (:pr:`3489`).
 
 - |Fix| Fixed :class:`objects.Bar` and :class:`objects.Bars` widths when using a nonlinear scale (:pr:`3217`).
 
