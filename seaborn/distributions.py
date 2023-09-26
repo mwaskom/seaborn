@@ -1608,7 +1608,7 @@ def kdeplot(
             action_taken = "assigning data to `x`."
         msg = textwrap.dedent(f"""\n
         The `vertical` parameter is deprecated; {action_taken}
-        This will become an error in seaborn v0.13.0; please update your code.
+        This will become an error in seaborn v0.14.0; please update your code.
         """)
         warnings.warn(msg, UserWarning, stacklevel=2)
 
@@ -1618,7 +1618,7 @@ def kdeplot(
         msg = textwrap.dedent(f"""\n
         The `bw` parameter is deprecated in favor of `bw_method` and `bw_adjust`.
         Setting `bw_method={bw}`, but please see the docs for the new parameters
-        and update your code. This will become an error in seaborn v0.13.0.
+        and update your code. This will become an error in seaborn v0.14.0.
         """)
         warnings.warn(msg, UserWarning, stacklevel=2)
         bw_method = bw
@@ -1627,7 +1627,7 @@ def kdeplot(
     if kwargs.pop("kernel", None) is not None:
         msg = textwrap.dedent("""\n
         Support for alternate kernels has been removed; using Gaussian kernel.
-        This will become an error in seaborn v0.13.0; please update your code.
+        This will become an error in seaborn v0.14.0; please update your code.
         """)
         warnings.warn(msg, UserWarning, stacklevel=2)
 
@@ -1638,7 +1638,7 @@ def kdeplot(
             thresh = 0
         msg = textwrap.dedent(f"""\n
         `shade_lowest` has been replaced by `thresh`; setting `thresh={thresh}.
-        This will become an error in seaborn v0.13.0; please update your code.
+        This will become an error in seaborn v0.14.0; please update your code.
         """)
         warnings.warn(msg, UserWarning, stacklevel=2)
 
@@ -1994,7 +1994,7 @@ def rugplot(
         data = a
         msg = textwrap.dedent("""\n
         The `a` parameter has been replaced; use `x`, `y`, and/or `data` instead.
-        Please update your code; This will become an error in seaborn v0.13.0.
+        Please update your code; This will become an error in seaborn v0.14.0.
         """)
         warnings.warn(msg, UserWarning, stacklevel=2)
 
@@ -2006,7 +2006,7 @@ def rugplot(
         data = None
         msg = textwrap.dedent(f"""\n
         The `axis` parameter has been deprecated; use the `{axis}` parameter instead.
-        Please update your code; this will become an error in seaborn v0.13.0.
+        Please update your code; this will become an error in seaborn v0.14.0.
         """)
         warnings.warn(msg, UserWarning, stacklevel=2)
 
@@ -2022,7 +2022,7 @@ def rugplot(
             action_taken = "assigning data to `x`."
         msg = textwrap.dedent(f"""\n
         The `vertical` parameter is deprecated; {action_taken}
-        This will become an error in seaborn v0.13.0; please update your code.
+        This will become an error in seaborn v0.14.0; please update your code.
         """)
         warnings.warn(msg, UserWarning, stacklevel=2)
 
