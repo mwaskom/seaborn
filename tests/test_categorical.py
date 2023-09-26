@@ -269,7 +269,7 @@ class SharedScatterTests(SharedAxesLevelTests):
         if data_type == "dict":
             wide_df = {k: v.to_numpy() for k, v in wide_df.items()}
 
-        ax = self.func(data=wide_df, orient=orient)
+        ax = self.func(data=wide_df, orient=orient, color="C0")
         _draw_figure(ax.figure)
 
         cat_idx = 0 if orient in "vx" else 1
@@ -914,7 +914,7 @@ class TestBoxPlot(SharedAxesLevelTests, SharedPatchArtistTests):
     def test_wide_data(self, wide_df, orient):
 
         orient = {"h": "y", "v": "x"}[orient]
-        ax = boxplot(wide_df, orient=orient)
+        ax = boxplot(wide_df, orient=orient, color="C0")
         for i, bxp in enumerate(ax.containers):
             col = wide_df.columns[i]
             self.check_box(bxp[i], wide_df[col], orient, i)
@@ -1007,6 +1007,18 @@ class TestBoxPlot(SharedAxesLevelTests, SharedPatchArtistTests):
         ax = boxplot(long_df, x="a", y="y", color=color, saturation=1)
         for box in ax.containers[0].boxes:
             assert same_color(box.get_facecolor(), color)
+
+    def test_wide_data_multicolored(self, wide_df):
+
+        ax = boxplot(wide_df)
+        assert len(ax.containers) == wide_df.shape[1]
+
+    def test_wide_data_single_color(self, wide_df):
+
+        ax = boxplot(wide_df, color="C1", saturation=1)
+        assert len(ax.containers) == 1
+        for box in ax.containers[0].boxes:
+            assert same_color(box.get_facecolor(), "C1")
 
     def test_hue_colors(self, long_df):
 
@@ -1699,7 +1711,7 @@ class TestViolinPlot(SharedAxesLevelTests, SharedPatchArtistTests):
     def test_density_norm_area(self, long_df):
 
         y = long_df["y"].to_numpy()
-        ax = violinplot([y, y * 5])
+        ax = violinplot([y, y * 5], color="C0")
         widths = []
         for poly in ax.collections:
             widths.append(self.violin_width(poly))
@@ -1708,7 +1720,7 @@ class TestViolinPlot(SharedAxesLevelTests, SharedPatchArtistTests):
     def test_density_norm_count(self, long_df):
 
         y = long_df["y"].to_numpy()
-        ax = violinplot([np.repeat(y, 3), y], density_norm="count")
+        ax = violinplot([np.repeat(y, 3), y], density_norm="count", color="C0")
         widths = []
         for poly in ax.collections:
             widths.append(self.violin_width(poly))
@@ -2441,6 +2453,11 @@ class TestPointPlot(SharedAggTests):
         for i, line in enumerate(ax.lines[:2]):
             assert_array_equal(line.get_ydata(), y[i::2])
             assert same_color(line.get_color(), f"C{i}")
+
+    def test_wide_data_is_joined(self, wide_df):
+
+        ax = pointplot(wide_df, errorbar=None)
+        assert len(ax.lines) == 1
 
     def test_xy_native_scale(self):
 
