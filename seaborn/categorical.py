@@ -2755,17 +2755,14 @@ def catplot(
         elif x is not None and y is not None:
             raise ValueError("Cannot pass values for both `x` and `y`.")
 
-    if kind == "point" and palette is None and color is None:
-        # Handle special backwards compatibility where pointplot originally
-        # did *not* default to multi-colored unless a palette was specified.
-        color = "C0"
-
     p = Plotter(
         data=data,
         variables=dict(x=x, y=y, hue=hue, row=row, col=col, units=units),
         order=order,
         orient=orient,
-        color=color,
+        # Handle special backwards compatibility where pointplot originally
+        # did *not* default to multi-colored unless a palette was specified.
+        color="C0" if kind == "point" and palette is None and color is None else color,
         legend=legend,
     )
 
