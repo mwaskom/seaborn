@@ -93,7 +93,7 @@ class GroupBy:
 
         res = (
             data
-            .groupby(grouper, sort=False, observed=True)
+            .groupby(grouper, sort=False, observed=False)
             .agg(*args, **kwargs)
             .reindex(groups)
             .reset_index()
@@ -113,7 +113,7 @@ class GroupBy:
             return self._reorder_columns(func(data, *args, **kwargs), data)
 
         parts = {}
-        for key, part_df in data.groupby(grouper, sort=False):
+        for key, part_df in data.groupby(grouper, sort=False, observed=False):
             parts[key] = func(part_df, *args, **kwargs)
         stack = []
         for key in groups:
