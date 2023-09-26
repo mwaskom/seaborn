@@ -42,7 +42,7 @@ __all__ = [
 
 class _CategoricalPlotter(VectorPlotter):
 
-    wide_structure = {"x": "@columns", "y": "@values"}
+    wide_structure = {"x": "@columns", "y": "@values", "hue": "@columns"}
     flat_structure = {"y": "@values"}
 
     _legend_attributes = ["color"]
@@ -54,6 +54,7 @@ class _CategoricalPlotter(VectorPlotter):
         order=None,
         orient=None,
         require_numeric=False,
+        color=None,
         legend="auto",
     ):
 
@@ -82,6 +83,18 @@ class _CategoricalPlotter(VectorPlotter):
                 self.variables["x"] = orig_y
                 self.var_types["x"] = orig_y_type
 
+        # Initially there was more special code for wide-form data where plots were
+        # multi-colored by default and then either palette or color could be used.
+        # We want to provide backwards compatibility for this behavior in a relatively
+        # simply way, so we delete the hue information when color is specified.
+        if (
+            self.input_format == "wide"
+            and "hue" in self.variables
+            and color is not None
+        ):
+            self.plot_data.drop("hue", axis=1)
+            self.variables.pop("hue")
+
         # The concept of an "orientation" is important to the original categorical
         # plots, but there's no provision for it in VectorPlotter, so we need it here.
         # Note that it could be useful for the other functions in at least two ways
@@ -91,7 +104,7 @@ class _CategoricalPlotter(VectorPlotter):
             x=self.plot_data.get("x", None),
             y=self.plot_data.get("y", None),
             orient=orient,
-            require_numeric=require_numeric,
+            require_numeric=False,
         )
 
         self.legend = legend
@@ -321,13 +334,14 @@ class _CategoricalPlotter(VectorPlotter):
         if value is default:
             value = plot_kws.pop(name, fallback)
 
-        if (levels := self._hue_map.levels) is None:
-            mapping = {None: value}
-        else:
+        if "hue" in self.variables:
+            levels = self._hue_map.levels
             if isinstance(value, list):
                 mapping = {k: v for k, v in zip(levels, value)}
             else:
                 mapping = {k: value for k in levels}
+        else:
+            mapping = {None: value}
 
         return mapping
 
@@ -1562,7 +1576,7 @@ def boxplot(
         variables=dict(x=x, y=y, hue=hue),
         order=order,
         orient=orient,
-        require_numeric=False,
+        color=color,
         legend=legend,
     )
 
@@ -1690,7 +1704,7 @@ def violinplot(
         variables=dict(x=x, y=y, hue=hue),
         order=order,
         orient=orient,
-        require_numeric=False,
+        color=color,
         legend=legend,
     )
 
@@ -1879,7 +1893,7 @@ def boxenplot(
         variables=dict(x=x, y=y, hue=hue),
         order=order,
         orient=orient,
-        require_numeric=False,
+        color=color,
         legend=legend,
     )
 
@@ -2047,7 +2061,7 @@ def stripplot(
         variables=dict(x=x, y=y, hue=hue),
         order=order,
         orient=orient,
-        require_numeric=False,
+        color=color,
         legend=legend,
     )
 
@@ -2172,7 +2186,7 @@ def swarmplot(
         variables=dict(x=x, y=y, hue=hue),
         order=order,
         orient=orient,
-        require_numeric=False,
+        color=color,
         legend=legend,
     )
 
@@ -2306,7 +2320,7 @@ def barplot(
         variables=dict(x=x, y=y, hue=hue, units=units),
         order=order,
         orient=orient,
-        require_numeric=False,
+        color=color,
         legend=legend,
     )
 
@@ -2444,7 +2458,9 @@ def pointplot(
         variables=dict(x=x, y=y, hue=hue, units=units),
         order=order,
         orient=orient,
-        require_numeric=False,
+        # Handle special backwards compatibility where pointplot originally
+        # did *not* default to multi-colored unless a palette was specified.
+        color="C0" if (color is None and palette is None) else color,
         legend=legend,
     )
 
@@ -2593,7 +2609,7 @@ def countplot(
         variables=dict(x=x, y=y, hue=hue),
         order=order,
         orient=orient,
-        require_numeric=False,
+        color=color,
         legend=legend,
     )
 
@@ -2739,16 +2755,19 @@ def catplot(
         elif x is not None and y is not None:
             raise ValueError("Cannot pass values for both `x` and `y`.")
 
+    if kind == "point" and palette is None and color is None:
+        # Handle special backwards compatibility where pointplot originally
+        # did *not* default to multi-colored unless a palette was specified.
+        color = "C0"
+
     p = Plotter(
         data=data,
         variables=dict(x=x, y=y, hue=hue, row=row, col=col, units=units),
         order=order,
         orient=orient,
-        require_numeric=False,
+        color=color,
         legend=legend,
     )
-
-    # XXX Copying a fair amount from displot, which is not ideal
 
     for var in ["row", "col"]:
         # Handle faceting variables that lack name information
@@ -3071,7 +3090,7 @@ def catplot(
         g._update_legend_data(ax)
         ax.legend_ = None
 
-    if legend and "hue" in p.variables:
+    if legend and "hue" in p.variables and p.input_format == "long":
         g.add_legend(title=p.variables.get("hue"), label_order=hue_order)
 
     if data is not None:

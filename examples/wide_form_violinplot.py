@@ -27,7 +27,7 @@ corr_df = corr_df.sort_index().T
 f, ax = plt.subplots(figsize=(11, 6))
 
 # Draw a violinplot with a narrower bandwidth than the default
-sns.violinplot(data=corr_df, bw_adjust=.5, cut=1, linewidth=1)
+sns.violinplot(data=corr_df, bw_adjust=.5, cut=1, linewidth=1, palette="Set3")
 
 # Finalize the figure
 ax.set(ylim=(-.7, 1.05))
