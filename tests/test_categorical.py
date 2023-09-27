@@ -1,5 +1,6 @@
 import itertools
 from functools import partial
+import warnings
 
 import numpy as np
 import pandas as pd
@@ -255,6 +256,15 @@ class SharedScatterTests(SharedAxesLevelTests):
         self.func(x=long_df["y"], c=long_df["y"], cmap=cmap)
         _draw_figure(ax.figure)
         assert_array_equal(ax.collections[0].get_facecolors(), colors)
+
+    def test_unfilled_marker(self, long_df):
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", UserWarning)
+            ax = self.func(long_df, x="y", y="a", marker="x", color="r")
+            for points in ax.collections:
+                assert same_color(points.get_facecolors().squeeze(), "r")
+                assert same_color(points.get_edgecolors().squeeze(), "r")
 
     @pytest.mark.parametrize(
         "orient,data_type", [
