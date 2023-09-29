@@ -1,5 +1,5 @@
-v0.13.0 (Unreleased)
---------------------
+v0.13.0 (September 2023)
+------------------------
 
 This is a major release with a number of important new features and changes. The highlight is a major overhaul to seaborn's categorical plotting functions, providing them with many new capabilities and better aligning their API with the rest of the library. There is also provisional support for alternate dataframe libraries like `polars <https://www.pola.rs>`_, a new theme and display configuration system for :class:`objects.Plot`, and many smaller bugfixes and enhancements.
 
@@ -34,8 +34,8 @@ Two related idiosyncratic color specifications are deprecated, but they will con
 
 Finally, like other seaborn functions, the default palette now depends on the variable type, and a sequential palette will be used with numeric data. To retain the previous behavior, pass the name of a qualitative palette (e.g., `palette="deep"` for seaborn's default). Accordingly, the functions have gained a parameter to control numeric color mappings (`hue_norm`).
 
-Other features, enhancements, and changes to categorical plots
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Other features, enhancements, and changes
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The following updates apply to multiple categorical functions.
 
