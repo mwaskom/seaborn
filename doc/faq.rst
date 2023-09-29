@@ -122,9 +122,9 @@ Several :ref:`seaborn functions <categorical_api>` are referred to as "categoric
 
 At the time these functions were written, matplotlib did not have any direct support for non-numeric data types. So seaborn internally builds a mapping from unique values in the data to 0-based integer indexes, which is what it passes to matplotlib. If your data are strings, that's great, and it more-or-less matches how `matplotlib now handles <https://matplotlib.org/stable/gallery/lines_bars_and_markers/categorical_variables.html>`_ string-typed data.
 
-But a potential gotcha is that these functions *always do this*, even if both the x and y variables are numeric. This gives rise to a number of confusing behaviors, especially when mixing categorical and non-categorical plots (e.g., a combo bar-and-line plot).
+But a potential gotcha is that these functions *always do this by default*, even if both the x and y variables are numeric. This gives rise to a number of confusing behaviors, especially when mixing categorical and non-categorical plots (e.g., a combo bar-and-line plot).
 
-The v0.12 release added a `native_scale` parameter to :func:`stripplot` and :func:`swarmplot`, which provides control over this behavior. It will be rolled out to other categorical functions in future releases. But the current behavior will almost certainly remain the default, so this is an important API wrinkle to understand.
+The v0.13 release added a `native_scale` parameter which provides control over this behavior. It is `False` by default, but setting it to `True` will preserve the original properties of the data used for categorical grouping.
 
 Specifying data
 ---------------

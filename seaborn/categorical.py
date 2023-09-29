@@ -27,6 +27,7 @@ from seaborn.utils import (
     _scatter_legend_artist,
     _version_predates,
 )
+from seaborn._compat import MarkerStyle
 from seaborn._statistics import EstimateAggregator, LetterValues
 from seaborn.palettes import light_palette
 from seaborn.axisgrid import FacetGrid, _facet_docs
@@ -481,6 +482,9 @@ class _CategoricalPlotter(VectorPlotter):
         ax = self.ax
         dodge_move = jitter_move = 0
 
+        if "marker" in plot_kws and not MarkerStyle(plot_kws["marker"]).is_filled():
+            plot_kws.pop("edgecolor", None)
+
         for sub_vars, sub_data in self.iter_data(iter_vars,
                                                  from_comp_data=True,
                                                  allow_empty=True):
@@ -521,6 +525,9 @@ class _CategoricalPlotter(VectorPlotter):
         point_collections = {}
         dodge_move = 0
 
+        if "marker" in plot_kws and not MarkerStyle(plot_kws["marker"]).is_filled():
+            plot_kws.pop("edgecolor", None)
+
         for sub_vars, sub_data in self.iter_data(iter_vars,
                                                  from_comp_data=True,
                                                  allow_empty=True):
@@ -534,6 +541,7 @@ class _CategoricalPlotter(VectorPlotter):
                 sub_data[self.orient] = sub_data[self.orient] + dodge_move
 
             self._invert_scale(ax, sub_data)
+
             points = ax.scatter(sub_data["x"], sub_data["y"], color=color, **plot_kws)
             if "hue" in self.variables:
                 points.set_facecolors(self._hue_map(sub_data["hue"]))
@@ -2755,17 +2763,14 @@ def catplot(
         elif x is not None and y is not None:
             raise ValueError("Cannot pass values for both `x` and `y`.")
 
-    if kind == "point" and palette is None and color is None:
-        # Handle special backwards compatibility where pointplot originally
-        # did *not* default to multi-colored unless a palette was specified.
-        color = "C0"
-
     p = Plotter(
         data=data,
         variables=dict(x=x, y=y, hue=hue, row=row, col=col, units=units),
         order=order,
         orient=orient,
-        color=color,
+        # Handle special backwards compatibility where pointplot originally
+        # did *not* default to multi-colored unless a palette was specified.
+        color="C0" if kind == "point" and palette is None and color is None else color,
         legend=legend,
     )
 

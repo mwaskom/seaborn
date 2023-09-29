@@ -1522,7 +1522,7 @@ class PairGrid(Grid):
         fixed_color = kwargs.pop("color", None)
 
         for var, ax in zip(self.diag_vars, self.diag_axes):
-            hue_grouped = self.data[var].groupby(self.hue_vals)
+            hue_grouped = self.data[var].groupby(self.hue_vals, observed=True)
 
             plot_kwargs = kwargs.copy()
             if str(func.__module__).startswith("seaborn"):
@@ -1629,7 +1629,7 @@ class PairGrid(Grid):
         else:
             axes_vars = [x_var, y_var]
 
-        hue_grouped = self.data.groupby(self.hue_vals)
+        hue_grouped = self.data.groupby(self.hue_vals, observed=True)
         for k, label_k in enumerate(self._hue_order):
 
             kws = kwargs.copy()
