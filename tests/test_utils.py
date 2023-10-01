@@ -145,13 +145,13 @@ class TestSpineUtils:
 
         utils.despine()
         for side in self.outer_sides:
-            assert ~ax.spines[side].get_visible()
+            assert not ax.spines[side].get_visible()
         for side in self.inner_sides:
             assert ax.spines[side].get_visible()
 
         utils.despine(**dict(zip(self.sides, [True] * 4)))
         for side in self.sides:
-            assert ~ax.spines[side].get_visible()
+            assert not ax.spines[side].get_visible()
 
     def test_despine_specific_axes(self):
         f, (ax1, ax2) = plt.subplots(2, 1)
@@ -162,7 +162,7 @@ class TestSpineUtils:
             assert ax1.spines[side].get_visible()
 
         for side in self.outer_sides:
-            assert ~ax2.spines[side].get_visible()
+            assert not ax2.spines[side].get_visible()
         for side in self.inner_sides:
             assert ax2.spines[side].get_visible()
 
