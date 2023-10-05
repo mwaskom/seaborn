@@ -200,10 +200,7 @@ def color_palette(palette=None, n_colors=None, desat=None, as_cmap=False):
 
         elif palette.lower() == "jet":
             # Paternalism
-            raise ValueError(
-                "No. Try `Spectral` or `turbo`.\n"
-                "https://seaborn.pydata.org/tutorial/color_palettes.html#other-diverging-palettes"
-            )
+            raise ValueError("No. Try `Spectral` or `turbo`.")
 
         elif palette.startswith("ch:"):
             # Cubehelix palette with params specified in string
