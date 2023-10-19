@@ -430,6 +430,19 @@ class TestPlotData:
             PlotData(mock_long_df, {"x": "x"})
 
     @pytest.mark.skipif(
+        condition=not hasattr(pd.api, "interchange"),
+        reason="Tests behavior assuming support for dataframe interchange"
+    )
+    def test_data_interchange_failure_with_fallback(self, mock_long_df, long_df):
+
+        mock_long_df._data = None  # Break __dataframe__()
+        mock_long_df.to_pandas = lambda: long_df
+        variables = {"x": "x", "y": "z", "color": "a"}
+        p = PlotData(mock_long_df, variables)
+        for var, col in variables.items():
+            assert_vector_equal(p.frame[var], long_df[col])
+
+    @pytest.mark.skipif(
         condition=hasattr(pd.api, "interchange"),
         reason="Tests graceful failure without support for dataframe interchange"
     )
