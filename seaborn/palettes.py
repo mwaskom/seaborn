@@ -60,7 +60,6 @@ QUAL_PALETTES = list(QUAL_PALETTE_SIZES.keys())
 
 class _ColorPalette(list):
     """Set the color palette in a with statement, otherwise be a list."""
-
     def __enter__(self):
         """Open the context."""
         from .rcmod import set_palette
@@ -94,7 +93,6 @@ class _ColorPalette(list):
 
 def _patch_colormap_display():
     """Simplify the rich display of matplotlib color maps in a notebook."""
-
     def _repr_png_(self):
         """Generate a PNG representation of the Colormap."""
         import io
