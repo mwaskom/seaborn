@@ -234,7 +234,11 @@ def color_palette(palette=None, n_colors=None, desat=None, as_cmap=False):
                 # Perhaps a named matplotlib colormap?
                 palette = mpl_palette(palette, n_colors, as_cmap=as_cmap)
             except (ValueError, KeyError):  # Error class changed in mpl36
-                valid_palettes = QUAL_PALETTES + list(mpl.colormaps)
+                valid_palettes = [
+                    cm for cm in
+                    QUAL_PALETTES + list(mpl.colormaps)
+                    if cm != 'jet'
+                ]
                 raise ValueError(
                     f"{palette!r} is not a valid palette name.\n"
                     f" Valid palettes include {valid_palettes}."
