@@ -60,6 +60,7 @@ QUAL_PALETTES = list(QUAL_PALETTE_SIZES.keys())
 
 class _ColorPalette(list):
     """Set the color palette in a with statement, otherwise be a list."""
+
     def __enter__(self):
         """Open the context."""
         from .rcmod import set_palette
@@ -93,6 +94,7 @@ class _ColorPalette(list):
 
 def _patch_colormap_display():
     """Simplify the rich display of matplotlib color maps in a notebook."""
+
     def _repr_png_(self):
         """Generate a PNG representation of the Colormap."""
         import io
@@ -234,7 +236,11 @@ def color_palette(palette=None, n_colors=None, desat=None, as_cmap=False):
                 # Perhaps a named matplotlib colormap?
                 palette = mpl_palette(palette, n_colors, as_cmap=as_cmap)
             except (ValueError, KeyError):  # Error class changed in mpl36
-                raise ValueError(f"{palette!r} is not a valid palette name")
+                valid_palettes = QUAL_PALETTES + list(mpl.colormaps)
+                raise ValueError(
+                    f"{palette!r} is not a valid palette name.\n"
+                    f" Valid palettes include {valid_palettes}."
+                )
 
     if desat is not None:
         palette = [desaturate(c, desat) for c in palette]
