@@ -316,14 +316,9 @@ def convert_dataframe_to_pandas(data: object) -> pd.DataFrame:
             try:
                 return data.to_pandas()  # type: ignore[attr-defined]
             except Exception:
-                msg = (
-                    "Encountered an exception when converting data source "
-                    "to a pandas DataFrame. See traceback above for details."
-                )
-                raise RuntimeError(msg) from err
-        else:
-            msg = (
-                "Encountered an exception when converting data source "
-                "to a pandas DataFrame. See traceback above for details."
-            )
-            raise RuntimeError(msg) from err
+                pass
+        msg = (
+            "Encountered an exception when converting data source "
+            "to a pandas DataFrame. See traceback above for details."
+        )
+        raise RuntimeError(msg) from err
