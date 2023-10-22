@@ -312,11 +312,12 @@ def convert_dataframe_to_pandas(data: object) -> pd.DataFrame:
         # in Plot.add(). But noting here in case this seems to be a bottleneck.
         return pd.api.interchange.from_dataframe(data)
     except Exception as err:
-        if hasattr(data, 'to_pandas'):
-            try:
-                return data.to_pandas()  # type: ignore[attr-defined]
-            except Exception:
-                pass
+        try:
+            # An object's own to_pandas method may be more flexible than the interchange
+            # See https://github.com/mwaskom/seaborn/pull/3534 for more context
+            return data.to_pandas()  # type: ignore[attr-defined]
+        except Exception:
+            pass
         msg = (
             "Encountered an exception when converting data source "
             "to a pandas DataFrame. See traceback above for details."
