@@ -2763,8 +2763,8 @@ def catplot(
         elif x is not None and y is not None:
             raise ValueError("Cannot pass values for both `x` and `y`.")
 
-    # Check for x and hue values are same
-    if x == hue:
+    # Check for x or y and hue values are same
+    if x == hue or y == hue:
         legend = False
 
     p = Plotter(
