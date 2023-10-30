@@ -2763,10 +2763,6 @@ def catplot(
         elif x is not None and y is not None:
             raise ValueError("Cannot pass values for both `x` and `y`.")
 
-    # Check for x or y and hue values are same
-    if x == hue or y == hue:
-        legend = False
-
     p = Plotter(
         data=data,
         variables=dict(x=x, y=y, hue=hue, row=row, col=col, units=units),
@@ -3100,7 +3096,18 @@ def catplot(
         ax.legend_ = None
 
     if legend and "hue" in p.variables and p.input_format == "long":
-        g.add_legend(title=p.variables.get("hue"), label_order=hue_order)
+        # Obtaining the column names for hue, x, and y.
+        hue_value = p.variables.get("hue")
+        x_value = p.variables.get("x")
+        y_value = p.variables.get("y")
+        # Obtaining the datatype of hue
+        hue_type = p.var_types.get("hue")
+        if legend == 'auto' and hue_value in {x_value, y_value} and hue_type != 'numeric':
+            # Setting the title of hue to None if hue matches "x" or "y", or if the data type of "hue" is numeric.
+            title_hue = None
+        else:
+            title_hue = hue_value
+        g.add_legend(title=title_hue, label_order=hue_order)
 
     if data is not None:
         # Replace the dataframe on the FacetGrid for any subsequent maps
