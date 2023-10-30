@@ -3102,8 +3102,10 @@ def catplot(
         y_value = p.variables.get("y")
         # Obtaining the datatype of hue
         hue_type = p.var_types.get("hue")
-        if legend == 'auto' and hue_value in {x_value, y_value} and hue_type != 'numeric':
-            # Setting the title of hue to None if hue matches "x" or "y", or if the data type of "hue" is numeric.
+        if legend == 'auto' and hue_value in {x_value, y_value} \
+                and hue_type != 'numeric':
+            # Setting the title of hue to None if hue matches "x" or
+            # "y", or if the data type of "hue" is numeric.
             title_hue = None
         else:
             title_hue = hue_value
