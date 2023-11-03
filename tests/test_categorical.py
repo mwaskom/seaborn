@@ -3125,6 +3125,10 @@ class TestCatPlot(CategoricalFixture):
         with pytest.raises(ValueError, match="Invalid `kind`: 'wrong'"):
             catplot(long_df, kind="wrong")
 
+    def test_no_legend_with_auto(self):
+
+        g = catplot(self.df, x="g", y="y", hue="g", legend='auto')
+        assert g._legend is None
 
 class TestBeeswarm:
 
