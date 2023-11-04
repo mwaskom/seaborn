@@ -2831,7 +2831,8 @@ def catplot(
             color = desaturate(color, saturation)
 
     if kind in ["strip", "swarm"]:
-        edgecolor = p._complement_color(
+        kwargs = _normalize_kwargs(kwargs, mpl.collections.PathCollection)
+        kwargs["edgecolor"] = p._complement_color(
             kwargs.pop("edgecolor", default), color, p._hue_map
         )
 
@@ -2844,7 +2845,6 @@ def catplot(
 
         jitter = kwargs.pop("jitter", True)
         plot_kws = kwargs.copy()
-        plot_kws["edgecolor"] = edgecolor
         plot_kws.setdefault("zorder", 3)
         plot_kws.setdefault("linewidth", 0)
         if "s" not in plot_kws:
@@ -2861,7 +2861,6 @@ def catplot(
 
         warn_thresh = kwargs.pop("warn_thresh", .05)
         plot_kws = kwargs.copy()
-        plot_kws["edgecolor"] = edgecolor
         plot_kws.setdefault("zorder", 3)
         if "s" not in plot_kws:
             plot_kws["s"] = plot_kws.pop("size", 5) ** 2
