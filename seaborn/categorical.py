@@ -2830,7 +2830,10 @@ def catplot(
         if saturation < 1:
             color = desaturate(color, saturation)
 
-    edgecolor = p._complement_color(kwargs.pop("edgecolor", default), color, p._hue_map)
+    if kind in ["strip", "swarm"]:
+        edgecolor = p._complement_color(
+            kwargs.pop("edgecolor", default), color, p._hue_map
+        )
 
     width = kwargs.pop("width", 0.8)
     dodge = kwargs.pop("dodge", False if kind in undodged_kinds else "auto")
