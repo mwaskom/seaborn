@@ -52,6 +52,11 @@ def test_variable_type():
     assert variable_type(s, boolean_type="categorical") == "categorical"
     assert variable_type(s, boolean_type="boolean") == "boolean"
 
+    # This should arguably be datmetime, but we don't currently handle it correctly
+    # Test is mainly asserting that this doesn't fail on the boolean check.
+    s = pd.timedelta_range(1, periods=3, freq="D").to_series()
+    assert variable_type(s) == "categorical"
+
     s_cat = s.astype("category")
     assert variable_type(s_cat, boolean_type="categorical") == "categorical"
     assert variable_type(s_cat, boolean_type="numeric") == "categorical"
@@ -60,6 +65,9 @@ def test_variable_type():
     s = pd.Series([1, 0, 0])
     assert variable_type(s, boolean_type="boolean") == "boolean"
     assert variable_type(s, boolean_type="boolean", strict_boolean=True) == "numeric"
+
+    s = pd.Series([1, 0, 0])
+    assert variable_type(s, boolean_type="boolean") == "boolean"
 
     s = pd.Series([pd.Timestamp(1), pd.Timestamp(2)])
     assert variable_type(s) == "datetime"
