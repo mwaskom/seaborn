@@ -2307,7 +2307,7 @@ class TestBarPlot(SharedAggTests):
             dict(data="long", x="a", y="y", errorbar=("pi", 50)),
             dict(data="long", x="a", y="y", errorbar=None),
             dict(data="long", x="a", y="y", capsize=.3, err_kws=dict(c="k")),
-            dict(data="long", x="a", y="y", color="blue", ec="green", alpha=.5),
+            dict(data="long", x="a", y="y", color="blue", edgecolor="green", alpha=.5),
         ]
     )
     def test_vs_catplot(self, long_df, wide_df, null_df, flat_series, kwargs):
