@@ -1520,8 +1520,13 @@ def variable_type(vector, boolean_type="numeric"):
         warnings.simplefilter(
             action='ignore', category=(FutureWarning, DeprecationWarning)
         )
-        if np.isin(vector, [0, 1]).all():
-            return VariableType(boolean_type)
+        try:
+            if np.isin(vector, [0, 1]).all():
+                return VariableType(boolean_type)
+        except TypeError:
+            # .isin comparison is not guaranteed to be possible under NumPy
+            # casting rules, depending on the (unknown) dtype of 'vector'
+            pass
 
     # Defer to positive pandas tests
     if pd.api.types.is_numeric_dtype(vector):

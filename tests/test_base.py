@@ -1508,6 +1508,11 @@ class TestCoreFunc:
         assert variable_type(s.to_numpy()) == "categorical"
         assert variable_type(s.to_list()) == "categorical"
 
+        # This should arguably be datmetime, but we don't currently handle it correctly
+        # Test is mainly asserting that this doesn't fail on the boolean check.
+        s = pd.timedelta_range(1, periods=3, freq="D").to_series()
+        assert variable_type(s) == "categorical"
+
         s = pd.Series([True, False, False])
         assert variable_type(s) == "numeric"
         assert variable_type(s, boolean_type="categorical") == "categorical"
