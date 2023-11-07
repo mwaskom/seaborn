@@ -144,7 +144,7 @@ class Subplots:
         pair_spec: PairSpec,
         pyplot: bool = False,
         figure_kws: dict | None = None,
-        target: Axes | Figure | SubFigure = None,
+        target: Axes | Figure | SubFigure | None = None,
     ) -> Figure:
         """Initialize matplotlib objects and add seaborn-relevant metadata."""
         # TODO reduce need to pass pair_spec here?

@@ -810,6 +810,7 @@ class Plot:
         *,
         size: tuple[float, float] | Default = default,
         engine: str | None | Default = default,
+        corners: tuple[float, float, float, float] | Default = default,
     ) -> Plot:
         """
         Control the figure size and layout.
@@ -828,6 +829,10 @@ class Plot:
         engine : {{"tight", "constrained", None}}
             Name of method for automatically adjusting the layout to remove overlap.
             The default depends on whether :meth:`Plot.on` is used.
+        corners : (left, bottom, right, top)
+            Position of the layout corners, in fractions of the figure size.
+            Corners are inclusive of axis decorations when using a layout engine,
+            but they are exclusive when `engine=None`.
 
         Examples
         --------
@@ -845,6 +850,8 @@ class Plot:
             new._figure_spec["figsize"] = size
         if engine is not default:
             new._layout_spec["engine"] = engine
+        if corners is not default:
+            new._layout_spec["corners"] = corners
 
         return new
 
@@ -1793,12 +1800,32 @@ class Plotter:
                 if axis_key in self._scales:  # TODO when would it not be?
                     self._scales[axis_key]._finalize(p, axis_obj)
 
-        if (engine := p._layout_spec.get("engine", default)) is not default:
+        if (engine_name := p._layout_spec.get("engine", default)) is not default:
             # None is a valid arg for Figure.set_layout_engine, hence `default`
-            set_layout_engine(self._figure, engine)
+            set_layout_engine(self._figure, engine_name)
         elif p._target is None:
             # Don't modify the layout engine if the user supplied their own
             # matplotlib figure and didn't specify an engine through Plot
             # TODO switch default to "constrained"?
             # TODO either way, make configurable
             set_layout_engine(self._figure, "tight")
+
+        if (corners := p._layout_spec.get("corners")) is not None:
+            engine = self._figure.get_layout_engine()
+            if engine is None:
+                self._figure.subplots_adjust(*corners)
+            else:
+                # Note the different parameterization for the layout engine rect...
+                left, bottom, right, top = corners
+                width, height = right - left, top - bottom
+                try:
+                    # The base LayoutEngine.set method doesn't have rect= so we need
+                    # to avoid typechecking this statement. We also catch a TypeError
+                    # as a plugin LayoutEngine may not support it either.
+                    # Alternatively we could guard this with a check on the engine type,
+                    # but that would make later-developed engines would un-useable.
+                    engine.set(rect=[left, bottom, width, height])  # type: ignore
+                except TypeError:
+                    # Should we warn / raise? Note that we don't expect to get here
+                    # under any normal circumstances.
+                    pass
