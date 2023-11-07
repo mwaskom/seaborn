@@ -1091,11 +1091,19 @@ class TestPlotting:
         p = Plot().layout(size=size).plot()
         assert tuple(p._figure.get_size_inches()) == size
 
+    @pytest.mark.skipif(
+        _version_predates(mpl, "3.6"),
+        reason="mpl<3.6 does not have get_layout_engine",
+    )
     def test_layout_extent(self):
 
         p = Plot().layout(extent=(.1, .2, .6, 1)).plot()
         assert p._figure.get_layout_engine().get()["rect"] == [.1, .2, .5, .8]
 
+    @pytest.mark.skipif(
+        _version_predates(mpl, "3.6"),
+        reason="mpl<3.6 does not have get_layout_engine",
+    )
     def test_constrained_layout_extent(self):
 
         p = Plot().layout(engine="constrained", extent=(.1, .2, .6, 1)).plot()
