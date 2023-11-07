@@ -810,7 +810,7 @@ class Plot:
         *,
         size: tuple[float, float] | Default = default,
         engine: str | None | Default = default,
-        corners: tuple[float, float, float, float] | Default = default,
+        extent: tuple[float, float, float, float] | Default = default,
     ) -> Plot:
         """
         Control the figure size and layout.
@@ -829,10 +829,10 @@ class Plot:
         engine : {{"tight", "constrained", None}}
             Name of method for automatically adjusting the layout to remove overlap.
             The default depends on whether :meth:`Plot.on` is used.
-        corners : (left, bottom, right, top)
-            Position of the layout corners, in fractions of the figure size.
-            Corners are inclusive of axis decorations when using a layout engine,
-            but they are exclusive when `engine=None`.
+        extent : (left, bottom, right, top)
+            Boundaries of the plot layout, in fractions of the figure size.
+            Note: the extent includes of axis decorations when using a layout engine,
+            but it is exclusive when `engine=None`.
 
         Examples
         --------
@@ -850,8 +850,8 @@ class Plot:
             new._figure_spec["figsize"] = size
         if engine is not default:
             new._layout_spec["engine"] = engine
-        if corners is not default:
-            new._layout_spec["corners"] = corners
+        if extent is not default:
+            new._layout_spec["extent"] = extent
 
         return new
 
@@ -1810,13 +1810,13 @@ class Plotter:
             # TODO either way, make configurable
             set_layout_engine(self._figure, "tight")
 
-        if (corners := p._layout_spec.get("corners")) is not None:
+        if (extent := p._layout_spec.get("extent")) is not None:
             engine = self._figure.get_layout_engine()
             if engine is None:
-                self._figure.subplots_adjust(*corners)
+                self._figure.subplots_adjust(*extent)
             else:
                 # Note the different parameterization for the layout engine rect...
-                left, bottom, right, top = corners
+                left, bottom, right, top = extent
                 width, height = right - left, top - bottom
                 try:
                     # The base LayoutEngine.set method doesn't have rect= so we need

@@ -1091,19 +1091,19 @@ class TestPlotting:
         p = Plot().layout(size=size).plot()
         assert tuple(p._figure.get_size_inches()) == size
 
-    def test_layout_corners(self):
+    def test_layout_extent(self):
 
-        p = Plot().layout(corners=(.1, .2, .6, 1)).plot()
+        p = Plot().layout(extent=(.1, .2, .6, 1)).plot()
         assert p._figure.get_layout_engine().get()["rect"] == [.1, .2, .5, .8]
 
-    def test_constrained_layout_corners(self):
+    def test_constrained_layout_extent(self):
 
-        p = Plot().layout(engine="constrained", corners=(.1, .2, .6, 1)).plot()
+        p = Plot().layout(engine="constrained", extent=(.1, .2, .6, 1)).plot()
         assert p._figure.get_layout_engine().get()["rect"] == [.1, .2, .5, .8]
 
-    def test_base_layout_corners(self):
+    def test_base_layout_extent(self):
 
-        p = Plot().layout(engine=None, corners=(.1, .2, .6, 1)).plot()
+        p = Plot().layout(engine=None, extent=(.1, .2, .6, 1)).plot()
         assert p._figure.subplotpars.left == 0.1
         assert p._figure.subplotpars.right == 0.6
         assert p._figure.subplotpars.bottom == 0.2
