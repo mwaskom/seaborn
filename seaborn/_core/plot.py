@@ -826,13 +826,14 @@ class Plot:
         size : (width, height)
             Size of the resulting figure, in inches. Size is inclusive of legend when
             using pyplot, but not otherwise.
-        engine : {{"tight", "constrained", None}}
+        engine : {{"tight", "constrained", "none"}}
             Name of method for automatically adjusting the layout to remove overlap.
             The default depends on whether :meth:`Plot.on` is used.
         extent : (left, bottom, right, top)
-            Boundaries of the plot layout, in fractions of the figure size.
-            Note: the extent includes of axis decorations when using a layout engine,
-            but it is exclusive when `engine=None`.
+            Boundaries of the plot layout, in fractions of the figure size. Takes
+            effect through the layout engine; exact results will vary across engines.
+            Note: the extent includes axis decorations when using a layout engine,
+            but it is exclusive of them when `engine="none"`.
 
         Examples
         --------
