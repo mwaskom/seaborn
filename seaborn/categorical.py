@@ -626,7 +626,7 @@ class _CategoricalPlotter(VectorPlotter):
 
             grouped = sub_data.groupby(self.orient)[value_var]
             value_data = [x.to_numpy() for _, x in grouped]
-            stats = pd.DataFrame(mpl.cbook.boxplot_stats(value_data, whis=whis, 
+            stats = pd.DataFrame(mpl.cbook.boxplot_stats(value_data, whis=whis,
                                                          bootstrap=bootstrap))
             positions = grouped.grouper.result_index.to_numpy(dtype=float)
 
