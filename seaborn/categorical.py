@@ -600,7 +600,7 @@ class _CategoricalPlotter(VectorPlotter):
 
         if not fill and linewidth is None:
             linewidth = mpl.rcParams["lines.linewidth"]
-
+        bootstrap = plot_kws.pop("bootstrap", mpl.rcParams["boxplot.bootstrap"])
         plot_kws.setdefault("shownotches", plot_kws.pop("notch", False))
 
         box_artist = mpl.patches.Rectangle if fill else mpl.lines.Line2D
@@ -626,7 +626,8 @@ class _CategoricalPlotter(VectorPlotter):
 
             grouped = sub_data.groupby(self.orient)[value_var]
             value_data = [x.to_numpy() for _, x in grouped]
-            stats = pd.DataFrame(mpl.cbook.boxplot_stats(value_data, whis=whis))
+            stats = pd.DataFrame(mpl.cbook.boxplot_stats(value_data, whis=whis,
+                                                         bootstrap=bootstrap))
             positions = grouped.grouper.result_index.to_numpy(dtype=float)
 
             orig_width = width * self._native_width
