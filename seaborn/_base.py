@@ -933,7 +933,10 @@ class VectorPlotter:
 
             grouping_keys = []
             for var in grouping_vars:
-                grouping_keys.append(levels.get(var, []))
+                if key := levels.get(var):
+                    grouping_keys.append(key)
+                else:
+                    grouping_keys.append([])
 
             iter_keys = itertools.product(*grouping_keys)
             if reverse:
