@@ -14,3 +14,4 @@ htmlcov/
 .DS_Store
 notes/
 notebooks/
+.venv/

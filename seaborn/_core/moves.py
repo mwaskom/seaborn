@@ -1,6 +1,6 @@
 from __future__ import annotations
 from dataclasses import dataclass
-from typing import ClassVar, Callable, Optional, Union, cast
+from typing import ClassVar, Callable, Optional, Union, cast, Any, Dict
 
 import numpy as np
 from pandas import DataFrame
@@ -19,7 +19,11 @@ class Move:
     group_by_orient: ClassVar[bool] = True
 
     def __call__(
-        self, data: DataFrame, groupby: GroupBy, orient: str, scales: dict[str, Scale],
+        self,
+        data: DataFrame,
+        groupby: GroupBy,
+        orient: str,
+        scales: dict[str, Scale],
     ) -> DataFrame:
         raise NotImplementedError
 
@@ -45,20 +49,24 @@ class Jitter(Move):
     .. include:: ../docstrings/objects.Jitter.rst
 
     """
+
     width: float | Default = default
     x: float = 0
     y: float = 0
     seed: int | None = None
 
     def __call__(
-        self, data: DataFrame, groupby: GroupBy, orient: str, scales: dict[str, Scale],
+        self,
+        data: DataFrame,
+        groupby: GroupBy,
+        orient: str,
+        scales: dict[str, Scale],
     ) -> DataFrame:
-
         data = data.copy()
         rng = np.random.default_rng(self.seed)
 
         def jitter(data, col, scale):
-            noise = rng.uniform(-.5, +.5, len(data))
+            noise = rng.uniform(-0.5, +0.5, len(data))
             offsets = noise * scale
             return data[col] + offsets
 
@@ -95,6 +103,7 @@ class Dodge(Move):
     .. include:: ../docstrings/objects.Dodge.rst
 
     """
+
     empty: str = "keep"  # Options: keep, drop, fill
     gap: float = 0
 
@@ -104,9 +113,12 @@ class Dodge(Move):
     by: Optional[list[str]] = None
 
     def __call__(
-        self, data: DataFrame, groupby: GroupBy, orient: str, scales: dict[str, Scale],
+        self,
+        data: DataFrame,
+        groupby: GroupBy,
+        orient: str,
+        scales: dict[str, Scale],
     ) -> DataFrame:
-
         grouping_vars = [v for v in groupby.order if v in data]
         groups = groupby.agg(data, {"width": "max"})
         if self.empty == "fill":
@@ -140,8 +152,7 @@ class Dodge(Move):
         groups["width"] = new_widths
 
         out = (
-            data
-            .drop("width", axis=1)
+            data.drop("width", axis=1)
             .merge(groups, on=grouping_vars, how="left")
             .drop(orient, axis=1)
             .rename(columns={"_dodged": orient})
@@ -160,10 +171,10 @@ class Stack(Move):
     .. include:: ../docstrings/objects.Stack.rst
 
     """
+
     # TODO center? (or should this be a different move, eg. Stream())
 
     def _stack(self, df, orient):
-
         # TODO should stack do something with ymin/ymax style marks?
         # Should there be an upstream conversion to baseline/height parameterization?
 
@@ -181,9 +192,12 @@ class Stack(Move):
         return df
 
     def __call__(
-        self, data: DataFrame, groupby: GroupBy, orient: str, scales: dict[str, Scale],
+        self,
+        data: DataFrame,
+        groupby: GroupBy,
+        orient: str,
+        scales: dict[str, Scale],
     ) -> DataFrame:
-
         # TODO where to ensure that other semantic variables are sorted properly?
         # TODO why are we not using the passed in groupby here?
         groupers = ["col", "row", orient]
@@ -205,13 +219,17 @@ class Shift(Move):
     .. include:: ../docstrings/objects.Shift.rst
 
     """
+
     x: float = 0
     y: float = 0
 
     def __call__(
-        self, data: DataFrame, groupby: GroupBy, orient: str, scales: dict[str, Scale],
+        self,
+        data: DataFrame,
+        groupby: GroupBy,
+        orient: str,
+        scales: dict[str, Scale],
     ) -> DataFrame:
-
         data = data.copy(deep=False)
         data["x"] = data["x"] + self.x
         data["y"] = data["y"] + self.y
@@ -248,7 +266,6 @@ class Norm(Move):
     group_by_orient: ClassVar[bool] = False
 
     def _norm(self, df, var):
-
         if self.where is None:
             denom_data = df[var]
         else:
@@ -261,9 +278,12 @@ class Norm(Move):
         return df
 
     def __call__(
-        self, data: DataFrame, groupby: GroupBy, orient: str, scales: dict[str, Scale],
+        self,
+        data: DataFrame,
+        groupby: GroupBy,
+        orient: str,
+        scales: dict[str, Scale],
     ) -> DataFrame:
-
         other = {"x": "y", "y": "x"}[orient]
         return groupby.apply(data, self._norm, other)
 
@@ -272,3 +292,59 @@ class Norm(Move):
 # @dataclass
 # class Ridge(Move):
 #     ...
+# Custom additions to the seaborn._core._moves namespace
+import operator
+import pandas as pd
+#from seaborn._core.moves import Move
+import dataclasses
+
+@dataclass
+class Rolling(Move):
+    """
+    Apply a rolling window calculation to the data.
+
+    Parameters
+    ----------
+    window : int
+        Size of the moving window.
+    window_type : str | None
+        The type of window to use (e.g., 'triang', 'blackman', 'hamming', 'bartlett').
+    window_kwargs : dict[str, Any]
+        Additional keyword arguments to pass to the rolling window function.
+    agg : str
+        Aggregation function to use ('mean', 'sum', etc.).
+
+    Examples
+    --------
+    .. include:: ../docstrings/objects.Rolling.rst
+
+    """
+
+    window: int = 2
+    window_type: Union[str, None] = None
+    window_kwargs: Dict[str, Any] = dataclasses.field(default_factory=dict)
+    agg: str = "mean"
+
+    group_by_orient: ClassVar[bool] = False
+
+    def _rolling(self, df: pd.DataFrame, var: str) -> pd.DataFrame:
+        aggregate = operator.methodcaller(self.agg, **self.window_kwargs)
+        df[var] = aggregate(
+            df[var].rolling(
+                window=self.window,
+                min_periods=1,
+                win_type=self.window_type,
+                closed="neither",
+            )
+        )
+        return df
+
+    def __call__(
+        self,
+        data: pd.DataFrame,
+        groupby: GroupBy,
+        orient: str,
+        scales: Dict[str, Scale],
+    ) -> pd.DataFrame:
+        other = {"x": "y", "y": "x"}[orient]
+        return groupby.apply(data, self._rolling, other)
