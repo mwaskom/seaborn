@@ -12,6 +12,7 @@ seaborn: statistical data visualization
 [![Code Coverage](https://codecov.io/gh/mwaskom/seaborn/branch/master/graph/badge.svg)](https://codecov.io/gh/mwaskom/seaborn)
 
 Seaborn is a Python visualization library based on matplotlib. It provides a high-level interface for drawing attractive statistical graphics.
+It builds on top of matplotlib and integrates closely with pandas data structures. Seaborn helps you explore and understand your data.
 
 
 Documentation
