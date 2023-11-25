@@ -167,6 +167,11 @@ def null_df(rng, long_df):
 
 
 @pytest.fixture
+def empty_df(long_df):
+    return long_df.drop(long_df.index)
+
+
+@pytest.fixture
 def object_df(rng, long_df):
 
     df = long_df.copy()

@@ -1219,7 +1219,7 @@ class TestLinePlotter(SharedAxesLevelTests, Helpers):
         wide_df, wide_array,
         wide_list_of_series, wide_list_of_arrays, wide_list_of_lists,
         flat_array, flat_series, flat_list,
-        long_df, null_df, object_df
+        long_df, null_df, object_df, empty_df
     ):
 
         f, ax = plt.subplots()
@@ -1300,6 +1300,9 @@ class TestLinePlotter(SharedAxesLevelTests, Helpers):
         ax.clear()
 
         lineplot(x="x", y="y", hue="f", size="s", data=object_df)
+        ax.clear()
+
+        lineplot(x="x", y="y", hue="a", data=empty_df)
         ax.clear()
 
     def test_ci_deprecation(self, long_df):
