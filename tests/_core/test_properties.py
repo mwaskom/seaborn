@@ -250,9 +250,8 @@ class TestColor(DataFixtures):
         assert f("#123456") == to_rgb("#123456")
         assert f("#12345678") == to_rgba("#12345678")
 
-        if not _version_predates(mpl, "3.4.0"):
-            assert f("#123") == to_rgb("#123")
-            assert f("#1234") == to_rgba("#1234")
+        assert f("#123") == to_rgb("#123")
+        assert f("#1234") == to_rgba("#1234")
 
 
 class ObjectPropertyBase(DataFixtures):

@@ -170,11 +170,8 @@ class Bar(BarBase):
                 ax.add_patch(bar)
 
             # Add a container which is useful for, e.g. Axes.bar_label
-            if _version_predates(mpl, "3.4"):
-                container_kws = {}
-            else:
-                orientation = {"x": "vertical", "y": "horizontal"}[orient]
-                container_kws = dict(datavalues=vals, orientation=orientation)
+            orientation = {"x": "vertical", "y": "horizontal"}[orient]
+            container_kws = dict(datavalues=vals, orientation=orientation)
             container = mpl.container.BarContainer(bars, **container_kws)
             ax.add_container(container)
 
