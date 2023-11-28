@@ -16,7 +16,6 @@ except ImportError:
     _no_statsmodels = True
 
 from seaborn import regression as lm
-from seaborn.utils import _version_predates
 from seaborn.palettes import color_palette
 
 rs = np.random.RandomState(0)

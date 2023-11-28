@@ -7,7 +7,6 @@ from matplotlib.colors import same_color, to_rgb, to_rgba
 import pytest
 from numpy.testing import assert_array_equal
 
-from seaborn.utils import _version_predates
 from seaborn._core.rules import categorical_order
 from seaborn._core.scales import Nominal, Continuous, Boolean
 from seaborn._core.properties import (

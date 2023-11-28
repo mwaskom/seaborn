@@ -16,7 +16,6 @@ from seaborn._marks.base import (
     resolve_color,
     document_properties
 )
-from seaborn.utils import _version_predates
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:

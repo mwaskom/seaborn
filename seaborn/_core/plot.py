@@ -27,7 +27,7 @@ from seaborn._marks.base import Mark
 from seaborn._stats.base import Stat
 from seaborn._core.data import PlotData
 from seaborn._core.moves import Move
-from seaborn._core.scales import Scale, Nominal
+from seaborn._core.scales import Scale
 from seaborn._core.subplots import Subplots
 from seaborn._core.groupby import GroupBy
 from seaborn._core.properties import PROPERTIES, Property
@@ -43,7 +43,6 @@ from seaborn._core.rules import categorical_order
 from seaborn._compat import set_layout_engine
 from seaborn.rcmod import axes_style, plotting_context
 from seaborn.palettes import color_palette
-from seaborn.utils import _version_predates
 
 from typing import TYPE_CHECKING, TypedDict
 if TYPE_CHECKING:
