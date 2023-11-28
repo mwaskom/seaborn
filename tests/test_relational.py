@@ -1302,6 +1302,9 @@ class TestLinePlotter(SharedAxesLevelTests, Helpers):
         lineplot(x="x", y="y", hue="f", size="s", data=object_df)
         ax.clear()
 
+        lineplot(x="x", y="y", hue="a", data=long_df.iloc[:0])
+        ax.clear()
+
     def test_ci_deprecation(self, long_df):
 
         axs = plt.figure().subplots(2)
