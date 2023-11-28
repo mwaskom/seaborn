@@ -176,10 +176,7 @@ class Subplots:
             self._figure = target.figure
             return self._figure
 
-        elif (
-            hasattr(mpl.figure, "SubFigure")  # Added in mpl 3.4
-            and isinstance(target, mpl.figure.SubFigure)
-        ):
+        elif isinstance(target, mpl.figure.SubFigure):
             figure = target.figure
         elif isinstance(target, mpl.figure.Figure):
             figure = target

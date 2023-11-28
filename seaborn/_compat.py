@@ -67,24 +67,6 @@ def norm_from_scale(scale, norm):
     return new_norm
 
 
-def scale_factory(scale, axis, **kwargs):
-    """
-    Backwards compatability for creation of independent scales.
-
-    Matplotlib scales require an Axis object for instantiation on < 3.4.
-    But the axis is not used, aside from extraction of the axis_name in LogScale.
-
-    """
-    if isinstance(scale, str):
-        class Axis:
-            axis_name = axis
-        axis = Axis()
-
-    scale = mpl.scale.scale_factory(scale, axis, **kwargs)
-
-    return scale
-
-
 def get_colormap(name):
     """Handle changes to matplotlib colormap interface in 3.6."""
     try:
