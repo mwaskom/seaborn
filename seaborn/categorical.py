@@ -1577,6 +1577,10 @@ def boxplot(
     fliersize=None, hue_norm=None, native_scale=False, log_scale=None, formatter=None,
     legend="auto", ax=None, **kwargs
 ):
+    
+    if "positions" in kwargs:
+        msg = "boxplot() does not support parameter 'positions'. Consider to use native_scale=True and specify positions via parameter 'x'."
+        raise ValueError(msg)
 
     p = _CategoricalPlotter(
         data=data,
