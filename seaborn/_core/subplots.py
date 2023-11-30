@@ -158,11 +158,8 @@ class Subplots:
                 err = " ".join([
                     "Cannot create multiple subplots after calling `Plot.on` with",
                     f"a {mpl.axes.Axes} object.",
+                    f" You may want to use a {mpl.figure.SubFigure} instead.",
                 ])
-                try:
-                    err += f" You may want to use a {mpl.figure.SubFigure} instead."
-                except AttributeError:  # SubFigure added in mpl 3.4
-                    pass
                 raise RuntimeError(err)
 
             self._subplot_list = [{
@@ -179,10 +176,7 @@ class Subplots:
             self._figure = target.figure
             return self._figure
 
-        elif (
-            hasattr(mpl.figure, "SubFigure")  # Added in mpl 3.4
-            and isinstance(target, mpl.figure.SubFigure)
-        ):
+        elif isinstance(target, mpl.figure.SubFigure):
             figure = target.figure
         elif isinstance(target, mpl.figure.Figure):
             figure = target

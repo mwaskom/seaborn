@@ -579,10 +579,6 @@ class TestScaling:
         assert_vector_equal(m.passed_data[0]["x"], pd.Series([0., 1.], [0, 1]))
         assert_vector_equal(m.passed_data[1]["x"], pd.Series([0., 1.], [0, 1]))
 
-    @pytest.mark.xfail(
-        _version_predates(mpl, "3.4.0"),
-        reason="Sharing paired categorical axes requires matplotlib>3.4.0"
-    )
     def test_pair_categories_shared(self):
 
         data = [("a", "a"), ("b", "c")]
@@ -1115,10 +1111,6 @@ class TestPlotting:
         assert m.passed_axes == f.axes
         assert p._figure is f
 
-    @pytest.mark.skipif(
-        _version_predates(mpl, "3.4"),
-        reason="mpl<3.4 does not have SubFigure",
-    )
     @pytest.mark.parametrize("facet", [True, False])
     def test_on_subfigure(self, facet):
 

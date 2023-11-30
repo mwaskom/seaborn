@@ -27,7 +27,7 @@ from seaborn._marks.base import Mark
 from seaborn._stats.base import Stat
 from seaborn._core.data import PlotData
 from seaborn._core.moves import Move
-from seaborn._core.scales import Scale, Nominal
+from seaborn._core.scales import Scale
 from seaborn._core.subplots import Subplots
 from seaborn._core.groupby import GroupBy
 from seaborn._core.properties import PROPERTIES, Property
@@ -40,10 +40,9 @@ from seaborn._core.typing import (
 )
 from seaborn._core.exceptions import PlotSpecError
 from seaborn._core.rules import categorical_order
-from seaborn._compat import set_scale_obj, set_layout_engine
+from seaborn._compat import set_layout_engine
 from seaborn.rcmod import axes_style, plotting_context
 from seaborn.palettes import color_palette
-from seaborn.utils import _version_predates
 
 from typing import TYPE_CHECKING, TypedDict
 if TYPE_CHECKING:
@@ -462,16 +461,12 @@ class Plot:
 
         """
         accepted_types: tuple  # Allow tuple of various length
-        if hasattr(mpl.figure, "SubFigure"):  # Added in mpl 3.4
-            accepted_types = (
-                mpl.axes.Axes, mpl.figure.SubFigure, mpl.figure.Figure
-            )
-            accepted_types_str = (
-                f"{mpl.axes.Axes}, {mpl.figure.SubFigure}, or {mpl.figure.Figure}"
-            )
-        else:
-            accepted_types = mpl.axes.Axes, mpl.figure.Figure
-            accepted_types_str = f"{mpl.axes.Axes} or {mpl.figure.Figure}"
+        accepted_types = (
+            mpl.axes.Axes, mpl.figure.SubFigure, mpl.figure.Figure
+        )
+        accepted_types_str = (
+            f"{mpl.axes.Axes}, {mpl.figure.SubFigure}, or {mpl.figure.Figure}"
+        )
 
         if not isinstance(target, accepted_types):
             err = (
@@ -1369,19 +1364,6 @@ class Plotter:
                 share_state = self._subplots.subplot_spec[f"share{axis}"]
                 subplots = [view for view in self._subplots if view[axis] == coord]
 
-            # Shared categorical axes are broken on matplotlib<3.4.0.
-            # https://github.com/matplotlib/matplotlib/pull/18308
-            # This only affects us when sharing *paired* axes. This is a novel/niche
-            # behavior, so we will raise rather than hack together a workaround.
-            if axis is not None and _version_predates(mpl, "3.4"):
-                paired_axis = axis in p._pair_spec.get("structure", {})
-                cat_scale = isinstance(scale, Nominal)
-                ok_dim = {"x": "col", "y": "row"}[axis]
-                shared_axes = share_state not in [False, "none", ok_dim]
-                if paired_axis and cat_scale and shared_axes:
-                    err = "Sharing paired categorical axes requires matplotlib>=3.4.0"
-                    raise RuntimeError(err)
-
             if scale is None:
                 self._scales[var] = Scale._identity()
             else:
@@ -1407,7 +1389,7 @@ class Plotter:
                 axis_obj = getattr(view["ax"], f"{axis}axis")
                 seed_values = self._get_subplot_data(var_df, var, view, share_state)
                 view_scale = scale._setup(seed_values, prop, axis=axis_obj)
-                set_scale_obj(view["ax"], axis, view_scale._matplotlib_scale)
+                view["ax"].set(**{f"{axis}scale": view_scale._matplotlib_scale})
 
                 for layer, new_series in zip(layers, transformed_data):
                     layer_df = layer["data"].frame

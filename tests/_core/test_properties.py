@@ -7,7 +7,6 @@ from matplotlib.colors import same_color, to_rgb, to_rgba
 import pytest
 from numpy.testing import assert_array_equal
 
-from seaborn.utils import _version_predates
 from seaborn._core.rules import categorical_order
 from seaborn._core.scales import Nominal, Continuous, Boolean
 from seaborn._core.properties import (
@@ -250,9 +249,8 @@ class TestColor(DataFixtures):
         assert f("#123456") == to_rgb("#123456")
         assert f("#12345678") == to_rgba("#12345678")
 
-        if not _version_predates(mpl, "3.4.0"):
-            assert f("#123") == to_rgb("#123")
-            assert f("#1234") == to_rgba("#1234")
+        assert f("#123") == to_rgb("#123")
+        assert f("#1234") == to_rgba("#1234")
 
 
 class ObjectPropertyBase(DataFixtures):
