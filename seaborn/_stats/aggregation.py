@@ -64,7 +64,7 @@ class Est(Stat):
 
     - **weight**: When passed to a layer that uses this stat, a weighted estimate
       will be computed. Note that use of weights currently limits the choice of
-      estimator error bar method  to `"mean"` and `"ci"`, respectively.
+      function and error bar method  to `"mean"` and `"ci"`, respectively.
 
     Parameters
     ----------
