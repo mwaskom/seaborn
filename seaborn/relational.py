@@ -17,7 +17,7 @@ from .utils import (
     _normalize_kwargs,
     _scatter_legend_artist,
 )
-from ._statistics import EstimateAggregator
+from ._statistics import EstimateAggregator, WeightedAggregator
 from .axisgrid import FacetGrid, _facet_docs
 from ._docstrings import DocstringComponents, _core_docs
 
@@ -252,7 +252,8 @@ class _LinePlotter(_RelationalPlotter):
             raise ValueError(err.format(self.err_style))
 
         # Initialize the aggregation object
-        agg = EstimateAggregator(
+        weighted = "weight" in self.plot_data
+        agg = (WeightedAggregator if weighted else EstimateAggregator)(
             self.estimator, self.errorbar, n_boot=self.n_boot, seed=self.seed,
         )
 
@@ -464,7 +465,7 @@ class _ScatterPlotter(_RelationalPlotter):
 
 def lineplot(
     data=None, *,
-    x=None, y=None, hue=None, size=None, style=None, units=None,
+    x=None, y=None, hue=None, size=None, style=None, units=None, weights=None,
     palette=None, hue_order=None, hue_norm=None,
     sizes=None, size_order=None, size_norm=None,
     dashes=True, markers=None, style_order=None,
@@ -478,7 +479,9 @@ def lineplot(
 
     p = _LinePlotter(
         data=data,
-        variables=dict(x=x, y=y, hue=hue, size=size, style=style, units=units),
+        variables=dict(
+            x=x, y=y, hue=hue, size=size, style=style, units=units, weight=weights
+        ),
         estimator=estimator, n_boot=n_boot, seed=seed, errorbar=errorbar,
         sort=sort, orient=orient, err_style=err_style, err_kws=err_kws,
         legend=legend,
@@ -536,6 +539,10 @@ style : vector or key in `data`
     and/or markers. Can have a numeric dtype but will always be treated
     as categorical.
 {params.rel.units}
+weights : vector or key in `data`
+    Data values or column used to compute weighted estimation.
+    Note that use of weights currently limits the choice of statistics
+    to a 'mean' estimator and 'ci' errorbar.
 {params.core.palette}
 {params.core.hue_order}
 {params.core.hue_norm}
