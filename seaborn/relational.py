@@ -792,17 +792,18 @@ def relplot(
 
     # Add the grid semantics onto the plotter
     grid_variables = dict(
-        x=x, y=y, row=row, col=col,
-        hue=hue, size=size, style=style,
+        x=x, y=y, row=row, col=col, hue=hue, size=size, style=style,
     )
     if kind == "line":
-        grid_variables["units"] = units
+        grid_variables.update(units=units, weights=weights)
     p.assign_variables(data, grid_variables)
 
     # Define the named variables for plotting on each facet
     # Rename the variables with a leading underscore to avoid
     # collisions with faceting variable names
     plot_variables = {v: f"_{v}" for v in variables}
+    if "weight" in plot_variables:
+        plot_variables["weights"] = plot_variables.pop("weight")
     plot_kws.update(plot_variables)
 
     # Pass the row/col variables to FacetGrid with their original
@@ -930,6 +931,10 @@ style : vector or key in `data`
     Grouping variable that will produce elements with different styles.
     Can have a numeric dtype but will always be treated as categorical.
 {params.rel.units}
+weights : vector or key in `data`
+    Data values or column used to compute weighted estimation.
+    Note that use of weights currently limits the choice of statistics
+    to a 'mean' estimator and 'ci' errorbar.
 {params.facets.rowcol}
 {params.facets.col_wrap}
 row_order, col_order : lists of strings

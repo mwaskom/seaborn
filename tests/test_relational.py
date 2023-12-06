@@ -578,6 +578,15 @@ class TestRelationalPlotter(Helpers):
             expected_paths = [paths[val] for val in grp_df["a"]]
             assert self.paths_equal(points.get_paths(), expected_paths)
 
+    def test_relplot_weighted_estimator(self, long_df):
+
+        g = relplot(data=long_df, x="a", y="y", weights="x", kind="line")
+        ydata = g.ax.lines[0].get_ydata()
+        for i, label in enumerate(g.ax.get_xticklabels()):
+            pos_df = long_df[long_df["a"] == label.get_text()]
+            expected = np.average(pos_df["y"], weights=pos_df["x"])
+            assert ydata[i] == pytest.approx(expected)
+
     def test_relplot_stringy_numerics(self, long_df):
 
         long_df["x_str"] = long_df["x"].astype(str)
@@ -1063,8 +1072,8 @@ class TestLinePlotter(SharedAxesLevelTests, Helpers):
 
         ax = lineplot(long_df, x="a", y="y", weights="x")
         vals = ax.lines[0].get_ydata()
-        for i, a in enumerate(ax.get_xticklabels()):
-            pos_df = long_df.loc[long_df["a"] == a.get_text()]
+        for i, label in enumerate(ax.get_xticklabels()):
+            pos_df = long_df.loc[long_df["a"] == label.get_text()]
             expected = np.average(pos_df["y"], weights=pos_df["x"])
             assert vals[i] == pytest.approx(expected)
 
