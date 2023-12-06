@@ -668,10 +668,14 @@ class TestRelationalPlotter(Helpers):
         )
         assert g.axes.shape == (1, len(col_data.unique()))
 
-    def test_relplot_scatter_units(self, long_df):
+    def test_relplot_scatter_unused_variables(self, long_df):
 
         with pytest.warns(UserWarning, match="The `units` parameter"):
             g = relplot(long_df, x="x", y="y", units="a")
+        assert g.ax is not None
+
+        with pytest.warns(UserWarning, match="The `weights` parameter"):
+            g = relplot(long_df, x="x", y="y", weights="x")
         assert g.ax is not None
 
     def test_ax_kwarg_removal(self, long_df):

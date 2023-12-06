@@ -694,7 +694,7 @@ Examples
 
 def relplot(
     data=None, *,
-    x=None, y=None, hue=None, size=None, style=None, units=None,
+    x=None, y=None, hue=None, size=None, style=None, units=None, weights=None,
     row=None, col=None, col_wrap=None, row_order=None, col_order=None,
     palette=None, hue_order=None, hue_norm=None,
     sizes=None, size_order=None, size_norm=None,
@@ -732,9 +732,14 @@ def relplot(
     variables = dict(x=x, y=y, hue=hue, size=size, style=style)
     if kind == "line":
         variables["units"] = units
-    elif units is not None:
-        msg = "The `units` parameter of `relplot` has no effect with kind='scatter'"
-        warnings.warn(msg, stacklevel=2)
+        variables["weight"] = weights
+    else:
+        if units is not None:
+            msg = "The `units` parameter has no effect with kind='scatter'."
+            warnings.warn(msg, stacklevel=2)
+        if weights is not None:
+            msg = "The `weights` parameter has no effect with kind='scatter'."
+            warnings.warn(msg, stacklevel=2)
     p = Plotter(
         data=data,
         variables=variables,

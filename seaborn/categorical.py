@@ -2739,12 +2739,12 @@ countplot.__doc__ = dedent("""\
 
 def catplot(
     data=None, *, x=None, y=None, hue=None, row=None, col=None, kind="strip",
-    estimator="mean", errorbar=("ci", 95), n_boot=1000, units=None, seed=None,
-    order=None, hue_order=None, row_order=None, col_order=None, col_wrap=None,
-    height=5, aspect=1, log_scale=None, native_scale=False, formatter=None,
-    orient=None, color=None, palette=None, hue_norm=None, legend="auto",
-    legend_out=True, sharex=True, sharey=True, margin_titles=False, facet_kws=None,
-    ci=deprecated, **kwargs
+    estimator="mean", errorbar=("ci", 95), n_boot=1000, seed=None, units=None,
+    weights=None, order=None, hue_order=None, row_order=None, col_order=None,
+    col_wrap=None, height=5, aspect=1, log_scale=None, native_scale=False,
+    formatter=None, orient=None, color=None, palette=None, hue_norm=None,
+    legend="auto", legend_out=True, sharex=True, sharey=True,
+    margin_titles=False, facet_kws=None, ci=deprecated, **kwargs
 ):
 
     # Check for attempt to plot onto specific axes and warn
@@ -2774,7 +2774,9 @@ def catplot(
 
     p = Plotter(
         data=data,
-        variables=dict(x=x, y=y, hue=hue, row=row, col=col, units=units),
+        variables=dict(
+            x=x, y=y, hue=hue, row=row, col=col, units=units, weight=weights
+        ),
         order=order,
         orient=orient,
         # Handle special backwards compatibility where pointplot originally
@@ -2849,6 +2851,14 @@ def catplot(
     dodge = kwargs.pop("dodge", False if kind in undodged_kinds else "auto")
     if dodge == "auto":
         dodge = p._dodge_needed()
+
+    if "weight" in p.plot_data:
+        if kind not in ["bar", "point"]:
+            msg = f"The `weights` parameter has no effect with kind={kind!r}."
+            warnings.warn(msg, stacklevel=2)
+        agg_cls = WeightedAggregator
+    else:
+        agg_cls = EstimateAggregator
 
     if kind == "strip":
 
@@ -2999,9 +3009,7 @@ def catplot(
 
     elif kind == "point":
 
-        aggregator = EstimateAggregator(
-            estimator, errorbar, n_boot=n_boot, seed=seed
-        )
+        aggregator = agg_cls(estimator, errorbar, n_boot=n_boot, seed=seed)
 
         markers = kwargs.pop("markers", default)
         linestyles = kwargs.pop("linestyles", default)
@@ -3035,9 +3043,8 @@ def catplot(
 
     elif kind == "bar":
 
-        aggregator = EstimateAggregator(
-            estimator, errorbar, n_boot=n_boot, seed=seed
-        )
+        aggregator = agg_cls(estimator, errorbar, n_boot=n_boot, seed=seed)
+
         err_kws, capsize = p._err_kws_backcompat(
             _normalize_kwargs(kwargs.pop("err_kws", {}), mpl.lines.Line2D),
             errcolor=kwargs.pop("errcolor", deprecated),

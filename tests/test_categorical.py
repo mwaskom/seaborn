@@ -3147,6 +3147,12 @@ class TestCatPlot(CategoricalFixture):
         g2 = catplot(self.df, x="g", y="y", hue="g", legend=True)
         assert g2._legend is not None
 
+    def test_weights_warning(self, long_df):
+
+        with pytest.warns(UserWarning, match="The `weights` parameter"):
+            g = catplot(long_df, x="a", y="y", weights="z")
+        assert g.ax is not None
+
 
 class TestBeeswarm:
 
