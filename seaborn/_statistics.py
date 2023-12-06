@@ -518,6 +518,62 @@ class EstimateAggregator:
         return pd.Series({var: estimate, f"{var}min": err_min, f"{var}max": err_max})
 
 
+class WeightedEstimateAggregator:
+
+    def __init__(self, estimator, errorbar=None, **boot_kws):
+        """
+        Data aggregator that produces a weighted estimate and error bar interval.
+
+        Parameters
+        ----------
+        estimator : string
+            Function (or method name) that maps a vector to a scalar. Currently
+            supports only "mean".
+        errorbar : string or (string, number) tuple
+            Name of errorbar method or a tuple with a method name and a level parameter.
+            Currently the only supported method is "ci".
+        boot_kws
+            Additional keywords are passed to bootstrap when error_method is "ci".
+
+        """
+        if estimator != "mean":
+            # Note that, while other weighted estimators may make sense (e.g. median),
+            # I'm not aware of an implementation in our dependencies. We can add one
+            # in seaborn later, if there is sufficient interest. For now, limit to mean.
+            raise ValueError(f"Weighted estimator must be 'mean', not {estimator!r}.")
+        self.estimator = estimator
+
+        method, level = _validate_errorbar_arg(errorbar)
+        if method is not None and method != "ci":
+            # As with the estimator, weighted 'sd' or 'pi' error bars may make sense.
+            # But we'll keep things simple for now and limit to (bootstrap) CI.
+            raise ValueError(f"Error bar method must be 'ci', not {method!r}.")
+        self.error_method = method
+        self.error_level = level
+
+        self.boot_kws = boot_kws
+
+    def __call__(self, data, var):
+        """Aggregate over `var` column of `data` with estimate and error interval."""
+        vals = data[var]
+        weights = data["weight"]
+
+        estimate = np.average(vals, weights=weights)
+
+        if self.error_method == "ci" and len(data) > 1:
+
+            def error_func(x, w):
+                return np.average(x, weights=w)
+
+            boots = bootstrap(vals, weights, func=error_func, **self.boot_kws)
+            err_min, err_max = _percentile_interval(boots, self.error_level)
+
+        else:
+            err_min = err_max = np.nan
+
+        return pd.Series({var: estimate, f"{var}min": err_min, f"{var}max": err_max})
+
+
 class LetterValues:
 
     def __init__(self, k_depth, outlier_prop, trust_alpha):
