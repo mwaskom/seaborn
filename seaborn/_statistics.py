@@ -518,7 +518,7 @@ class EstimateAggregator:
         return pd.Series({var: estimate, f"{var}min": err_min, f"{var}max": err_max})
 
 
-class WeightedEstimateAggregator:
+class WeightedAggregator:
 
     def __init__(self, estimator, errorbar=None, **boot_kws):
         """

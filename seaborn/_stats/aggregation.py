@@ -10,7 +10,7 @@ from seaborn._core.groupby import GroupBy
 from seaborn._stats.base import Stat
 from seaborn._statistics import (
     EstimateAggregator,
-    WeightedEstimateAggregator,
+    WeightedAggregator,
 )
 from seaborn._core.typing import Vector
 
@@ -105,7 +105,7 @@ class Est(Stat):
 
         boot_kws = {"n_boot": self.n_boot, "seed": self.seed}
         if "weight" in data:
-            engine = WeightedEstimateAggregator(self.func, self.errorbar, **boot_kws)
+            engine = WeightedAggregator(self.func, self.errorbar, **boot_kws)
         else:
             engine = EstimateAggregator(self.func, self.errorbar, **boot_kws)
 

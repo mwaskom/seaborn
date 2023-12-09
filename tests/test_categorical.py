@@ -2131,6 +2131,13 @@ class TestBarPlot(SharedAggTests):
         for i, bar in enumerate(ax.patches):
             assert bar.get_height() == approx(agg_df[order[i]])
 
+    def test_weighted_estimate(self, long_df):
+
+        ax = barplot(long_df, y="y", weights="x")
+        height = ax.patches[0].get_height()
+        expected = np.average(long_df["y"], weights=long_df["x"])
+        assert height == expected
+
     def test_estimate_log_transform(self, long_df):
 
         ax = mpl.figure.Figure().subplots()
@@ -2489,6 +2496,13 @@ class TestPointPlot(SharedAggTests):
         order = categorical_order(long_df[agg_var])
         for i, xy in enumerate(ax.lines[0].get_xydata()):
             assert tuple(xy) == approx((i, agg_df[order[i]]))
+
+    def test_weighted_estimate(self, long_df):
+
+        ax = pointplot(long_df, y="y", weights="x")
+        val = ax.lines[0].get_ydata().item()
+        expected = np.average(long_df["y"], weights=long_df["x"])
+        assert val == expected
 
     def test_estimate_log_transform(self, long_df):
 
@@ -3132,6 +3146,12 @@ class TestCatPlot(CategoricalFixture):
 
         g2 = catplot(self.df, x="g", y="y", hue="g", legend=True)
         assert g2._legend is not None
+
+    def test_weights_warning(self, long_df):
+
+        with pytest.warns(UserWarning, match="The `weights` parameter"):
+            g = catplot(long_df, x="a", y="y", weights="z")
+        assert g.ax is not None
 
 
 class TestBeeswarm:
