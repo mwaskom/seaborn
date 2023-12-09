@@ -40,7 +40,7 @@ from seaborn._core.typing import (
 )
 from seaborn._core.exceptions import PlotSpecError
 from seaborn._core.rules import categorical_order
-from seaborn._compat import set_layout_engine
+from seaborn._compat import get_layout_engine, set_layout_engine
 from seaborn.rcmod import axes_style, plotting_context
 from seaborn.palettes import color_palette
 
@@ -810,6 +810,7 @@ class Plot:
         *,
         size: tuple[float, float] | Default = default,
         engine: str | None | Default = default,
+        extent: tuple[float, float, float, float] | Default = default,
     ) -> Plot:
         """
         Control the figure size and layout.
@@ -825,9 +826,14 @@ class Plot:
         size : (width, height)
             Size of the resulting figure, in inches. Size is inclusive of legend when
             using pyplot, but not otherwise.
-        engine : {{"tight", "constrained", None}}
+        engine : {{"tight", "constrained", "none"}}
             Name of method for automatically adjusting the layout to remove overlap.
             The default depends on whether :meth:`Plot.on` is used.
+        extent : (left, bottom, right, top)
+            Boundaries of the plot layout, in fractions of the figure size. Takes
+            effect through the layout engine; exact results will vary across engines.
+            Note: the extent includes axis decorations when using a layout engine,
+            but it is exclusive of them when `engine="none"`.
 
         Examples
         --------
@@ -845,6 +851,8 @@ class Plot:
             new._figure_spec["figsize"] = size
         if engine is not default:
             new._layout_spec["engine"] = engine
+        if extent is not default:
+            new._layout_spec["extent"] = extent
 
         return new
 
@@ -1793,12 +1801,32 @@ class Plotter:
                 if axis_key in self._scales:  # TODO when would it not be?
                     self._scales[axis_key]._finalize(p, axis_obj)
 
-        if (engine := p._layout_spec.get("engine", default)) is not default:
+        if (engine_name := p._layout_spec.get("engine", default)) is not default:
             # None is a valid arg for Figure.set_layout_engine, hence `default`
-            set_layout_engine(self._figure, engine)
+            set_layout_engine(self._figure, engine_name)
         elif p._target is None:
             # Don't modify the layout engine if the user supplied their own
             # matplotlib figure and didn't specify an engine through Plot
             # TODO switch default to "constrained"?
             # TODO either way, make configurable
             set_layout_engine(self._figure, "tight")
+
+        if (extent := p._layout_spec.get("extent")) is not None:
+            engine = get_layout_engine(self._figure)
+            if engine is None:
+                self._figure.subplots_adjust(*extent)
+            else:
+                # Note the different parameterization for the layout engine rect...
+                left, bottom, right, top = extent
+                width, height = right - left, top - bottom
+                try:
+                    # The base LayoutEngine.set method doesn't have rect= so we need
+                    # to avoid typechecking this statement. We also catch a TypeError
+                    # as a plugin LayoutEngine may not support it either.
+                    # Alternatively we could guard this with a check on the engine type,
+                    # but that would make later-developed engines would un-useable.
+                    engine.set(rect=[left, bottom, width, height])  # type: ignore
+                except TypeError:
+                    # Should we warn / raise? Note that we don't expect to get here
+                    # under any normal circumstances.
+                    pass
