@@ -1384,7 +1384,8 @@ _categorical_docs = dict(
     errorbar : string, (string, number) tuple, callable or None
         Name of errorbar method (either "ci", "pi", "se", or "sd"), or a tuple
         with a method name and a level parameter, or a function that maps from a
-        vector to a (min, max) interval, or None to hide errorbar.
+        vector to a (min, max) interval, or None to hide errorbar. See the
+        :doc:`errorbar tutorial </tutorial/error_bars>` for more information.
 
         .. versionadded:: v0.12.0
     n_boot : int
