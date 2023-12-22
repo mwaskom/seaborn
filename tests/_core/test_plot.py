@@ -1852,6 +1852,12 @@ class TestLabelVisibility:
         for s in subplots[1:]:
             ax = s["ax"]
             assert ax.xaxis.get_label().get_visible()
+            # mpl3.7 added a getter for tick params, but both yaxis and xaxis return
+            # the same entry of "labelleft" instead of  "labelbottom" for xaxis
+            if not _version_predates(mpl, "3.7"):
+                assert ax.xaxis.get_tick_params()["labelleft"]
+            else:
+                assert len(ax.get_xticklabels()) > 0
             assert all(t.get_visible() for t in ax.get_xticklabels())
 
         for s in subplots[1:-1]:
@@ -1876,6 +1882,12 @@ class TestLabelVisibility:
         for s in subplots[-2:]:
             ax = s["ax"]
             assert ax.xaxis.get_label().get_visible()
+            # mpl3.7 added a getter for tick params, but both yaxis and xaxis return
+            # the same entry of "labelleft" instead of  "labelbottom" for xaxis
+            if not _version_predates(mpl, "3.7"):
+                assert ax.xaxis.get_tick_params()["labelleft"]
+            else:
+                assert len(ax.get_xticklabels()) > 0
             assert all(t.get_visible() for t in ax.get_xticklabels())
 
         for s in subplots[:-2]:
