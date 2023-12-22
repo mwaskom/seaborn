@@ -336,9 +336,8 @@ def plotting_context(context=None, font_scale=1, rc=None):
     """
     Get the parameters that control the scaling of plot elements.
 
-    These parameters correspond to label size, line thickness, etc.
-    The parameters correspond to matplotlib `rcParams`. For more information,
-    see the :doc:`aesthetics tutorial <../tutorial/aesthetics>`.
+    These parameters correspond to label size, line thickness, etc. For more
+    information, see the :doc:`aesthetics tutorial <../tutorial/aesthetics>`.
 
     The base context is "notebook", and the other contexts are "paper", "talk",
     and "poster", which are version of the notebook parameters scaled by different
@@ -438,8 +437,8 @@ def set_context(context=None, font_scale=1, rc=None):
     Set the parameters that control the scaling of plot elements.
 
     These parameters correspond to label size, line thickness, etc.
-    Calling this function modifies the matplotlib `rcParams`. For more information,
-    see the :doc:`aesthetics tutorial <../tutorial/aesthetics>`.
+    Calling this function modifies the global matplotlib `rcParams`. For more
+    information, see the :doc:`aesthetics tutorial <../tutorial/aesthetics>`.
 
     The base context is "notebook", and the other contexts are "paper", "talk",
     and "poster", which are version of the notebook parameters scaled by different
