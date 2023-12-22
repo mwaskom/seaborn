@@ -1177,6 +1177,7 @@ class Plotter:
                     )
                 )
                 for group in ("major", "minor"):
+                    axis_obj.set_tick_params(labelbottom=show_tick_labels)
                     for t in getattr(axis_obj, f"get_{group}ticklabels")():
                         t.set_visible(show_tick_labels)
 
