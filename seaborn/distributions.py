@@ -1593,7 +1593,7 @@ def kdeplot(
     # Handle (past) deprecation of `data2`
     if "data2" in kwargs:
         msg = "`data2` has been removed (replaced by `y`); please update your code."
-        TypeError(msg)
+        raise TypeError(msg)
 
     # Handle deprecation of `vertical`
     vertical = kwargs.pop("vertical", None)
