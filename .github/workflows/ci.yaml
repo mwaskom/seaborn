@@ -35,7 +35,8 @@ jobs:
 
       - name: Install pandoc
         run: |
-          sudo apt-get install pandoc
+          wget https://github.com/jgm/pandoc/releases/download/3.1.11/pandoc-3.1.11-1-amd64.deb
+          sudo dpkg -i pandoc-3.1.11-1-amd64.deb
 
       - name: Cache datasets
         run: |
