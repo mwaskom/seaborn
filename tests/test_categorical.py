@@ -999,6 +999,16 @@ class TestBoxPlot(SharedAxesLevelTests, SharedPatchArtistTests):
                 widths.append(np.ptp(coords))
         assert np.std(widths) == approx(0)
 
+    def test_dodge_without_hue(self, long_df):
+
+        ax = boxplot(long_df, x="a", y="y", dodge=True)
+        bxp, = ax.containers
+        levels = categorical_order(long_df["a"])
+        for i, level in enumerate(levels):
+            data = long_df.loc[long_df["a"] == level, "y"]
+            self.check_box(bxp[i], data, "x", i)
+            self.check_whiskers(bxp[i], data, "x", i)
+
     @pytest.mark.parametrize("orient", ["x", "y"])
     def test_log_data_scale(self, long_df, orient):
 
