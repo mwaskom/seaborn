@@ -392,6 +392,11 @@ class _CategoricalPlotter(VectorPlotter):
 
     def _dodge(self, keys, data):
         """Apply a dodge transform to coordinates in place."""
+        if "hue" not in self.variables:
+            # Short-circuit if hue variable was not assigned
+            # We could potentially warn when hue=None, dodge=True, user may be confused
+            # But I think it's fine to just treat it as a no-op.
+            return
         hue_idx = self._hue_map.levels.index(keys["hue"])
         n = len(self._hue_map.levels)
         data["width"] /= n
