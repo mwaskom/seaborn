@@ -1177,6 +1177,8 @@ class Plotter:
                     )
                 )
                 for group in ("major", "minor"):
+                    side = {"x": "bottom", "y": "left"}[axis]
+                    axis_obj.set_tick_params(**{f"label{side}": show_tick_labels})
                     for t in getattr(axis_obj, f"get_{group}ticklabels")():
                         t.set_visible(show_tick_labels)
 
