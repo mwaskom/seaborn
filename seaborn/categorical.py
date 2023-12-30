@@ -8,7 +8,9 @@ import numpy as np
 import pandas as pd
 
 import matplotlib as mpl
+from matplotlib.cbook import normalize_kwargs
 from matplotlib.collections import PatchCollection
+from matplotlib.markers import MarkerStyle
 from matplotlib.patches import Rectangle
 import matplotlib.pyplot as plt
 
@@ -23,11 +25,9 @@ from seaborn.utils import (
     _default_color,
     _get_patch_legend_artist,
     _get_transform_functions,
-    _normalize_kwargs,
     _scatter_legend_artist,
     _version_predates,
 )
-from seaborn._compat import MarkerStyle
 from seaborn._statistics import (
     EstimateAggregator,
     LetterValues,
@@ -605,7 +605,7 @@ class _CategoricalPlotter(VectorPlotter):
         value_var = {"x": "y", "y": "x"}[self.orient]
 
         def get_props(element, artist=mpl.lines.Line2D):
-            return _normalize_kwargs(plot_kws.pop(f"{element}props", {}), artist)
+            return normalize_kwargs(plot_kws.pop(f"{element}props", {}), artist)
 
         if not fill and linewidth is None:
             linewidth = mpl.rcParams["lines.linewidth"]
@@ -1175,7 +1175,7 @@ class _CategoricalPlotter(VectorPlotter):
         agg_var = {"x": "y", "y": "x"}[self.orient]
         iter_vars = ["hue"]
 
-        plot_kws = _normalize_kwargs(plot_kws, mpl.lines.Line2D)
+        plot_kws = normalize_kwargs(plot_kws, mpl.lines.Line2D)
         plot_kws.setdefault("linewidth", mpl.rcParams["lines.linewidth"] * 1.8)
         plot_kws.setdefault("markeredgewidth", plot_kws["linewidth"] * 0.75)
         plot_kws.setdefault("markersize", plot_kws["linewidth"] * np.sqrt(2 * np.pi))
@@ -2371,7 +2371,7 @@ def barplot(
 
     agg_cls = WeightedAggregator if "weight" in p.plot_data else EstimateAggregator
     aggregator = agg_cls(estimator, errorbar, n_boot=n_boot, seed=seed)
-    err_kws = {} if err_kws is None else _normalize_kwargs(err_kws, mpl.lines.Line2D)
+    err_kws = {} if err_kws is None else normalize_kwargs(err_kws, mpl.lines.Line2D)
 
     # Deprecations to remove in v0.15.0.
     err_kws, capsize = p._err_kws_backcompat(err_kws, errcolor, errwidth, capsize)
@@ -2506,7 +2506,7 @@ def pointplot(
 
     agg_cls = WeightedAggregator if "weight" in p.plot_data else EstimateAggregator
     aggregator = agg_cls(estimator, errorbar, n_boot=n_boot, seed=seed)
-    err_kws = {} if err_kws is None else _normalize_kwargs(err_kws, mpl.lines.Line2D)
+    err_kws = {} if err_kws is None else normalize_kwargs(err_kws, mpl.lines.Line2D)
 
     # Deprecations to remove in v0.15.0.
     p._point_kwargs_backcompat(scale, join, kwargs)
@@ -2848,7 +2848,7 @@ def catplot(
             color = desaturate(color, saturation)
 
     if kind in ["strip", "swarm"]:
-        kwargs = _normalize_kwargs(kwargs, mpl.collections.PathCollection)
+        kwargs = normalize_kwargs(kwargs, mpl.collections.PathCollection)
         kwargs["edgecolor"] = p._complement_color(
             kwargs.pop("edgecolor", default), color, p._hue_map
         )
@@ -3023,14 +3023,14 @@ def catplot(
         # Deprecations to remove in v0.15.0.
         # TODO Uncomment when removing deprecation backcompat
         # capsize = kwargs.pop("capsize", 0)
-        # err_kws = _normalize_kwargs(kwargs.pop("err_kws", {}), mpl.lines.Line2D)
+        # err_kws = normalize_kwargs(kwargs.pop("err_kws", {}), mpl.lines.Line2D)
         p._point_kwargs_backcompat(
             kwargs.pop("scale", deprecated),
             kwargs.pop("join", deprecated),
             kwargs
         )
         err_kws, capsize = p._err_kws_backcompat(
-            _normalize_kwargs(kwargs.pop("err_kws", {}), mpl.lines.Line2D),
+            normalize_kwargs(kwargs.pop("err_kws", {}), mpl.lines.Line2D),
             None,
             errwidth=kwargs.pop("errwidth", deprecated),
             capsize=kwargs.pop("capsize", 0),
@@ -3052,7 +3052,7 @@ def catplot(
         aggregator = agg_cls(estimator, errorbar, n_boot=n_boot, seed=seed)
 
         err_kws, capsize = p._err_kws_backcompat(
-            _normalize_kwargs(kwargs.pop("err_kws", {}), mpl.lines.Line2D),
+            normalize_kwargs(kwargs.pop("err_kws", {}), mpl.lines.Line2D),
             errcolor=kwargs.pop("errcolor", deprecated),
             errwidth=kwargs.pop("errwidth", deprecated),
             capsize=kwargs.pop("capsize", 0),

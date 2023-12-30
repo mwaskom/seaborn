@@ -25,6 +25,7 @@ The classes should behave roughly in the style of scikit-learn.
 
 """
 from numbers import Number
+from statistics import NormalDist
 import numpy as np
 import pandas as pd
 try:
@@ -35,7 +36,7 @@ except ImportError:
     _no_scipy = True
 
 from .algorithms import bootstrap
-from .utils import _check_argument, _normal_quantile_func
+from .utils import _check_argument
 
 
 class KDE:
@@ -627,7 +628,8 @@ class LetterValues:
         elif self.k_depth == "proportion":
             k = int(np.log2(n)) - int(np.log2(n * self.outlier_prop)) + 1
         elif self.k_depth == "trustworthy":
-            point_conf = 2 * _normal_quantile_func(1 - self.trust_alpha / 2) ** 2
+            normal_quantile_func = np.vectorize(NormalDist().inv_cdf)
+            point_conf = 2 * normal_quantile_func(1 - self.trust_alpha / 2) ** 2
             k = int(np.log2(n / point_conf)) + 1
         else:
             # Allow having k directly specified as input

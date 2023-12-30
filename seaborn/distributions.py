@@ -10,6 +10,7 @@ import pandas as pd
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import matplotlib.transforms as tx
+from matplotlib.cbook import normalize_kwargs
 from matplotlib.colors import to_rgba
 from matplotlib.collections import LineCollection
 
@@ -28,7 +29,6 @@ from .utils import (
     remove_na,
     _get_transform_functions,
     _kde_support,
-    _normalize_kwargs,
     _check_argument,
     _assign_default_kwargs,
     _default_color,
@@ -171,7 +171,7 @@ class _DistributionPlotter(VectorPlotter):
         """Handle differences between artists in filled/unfilled plots."""
         kws = kws.copy()
         if fill:
-            kws = _normalize_kwargs(kws, mpl.collections.PolyCollection)
+            kws = normalize_kwargs(kws, mpl.collections.PolyCollection)
             kws.setdefault("facecolor", to_rgba(color, alpha))
 
             if element == "bars":
@@ -916,7 +916,7 @@ class _DistributionPlotter(VectorPlotter):
             artist = mpl.collections.PolyCollection
         else:
             artist = mpl.lines.Line2D
-        plot_kws = _normalize_kwargs(plot_kws, artist)
+        plot_kws = normalize_kwargs(plot_kws, artist)
 
         # Input checking
         _check_argument("multiple", ["layer", "stack", "fill"], multiple)

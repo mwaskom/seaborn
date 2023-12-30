@@ -387,8 +387,6 @@ class TestHeatmap:
         assert len(f.axes) == 2
         plt.close(f)
 
-    @pytest.mark.xfail(mpl.__version__ == "3.1.1",
-                       reason="matplotlib 3.1.1 bug")
     def test_heatmap_axes(self):
 
         ax = mat.heatmap(self.df_norm)
@@ -443,10 +441,7 @@ class TestHeatmap:
     def test_square_aspect(self):
 
         ax = mat.heatmap(self.df_norm, square=True)
-        obs_aspect = ax.get_aspect()
-        # mpl>3.3 returns 1 for setting "equal" aspect
-        # so test for the two possible equal outcomes
-        assert obs_aspect == "equal" or obs_aspect == 1
+        npt.assert_equal(ax.get_aspect(), 1)
 
     def test_mask_validation(self):
 
@@ -679,8 +674,6 @@ class TestDendrogram:
 
         assert len(ax.collections[0].get_paths()) == len(d.dependent_coord)
 
-    @pytest.mark.xfail(mpl.__version__ == "3.1.1",
-                       reason="matplotlib 3.1.1 bug")
     def test_dendrogram_rotate(self):
         kws = self.default_kws.copy()
         kws['rotate'] = True
