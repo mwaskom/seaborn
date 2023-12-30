@@ -3,6 +3,7 @@ import numpy as np
 import pandas as pd
 import matplotlib as mpl
 from matplotlib.colors import same_color, to_rgb, to_rgba
+from matplotlib.markers import MarkerStyle
 
 import pytest
 from numpy.testing import assert_array_equal
@@ -20,7 +21,7 @@ from seaborn._core.properties import (
     Marker,
     PointSize,
 )
-from seaborn._compat import MarkerStyle, get_colormap
+from seaborn._compat import get_colormap
 from seaborn.palettes import color_palette
 
 
@@ -357,6 +358,17 @@ class TestMarker(ObjectPropertyBase):
     prop = Marker
     values = ["o", (5, 2, 0), MarkerStyle("^")]
     standardized_values = [MarkerStyle(x) for x in values]
+
+    def assert_equal(self, a, b):
+        a_path, b_path = a.get_path(), b.get_path()
+        assert_array_equal(a_path.vertices, b_path.vertices)
+        assert_array_equal(a_path.codes, b_path.codes)
+        assert a_path.simplify_threshold == b_path.simplify_threshold
+        assert a_path.should_simplify == b_path.should_simplify
+
+        assert a.get_joinstyle() == b.get_joinstyle()
+        assert a.get_transform().to_values() == b.get_transform().to_values()
+        assert a.get_fillstyle() == b.get_fillstyle()
 
     def unpack(self, x):
         return (

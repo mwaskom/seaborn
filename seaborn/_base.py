@@ -1160,11 +1160,7 @@ class VectorPlotter:
         # For categorical y, we want the "first" level to be at the top of the axis
         if self.var_types.get("y", None) == "categorical":
             for ax in ax_list:
-                try:
-                    ax.yaxis.set_inverted(True)
-                except AttributeError:  # mpl < 3.1
-                    if not ax.yaxis_inverted():
-                        ax.invert_yaxis()
+                ax.yaxis.set_inverted(True)
 
         # TODO -- Add axes labels
 

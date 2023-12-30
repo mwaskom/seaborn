@@ -934,7 +934,7 @@ class TestPlotting:
     def test_theme_error(self):
 
         p = Plot()
-        with pytest.raises(TypeError, match=r"theme\(\) takes 1 positional"):
+        with pytest.raises(TypeError, match=r"theme\(\) takes 2 positional"):
             p.theme("arg1", "arg2")
 
     def test_theme_validation(self):

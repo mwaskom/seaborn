@@ -5,6 +5,7 @@ import numpy as np
 import pandas as pd
 import matplotlib as mpl
 import matplotlib.pyplot as plt
+from matplotlib.cbook import normalize_kwargs
 
 from ._base import (
     VectorPlotter,
@@ -14,7 +15,6 @@ from .utils import (
     _default_color,
     _deprecate_ci,
     _get_transform_functions,
-    _normalize_kwargs,
     _scatter_legend_artist,
 )
 from ._statistics import EstimateAggregator, WeightedAggregator
@@ -237,7 +237,7 @@ class _LinePlotter(_RelationalPlotter):
         # gotten from the corresponding matplotlib function, and calling the
         # function will advance the axes property cycle.
 
-        kws = _normalize_kwargs(kws, mpl.lines.Line2D)
+        kws = normalize_kwargs(kws, mpl.lines.Line2D)
         kws.setdefault("markeredgewidth", 0.75)
         kws.setdefault("markeredgecolor", "w")
 
@@ -400,7 +400,7 @@ class _ScatterPlotter(_RelationalPlotter):
         if data.empty:
             return
 
-        kws = _normalize_kwargs(kws, mpl.collections.PathCollection)
+        kws = normalize_kwargs(kws, mpl.collections.PathCollection)
 
         # Define the vectors of x and y positions
         empty = np.full(len(data), np.nan)
