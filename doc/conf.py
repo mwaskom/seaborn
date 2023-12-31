@@ -88,7 +88,7 @@ rst_prolog = """
 """
 
 # Define replacements (used in whatsnew bullets)
-rst_epilog = """
+rst_epilog = r"""
 
 .. role:: raw-html(raw)
    :format: html

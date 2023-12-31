@@ -3,7 +3,9 @@ v0.13.1 (Unreleased)
 
 - |Feature| Added support for weighted mean estimation (with boostrap CIs) in :func:`lineplot`, :func:`barplot`, :func:`pointplot`, and :class:`objects.Est` (:pr:`3580`, :pr:`3586`).
 
-- |Feature| Added the `extent` option to :meth:`Plot.layout` (:pr:`3552`).
+- |Feature| Added the `extent` option to :meth:`objects.Plot.layout` (:pr:`3552`).
+
+- |Fix| Fixed a bug in :class:`objects.Plot` so that tick labels are shown for wrapped axes that aren't in the bottom-most row (:pr:`3600`).
 
 - |Fix| Fixed a bug in :func:`catplot` where a blank legend would be added when `hue` was redundantly assigned (:pr:`3540`).
 
@@ -12,5 +14,7 @@ v0.13.1 (Unreleased)
 - |Fix| Fixed a bug in :func:`boxplot` where an exception was raised when using the matplotlib `bootstrap` option (:pr:`3562`).
 
 - |Fix| Fixed a bug in :func:`lineplot` where an exception was raised when `hue` was assigned with an empty dataframe (:pr:`3569`).
+
+- |Fix| Fixed a bug in multiple categorical plots that raised with `hue=None` and `dodge=True`; this is now has no effect (:pr:`3605`).
 
 - |Fix| Fixed a regression in v0.13.0 that triggered an exception when working with non-numpy data types (:pr:`3516`).
