@@ -933,7 +933,8 @@ class VectorPlotter:
 
             grouping_keys = []
             for var in grouping_vars:
-                grouping_keys.append(levels.get(var, []))
+                key = levels.get(var)
+                grouping_keys.append([] if key is None else key)
 
             iter_keys = itertools.product(*grouping_keys)
             if reverse:
@@ -1159,11 +1160,7 @@ class VectorPlotter:
         # For categorical y, we want the "first" level to be at the top of the axis
         if self.var_types.get("y", None) == "categorical":
             for ax in ax_list:
-                try:
-                    ax.yaxis.set_inverted(True)
-                except AttributeError:  # mpl < 3.1
-                    if not ax.yaxis_inverted():
-                        ax.invert_yaxis()
+                ax.yaxis.set_inverted(True)
 
         # TODO -- Add axes labels
 
@@ -1520,8 +1517,13 @@ def variable_type(vector, boolean_type="numeric"):
         warnings.simplefilter(
             action='ignore', category=(FutureWarning, DeprecationWarning)
         )
-        if np.isin(vector, [0, 1]).all():
-            return VariableType(boolean_type)
+        try:
+            if np.isin(vector, [0, 1]).all():
+                return VariableType(boolean_type)
+        except TypeError:
+            # .isin comparison is not guaranteed to be possible under NumPy
+            # casting rules, depending on the (unknown) dtype of 'vector'
+            pass
 
     # Defer to positive pandas tests
     if pd.api.types.is_numeric_dtype(vector):

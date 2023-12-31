@@ -129,7 +129,7 @@ if you try to reproduce the issue in an example that uses only matplotlib,
 so that you can report it in the right place. But it is alright to skip this
 step if it's not obvious how to do it.
 
-General support questions are more at home on either `stackoverflow
+General support questions are more at home on `stackoverflow
 <https://stackoverflow.com/questions/tagged/seaborn/>`_, where there is a
 larger audience of people who will see your post and may be able to offer
 assistance. Your chance of getting a quick answer will be higher if you include

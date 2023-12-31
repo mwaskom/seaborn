@@ -15,6 +15,7 @@ from seaborn._statistics import (
     ECDF,
     EstimateAggregator,
     LetterValues,
+    WeightedAggregator,
     _validate_errorbar_arg,
     _no_scipy,
 )
@@ -630,6 +631,39 @@ class TestEstimateAggregator:
         for arg, exception in bad_args:
             with pytest.raises(exception, match="`errorbar` must be"):
                 _validate_errorbar_arg(arg)
+
+
+class TestWeightedAggregator:
+
+    def test_weighted_mean(self, long_df):
+
+        long_df["weight"] = long_df["x"]
+        est = WeightedAggregator("mean")
+        out = est(long_df, "y")
+        expected = np.average(long_df["y"], weights=long_df["weight"])
+        assert_array_equal(out["y"], expected)
+        assert_array_equal(out["ymin"], np.nan)
+        assert_array_equal(out["ymax"], np.nan)
+
+    def test_weighted_ci(self, long_df):
+
+        long_df["weight"] = long_df["x"]
+        est = WeightedAggregator("mean", "ci")
+        out = est(long_df, "y")
+        expected = np.average(long_df["y"], weights=long_df["weight"])
+        assert_array_equal(out["y"], expected)
+        assert (out["ymin"] <= out["y"]).all()
+        assert (out["ymax"] >= out["y"]).all()
+
+    def test_limited_estimator(self):
+
+        with pytest.raises(ValueError, match="Weighted estimator must be 'mean'"):
+            WeightedAggregator("median")
+
+    def test_limited_ci(self):
+
+        with pytest.raises(ValueError, match="Error bar method must be 'ci'"):
+            WeightedAggregator("mean", "sd")
 
 
 class TestLetterValues:

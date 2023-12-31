@@ -578,6 +578,15 @@ class TestRelationalPlotter(Helpers):
             expected_paths = [paths[val] for val in grp_df["a"]]
             assert self.paths_equal(points.get_paths(), expected_paths)
 
+    def test_relplot_weighted_estimator(self, long_df):
+
+        g = relplot(data=long_df, x="a", y="y", weights="x", kind="line")
+        ydata = g.ax.lines[0].get_ydata()
+        for i, level in enumerate(categorical_order(long_df["a"])):
+            pos_df = long_df[long_df["a"] == level]
+            expected = np.average(pos_df["y"], weights=pos_df["x"])
+            assert ydata[i] == pytest.approx(expected)
+
     def test_relplot_stringy_numerics(self, long_df):
 
         long_df["x_str"] = long_df["x"].astype(str)
@@ -668,10 +677,14 @@ class TestRelationalPlotter(Helpers):
         )
         assert g.axes.shape == (1, len(col_data.unique()))
 
-    def test_relplot_scatter_units(self, long_df):
+    def test_relplot_scatter_unused_variables(self, long_df):
 
         with pytest.warns(UserWarning, match="The `units` parameter"):
             g = relplot(long_df, x="x", y="y", units="a")
+        assert g.ax is not None
+
+        with pytest.warns(UserWarning, match="The `weights` parameter"):
+            g = relplot(long_df, x="x", y="y", weights="x")
         assert g.ax is not None
 
     def test_ax_kwarg_removal(self, long_df):
@@ -1055,6 +1068,15 @@ class TestLinePlotter(SharedAxesLevelTests, Helpers):
         ax.clear()
         p.plot(ax, {})
 
+    def test_weights(self, long_df):
+
+        ax = lineplot(long_df, x="a", y="y", weights="x")
+        vals = ax.lines[0].get_ydata()
+        for i, level in enumerate(categorical_order(long_df["a"])):
+            pos_df = long_df[long_df["a"] == level]
+            expected = np.average(pos_df["y"], weights=pos_df["x"])
+            assert vals[i] == pytest.approx(expected)
+
     def test_non_aggregated_data(self):
 
         x = [1, 2, 3, 4]
@@ -1300,6 +1322,9 @@ class TestLinePlotter(SharedAxesLevelTests, Helpers):
         ax.clear()
 
         lineplot(x="x", y="y", hue="f", size="s", data=object_df)
+        ax.clear()
+
+        lineplot(x="x", y="y", hue="a", data=long_df.iloc[:0])
         ax.clear()
 
     def test_ci_deprecation(self, long_df):
