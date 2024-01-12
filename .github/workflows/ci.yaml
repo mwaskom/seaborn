@@ -57,6 +57,7 @@ jobs:
     runs-on: ubuntu-latest
 
     strategy:
+      fail-fast: false
       matrix:
         python: ["3.8", "3.9", "3.10", "3.11", "3.12"]
         install: [full]
@@ -85,6 +86,7 @@ jobs:
           if [[ ${{matrix.install}} == 'full' ]]; then EXTRAS=',stats'; fi
           if [[ ${{matrix.deps }} == 'pinned' ]]; then DEPS='-r ci/deps_pinned.txt'; fi
           pip install .[dev$EXTRAS] $DEPS
+          pip install --upgrade --pre pandas==2.2.0rc0
 
       - name: Run tests
         run: make test
