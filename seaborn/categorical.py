@@ -2281,7 +2281,7 @@ swarmplot.__doc__ = dedent("""\
     {order_vars}
     dodge : bool
         When a `hue` variable is assigned, setting this to `True` will
-        separate the swaarms for different hue levels along the categorical
+        separate the swarms for different hue levels along the categorical
         axis and narrow the amount of space allotedto each strip. Otherwise,
         the points for each level will be plotted in the same swarm.
     {orient}
