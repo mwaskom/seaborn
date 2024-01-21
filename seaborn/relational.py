@@ -17,6 +17,7 @@ from .utils import (
     _get_transform_functions,
     _scatter_legend_artist,
 )
+from ._compat import groupby_apply_include_groups
 from ._statistics import EstimateAggregator, WeightedAggregator
 from .axisgrid import FacetGrid, _facet_docs
 from ._docstrings import DocstringComponents, _core_docs
@@ -290,7 +291,11 @@ class _LinePlotter(_RelationalPlotter):
                 grouped = sub_data.groupby(orient, sort=self.sort)
                 # Could pass as_index=False instead of reset_index,
                 # but that fails on a corner case with older pandas.
-                sub_data = grouped.apply(agg, other).reset_index()
+                sub_data = (
+                    grouped
+                    .apply(agg, other, **groupby_apply_include_groups(False))
+                    .reset_index()
+                )
             else:
                 sub_data[f"{other}min"] = np.nan
                 sub_data[f"{other}max"] = np.nan

@@ -942,11 +942,8 @@ class VectorPlotter:
 
             for key in iter_keys:
 
-                # Pandas fails with singleton tuple inputs
-                pd_key = key[0] if len(key) == 1 else key
-
                 try:
-                    data_subset = grouped_data.get_group(pd_key)
+                    data_subset = grouped_data.get_group(key)
                 except KeyError:
                     # XXX we are adding this to allow backwards compatibility
                     # with the empty artists that old categorical plots would

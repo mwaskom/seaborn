@@ -1637,11 +1637,8 @@ class Plotter:
 
                 for key in itertools.product(*grouping_keys):
 
-                    # Pandas fails with singleton tuple inputs
-                    pd_key = key[0] if len(key) == 1 else key
-
                     try:
-                        df_subset = grouped_df.get_group(pd_key)
+                        df_subset = grouped_df.get_group(key)
                     except KeyError:
                         # TODO (from initial work on categorical plots refactor)
                         # We are adding this to allow backwards compatability
