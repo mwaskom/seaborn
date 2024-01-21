@@ -41,6 +41,7 @@ from seaborn._core.typing import (
 from seaborn._core.exceptions import PlotSpecError
 from seaborn._core.rules import categorical_order
 from seaborn._compat import get_layout_engine, set_layout_engine
+from seaborn.utils import _version_predates
 from seaborn.rcmod import axes_style, plotting_context
 from seaborn.palettes import color_palette
 
@@ -1637,8 +1638,12 @@ class Plotter:
 
                 for key in itertools.product(*grouping_keys):
 
+                    pd_key = (
+                        key[0] if len(key) == 1 and _version_predates(pd, "2.2.0")
+                        else key
+                    )
                     try:
-                        df_subset = grouped_df.get_group(key)
+                        df_subset = grouped_df.get_group(pd_key)
                     except KeyError:
                         # TODO (from initial work on categorical plots refactor)
                         # We are adding this to allow backwards compatability
