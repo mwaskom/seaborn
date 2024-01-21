@@ -942,9 +942,9 @@ class VectorPlotter:
 
             for key in iter_keys:
 
-                # Pandas fails with singleton tuple inputs
-                pd_key = key[0] if len(key) == 1 else key
-
+                pd_key = (
+                    key[0] if len(key) == 1 and _version_predates(pd, "2.2.0") else key
+                )
                 try:
                     data_subset = grouped_data.get_group(pd_key)
                 except KeyError:

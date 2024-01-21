@@ -66,4 +66,6 @@ exclude = ["doc/_static/*.svg"]
 [tool.pytest.ini_options]
 filterwarnings = [
    "ignore:The --rsyncdir command line argument and rsyncdirs config variable are deprecated.:DeprecationWarning",
+   "ignore:\\s*Pyarrow will become a required dependency of pandas:DeprecationWarning",
+   "ignore:datetime.datetime.utcfromtimestamp\\(\\) is deprecated:DeprecationWarning",
  ]

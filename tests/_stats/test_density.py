@@ -6,6 +6,7 @@ from numpy.testing import assert_array_equal, assert_array_almost_equal
 
 from seaborn._core.groupby import GroupBy
 from seaborn._stats.density import KDE, _no_scipy
+from seaborn._compat import groupby_apply_include_groups
 
 
 class TestKDE:
@@ -93,7 +94,10 @@ class TestKDE:
 
         areas = (
             res.groupby("alpha")
-            .apply(lambda x: self.integrate(x["density"], x[ori]))
+            .apply(
+                lambda x: self.integrate(x["density"], x[ori]),
+                **groupby_apply_include_groups(False),
+            )
         )
 
         if common_norm:
@@ -111,11 +115,18 @@ class TestKDE:
         def integrate_by_color_and_sum(x):
             return (
                 x.groupby("color")
-                .apply(lambda y: self.integrate(y["density"], y[ori]))
+                .apply(
+                    lambda y: self.integrate(y["density"], y[ori]),
+                    **groupby_apply_include_groups(False)
+                )
                 .sum()
             )
 
-        areas = res.groupby("alpha").apply(integrate_by_color_and_sum)
+        areas = (
+            res
+            .groupby("alpha")
+            .apply(integrate_by_color_and_sum, **groupby_apply_include_groups(False))
+        )
         assert_array_almost_equal(areas, [1, 1], decimal=3)
 
     @pytest.mark.parametrize("param", ["norm", "grid"])
