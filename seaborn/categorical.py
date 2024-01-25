@@ -28,6 +28,7 @@ from seaborn.utils import (
     _scatter_legend_artist,
     _version_predates,
 )
+from seaborn._compat import groupby_apply_include_groups
 from seaborn._statistics import (
     EstimateAggregator,
     LetterValues,
@@ -634,10 +635,10 @@ class _CategoricalPlotter(VectorPlotter):
             ax = self._get_axes(sub_vars)
 
             grouped = sub_data.groupby(self.orient)[value_var]
+            positions = sorted(sub_data[self.orient].unique().astype(float))
             value_data = [x.to_numpy() for _, x in grouped]
             stats = pd.DataFrame(mpl.cbook.boxplot_stats(value_data, whis=whis,
                                                          bootstrap=bootstrap))
-            positions = grouped.grouper.result_index.to_numpy(dtype=float)
 
             orig_width = width * self._native_width
             data = pd.DataFrame({self.orient: positions, "width": orig_width})
@@ -1207,7 +1208,7 @@ class _CategoricalPlotter(VectorPlotter):
             agg_data = sub_data if sub_data.empty else (
                 sub_data
                 .groupby(self.orient)
-                .apply(aggregator, agg_var)
+                .apply(aggregator, agg_var, **groupby_apply_include_groups(False))
                 .reindex(pd.Index(positions, name=self.orient))
                 .reset_index()
             )
@@ -1278,7 +1279,7 @@ class _CategoricalPlotter(VectorPlotter):
             agg_data = sub_data if sub_data.empty else (
                 sub_data
                 .groupby(self.orient)
-                .apply(aggregator, agg_var)
+                .apply(aggregator, agg_var, **groupby_apply_include_groups(False))
                 .reset_index()
             )
 
@@ -2281,7 +2282,7 @@ swarmplot.__doc__ = dedent("""\
     {order_vars}
     dodge : bool
         When a `hue` variable is assigned, setting this to `True` will
-        separate the swaarms for different hue levels along the categorical
+        separate the swarms for different hue levels along the categorical
         axis and narrow the amount of space allotedto each strip. Otherwise,
         the points for each level will be plotted in the same swarm.
     {orient}
