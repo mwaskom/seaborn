@@ -427,26 +427,27 @@ class TestRegressionPlotter:
 
         p = lm._RegressionPlotter("x", "y", data=self.df, lowess=True)
         grid, yhat, err_bands = p.fit_regression(x_range=(-3, 3))
-        
+
         assert len(grid) == len(yhat)
         assert err_bands is None
-        
+
     @pytest.mark.skipif(_no_statsmodels, reason="no statsmodels")
     def test_lowess_regression_with_kws(self):
-        lowess_kws = dict(frac=2/3, it=1, delta=0.0)
-        p = lm._RegressionPlotter("x", "y", data=self.df, lowess=True, 
+        lowess_kws = dict(frac=2 / 3, it=1, delta=0.0)
+        p = lm._RegressionPlotter("x", "y", data=self.df, lowess=True,
                                   lowess_kws=lowess_kws)
         grid, yhat, err_bands = p.fit_regression(x_range=(-3, 3))
-        
+
         assert len(grid) == len(yhat)
         assert err_bands is None
-        
+
     @pytest.mark.skipif(_no_statsmodels, reason="no statsmodels")
     def test_lowess_regression_with_bad_kw(self):
-        
-        lowess_kws = dict(frac=2/3, it=3, delta=0.0, bad_kw=-1)
-        with pytest.raises(ValueError, match="Unsupported parameter 'bad_kw' for lowess\\."):
-            lm._RegressionPlotter("x", "y", data=self.df, lowess=True, 
+
+        lowess_kws = dict(frac=2 / 3, it=3, delta=0.0, bad_kw=-1)
+        with pytest.raises(ValueError, match="Unsupported parameter "
+                           "'bad_kw' for lowess\\."):
+            lm._RegressionPlotter("x", "y", data=self.df, lowess=True,
                                   lowess_kws=lowess_kws)
 
     def test_regression_options(self):
@@ -683,26 +684,26 @@ class TestRegressionPlots:
 
         x, y = ax.lines[1].get_xydata().T
         npt.assert_array_equal(x, np.sort(self.df.x))
-        
+
     @pytest.mark.skipif(_no_statsmodels, reason="no statsmodels")
     def test_residplot_lowess_with_kws(self):
 
-        lowess_kws = dict(frac=2/3, it=3, delta=0.0)
-        ax = lm.residplot(x="x", y="y", data=self.df, lowess=True, 
+        lowess_kws = dict(frac=2 / 3, it=3, delta=0.0)
+        ax = lm.residplot(x="x", y="y", data=self.df, lowess=True,
                           lowess_kws=lowess_kws)
         assert len(ax.lines) == 2
 
         x, y = ax.lines[1].get_xydata().T
         npt.assert_array_equal(x, np.sort(self.df.x))
-        
+
     @pytest.mark.skipif(_no_statsmodels, reason="no statsmodels")
     def test_residplot_lowess_bad_kw(self):
 
-        lowess_kws = dict(frac=2/3, it=3, delta=0.0, bad_kw=-1)
+        lowess_kws = dict(frac=2 / 3, it=3, delta=0.0, bad_kw=-1)
         with pytest.raises(ValueError, match="Unsupported parameter"
                            " 'bad_kw' for lowess\\."):
-            lm.residplot(x="x", y="y", data=self.df, lowess=True, 
-                              lowess_kws=lowess_kws)
+            lm.residplot(x="x", y="y", data=self.df, lowess=True,
+                         lowess_kws=lowess_kws)
 
     @pytest.mark.parametrize("option", ["robust", "lowess"])
     @pytest.mark.skipif(not _no_statsmodels, reason="statsmodels installed")
