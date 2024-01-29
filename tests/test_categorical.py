@@ -1168,25 +1168,18 @@ class TestBoxPlot(SharedAxesLevelTests, SharedPatchArtistTests):
         g = catplot(**kwargs, kind="box")
 
         assert_plots_equal(ax, g.ax)
-        
-        
+
     @pytest.mark.parametrize("positions", [None, [1, 2, 3, 4]])
     def test_reject_boxpositions(self, positions):
-        
         kwargs = {
-            "x":[1, 2, 3, 4],
-            "y":[1, 1, 2, 2]
+            "x": [1, 2, 3, 4],
+            "y": [1, 1, 2, 2]
         }
-            
-        try:
+        with pytest.raises(RuntimeError, match="boxplot\\(\\) does not support "
+                           "parameter 'positions'\\. Consider to use "
+                           "native_scale=True and specify positions explicitly."):
             boxplot(**kwargs, positions=positions)
-            err = None
-        except ValueError as e:
-            err = e
-        
-        assert(err is not None)
-        
-        
+
 
 class TestBoxenPlot(SharedAxesLevelTests, SharedPatchArtistTests):
 
