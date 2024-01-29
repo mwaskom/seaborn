@@ -115,6 +115,17 @@ class TestEst(AggregationFixtures):
         expected = est.assign(ymin=grouped.min()["y"], ymax=grouped.max()["y"])
         assert_frame_equal(res, expected)
 
+    def test_weighted_mean(self, df, rng):
+
+        weights = rng.uniform(0, 5, len(df))
+        gb = self.get_groupby(df[["x", "y"]], "x")
+        df = df.assign(weight=weights)
+        res = Est("mean")(df, gb, "x", {})
+        for _, res_row in res.iterrows():
+            rows = df[df["x"] == res_row["x"]]
+            expected = np.average(rows["y"], weights=rows["weight"])
+            assert res_row["y"] == expected
+
     def test_seed(self, df):
 
         ori = "x"

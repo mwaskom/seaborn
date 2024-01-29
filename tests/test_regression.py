@@ -16,7 +16,6 @@ except ImportError:
     _no_statsmodels = True
 
 from seaborn import regression as lm
-from seaborn.utils import _version_predates
 from seaborn.palettes import color_palette
 
 rs = np.random.RandomState(0)
@@ -611,8 +610,6 @@ class TestRegressionPlots:
         npt.assert_array_equal(red, red_scatter.get_facecolors()[0, :3])
         npt.assert_array_equal(blue, blue_scatter.get_facecolors()[0, :3])
 
-    @pytest.mark.skipif(_version_predates(mpl, "3.4"),
-                        reason="MPL bug #15967")
     @pytest.mark.parametrize("sharex", [True, False])
     def test_lmplot_facet_truncate(self, sharex):
 

@@ -579,10 +579,6 @@ class TestScaling:
         assert_vector_equal(m.passed_data[0]["x"], pd.Series([0., 1.], [0, 1]))
         assert_vector_equal(m.passed_data[1]["x"], pd.Series([0., 1.], [0, 1]))
 
-    @pytest.mark.xfail(
-        _version_predates(mpl, "3.4.0"),
-        reason="Sharing paired categorical axes requires matplotlib>3.4.0"
-    )
     def test_pair_categories_shared(self):
 
         data = [("a", "a"), ("b", "c")]
@@ -938,7 +934,7 @@ class TestPlotting:
     def test_theme_error(self):
 
         p = Plot()
-        with pytest.raises(TypeError, match=r"theme\(\) takes 1 positional"):
+        with pytest.raises(TypeError, match=r"theme\(\) takes 2 positional"):
             p.theme("arg1", "arg2")
 
     def test_theme_validation(self):
@@ -1095,6 +1091,32 @@ class TestPlotting:
         p = Plot().layout(size=size).plot()
         assert tuple(p._figure.get_size_inches()) == size
 
+    @pytest.mark.skipif(
+        _version_predates(mpl, "3.6"),
+        reason="mpl<3.6 does not have get_layout_engine",
+    )
+    def test_layout_extent(self):
+
+        p = Plot().layout(extent=(.1, .2, .6, 1)).plot()
+        assert p._figure.get_layout_engine().get()["rect"] == [.1, .2, .5, .8]
+
+    @pytest.mark.skipif(
+        _version_predates(mpl, "3.6"),
+        reason="mpl<3.6 does not have get_layout_engine",
+    )
+    def test_constrained_layout_extent(self):
+
+        p = Plot().layout(engine="constrained", extent=(.1, .2, .6, 1)).plot()
+        assert p._figure.get_layout_engine().get()["rect"] == [.1, .2, .5, .8]
+
+    def test_base_layout_extent(self):
+
+        p = Plot().layout(engine=None, extent=(.1, .2, .6, 1)).plot()
+        assert p._figure.subplotpars.left == 0.1
+        assert p._figure.subplotpars.right == 0.6
+        assert p._figure.subplotpars.bottom == 0.2
+        assert p._figure.subplotpars.top == 1
+
     def test_on_axes(self):
 
         ax = mpl.figure.Figure().subplots()
@@ -1115,10 +1137,6 @@ class TestPlotting:
         assert m.passed_axes == f.axes
         assert p._figure is f
 
-    @pytest.mark.skipif(
-        _version_predates(mpl, "3.4"),
-        reason="mpl<3.4 does not have SubFigure",
-    )
     @pytest.mark.parametrize("facet", [True, False])
     def test_on_subfigure(self, facet):
 
@@ -1834,6 +1852,12 @@ class TestLabelVisibility:
         for s in subplots[1:]:
             ax = s["ax"]
             assert ax.xaxis.get_label().get_visible()
+            # mpl3.7 added a getter for tick params, but both yaxis and xaxis return
+            # the same entry of "labelleft" instead of  "labelbottom" for xaxis
+            if not _version_predates(mpl, "3.7"):
+                assert ax.xaxis.get_tick_params()["labelleft"]
+            else:
+                assert len(ax.get_xticklabels()) > 0
             assert all(t.get_visible() for t in ax.get_xticklabels())
 
         for s in subplots[1:-1]:
@@ -1858,6 +1882,12 @@ class TestLabelVisibility:
         for s in subplots[-2:]:
             ax = s["ax"]
             assert ax.xaxis.get_label().get_visible()
+            # mpl3.7 added a getter for tick params, but both yaxis and xaxis return
+            # the same entry of "labelleft" instead of  "labelbottom" for xaxis
+            if not _version_predates(mpl, "3.7"):
+                assert ax.xaxis.get_tick_params()["labelleft"]
+            else:
+                assert len(ax.get_xticklabels()) > 0
             assert all(t.get_visible() for t in ax.get_xticklabels())
 
         for s in subplots[:-2]:

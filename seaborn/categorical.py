@@ -8,7 +8,9 @@ import numpy as np
 import pandas as pd
 
 import matplotlib as mpl
+from matplotlib.cbook import normalize_kwargs
 from matplotlib.collections import PatchCollection
+from matplotlib.markers import MarkerStyle
 from matplotlib.patches import Rectangle
 import matplotlib.pyplot as plt
 
@@ -23,12 +25,15 @@ from seaborn.utils import (
     _default_color,
     _get_patch_legend_artist,
     _get_transform_functions,
-    _normalize_kwargs,
     _scatter_legend_artist,
     _version_predates,
 )
-from seaborn._compat import MarkerStyle
-from seaborn._statistics import EstimateAggregator, LetterValues
+from seaborn._compat import groupby_apply_include_groups
+from seaborn._statistics import (
+    EstimateAggregator,
+    LetterValues,
+    WeightedAggregator,
+)
 from seaborn.palettes import light_palette
 from seaborn.axisgrid import FacetGrid, _facet_docs
 
@@ -388,6 +393,11 @@ class _CategoricalPlotter(VectorPlotter):
 
     def _dodge(self, keys, data):
         """Apply a dodge transform to coordinates in place."""
+        if "hue" not in self.variables:
+            # Short-circuit if hue variable was not assigned
+            # We could potentially warn when hue=None, dodge=True, user may be confused
+            # But I think it's fine to just treat it as a no-op.
+            return
         hue_idx = self._hue_map.levels.index(keys["hue"])
         n = len(self._hue_map.levels)
         data["width"] /= n
@@ -596,7 +606,7 @@ class _CategoricalPlotter(VectorPlotter):
         value_var = {"x": "y", "y": "x"}[self.orient]
 
         def get_props(element, artist=mpl.lines.Line2D):
-            return _normalize_kwargs(plot_kws.pop(f"{element}props", {}), artist)
+            return normalize_kwargs(plot_kws.pop(f"{element}props", {}), artist)
 
         if not fill and linewidth is None:
             linewidth = mpl.rcParams["lines.linewidth"]
@@ -625,10 +635,10 @@ class _CategoricalPlotter(VectorPlotter):
             ax = self._get_axes(sub_vars)
 
             grouped = sub_data.groupby(self.orient)[value_var]
+            positions = sorted(sub_data[self.orient].unique().astype(float))
             value_data = [x.to_numpy() for _, x in grouped]
             stats = pd.DataFrame(mpl.cbook.boxplot_stats(value_data, whis=whis,
                                                          bootstrap=bootstrap))
-            positions = grouped.grouper.result_index.to_numpy(dtype=float)
 
             orig_width = width * self._native_width
             data = pd.DataFrame({self.orient: positions, "width": orig_width})
@@ -1166,7 +1176,7 @@ class _CategoricalPlotter(VectorPlotter):
         agg_var = {"x": "y", "y": "x"}[self.orient]
         iter_vars = ["hue"]
 
-        plot_kws = _normalize_kwargs(plot_kws, mpl.lines.Line2D)
+        plot_kws = normalize_kwargs(plot_kws, mpl.lines.Line2D)
         plot_kws.setdefault("linewidth", mpl.rcParams["lines.linewidth"] * 1.8)
         plot_kws.setdefault("markeredgewidth", plot_kws["linewidth"] * 0.75)
         plot_kws.setdefault("markersize", plot_kws["linewidth"] * np.sqrt(2 * np.pi))
@@ -1198,7 +1208,7 @@ class _CategoricalPlotter(VectorPlotter):
             agg_data = sub_data if sub_data.empty else (
                 sub_data
                 .groupby(self.orient)
-                .apply(aggregator, agg_var)
+                .apply(aggregator, agg_var, **groupby_apply_include_groups(False))
                 .reindex(pd.Index(positions, name=self.orient))
                 .reset_index()
             )
@@ -1269,7 +1279,7 @@ class _CategoricalPlotter(VectorPlotter):
             agg_data = sub_data if sub_data.empty else (
                 sub_data
                 .groupby(self.orient)
-                .apply(aggregator, agg_var)
+                .apply(aggregator, agg_var, **groupby_apply_include_groups(False))
                 .reset_index()
             )
 
@@ -1380,16 +1390,22 @@ _categorical_docs = dict(
     errorbar : string, (string, number) tuple, callable or None
         Name of errorbar method (either "ci", "pi", "se", or "sd"), or a tuple
         with a method name and a level parameter, or a function that maps from a
-        vector to a (min, max) interval, or None to hide errorbar.
+        vector to a (min, max) interval, or None to hide errorbar. See the
+        :doc:`errorbar tutorial </tutorial/error_bars>` for more information.
 
         .. versionadded:: v0.12.0
     n_boot : int
         Number of bootstrap samples used to compute confidence intervals.
+    seed : int, `numpy.random.Generator`, or `numpy.random.RandomState`
+        Seed or random number generator for reproducible bootstrapping.
     units : name of variable in `data` or vector data
         Identifier of sampling units; used by the errorbar function to
         perform a multilevel bootstrap and account for repeated measures
-    seed : int, `numpy.random.Generator`, or `numpy.random.RandomState`
-        Seed or random number generator for reproducible bootstrapping.\
+    weights : name of variable in `data` or vector data
+        Data values or column used to compute weighted statistics.
+        Note that the use of weights may limit other statistical options.
+
+        .. versionadded:: v0.13.1\
     """),
     ci=dedent("""\
     ci : float
@@ -2270,7 +2286,7 @@ swarmplot.__doc__ = dedent("""\
     {order_vars}
     dodge : bool
         When a `hue` variable is assigned, setting this to `True` will
-        separate the swaarms for different hue levels along the categorical
+        separate the swarms for different hue levels along the categorical
         axis and narrow the amount of space allotedto each strip. Otherwise,
         the points for each level will be plotted in the same swarm.
     {orient}
@@ -2312,10 +2328,10 @@ swarmplot.__doc__ = dedent("""\
 
 def barplot(
     data=None, *, x=None, y=None, hue=None, order=None, hue_order=None,
-    estimator="mean", errorbar=("ci", 95), n_boot=1000, units=None, seed=None,
-    orient=None, color=None, palette=None, saturation=.75, fill=True, hue_norm=None,
-    width=.8, dodge="auto", gap=0, log_scale=None, native_scale=False, formatter=None,
-    legend="auto", capsize=0, err_kws=None,
+    estimator="mean", errorbar=("ci", 95), n_boot=1000, seed=None, units=None,
+    weights=None, orient=None, color=None, palette=None, saturation=.75,
+    fill=True, hue_norm=None, width=.8, dodge="auto", gap=0, log_scale=None,
+    native_scale=False, formatter=None, legend="auto", capsize=0, err_kws=None,
     ci=deprecated, errcolor=deprecated, errwidth=deprecated, ax=None, **kwargs,
 ):
 
@@ -2328,7 +2344,7 @@ def barplot(
 
     p = _CategoricalAggPlotter(
         data=data,
-        variables=dict(x=x, y=y, hue=hue, units=units),
+        variables=dict(x=x, y=y, hue=hue, units=units, weight=weights),
         order=order,
         orient=orient,
         color=color,
@@ -2358,8 +2374,9 @@ def barplot(
     p.map_hue(palette=palette, order=hue_order, norm=hue_norm, saturation=saturation)
     color = _default_color(ax.bar, hue, color, kwargs, saturation=saturation)
 
-    aggregator = EstimateAggregator(estimator, errorbar, n_boot=n_boot, seed=seed)
-    err_kws = {} if err_kws is None else _normalize_kwargs(err_kws, mpl.lines.Line2D)
+    agg_cls = WeightedAggregator if "weight" in p.plot_data else EstimateAggregator
+    aggregator = agg_cls(estimator, errorbar, n_boot=n_boot, seed=seed)
+    err_kws = {} if err_kws is None else normalize_kwargs(err_kws, mpl.lines.Line2D)
 
     # Deprecations to remove in v0.15.0.
     err_kws, capsize = p._err_kws_backcompat(err_kws, errcolor, errwidth, capsize)
@@ -2453,20 +2470,19 @@ barplot.__doc__ = dedent("""\
 
 def pointplot(
     data=None, *, x=None, y=None, hue=None, order=None, hue_order=None,
-    estimator="mean", errorbar=("ci", 95), n_boot=1000, units=None, seed=None,
-    color=None, palette=None, hue_norm=None, markers=default, linestyles=default,
-    dodge=False, log_scale=None, native_scale=False, orient=None, capsize=0,
-    formatter=None, legend="auto", err_kws=None,
+    estimator="mean", errorbar=("ci", 95), n_boot=1000, seed=None, units=None,
+    weights=None, color=None, palette=None, hue_norm=None, markers=default,
+    linestyles=default, dodge=False, log_scale=None, native_scale=False,
+    orient=None, capsize=0, formatter=None, legend="auto", err_kws=None,
     ci=deprecated, errwidth=deprecated, join=deprecated, scale=deprecated,
-    ax=None,
-    **kwargs,
+    ax=None, **kwargs,
 ):
 
     errorbar = utils._deprecate_ci(errorbar, ci)
 
     p = _CategoricalAggPlotter(
         data=data,
-        variables=dict(x=x, y=y, hue=hue, units=units),
+        variables=dict(x=x, y=y, hue=hue, units=units, weight=weights),
         order=order,
         orient=orient,
         # Handle special backwards compatibility where pointplot originally
@@ -2493,8 +2509,9 @@ def pointplot(
     p.map_hue(palette=palette, order=hue_order, norm=hue_norm)
     color = _default_color(ax.plot, hue, color, kwargs)
 
-    aggregator = EstimateAggregator(estimator, errorbar, n_boot=n_boot, seed=seed)
-    err_kws = {} if err_kws is None else _normalize_kwargs(err_kws, mpl.lines.Line2D)
+    agg_cls = WeightedAggregator if "weight" in p.plot_data else EstimateAggregator
+    aggregator = agg_cls(estimator, errorbar, n_boot=n_boot, seed=seed)
+    err_kws = {} if err_kws is None else normalize_kwargs(err_kws, mpl.lines.Line2D)
 
     # Deprecations to remove in v0.15.0.
     p._point_kwargs_backcompat(scale, join, kwargs)
@@ -2733,12 +2750,12 @@ countplot.__doc__ = dedent("""\
 
 def catplot(
     data=None, *, x=None, y=None, hue=None, row=None, col=None, kind="strip",
-    estimator="mean", errorbar=("ci", 95), n_boot=1000, units=None, seed=None,
-    order=None, hue_order=None, row_order=None, col_order=None, col_wrap=None,
-    height=5, aspect=1, log_scale=None, native_scale=False, formatter=None,
-    orient=None, color=None, palette=None, hue_norm=None, legend="auto",
-    legend_out=True, sharex=True, sharey=True, margin_titles=False, facet_kws=None,
-    ci=deprecated, **kwargs
+    estimator="mean", errorbar=("ci", 95), n_boot=1000, seed=None, units=None,
+    weights=None, order=None, hue_order=None, row_order=None, col_order=None,
+    col_wrap=None, height=5, aspect=1, log_scale=None, native_scale=False,
+    formatter=None, orient=None, color=None, palette=None, hue_norm=None,
+    legend="auto", legend_out=True, sharex=True, sharey=True,
+    margin_titles=False, facet_kws=None, ci=deprecated, **kwargs
 ):
 
     # Check for attempt to plot onto specific axes and warn
@@ -2768,7 +2785,9 @@ def catplot(
 
     p = Plotter(
         data=data,
-        variables=dict(x=x, y=y, hue=hue, row=row, col=col, units=units),
+        variables=dict(
+            x=x, y=y, hue=hue, row=row, col=col, units=units, weight=weights
+        ),
         order=order,
         orient=orient,
         # Handle special backwards compatibility where pointplot originally
@@ -2834,7 +2853,7 @@ def catplot(
             color = desaturate(color, saturation)
 
     if kind in ["strip", "swarm"]:
-        kwargs = _normalize_kwargs(kwargs, mpl.collections.PathCollection)
+        kwargs = normalize_kwargs(kwargs, mpl.collections.PathCollection)
         kwargs["edgecolor"] = p._complement_color(
             kwargs.pop("edgecolor", default), color, p._hue_map
         )
@@ -2843,6 +2862,14 @@ def catplot(
     dodge = kwargs.pop("dodge", False if kind in undodged_kinds else "auto")
     if dodge == "auto":
         dodge = p._dodge_needed()
+
+    if "weight" in p.plot_data:
+        if kind not in ["bar", "point"]:
+            msg = f"The `weights` parameter has no effect with kind={kind!r}."
+            warnings.warn(msg, stacklevel=2)
+        agg_cls = WeightedAggregator
+    else:
+        agg_cls = EstimateAggregator
 
     if kind == "strip":
 
@@ -2993,9 +3020,7 @@ def catplot(
 
     elif kind == "point":
 
-        aggregator = EstimateAggregator(
-            estimator, errorbar, n_boot=n_boot, seed=seed
-        )
+        aggregator = agg_cls(estimator, errorbar, n_boot=n_boot, seed=seed)
 
         markers = kwargs.pop("markers", default)
         linestyles = kwargs.pop("linestyles", default)
@@ -3003,14 +3028,14 @@ def catplot(
         # Deprecations to remove in v0.15.0.
         # TODO Uncomment when removing deprecation backcompat
         # capsize = kwargs.pop("capsize", 0)
-        # err_kws = _normalize_kwargs(kwargs.pop("err_kws", {}), mpl.lines.Line2D)
+        # err_kws = normalize_kwargs(kwargs.pop("err_kws", {}), mpl.lines.Line2D)
         p._point_kwargs_backcompat(
             kwargs.pop("scale", deprecated),
             kwargs.pop("join", deprecated),
             kwargs
         )
         err_kws, capsize = p._err_kws_backcompat(
-            _normalize_kwargs(kwargs.pop("err_kws", {}), mpl.lines.Line2D),
+            normalize_kwargs(kwargs.pop("err_kws", {}), mpl.lines.Line2D),
             None,
             errwidth=kwargs.pop("errwidth", deprecated),
             capsize=kwargs.pop("capsize", 0),
@@ -3029,11 +3054,10 @@ def catplot(
 
     elif kind == "bar":
 
-        aggregator = EstimateAggregator(
-            estimator, errorbar, n_boot=n_boot, seed=seed
-        )
+        aggregator = agg_cls(estimator, errorbar, n_boot=n_boot, seed=seed)
+
         err_kws, capsize = p._err_kws_backcompat(
-            _normalize_kwargs(kwargs.pop("err_kws", {}), mpl.lines.Line2D),
+            normalize_kwargs(kwargs.pop("err_kws", {}), mpl.lines.Line2D),
             errcolor=kwargs.pop("errcolor", deprecated),
             errwidth=kwargs.pop("errwidth", deprecated),
             capsize=kwargs.pop("capsize", 0),

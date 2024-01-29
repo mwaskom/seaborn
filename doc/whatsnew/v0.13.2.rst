@@ -1,0 +1,4 @@
+v0.13.2 (January 2024)
+----------------------
+
+This is a minor release containing internal changes that adapt to upcoming deprecations in pandas. All users are encouraged to update.

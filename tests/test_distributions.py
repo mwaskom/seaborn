@@ -920,6 +920,10 @@ class TestKDEPlotUnivariate(SharedAxesLevelTests):
 
         assert ax.legend_ is None
 
+    def test_replaced_kws(self, long_df):
+        with pytest.raises(TypeError, match=r"`data2` has been removed"):
+            kdeplot(data=long_df, x="x", data2="y")
+
 
 class TestKDEPlotBivariate:
 
