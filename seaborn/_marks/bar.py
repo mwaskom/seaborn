@@ -109,7 +109,7 @@ class BarBase(Mark):
 
 
 @document_properties
-@dataclass
+@dataclass(repr=False)
 class Bar(BarBase):
     """
     A bar mark drawn between baseline and data values.
@@ -176,7 +176,7 @@ class Bar(BarBase):
 
 
 @document_properties
-@dataclass
+@dataclass(repr=False)
 class Bars(BarBase):
     """
     A faster bar mark with defaults more suitable for histograms.

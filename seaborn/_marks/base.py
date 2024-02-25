@@ -101,10 +101,9 @@ MappableColor = Union[str, tuple, Mappable]
 MappableStyle = Union[str, DashPattern, DashPatternWithOffset, Mappable]
 
 
-@dataclass
+@dataclass(repr=False)
 class Mark:
     """Base class for objects that visually represent data."""
-
     artist_kws: dict = field(default_factory=dict)
 
     @property
@@ -123,7 +122,28 @@ class Mark:
             if isinstance(f.default, Mappable) and f.default.grouping
         ]
 
-    # TODO make this method private? Would extender every need to call directly?
+    def __repr__(self):
+
+        res = f"{self.__class__.__name__}(\n"
+        for prop in fields(self):
+            name = prop.name
+            res += f"  {name}={getattr(self, name)!r},\n"
+        return res + ")"
+
+    def __add__(self, other: Mark) -> CompoundMark:
+
+        if not isinstance(other, Mark):
+            raise TypeError()  # TODO
+
+        for prop, val in self._mappable_props.items():
+            if (
+                isinstance(getattr(other, prop, None), Mappable)
+                and not isinstance(getattr(self, prop, None), Mappable)
+            ):
+                setattr(other, prop, val)
+
+        return CompoundMark(_marks=[self, other])
+
     def _resolve(
         self,
         data: DataFrame | dict[str, Any],
@@ -227,6 +247,59 @@ class Mark:
     ) -> Artist | None:
 
         return None
+
+
+# TODO maybe have an intermediate ArtistMark with the artist_kws attribute and have
+# other marks inherit that class, so this one would only have _mark
+
+@dataclass(repr=False)
+class CompoundMark(Mark):
+
+    _marks: list[Mark] = field(default_factory=list)
+
+    @property
+    def _mappable_props(self):
+
+        res = {}
+        for mark in self._marks:
+            res.update({k: v for k, v in mark._mappable_props.items() if k not in res})
+        return res
+
+    @property
+    def _grouping_props(self):
+
+        res = []
+        for mark in self._marks:
+            res.extend(x for x in mark._grouping_props if x not in res)
+        return res
+
+    def __repr__(self):
+
+        res = f"{self.__class__.__name__}([\n"
+        for mark in self._marks:
+            for line in repr(mark).split("\n"):
+                if line.endswith(")"):
+                    line += ","
+                res += f"  {line}\n"
+        return res + "])"
+
+    def _plot(
+        self,
+        split_generator: Callable[[], Generator],
+        scales: dict[str, Scale],
+        orient: str,
+    ) -> None:
+
+        for mark in self._marks:
+            mark._plot(split_generator, scales, orient)
+
+    def _legend_artist(
+        self, variables: list[str], value: Any, scales: dict[str, Scale],
+    ) -> Artist:
+
+        return tuple(
+            mark._legend_artist(variables, value, scales) for mark in self._marks
+        )
 
 
 def resolve_properties(
