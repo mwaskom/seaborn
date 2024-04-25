@@ -9,7 +9,7 @@ import itertools
 import textwrap
 from contextlib import contextmanager
 from collections import abc
-from collections.abc import Callable, Generator
+from collections.abc import Callable, Generator, Mapping
 from typing import Any, List, Literal, Optional, cast
 from xml.etree import ElementTree
 
@@ -859,7 +859,7 @@ class Plot:
 
     # TODO def legend (ugh)
 
-    def theme(self, config: dict[str, Any], /) -> Plot:
+    def theme(self, config: Mapping[str, Any], /) -> Plot:
         """
         Control the appearance of elements in the plot.
 
