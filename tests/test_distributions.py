@@ -1038,9 +1038,6 @@ class TestKDEPlotBivariate:
 
     def test_weights(self, rng):
 
-        import warnings
-        warnings.simplefilter("error", np.VisibleDeprecationWarning)
-
         n = 100
         x, y = rng.multivariate_normal([1, 3], [(.2, .5), (.5, 2)], n).T
         hue = np.repeat([0, 1], n // 2)
