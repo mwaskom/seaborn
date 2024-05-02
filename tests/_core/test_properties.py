@@ -238,6 +238,17 @@ class TestColor(DataFixtures):
         assert isinstance(scale, scale_class)
         assert scale.values == values
 
+    @pytest.mark.parametrize(
+        "trans",
+        ["pow", "sqrt", "log", "symlog", "logit", "log2", "symlog100"]
+    )
+    def test_inference_magic_args(self, trans, num_vector):
+
+        scale = Color().infer_scale(trans, num_vector)
+        assert isinstance(scale, Continuous)
+        assert scale.trans == trans
+        assert scale.values is None
+
     def test_standardization(self):
 
         f = Color().standardize

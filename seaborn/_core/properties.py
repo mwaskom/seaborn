@@ -43,6 +43,7 @@ Mapping = Callable[[ArrayLike], ArrayLike]
 
 class Property:
     """Base class for visual properties that can be set directly or be data scaling."""
+    _TRANS_ARGS = ["log", "symlog", "logit", "pow", "sqrt"]
 
     # When True, scales for this property will populate the legend by default
     legend = False
@@ -607,8 +608,6 @@ class Color(Property):
         if callable(arg):
             return Continuous(arg)
 
-        # TODO Do we accept str like "log", "pow", etc. for semantics?
-
         if not isinstance(arg, str):
             msg = " ".join([
                 f"A single scale argument for {self.variable} variables must be",
@@ -618,6 +617,8 @@ class Color(Property):
 
         if arg in QUAL_PALETTES:
             return Nominal(arg)
+        if any(arg.startswith(k) for k in self._TRANS_ARGS):
+            return Continuous(trans=arg)
         elif var_type == "numeric":
             return Continuous(arg)
         # TODO implement scales for date variables and any others.
