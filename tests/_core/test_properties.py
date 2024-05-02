@@ -542,6 +542,17 @@ class IntervalBase(DataFixtures):
         n = cat_vector.nunique()
         assert_array_equal(mapping([n - 1, 0]), self.prop().default_range)
 
+    @pytest.mark.parametrize(
+        "trans",
+        ["pow", "sqrt", "log", "symlog", "log13", "logit", "symlog37"]
+    )
+    def test_inference_magic_args(self, trans, num_vector):
+
+        scale = self.prop().infer_scale(trans, num_vector)
+        assert isinstance(scale, Continuous)
+        assert scale.trans == trans
+        assert scale.values is None
+
     def test_bad_scale_values_numeric_data(self, num_vector):
 
         prop_name = self.prop.__name__.lower()

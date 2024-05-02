@@ -184,6 +184,8 @@ class IntervalProperty(Property):
             return Nominal(arg)
         elif var_type == "datetime":
             return Temporal(arg)
+        elif isinstance(arg, str) and any(arg.startswith(k) for k in self._TRANS_ARGS):
+            return Continuous(trans=arg)
         # TODO other variable types
         else:
             return Continuous(arg)
