@@ -14,6 +14,7 @@ from seaborn._core.scales import Scale, Boolean, Continuous, Nominal, Temporal
 from seaborn._core.rules import categorical_order, variable_type
 from seaborn.palettes import QUAL_PALETTES, color_palette, blend_palette
 from seaborn.utils import get_color_cycle
+from seaborn._compat import is_registered_colormap
 
 from typing import Any, Callable, Tuple, List, Union, Optional
 
@@ -77,9 +78,8 @@ class Property:
         # (e.g. color). How best to handle that? One option is to call super after
         # handling property-specific possibilities (e.g. for color check that the
         # arg is not a valid palette name) but that could get tricky.
-        trans_args = ["log", "symlog", "logit", "pow", "sqrt"]
         if isinstance(arg, str):
-            if any(arg.startswith(k) for k in trans_args):
+            if any(arg.startswith(k) for k in self._TRANS_ARGS):
                 # TODO validate numeric type? That should happen centrally somewhere
                 return Continuous(trans=arg)
             else:
@@ -617,10 +617,15 @@ class Color(Property):
 
         if arg in QUAL_PALETTES:
             return Nominal(arg)
-        if any(arg.startswith(k) for k in self._TRANS_ARGS):
-            return Continuous(trans=arg)
         elif var_type == "numeric":
-            return Continuous(arg)
+            # Prioritize actual colormaps, e.g. if a colormap named "pow" exists
+            if is_registered_colormap(arg):
+                return Continuous(arg)
+            elif any(arg.startswith(k) for k in self._TRANS_ARGS):
+                return Continuous(trans=arg)
+            else:
+                return Continuous(arg)
+            
         # TODO implement scales for date variables and any others.
         else:
             return Nominal(arg)
