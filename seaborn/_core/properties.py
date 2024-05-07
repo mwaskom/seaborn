@@ -627,7 +627,7 @@ class Color(Property):
                 return Continuous(trans=arg)
             else:
                 return Continuous(arg)
-            
+
         # TODO implement scales for date variables and any others.
         else:
             return Nominal(arg)

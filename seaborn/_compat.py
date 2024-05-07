@@ -55,6 +55,7 @@ def norm_from_scale(scale, norm):
 
     return new_norm
 
+
 def is_registered_colormap(name):
     """Handle changes to matplotlib colormap interface in 3.5."""
     if _version_predates(mpl, "3.5"):
