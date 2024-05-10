@@ -833,8 +833,6 @@ def relplot(
         height=height, aspect=aspect, dropna=False,
         **facet_kws
     )
-    
-    print('relplot', g.data.shape)
 
     # Draw the plot
     g.map_dataframe(func, **plot_kws)
