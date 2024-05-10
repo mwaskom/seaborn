@@ -647,7 +647,8 @@ class _DistributionPlotter(VectorPlotter):
                     line_args = density, support
                     sticky_x, sticky_y = (0, np.inf), None
 
-                line_kws["color"] = to_rgba(sub_color, 1)
+                line_color = line_kws.get('color', sub_color)
+                line_kws["color"] = to_rgba(line_color, 1)
                 line, = ax.plot(
                     *line_args, **line_kws,
                 )
