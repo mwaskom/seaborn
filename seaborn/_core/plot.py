@@ -1154,7 +1154,8 @@ class Plotter:
                 # axis / tick labels can be shown on interior shared axes if desired
 
                 axis_obj = getattr(ax, f"{axis}axis")
-                visible_side = {"x": "bottom", "y": "left"}.get(axis)
+                # This allows correct handling for twin{x/y} axises (GH 3614)
+                visible_side = axis_obj.get_label_position()
                 show_axis_label = (
                     sub[visible_side]
                     or not p._pair_spec.get("cross", True)
@@ -1172,8 +1173,9 @@ class Plotter:
                     )
                 )
                 for group in ("major", "minor"):
-                    side = {"x": "bottom", "y": "left"}[axis]
-                    axis_obj.set_tick_params(**{f"label{side}": show_tick_labels})
+                    axis_obj.set_tick_params(
+                        **{f"label{visible_side}": show_tick_labels}
+                    )
                     for t in getattr(axis_obj, f"get_{group}ticklabels")():
                         t.set_visible(show_tick_labels)
 
