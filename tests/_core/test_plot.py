@@ -1124,6 +1124,24 @@ class TestPlotting:
         p = Plot([1], [2]).on(ax).add(m).plot()
         assert m.passed_axes == [ax]
         assert p._figure is ax.figure
+        assert ax.yaxis.get_label_position() == "left"
+        assert ax.yaxis.get_ticks_position() == "left"
+        assert ax.xaxis.get_label_position() == "bottom"
+        assert ax.xaxis.get_ticks_position() == "bottom"
+
+    @pytest.mark.parametrize("axis,exp_position", [("x", "top"), ("y", "right")])
+    def test_on_secondary_axes(self, axis, exp_position):
+
+        ax = mpl.figure.Figure().subplots()
+        twinned_ax = {"x": "y", "y": "x"}[axis]
+        ax2 = getattr(ax, f"twin{twinned_ax}")()
+        m = MockMark()
+        p = Plot([1], [2]).on(ax2).add(m).plot()
+        assert m.passed_axes == [ax2]
+        assert p._figure is ax2.figure
+        targetaxis = getattr(ax2, f"{axis}axis")
+        assert targetaxis.get_label_position() == exp_position
+        assert targetaxis.get_ticks_position() == exp_position
 
     @pytest.mark.parametrize("facet", [True, False])
     def test_on_figure(self, facet):
