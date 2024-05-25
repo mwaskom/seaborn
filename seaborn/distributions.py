@@ -545,6 +545,7 @@ class _DistributionPlotter(VectorPlotter):
         hist_artists = []
 
         # Go back through the dataset and draw the plots
+        custome_line_color = line_kws.get('color')
         for sub_vars, _ in self.iter_data("hue", reverse=True):
 
             key = tuple(sub_vars.items())
@@ -647,7 +648,10 @@ class _DistributionPlotter(VectorPlotter):
                     line_args = density, support
                     sticky_x, sticky_y = (0, np.inf), None
 
-                line_color = line_kws.get('color', sub_color)
+                if custome_line_color is None:
+                    line_color = sub_color
+                else:
+                    line_color = custome_line_color
                 line_kws["color"] = to_rgba(line_color, 1)
                 line, = ax.plot(
                     *line_args, **line_kws,
