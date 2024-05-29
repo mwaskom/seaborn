@@ -1,0 +1,44 @@
+name: AppMap
+
+on:
+  push:
+
+jobs:
+  appmap:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        python: ["3.10"]
+        install: [full]
+        deps: [latest]
+
+        include:
+          - python: "3.7"
+            install: full
+            deps: pinned
+          - python: "3.10"
+            install: light
+            deps: latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup Python 3.10
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.10
+
+      - name: Install seaborn
+        run: |
+          pip install --upgrade pip wheel
+          pip install .[dev,stats] latest
+          pip install appmap
+
+      - name: Run tests
+        run: | 
+          appmap-python make test
+
+      - name: Collect AppMap data
+        run: |
+          tar -cJf seaborn-0.12.2.tar.gz tmp/appmap appmap.yml
