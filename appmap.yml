@@ -1,0 +1,7 @@
+name: seaborn
+appmap_dir: tmp/appmap
+language: python
+packages:
+  - path: seaborn
+    exclude: 
+      - external

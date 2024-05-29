@@ -14,3 +14,9 @@ htmlcov/
 .DS_Store
 notes/
 notebooks/
+tmp/appmap/
+appmap.log
+venv
+seaborn.patch
+*.tar.xz
+

@@ -1,0 +1,25 @@
+May 28
+------
+
+# https://stackoverflow.com/questions/76364921/seaborn-pairplot-error-optionerror-no-such-keyss-mode-use-inf-as-null
+v0.12.2
+
+pip install -e .
+appmap-python pytest
+
+
+May 24
+------
+
+appmap 2.0.1
+
+2 test failures
+See: https://github.com/getappmap/appmap-python/issues/315
+
+May 23
+------
+
+appmap 1.x
+
+37 test failures due to https://github.com/getappmap/appmap-python/issues/283
+
