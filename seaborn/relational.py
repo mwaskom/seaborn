@@ -887,15 +887,15 @@ def relplot(
     if data is not None and (x is not None or y is not None):
         if not isinstance(data, pd.DataFrame):
             data = pd.DataFrame(data)
-        g.data = pd.merge(
-            data,
-            grid_data[grid_data.columns.difference(data.columns)],
-            left_index=True,
-            right_index=True,
-        )
+        if len(grid_data.columns.difference(data.columns)) > 0:
+            g.data = pd.merge(
+                data,
+                grid_data[grid_data.columns.difference(data.columns)],
+                left_index=True,
+                right_index=True,
+            )
     else:
         g.data = grid_data
-
     return g
 
 
