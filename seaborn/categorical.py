@@ -2015,7 +2015,7 @@ boxenplot.__doc__ = dedent("""\
 
         - `"tukey"`: Use log2(n) - 3 levels, covering similar range as boxplot whiskers
         - `"proportion"`: Leave approximately `outlier_prop` fliers
-        - `"trusthworthy"`: Extend to level with confidence of at least `trust_alpha`
+        - `"trustworthy"`: Extend to level with confidence of at least `trust_alpha`
         - `"full"`: Use log2(n) + 1 levels and extend to most extreme points
     outlier_prop : float
         Proportion of data expected to be outliers; used when `k_depth="proportion"`.
