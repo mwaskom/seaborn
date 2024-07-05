@@ -133,7 +133,7 @@ class Hist(Stat):
             bin_edges = np.arange(start - .5, stop + 1.5)
         else:
             if binwidth is not None:
-                bins = int(round((stop - start) / binwidth))
+                bins = int(np.ceil((stop - start) / binwidth))
             bin_edges = np.histogram_bin_edges(vals, bins, binrange, weight)
 
         # TODO warning or cap on too many bins?
