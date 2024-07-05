@@ -11,6 +11,7 @@ from seaborn._core.scales import Scale
 from seaborn._stats.base import Stat
 
 from typing import TYPE_CHECKING
+
 if TYPE_CHECKING:
     from numpy.typing import ArrayLike
 
@@ -32,9 +33,8 @@ class Count(Stat):
     group_by_orient: ClassVar[bool] = True
 
     def __call__(
-        self, data: DataFrame, groupby: GroupBy, orient: str, scales: dict[str, Scale],
+            self, data: DataFrame, groupby: GroupBy, orient: str, scales: dict[str, Scale],
     ) -> DataFrame:
-
         var = {"x": "y", "y": "x"}[orient]
         res = (
             groupby
@@ -133,7 +133,7 @@ class Hist(Stat):
             bin_edges = np.arange(start - .5, stop + 1.5)
         else:
             if binwidth is not None:
-                bins = int(np.ceil((stop - start) / binwidth))
+                bins = max(int(round((stop - start) / binwidth)), 1)
             bin_edges = np.histogram_bin_edges(vals, bins, binrange, weight)
 
         # TODO warning or cap on too many bins?
@@ -199,7 +199,7 @@ class Hist(Stat):
         return data.assign(**{self.stat: hist})
 
     def __call__(
-        self, data: DataFrame, groupby: GroupBy, orient: str, scales: dict[str, Scale],
+            self, data: DataFrame, groupby: GroupBy, orient: str, scales: dict[str, Scale],
     ) -> DataFrame:
 
         scale_type = scales[orient].__class__.__name__.lower()
