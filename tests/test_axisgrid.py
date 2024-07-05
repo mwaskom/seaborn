@@ -721,6 +721,10 @@ class TestFacetGrid:
         for ax in g.axes.flat:
             assert len(ax.collections) == 1
 
+    def test_histplot_with_mini_bin(self, mini_bin_df):
+        grid = ag.FacetGrid(mini_bin_df, col='b', col_wrap=2, hue="a")
+        grid.map(histplot, "x", binwidth=10)
+
 
 class TestPairGrid:
 

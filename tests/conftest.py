@@ -137,6 +137,18 @@ def long_df(rng):
 
 
 @pytest.fixture
+def mini_bin_df(rng):
+    n = 100
+    df1 = pd.DataFrame({"x": rng.uniform(0, 100, n // 2),
+                        "a": "a",
+                        "b": "x"})
+    df2 = pd.DataFrame({"x": rng.uniform(0, 1, n // 2),
+                        "a": "b",
+                        "b": "y"})
+    return pd.concat([df1, df2])
+
+
+@pytest.fixture
 def long_dict(long_df):
 
     return long_df.to_dict()
