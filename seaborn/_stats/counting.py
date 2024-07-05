@@ -11,7 +11,6 @@ from seaborn._core.scales import Scale
 from seaborn._stats.base import Stat
 
 from typing import TYPE_CHECKING
-
 if TYPE_CHECKING:
     from numpy.typing import ArrayLike
 
@@ -33,8 +32,9 @@ class Count(Stat):
     group_by_orient: ClassVar[bool] = True
 
     def __call__(
-            self, data: DataFrame, groupby: GroupBy, orient: str, scales: dict[str, Scale],
+        self, data: DataFrame, groupby: GroupBy, orient: str, scales: dict[str, Scale],
     ) -> DataFrame:
+
         var = {"x": "y", "y": "x"}[orient]
         res = (
             groupby
@@ -199,7 +199,7 @@ class Hist(Stat):
         return data.assign(**{self.stat: hist})
 
     def __call__(
-            self, data: DataFrame, groupby: GroupBy, orient: str, scales: dict[str, Scale],
+        self, data: DataFrame, groupby: GroupBy, orient: str, scales: dict[str, Scale],
     ) -> DataFrame:
 
         scale_type = scales[orient].__class__.__name__.lower()
