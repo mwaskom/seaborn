@@ -441,6 +441,11 @@ class _ScatterPlotter(_RelationalPlotter):
 
         if "hue" in self.variables:
             points.set_facecolors(self._hue_map(data["hue"]))
+            # nullify edgecolor when facecolor is null, preserve value in kws otherwise
+            points.set_edgecolors([
+                c if c[3] == 0 else kws['edgecolor']
+                for c in points.get_facecolors()
+            ])
 
         if "size" in self.variables:
             points.set_sizes(self._size_map(data["size"]))
