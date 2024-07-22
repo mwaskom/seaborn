@@ -906,7 +906,7 @@ class _CategoricalPlotter(VectorPlotter):
         iter_vars = [self.orient, "hue"]
         value_var = {"x": "y", "y": "x"}[self.orient]
 
-        inner_options = ["box", "quart", "stick", "point", None]
+        inner_options = ["box", "quart", "median", "stick", "point", None]
         _check_argument("inner", inner_options, inner, prefix=True)
         _check_argument("density_norm", ["area", "count", "width"], density_norm)
 
@@ -1093,8 +1093,15 @@ class _CategoricalPlotter(VectorPlotter):
                 lines = mpl.collections.LineCollection(segments, **kws)
                 ax.add_collection(lines, autolim=False)
 
-            elif inner.startswith("quart"):
-                stats = np.percentile(obs, [25, 50, 75])
+            elif inner.startswith("quart") or inner.startswith("median"):
+                median_dashes = (2.5, 1)
+                if inner.startswith("median"):
+                    q = [50]
+                    dashes = [median_dashes]
+                else:
+                    q = [25, 50, 75]
+                    dashes = [(1.25, .75), median_dashes, (1.25, .75)]
+                stats = np.percentile(obs, q)
                 pos0 = np.interp(stats, data[value_var], data[self.orient] - offsets[0])
                 pos1 = np.interp(stats, data[value_var], data[self.orient] + offsets[1])
                 pos_pts = np.stack([inv_pos(pos0), inv_pos(pos1)])
@@ -1102,7 +1109,6 @@ class _CategoricalPlotter(VectorPlotter):
                 segments = np.stack([pos_pts, val_pts]).transpose(2, 0, 1)
                 if self.orient == "y":
                     segments = segments[:, ::-1, :]
-                dashes = [(1.25, .75), (2.5, 1), (1.25, .75)]
                 for i, segment in enumerate(segments):
                     kws = {
                         "color": linecolor,
@@ -1810,11 +1816,12 @@ violinplot.__doc__ = dedent("""\
     {palette}
     {saturation}
     {fill}
-    inner : {{"box", "quart", "point", "stick", None}}
+    inner : {{"box", "quart", "median" "point", "stick", None}}
         Representation of the data in the violin interior. One of the following:
 
         - `"box"`: draw a miniature box-and-whisker plot
         - `"quart"`: show the quartiles of the data
+        - `"median"`: show the median of the data
         - `"point"` or `"stick"`: show each observation
     split : bool
         Show an un-mirrored distribution, alternating sides when using `hue`.
