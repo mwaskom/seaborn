@@ -106,7 +106,7 @@ jobs:
         uses: actions/setup-python@0a5c61591373683505ea898e09a3ea4f39ef2b9c # v5.0.0
 
       - name: Install tools
-        run: pip install mypy flake8
+        run: pip install mypy~=1.10.0 flake8
 
       - name: Flake8
         run: make lint
