@@ -104,7 +104,7 @@ class DotBase(Mark):
 
 
 @document_properties
-@dataclass
+@dataclass(repr=False)
 class Dot(DotBase):
     """
     A mark suitable for dot plots or less-dense scatterplots.
@@ -158,7 +158,7 @@ class Dot(DotBase):
 
 
 @document_properties
-@dataclass
+@dataclass(repr=False)
 class Dots(DotBase):
     """
     A dot mark defined by strokes to better handle overplotting.
