@@ -1878,3 +1878,9 @@ class TestJointPlot:
         with pytest.warns(UserWarning):
             g = ag.jointplot(data=long_df, x="x", y="y", ax=ax)
         assert g.ax_joint.collections
+
+    def test_datetime_input(self):
+        dates = np.array(
+            ["2023-01-01", "2023-01-02", "2023-01-03"], dtype="datetime64[ns]"
+        )
+        ag.jointplot(x=dates, y=[1, 2, 3], kind="hex")

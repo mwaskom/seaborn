@@ -1704,6 +1704,7 @@ class JointGrid(_BaseGrid):
         self.ax_joint = ax_joint
         self.ax_marg_x = ax_marg_x
         self.ax_marg_y = ax_marg_y
+        self.is_datetime_x = False
 
         # Turn off tick visibility for the measure axis on the marginal plots
         plt.setp(ax_marg_x.get_xticklabels(), visible=False)
@@ -1736,6 +1737,9 @@ class JointGrid(_BaseGrid):
             vector = plot_data.get(var, None)
             if vector is not None:
                 vector = vector.rename(p.variables.get(var, None))
+            if np.issubdtype(vector, np.datetime64):
+                vector = vector.astype(int)
+                self.is_datetime_x = True
             return vector
 
         self.x = get_var("x")
@@ -1832,6 +1836,14 @@ class JointGrid(_BaseGrid):
             func(x=self.x, y=self.y, **kwargs)
         else:
             func(self.x, self.y, **kwargs)
+
+        if self.is_datetime_x:
+            xtick_arr = self.ax_joint.get_xticks()
+            date_label = xtick_arr.astype("datetime64[ns]")
+            date_label = [str(dt)[0:10] for dt in date_label]
+            self.ax_joint.set_xticks(self.ax_joint.get_xticks())
+            self.ax_joint.set_xticklabels(date_label, rotation=45)
+            self._figure.tight_layout()
 
         return self
 

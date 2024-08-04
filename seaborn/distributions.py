@@ -2376,6 +2376,8 @@ def _freedman_diaconis_bins(a):
     """Calculate number of hist bins using Freedman-Diaconis rule."""
     # From https://stats.stackexchange.com/questions/798/
     a = np.asarray(a)
+    if a.dtype.type == np.datetime64:
+        a = a.astype(np.int64)
     if len(a) < 2:
         return 1
     iqr = np.subtract.reduce(np.nanpercentile(a, [75, 25]))
