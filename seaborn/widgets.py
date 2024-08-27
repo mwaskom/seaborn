@@ -310,7 +310,7 @@ def choose_light_palette(input="husl", as_cmap=False):
     return pal
 
 
-def choose_diverging_palette(as_cmap=False):
+def choose_diverging_palette(as_cmap=False, as_dict=False):
     """Launch an interactive widget to choose a diverging color palette.
 
     This corresponds with the :func:`diverging_palette` function. This kind
@@ -339,6 +339,7 @@ def choose_diverging_palette(as_cmap=False):
 
     """
     pal = []
+    pal_dict = {}
     if as_cmap:
         cmap = _init_mutable_colormap()
 
@@ -356,6 +357,13 @@ def choose_diverging_palette(as_cmap=False):
         n=(2, 16),
         center=["light", "dark"]
     ):
+        pal_dict['h_neg'] = h_neg
+        pal_dict['h_pos'] = h_pos
+        pal_dict['s'] = s
+        pal_dict['l'] = l
+        pal_dict['sep'] = sep
+        pal_dict['center'] = center
+
         if as_cmap:
             colors = diverging_palette(h_neg, h_pos, s, l, sep, 256, center)
             _update_lut(cmap, colors)
@@ -363,8 +371,9 @@ def choose_diverging_palette(as_cmap=False):
         else:
             pal[:] = diverging_palette(h_neg, h_pos, s, l, sep, n, center)
             palplot(pal)
-
-    if as_cmap:
+    if as_dict:
+        return pal_dict
+    elif as_cmap:
         return cmap
     return pal
 
