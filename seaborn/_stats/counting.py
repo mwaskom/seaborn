@@ -178,7 +178,7 @@ class Hist(Stat):
         width = np.diff(edges)
         center = edges[:-1] + width / 2
 
-        return pd.DataFrame({orient: center, "count": hist, "space": width})
+        return pd.DataFrame({orient: center, "count": hist, "width": width})
 
     def _normalize(self, data):
 
@@ -188,11 +188,11 @@ class Hist(Stat):
         elif self.stat == "percent":
             hist = hist.astype(float) / hist.sum() * 100
         elif self.stat == "frequency":
-            hist = hist.astype(float) / data["space"]
+            hist = hist.astype(float) / data["width"]
 
         if self.cumulative:
             if self.stat in ["density", "frequency"]:
-                hist = (hist * data["space"]).cumsum()
+                hist = (hist * data["width"]).cumsum()
             else:
                 hist = hist.cumsum()
 
