@@ -188,11 +188,12 @@ class MockInterchangeableDataFrame:
     def __init__(self, data):
         self._data = data
 
-    def __dataframe__(self, *args, **kwargs):
-        return self._data.__dataframe__(*args, **kwargs)
+    def __arrow_c_stream__(self, *args, **kwargs):
+        return self._data.__arrow_c_stream__()
 
 
 @pytest.fixture
 def mock_long_df(long_df):
+    import pyarrow
 
-    return MockInterchangeableDataFrame(long_df)
+    return MockInterchangeableDataFrame(pyarrow.Table.from_pandas(long_df))

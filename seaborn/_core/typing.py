@@ -17,9 +17,9 @@ Vector = Union[Series, Index, ndarray]
 VariableSpec = Union[ColumnName, Vector, None]
 VariableSpecList = Union[List[VariableSpec], Index, None]
 
-# A DataSource can be an object implementing __dataframe__, or a Mapping
+# A DataSource can be an object implementing __arrow_c_stream__, or a Mapping
 # (and is optional in all contexts where it is used).
-# I don't think there's an abc for "has __dataframe__", so we type as object
+# I don't think there's an abc for "has __arrow_c_stream__", so we type as object
 # but keep the (slightly odd) Union alias for better user-facing annotations.
 DataSource = Union[object, Mapping, None]
 

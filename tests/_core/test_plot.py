@@ -170,11 +170,11 @@ class TestInit:
         assert p._data.source_data is None
         assert list(p._data.source_vars) == ["x"]
 
-    @pytest.mark.skipif(
-        condition=not hasattr(pd.api, "interchange"),
-        reason="Tests behavior assuming support for dataframe interchange"
-    )
     def test_positional_interchangeable_dataframe(self, mock_long_df, long_df):
+        pytest.importorskip(
+            'pyarrow', '14.0',
+            reason="Tests behavior assuming support for PyCapsule Interface"
+        )
 
         p = Plot(mock_long_df, x="x")
         assert_frame_equal(p._data.source_data, long_df)
