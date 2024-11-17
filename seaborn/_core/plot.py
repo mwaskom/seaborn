@@ -1450,7 +1450,10 @@ class Plotter:
                         view_width = view_df["width"]
                     else:
                         view_width = 0.8  # TODO what default?
-                    spacing = scales[orient]._spacing(view_df.loc[view_idx, orient])
+                    spacing = scales[orient]._spacing(
+                        view_df.loc[view_idx, orient],
+                        groupby=view_df["group"]  
+                    )
                     width.loc[view_idx] = view_width * spacing
                 df["width"] = width
 

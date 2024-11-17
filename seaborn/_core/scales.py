@@ -95,13 +95,16 @@ class Scale:
 
         return InternalScale(name, (forward, inverse))
 
-    def _spacing(self, x: Series) -> float:
-        space = self._spacer(x)
-        if np.isnan(space):
-            # This happens when there is no variance in the orient coordinate data
-            # Not exactly clear what the right default is, but 1 seems reasonable?
-            return 1
-        return space
+    def _spacing(self, x: Series, groupby: Optional[Series] = None) -> float:
+        if groupby is not None:
+            grouped = x.groupby(groupby)
+            spaces = grouped.apply(lambda group: self._spacer(group))
+            return spaces.min() 
+        else:
+            space = self._spacer(x)
+            if np.isnan(space):
+                return 1
+            return space
 
     def _setup(
         self, data: Series, prop: Property, axis: Axis | None = None,
