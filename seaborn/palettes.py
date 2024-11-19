@@ -41,7 +41,15 @@ SEABORN_PALETTES = dict(
     colorblind=["#0173B2", "#DE8F05", "#029E73", "#D55E00", "#CC78BC",
                 "#CA9161", "#FBAFE4", "#949494", "#ECE133", "#56B4E9"],
     colorblind6=["#0173B2", "#029E73", "#D55E00",
-                 "#CC78BC", "#ECE133", "#56B4E9"]
+                 "#CC78BC", "#ECE133", "#56B4E9"],
+    synthwave=["#003f5c", "#2f4b7c", "#665191", "#a05195", "#d45087",
+               "#f95d6a", "#ff7c43", "#ffa600"],
+    nature=["#E64B35FF", "#4DBBD5FF", "#00A087FF", "#3C5488FF",
+            "#F39B7FFF", "#8491B4FF"],
+    paultol=["#0077BB", "#33BBEE", "#009988", "#EE7733", "#CCBB44",
+             "#CC3311", "#EE3377", "#BBBBBB"],
+    paultol_dark=["#332288", "#88CCEE", "#44AA99", "#117733", "#999933",
+                  "#DDCC77", "#CC6677", "#882255"]
 )
 
 
