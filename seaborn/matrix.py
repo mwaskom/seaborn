@@ -69,7 +69,14 @@ def _matrix_mask(data, mask):
     if mask is None:
         mask = np.zeros(data.shape, bool)
 
-    if isinstance(mask, np.ndarray):
+    if isinstance(mask, pd.DataFrame):
+        # For DataFrame masks, ensure that semantic labels match data
+        if not mask.index.equals(data.index) \
+           and mask.columns.equals(data.columns):
+            err = "Mask must have the same index and columns as data."
+            raise ValueError(err)
+    elif hasattr(mask, "__array__"):
+        mask = np.asarray(mask)
         # For array masks, ensure that shape matches data then convert
         if mask.shape != data.shape:
             raise ValueError("Mask must have the same shape as data.")
@@ -78,13 +85,6 @@ def _matrix_mask(data, mask):
                             index=data.index,
                             columns=data.columns,
                             dtype=bool)
-
-    elif isinstance(mask, pd.DataFrame):
-        # For DataFrame masks, ensure that semantic labels match data
-        if not mask.index.equals(data.index) \
-           and mask.columns.equals(data.columns):
-            err = "Mask must have the same index and columns as data."
-            raise ValueError(err)
 
     # Add any cells with missing data to the mask
     # This works around an issue where `plt.pcolormesh` doesn't represent

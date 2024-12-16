@@ -56,6 +56,24 @@ class TestHeatmap:
         assert p.xlabel == ""
         assert p.ylabel == ""
 
+    def test_array_like_input(self):
+        class ArrayLike:
+            def __init__(self, data):
+                self.data = data
+
+            def __array__(self, dtype=None, copy=None):
+                return self.data
+
+        p = mat._HeatMapper(ArrayLike(self.x_norm), **self.default_kws)
+        npt.assert_array_equal(p.plot_data, self.x_norm)
+        pdt.assert_frame_equal(p.data, pd.DataFrame(self.x_norm))
+
+        npt.assert_array_equal(p.xticklabels, np.arange(8))
+        npt.assert_array_equal(p.yticklabels, np.arange(4))
+
+        assert p.xlabel == ""
+        assert p.ylabel == ""
+
     def test_df_input(self):
 
         p = mat._HeatMapper(self.df_norm, **self.default_kws)
