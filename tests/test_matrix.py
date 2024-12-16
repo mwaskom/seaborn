@@ -62,7 +62,7 @@ class TestHeatmap:
                 self.data = data
 
             def __array__(self, dtype=None, copy=None):
-                return self.data
+                return np.asarray(self.data, dtype=dtype, copy=copy)
 
         p = mat._HeatMapper(ArrayLike(self.x_norm), **self.default_kws)
         npt.assert_array_equal(p.plot_data, self.x_norm)
