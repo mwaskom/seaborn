@@ -42,6 +42,7 @@ dev = [
     "mypy",
     "pandas-stubs",
     "pre-commit",
+    "pyarrow",
     "flit",
 ]
 docs = [

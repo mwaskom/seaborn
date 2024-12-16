@@ -349,7 +349,7 @@ class Plot:
 
         if (
             isinstance(args[0], (abc.Mapping, pd.DataFrame))
-            or hasattr(args[0], "__dataframe__")
+            or hasattr(args[0], "__arrow_c_stream__")
         ):
             if data is not None:
                 raise TypeError("`data` given by both name and position.")

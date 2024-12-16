@@ -1,6 +1,7 @@
 import functools
 import numpy as np
 import pandas as pd
+from seaborn.external.version import Version
 
 import pytest
 from numpy.testing import assert_array_equal
@@ -404,11 +405,11 @@ class TestPlotData:
         with pytest.raises(TypeError, match=err):
             PlotData(flat_list, {})
 
-    @pytest.mark.skipif(
-        condition=not hasattr(pd.api, "interchange"),
-        reason="Tests behavior assuming support for dataframe interchange"
-    )
     def test_data_interchange(self, mock_long_df, long_df):
+        pytest.importorskip(
+            'pyarrow', '14.0',
+            reason="Tests behavior assuming support for PyCapsule Interface"
+        )
 
         variables = {"x": "x", "y": "z", "color": "a"}
         p = PlotData(mock_long_df, variables)
@@ -419,21 +420,22 @@ class TestPlotData:
         for var, col in variables.items():
             assert_vector_equal(p.frame[var], long_df[col])
 
-    @pytest.mark.skipif(
-        condition=not hasattr(pd.api, "interchange"),
-        reason="Tests behavior assuming support for dataframe interchange"
-    )
     def test_data_interchange_failure(self, mock_long_df):
+        pytest.importorskip(
+            'pyarrow', '14.0',
+            reason="Tests behavior assuming support for PyCapsule Interface"
+        )
 
-        mock_long_df._data = None  # Break __dataframe__()
+        mock_long_df.__arrow_c_stream__ = lambda _x: 1 / 0  # Break __arrow_c_stream__()
         with pytest.raises(RuntimeError, match="Encountered an exception"):
             PlotData(mock_long_df, {"x": "x"})
 
-    @pytest.mark.skipif(
-        condition=hasattr(pd.api, "interchange"),
-        reason="Tests graceful failure without support for dataframe interchange"
-    )
     def test_data_interchange_support_test(self, mock_long_df):
+        pyarrow = pytest.importorskip('pyarrow')
+        if Version(pyarrow.__version__) >= Version('14.0.0'):
+            pytest.skip(
+                reason="Tests graceful failure without support for PyCapsule Interface"
+            )
 
         with pytest.raises(TypeError, match="Support for non-pandas DataFrame"):
             PlotData(mock_long_df, {"x": "x"})

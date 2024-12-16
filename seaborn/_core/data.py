@@ -5,7 +5,6 @@ from __future__ import annotations
 
 from collections.abc import Mapping, Sized
 from typing import cast
-import warnings
 
 import pandas as pd
 from pandas import DataFrame
@@ -269,9 +268,9 @@ class PlotData:
 
 def handle_data_source(data: object) -> pd.DataFrame | Mapping | None:
     """Convert the data source object to a common union representation."""
-    if isinstance(data, pd.DataFrame) or hasattr(data, "__dataframe__"):
+    if isinstance(data, pd.DataFrame) or hasattr(data, "__arrow_c_stream__"):
         # Check for pd.DataFrame inheritance could be removed once
-        # minimal pandas version supports dataframe interchange (1.5.0).
+        # minimal pandas version supports PyCapsule Interface (2.2).
         data = convert_dataframe_to_pandas(data)
     elif data is not None and not isinstance(data, Mapping):
         err = f"Data source must be a DataFrame or Mapping, not {type(data)!r}."
@@ -285,35 +284,32 @@ def convert_dataframe_to_pandas(data: object) -> pd.DataFrame:
     if isinstance(data, pd.DataFrame):
         return data
 
-    if not hasattr(pd.api, "interchange"):
-        msg = (
-            "Support for non-pandas DataFrame objects requires a version of pandas "
-            "that implements the DataFrame interchange protocol. Please upgrade "
-            "your pandas version or coerce your data to pandas before passing "
-            "it to seaborn."
-        )
-        raise TypeError(msg)
+    if hasattr(data, '__arrow_c_stream__'):
+        try:
+            import pyarrow
+        except ImportError as err:
+            msg = "PyArrow is required for non-pandas Dataframe support."
+            raise RuntimeError(msg) from err
+        if _version_predates(pyarrow, '14.0.0'):
+            msg = "PyArrow>=14.0.0 is required for non-pandas Dataframe support."
+            raise RuntimeError(msg)
+        try:
+            # This is going to convert all columns in the input dataframe, even though
+            # we may only need one or two of them. It would be more efficient to select
+            # the columns that are going to be used in the plot prior to interchange.
+            # Solving that in general is a hard problem, especially with the objects
+            # interface where variables passed in Plot() may only be referenced later
+            # in Plot.add(). But noting here in case this seems to be a bottleneck.
+            return pyarrow.table(data).to_pandas()
+        except Exception as err:
+            msg = (
+                "Encountered an exception when converting data source "
+                "to a pandas DataFrame. See traceback above for details."
+            )
+            raise RuntimeError(msg) from err
 
-    if _version_predates(pd, "2.0.2"):
-        msg = (
-            "DataFrame interchange with pandas<2.0.2 has some known issues. "
-            f"You are using pandas {pd.__version__}. "
-            "Continuing, but it is recommended to carefully inspect the results and to "
-            "consider upgrading."
-        )
-        warnings.warn(msg, stacklevel=2)
-
-    try:
-        # This is going to convert all columns in the input dataframe, even though
-        # we may only need one or two of them. It would be more efficient to select
-        # the columns that are going to be used in the plot prior to interchange.
-        # Solving that in general is a hard problem, especially with the objects
-        # interface where variables passed in Plot() may only be referenced later
-        # in Plot.add(). But noting here in case this seems to be a bottleneck.
-        return pd.api.interchange.from_dataframe(data)
-    except Exception as err:
-        msg = (
-            "Encountered an exception when converting data source "
-            "to a pandas DataFrame. See traceback above for details."
-        )
-        raise RuntimeError(msg) from err
+    msg = (
+        "Expected object which implements '__arrow_c_stream__' from the "
+        f"PyCapsule Interface, got: {type(data)}"
+    )
+    raise TypeError(msg)
