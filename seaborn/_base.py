@@ -384,8 +384,13 @@ class SizeMapping(SemanticMapping):
 
         if isinstance(sizes, dict):
 
-            # Dict inputs map existing data values to the size attribute
-            missing = set(levels) - set(sizes)
+            # Check for dict or defaultdict
+            missing = set()
+            for level in levels:
+                try:
+                    sizes[level]              # Ensure that default values are handled for defaultdict
+                except KeyError:
+                    missing.add(level)
             if any(missing):
                 err = f"Missing sizes for the following levels: {missing}"
                 raise ValueError(err)

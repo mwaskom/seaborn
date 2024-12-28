@@ -3,6 +3,8 @@ import numpy as np
 import pandas as pd
 import matplotlib as mpl
 import matplotlib.pyplot as plt
+import seaborn as sns
+
 
 import pytest
 from numpy.testing import assert_array_equal, assert_array_almost_equal
@@ -1269,6 +1271,13 @@ class TestVectorPlotter:
         p = VectorPlotter(data=long_df, variables={"x": "x", "hue": "a"})
         p._attach(ax)
         assert p._get_axes({"hue": "a"}) is ax
+
+    def test_countplot_stat_label_capitalization(self, long_df):
+        data = sns.load_dataset("iris")
+        ax = sns.countplot(data=data, x="sepal_width", stat="count")
+
+        assert ax.get_ylabel() == "Count"
+        plt.close()  # Cleanup
 
     def test_get_axes_facets(self, long_df):
 
