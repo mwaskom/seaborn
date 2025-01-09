@@ -2496,14 +2496,10 @@ def pointplot(
     if p.plot_data.empty:
         return ax
 
-    if p.var_types.get(p.orient) == "categorical" or not native_scale:
+    if p.var_types.get(p.orient) == "categorical" and not native_scale:
         p.scale_categorical(p.orient, order=order, formatter=formatter)
 
     p._attach(ax, log_scale=log_scale)
-
-    # Deprecations to remove in v0.14.0.
-    hue_order = p._palette_without_hue_backcompat(palette, hue_order)
-    palette, hue_order = p._hue_backcompat(color, palette, hue_order)
 
     p.map_hue(palette=palette, order=hue_order, norm=hue_norm)
     color = _default_color(ax.plot, hue, color, kwargs)
