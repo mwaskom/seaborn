@@ -146,9 +146,9 @@ html_theme_options = {
             "type": "fontawesome",
         },
         {
-            "name": "Twitter",
-            "url": "https://twitter.com/michaelwaskom",
-            "icon": "fab fa-twitter",
+            "name": "X",
+            "url": "https://x.com/michaelwaskom",
+            "icon": "fab fa-x-twitter",
             "type": "fontawesome",
         },
     ],
