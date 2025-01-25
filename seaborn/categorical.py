@@ -682,7 +682,7 @@ class _CategoricalPlotter(VectorPlotter):
                 # Set width to 0 to avoid going out of domain
                 widths=data["width"] if linear_orient_scale else 0,
                 patch_artist=fill,
-                vert=self.orient == "x",
+                orientation="vertical" if self.orient == "x" else "horizontal",
                 manage_ticks=False,
                 boxprops=boxprops,
                 medianprops=medianprops,
