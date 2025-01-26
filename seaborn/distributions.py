@@ -470,7 +470,7 @@ class _DistributionPlotter(VectorPlotter):
                 bin_kws = estimator._define_bin_params(sub_data, orient, None)
             res = estimator._normalize(estimator._eval(sub_data, orient, bin_kws))
             heights = res[estimator.stat].to_numpy()
-            widths = res["space"].to_numpy()
+            widths = res["width"].to_numpy()
             edges = res[orient].to_numpy() - widths / 2
 
             # Rescale the smoothed curve to match the histogram
