@@ -693,7 +693,8 @@ class _CategoricalPlotter(VectorPlotter):
                 # Added in matplotlib 3.10; see below
                 # orientation=orientation
                 **(
-                    {"vert": orientation == "x"} if _version_predates(mpl, "3.10.0")
+                    {"vert": orientation == "vertical"}
+                    if _version_predates(mpl, "3.10.0")
                     else {"orientation": orientation}
                 ),
                 # added in matplotlib 3.6.0; see below
