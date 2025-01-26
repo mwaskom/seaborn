@@ -1206,7 +1206,7 @@ class TestBoxenPlot(SharedAxesLevelTests, SharedPatchArtistTests):
 
         assert verts[pos_idx].min().round(4) >= np.round(pos - width / 2, 4)
         assert verts[pos_idx].max().round(4) <= np.round(pos + width / 2, 4)
-        assert np.in1d(
+        assert np.isin(
             np.percentile(data, [25, 75]).round(4), verts[val_idx].round(4).flat
         ).all()
         assert_array_equal(verts[val_idx, 1:, 0], verts[val_idx, :-1, 2])
