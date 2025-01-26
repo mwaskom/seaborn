@@ -626,6 +626,8 @@ class _CategoricalPlotter(VectorPlotter):
         props["whisker"].setdefault("solid_capstyle", "butt")
         props["flier"].setdefault("markersize", fliersize)
 
+        orientation = {"x": "vertical", "y": "horizontal"}[self.orient]
+
         ax = self.ax
 
         for sub_vars, sub_data in self.iter_data(iter_vars,
@@ -682,14 +684,19 @@ class _CategoricalPlotter(VectorPlotter):
                 # Set width to 0 to avoid going out of domain
                 widths=data["width"] if linear_orient_scale else 0,
                 patch_artist=fill,
-                vert=self.orient == "x",
                 manage_ticks=False,
                 boxprops=boxprops,
                 medianprops=medianprops,
                 whiskerprops=whiskerprops,
                 flierprops=flierprops,
                 capprops=capprops,
-                # Added in matplotlib 3.6.0; see below
+                # Added in matplotlib 3.10; see below
+                # orientation=orientation
+                **(
+                    {"vert": orientation == "x"} if _version_predates(mpl, "3.10.0")
+                    else {"orientation": orientation}
+                ),
+                # added in matplotlib 3.6.0; see below
                 # capwidths=capwidth,
                 **(
                     {} if _version_predates(mpl, "3.6.0")
