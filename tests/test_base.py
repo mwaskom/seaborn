@@ -9,7 +9,7 @@ from numpy.testing import assert_array_equal, assert_array_almost_equal
 from pandas.testing import assert_frame_equal
 
 from seaborn.axisgrid import FacetGrid
-from seaborn._compat import get_colormap
+from seaborn._compat import get_colormap, get_converter
 from seaborn._base import (
     SemanticMapping,
     HueMapping,
@@ -454,7 +454,7 @@ class TestSizeMapping:
     def test_array_palette_deprecation(self, long_df):
 
         p = VectorPlotter(long_df, {"y": "y", "hue": "s"})
-        pal = mpl.cm.Blues([.3, .8])[:, :3]
+        pal = mpl.cm.Blues([.3, .5, .8])[:, :3]
         with pytest.warns(UserWarning, match="Numpy array is not a supported type"):
             m = HueMapping(p, pal)
         assert m.palette == pal.tolist()
@@ -1130,14 +1130,14 @@ class TestVectorPlotter:
         _, ax = plt.subplots()
         p = VectorPlotter(data=long_df, variables={"x": "x", "y": "t"})
         p._attach(ax)
-        assert ax.xaxis.converter is None
-        assert "Date" in ax.yaxis.converter.__class__.__name__
+        assert get_converter(ax.xaxis) is None
+        assert "Date" in get_converter(ax.yaxis).__class__.__name__
 
         _, ax = plt.subplots()
         p = VectorPlotter(data=long_df, variables={"x": "a", "y": "y"})
         p._attach(ax)
-        assert "CategoryConverter" in ax.xaxis.converter.__class__.__name__
-        assert ax.yaxis.converter is None
+        assert "CategoryConverter" in get_converter(ax.xaxis).__class__.__name__
+        assert get_converter(ax.yaxis) is None
 
     def test_attach_facets(self, long_df):
 
@@ -1340,7 +1340,6 @@ class TestVectorPlotter:
             ["numeric", "category", "datetime"],
         )
     )
-    @pytest.mark.parametrize("NA,var_type")
     def comp_data_missing_fixture(self, request):
 
         # This fixture holds the logic for parameterizing

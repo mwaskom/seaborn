@@ -121,3 +121,9 @@ def groupby_apply_include_groups(val):
     if _version_predates(pd, "2.2.0"):
         return {}
     return {"include_groups": val}
+
+
+def get_converter(axis):
+    if _version_predates(mpl, "3.10.0"):
+        return axis.converter
+    return axis.get_converter()
