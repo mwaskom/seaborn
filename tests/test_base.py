@@ -1340,7 +1340,6 @@ class TestVectorPlotter:
             ["numeric", "category", "datetime"],
         )
     )
-    @pytest.mark.parametrize("NA,var_type")
     def comp_data_missing_fixture(self, request):
 
         # This fixture holds the logic for parameterizing
