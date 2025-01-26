@@ -9,6 +9,15 @@ except ImportError:
         msg = "Interactive palettes require `ipywidgets`, which is not installed."
         raise ImportError(msg)
 
+    class FloatSlider:
+        def __init__(self, *args, **kwargs):
+            pass
+
+    class IntSlider:
+        def __init__(self, *args, **kwargs):
+            pass
+
+
 from .miscplot import palplot
 from .palettes import (color_palette, dark_palette, light_palette,
                        diverging_palette, cubehelix_palette)
