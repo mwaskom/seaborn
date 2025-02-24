@@ -198,10 +198,6 @@ def color_palette(palette=None, n_colors=None, desat=None, as_cmap=False):
             # Evenly spaced colors in cylindrical Lab space
             palette = husl_palette(n_colors, as_cmap=as_cmap)
 
-        elif palette.lower() == "jet":
-            # Paternalism
-            raise ValueError("No.")
-
         elif palette.startswith("ch:"):
             # Cubehelix palette with params specified in string
             args, kwargs = _parse_cubehelix_args(palette)
