@@ -1230,8 +1230,6 @@ class _CategoricalPlotter(VectorPlotter):
                 agg_data[self.orient] += 0
 
             self._invert_scale(ax, agg_data)
-            
-            self._invert_scale(ax, agg_data)
 
             sub_kws = plot_kws.copy()
             sub_kws.update(
