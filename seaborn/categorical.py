@@ -1221,12 +1221,16 @@ class _CategoricalPlotter(VectorPlotter):
                 .reset_index()
             )
 
-            if dodge:
+            if dodge and n_hue_levels > 1:
                 hue_idx = self._hue_map.levels.index(sub_vars["hue"])
                 step_size = dodge / (n_hue_levels - 1)
                 offset = -dodge / 2 + step_size * hue_idx
                 agg_data[self.orient] += offset * self._native_width
+            else:
+                agg_data[self.orient] += 0
 
+            self._invert_scale(ax, agg_data)
+            
             self._invert_scale(ax, agg_data)
 
             sub_kws = plot_kws.copy()
