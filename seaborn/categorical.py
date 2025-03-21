@@ -1684,7 +1684,7 @@ boxplot.__doc__ = dedent("""\
     {width}
     {gap}
     whis : float or pair of floats
-        Paramater that controls whisker length. If scalar, whiskers are drawn
+        Parameter that controls whisker length. If scalar, whiskers are drawn
         to the farthest datapoint within *whis * IQR* from the nearest hinge.
         If a tuple, it is interpreted as percentiles that whiskers represent.
     {linecolor}
