@@ -1261,7 +1261,7 @@ class PairGrid(Grid):
         if vars is not None:    # user provide vars
             x_vars = list(vars)
             y_vars = list(vars)
-            if len(set(vars))<len(x_vars):
+            if len(set(vars)) < len(x_vars):
                 # Does not crash, only causes unexpected figures.
                 # Do not take efforts to specify duplicants.
                 warnings.warn(f"Duplicated items in vars: {x_vars}")
@@ -1270,16 +1270,18 @@ class PairGrid(Grid):
                 condensed_vars = x_vars
                 # Use condensed_vars to avoid duplicated items in vars
                 # causing duplicates in data.loc[:, vars].columns.
-            selected_columns = data.loc[:,condensed_vars].columns
+            selected_columns = data.loc[:, condensed_vars].columns
             if not selected_columns.is_unique:
                 # Crash if duplicated columns are selected in vars.
                 # Specify duplicants since we raise an Error.
+                dupe_cols = selected_columns[selected_columns.duplicated()]
                 raise ValueError(
-                    f"Columns: {selected_columns[selected_columns.duplicated()]} are duplicated.")
+                    f"Columns: {dupe_cols} are duplicated.")
         else:
             if not data.columns.is_unique:
+                dupe_cols = data.columns[data.columns.duplicated()]
                 raise ValueError(
-                    f"Columns: {data.columns[data.columns.duplicated()]} are duplicated.")
+                    f"Columns: {dupe_cols} are duplicated.")
             numeric_cols = self._find_numeric_cols(data)
             if hue in numeric_cols:
                 numeric_cols.remove(hue)
