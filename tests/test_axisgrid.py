@@ -787,14 +787,14 @@ class TestPairGrid:
 
     def test_duplicates_in_df_columns_without_vars(self):
         # should fail with clear msg
-        df_with_dupe = self.df.copy()
+        df_with_dupe = self.df.loc[:,["x", "y", "z"]].copy()
         df_with_dupe.columns = ["x", "y", "y"]
         with pytest.raises(ValueError, match=r"Columns: .* are duplicated\."):
             a = ag.PairGrid(df_with_dupe)
 
     def test_duplicates_in_df_columns_with_related_vars(self):
         # should fail with clear msg
-        df_with_dupe = self.df.copy()
+        df_with_dupe = self.df.loc[:,["x", "y", "z"]].copy()
         df_with_dupe.columns = ["x", "y", "y"]
         with pytest.raises(ValueError, match=r"Columns: .* are duplicated\."):
             a = ag.PairGrid(df_with_dupe,vars = ['x','y'])
