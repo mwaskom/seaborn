@@ -1248,12 +1248,23 @@ class PairGrid(Grid):
         data = handle_data_source(data)
 
         # Sort out the variables that define the grid
-        numeric_cols = self._find_numeric_cols(data)
-        if hue in numeric_cols:
-            numeric_cols.remove(hue)
-        if vars is not None:
+
+        # It will crash in `_find_numeric_cols` if there are duplicated columns in the data, 
+        # even if these columns are not in the `vars` variable.
+        # If `vars` is provided, we don't need `_find_numeric_cols`, which will cause extra crash.
+        # If `vars` is not provided, we need `_find_numeric_cols`, but it crashes with ambigious ValueError: The truth value of a DataFrame is ambiguous. Use a.empty, a.bool(), a.item(), a.any() or a.all().
+        # My fix is to skip `_find_numeric_cols` when `vars` is provided.
+        # And raise early error if data.columns is not unique when `vars` is not provided.[I suppose duplicated columns are not expected in PairGrid]
+
+        if vars is not None: # user provide vars
             x_vars = list(vars)
             y_vars = list(vars)
+        else:
+            if not data.columns.is_unique:
+                raise ValueError(f"Columns: {data.columns.duplicated()} are duplicated.")
+            numeric_cols = self._find_numeric_cols(data)
+            if hue in numeric_cols:
+                numeric_cols.remove(hue)
         if x_vars is None:
             x_vars = numeric_cols
         if y_vars is None:
