@@ -1249,19 +1249,37 @@ class PairGrid(Grid):
 
         # Sort out the variables that define the grid
 
-        # It will crash in `_find_numeric_cols` if there are duplicated columns in the data, 
+        # `_find_numeric_cols` will crash if there are duplicated columns in the data,
         # even if these columns are not in the `vars` variable.
-        # If `vars` is provided, we don't need `_find_numeric_cols`, which will cause extra crash.
-        # If `vars` is not provided, we need `_find_numeric_cols`, but it crashes with ambigious ValueError: The truth value of a DataFrame is ambiguous. Use a.empty, a.bool(), a.item(), a.any() or a.all().
+        # If `vars` is provided, we don't need `_find_numeric_cols`.
+        # If `vars` is not provided, we need `_find_numeric_cols`,
+        # but it crashes with ambigious ValueError: The truth value of a DataFrame ...
         # My fix is to skip `_find_numeric_cols` when `vars` is provided.
-        # And raise early error if data.columns is not unique when `vars` is not provided.[I suppose duplicated columns are not expected in PairGrid]
+        # And raise early error if data_to_plot.columns is duplicated.
+        # [I suppose duplicated columns are not expected in PairGrid]
 
-        if vars is not None: # user provide vars
+        if vars is not None:    # user provide vars
             x_vars = list(vars)
             y_vars = list(vars)
+            if len(set(vars))<len(x_vars):
+                # Does not crash, only causes unexpected figures.
+                # Do not take efforts to specify duplicants.
+                warnings.warn(f"Duplicated items in vars: {x_vars}")
+                condensed_vars = list(set(x_vars))
+            else:
+                condensed_vars = x_vars
+                # Use condensed_vars to avoid duplicated items in vars
+                # causing duplicates in data.loc[:, vars].columns.
+            selected_columns = data.loc[:,condensed_vars].columns
+            if not selected_columns.is_unique:
+                # Crash if duplicated columns are selected in vars.
+                # Specify duplicants since we raise an Error.
+                raise ValueError(
+                    f"Columns: {selected_columns[selected_columns.duplicated()]} are duplicated.")
         else:
             if not data.columns.is_unique:
-                raise ValueError(f"Columns: {data.columns.duplicated()} are duplicated.")
+                raise ValueError(
+                    f"Columns: {data.columns[data.columns.duplicated()]} are duplicated.")
             numeric_cols = self._find_numeric_cols(data)
             if hue in numeric_cols:
                 numeric_cols.remove(hue)
