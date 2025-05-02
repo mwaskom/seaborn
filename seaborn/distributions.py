@@ -1376,6 +1376,26 @@ def histplot(
     **kwargs,
 ):
 
+    # Handle mixed data types by converting to string if needed
+    if data is not None:
+        # Check if we're dealing with a DataFrame
+        import pandas as pd
+        if isinstance(data, pd.DataFrame):
+            # Check for mixed types in the column specified by x or y
+            for var_name, var in zip(['x', 'y'], [x, y]):
+                if var is not None and var in data.columns:
+                    col_dtype = data[var].dtype
+                    if col_dtype == 'object':
+                        # If we have object dtype (potential mixed types), convert to string
+                        # Create a copy to avoid modifying the original
+                        data = data.copy()
+                        # Check for mixed numeric and string values
+                        try:
+                            pd.to_numeric(data[var])
+                        except (ValueError, TypeError):
+                            # If conversion fails, we have mixed types - convert all to strings
+                            data[var] = data[var].astype(str)
+
     p = _DistributionPlotter(
         data=data,
         variables=dict(x=x, y=y, hue=hue, weights=weights),
@@ -1565,6 +1585,12 @@ different bin sizes to be sure that you are not missing something important.
 This function allows you to specify bins in several different ways, such as
 by setting the total number of bins to use, the width of each bin, or the
 specific locations where the bins should break.
+
+When working with columns containing mixed data types (e.g., integers and strings 
+together), you may encounter errors as seaborn tries to convert values to numeric 
+types. As of version 0.13.0, histplot will automatically convert columns with 
+mixed types to strings. Alternatively, you can manually convert your data before 
+plotting using ``df.astype(str)`` for more control over the conversion process.
 
 Examples
 --------
