@@ -41,6 +41,7 @@ dev = [
     "flake8",
     "mypy",
     "pandas-stubs",
+    "scipy-stubs",
     "pre-commit",
     "flit",
 ]
