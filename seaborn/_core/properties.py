@@ -262,7 +262,8 @@ class IntervalProperty(Property):
                 raise TypeError(err)
 
             vmin, vmax = self._forward([vmin, vmax])
-            values = list(self._inverse(np.linspace(vmax, vmin, len(levels))))
+            #Change from vmax->vmin to vmin->vmax ordering
+            values = list(self._inverse(np.linspace(vmin, vmax, len(levels))))
 
         return values
 
