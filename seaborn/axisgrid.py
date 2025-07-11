@@ -2099,7 +2099,7 @@ def pairplot(
                "please update your code.")
         warnings.warn(msg, UserWarning)
 
-    if not isinstance(data, pd.DataFrame):
+    if not hasattr(data, '__dataframe__'):
         raise TypeError(
             f"'data' must be pandas DataFrame object, not: {type(data)}")
 
