@@ -3259,3 +3259,14 @@ class TestBoxPlotContainer:
         children = container.get_children()
         for child in children:
             assert isinstance(child, mpl.artist.Artist)
+
+
+def test_countplot_stat_label_capitalization():
+    import seaborn as sns
+    import matplotlib.pyplot as plt
+
+    data = sns.load_dataset("iris")
+    ax = sns.countplot(data=data, x="sepal_width", stat="count")
+
+    assert ax.get_ylabel() == "Count"
+    plt.close()  # Cleanup
