@@ -769,11 +769,11 @@ def relplot(
 
     if "style" in p.variables:
         style_order = p._style_map.levels
-        if markers:
+        if markers and style_order is not None:
             markers = {k: p._style_map(k, "marker") for k in style_order}
         else:
             markers = None
-        if dashes:
+        if dashes and style_order is not None:
             dashes = {k: p._style_map(k, "dashes") for k in style_order}
         else:
             dashes = None
