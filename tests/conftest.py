@@ -182,17 +182,19 @@ def null_series(flat_series):
     return pd.Series(index=flat_series.index, dtype='float64')
 
 
-class MockInterchangeableDataFrame:
+class MockConvertibleDataFrame:
     # Mock object that is not a pandas.DataFrame but that can
     # be converted to one via the DataFrame exchange protocol
     def __init__(self, data):
         self._data = data
 
-    def __dataframe__(self, *args, **kwargs):
-        return self._data.__dataframe__(*args, **kwargs)
+    def to_pandas(self, *args, **kwargs):
+        if self._data is None:
+            raise ValueError("Cannot convert to pandas")
+        return self._data
 
 
 @pytest.fixture
 def mock_long_df(long_df):
 
-    return MockInterchangeableDataFrame(long_df)
+    return MockConvertibleDataFrame(long_df)

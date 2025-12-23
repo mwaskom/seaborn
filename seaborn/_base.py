@@ -805,7 +805,6 @@ class VectorPlotter:
                 try:
                     orig_categories = wide_data.columns.categories
                     orig_ordered = wide_data.columns.ordered
-                    wide_data.columns = wide_data.columns.add_categories("@index")
                 except AttributeError:
                     category_columns = False
                 else:
