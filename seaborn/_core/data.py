@@ -106,7 +106,7 @@ class PlotData:
         # Because we are combining distinct columns, this is perhaps more
         # naturally thought of as a "merge"/"join". But using concat because
         # some simple testing suggests that it is marginally faster.
-        frame = pd.concat(parts, axis=1, sort=False, copy=False)
+        frame = pd.concat(parts, axis=1, sort=False)
 
         names = {k: v for k, v in self.names.items() if k not in disinherit}
         names.update(new.names)
