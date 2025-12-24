@@ -11,18 +11,13 @@ license = {file = "LICENSE.md"}
 dynamic = ["version"]
 classifiers = [
     "Intended Audience :: Science/Research",
-    "Programming Language :: Python :: 3.8",
-    "Programming Language :: Python :: 3.9",
-    "Programming Language :: Python :: 3.10",
-    "Programming Language :: Python :: 3.11",
-    "Programming Language :: Python :: 3.12",
     "License :: OSI Approved :: BSD License",
     "Topic :: Scientific/Engineering :: Visualization",
     "Topic :: Multimedia :: Graphics",
     "Operating System :: OS Independent",
     "Framework :: Matplotlib",
 ]
-requires-python = ">=3.8"
+requires-python = ">=3.10"
 dependencies = [
     "numpy>=1.20,!=1.24.0",
     "pandas>=1.2",
