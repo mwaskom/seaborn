@@ -739,7 +739,7 @@ class TestPairGrid:
     def test_ignore_datelike_data(self):
 
         df = self.df.copy()
-        df['date'] = pd.date_range('2010-01-01', periods=len(df), freq='d')
+        df['date'] = pd.date_range('2010-01-01', periods=len(df), freq='D')
         result = ag.PairGrid(self.df).data
         expected = df.drop('date', axis=1)
         tm.assert_frame_equal(result, expected)

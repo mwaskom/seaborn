@@ -5,13 +5,11 @@ from __future__ import annotations
 
 from collections.abc import Mapping, Sized
 from typing import cast
-import warnings
 
 import pandas as pd
 from pandas import DataFrame
 
 from seaborn._core.typing import DataSource, VariableSpec, ColumnName
-from seaborn.utils import _version_predates
 
 
 class PlotData:
@@ -106,7 +104,7 @@ class PlotData:
         # Because we are combining distinct columns, this is perhaps more
         # naturally thought of as a "merge"/"join". But using concat because
         # some simple testing suggests that it is marginally faster.
-        frame = pd.concat(parts, axis=1, sort=False, copy=False)
+        frame = pd.concat(parts, axis=1, sort=False)
 
         names = {k: v for k, v in self.names.items() if k not in disinherit}
         names.update(new.names)
@@ -267,53 +265,21 @@ class PlotData:
         return frame, names, ids
 
 
-def handle_data_source(data: object) -> pd.DataFrame | Mapping | None:
+def handle_data_source(data: DataSource) -> pd.DataFrame | Mapping | None:
     """Convert the data source object to a common union representation."""
-    if isinstance(data, pd.DataFrame) or hasattr(data, "__dataframe__"):
-        # Check for pd.DataFrame inheritance could be removed once
-        # minimal pandas version supports dataframe interchange (1.5.0).
-        data = convert_dataframe_to_pandas(data)
-    elif data is not None and not isinstance(data, Mapping):
-        err = f"Data source must be a DataFrame or Mapping, not {type(data)!r}."
-        raise TypeError(err)
-
-    return data
-
-
-def convert_dataframe_to_pandas(data: object) -> pd.DataFrame:
-    """Use the DataFrame exchange protocol, or fail gracefully."""
-    if isinstance(data, pd.DataFrame):
+    if isinstance(data, pd.DataFrame) or isinstance(data, Mapping) or data is None:
         return data
+    elif hasattr(data, "to_pandas"):
+        try:
+            df = data.to_pandas()
+        except Exception as err:
+            msg = (
+                "Encountered an exception when converting data source "
+                "to a pandas DataFrame. See traceback above for details."
+            )
+            raise RuntimeError(msg) from err
+        if isinstance(df, pd.DataFrame):
+            return df
 
-    if not hasattr(pd.api, "interchange"):
-        msg = (
-            "Support for non-pandas DataFrame objects requires a version of pandas "
-            "that implements the DataFrame interchange protocol. Please upgrade "
-            "your pandas version or coerce your data to pandas before passing "
-            "it to seaborn."
-        )
-        raise TypeError(msg)
-
-    if _version_predates(pd, "2.0.2"):
-        msg = (
-            "DataFrame interchange with pandas<2.0.2 has some known issues. "
-            f"You are using pandas {pd.__version__}. "
-            "Continuing, but it is recommended to carefully inspect the results and to "
-            "consider upgrading."
-        )
-        warnings.warn(msg, stacklevel=2)
-
-    try:
-        # This is going to convert all columns in the input dataframe, even though
-        # we may only need one or two of them. It would be more efficient to select
-        # the columns that are going to be used in the plot prior to interchange.
-        # Solving that in general is a hard problem, especially with the objects
-        # interface where variables passed in Plot() may only be referenced later
-        # in Plot.add(). But noting here in case this seems to be a bottleneck.
-        return pd.api.interchange.from_dataframe(data)
-    except Exception as err:
-        msg = (
-            "Encountered an exception when converting data source "
-            "to a pandas DataFrame. See traceback above for details."
-        )
-        raise RuntimeError(msg) from err
+    msg = f"Data source must be a DataFrame or Mapping, not {type(data)!r}."
+    raise TypeError(msg)

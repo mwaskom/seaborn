@@ -419,13 +419,9 @@ class TestPlotData:
         for var, col in variables.items():
             assert_vector_equal(p.frame[var], long_df[col])
 
-    @pytest.mark.skipif(
-        condition=not hasattr(pd.api, "interchange"),
-        reason="Tests behavior assuming support for dataframe interchange"
-    )
     def test_data_interchange_failure(self, mock_long_df):
 
-        mock_long_df._data = None  # Break __dataframe__()
+        mock_long_df._data = None  # Break to_pandas()
         with pytest.raises(RuntimeError, match="Encountered an exception"):
             PlotData(mock_long_df, {"x": "x"})
 

@@ -2,10 +2,10 @@ from __future__ import annotations
 
 from collections.abc import Iterable, Mapping
 from datetime import date, datetime, timedelta
-from typing import Any, Optional, Union, Tuple, List, Dict
+from typing import Any, Optional, Union, Tuple, List, Dict, Protocol
 
 from numpy import ndarray  # TODO use ArrayLike?
-from pandas import Series, Index, Timestamp, Timedelta
+from pandas import DataFrame, Series, Index, Timestamp, Timedelta
 from matplotlib.colors import Colormap, Normalize
 
 
@@ -17,11 +17,16 @@ Vector = Union[Series, Index, ndarray]
 VariableSpec = Union[ColumnName, Vector, None]
 VariableSpecList = Union[List[VariableSpec], Index, None]
 
-# A DataSource can be an object implementing __dataframe__, or a Mapping
-# (and is optional in all contexts where it is used).
-# I don't think there's an abc for "has __dataframe__", so we type as object
-# but keep the (slightly odd) Union alias for better user-facing annotations.
-DataSource = Union[object, Mapping, None]
+
+# A DataSource can be a DataFrame, an object that is convertible to a DataFrame,
+# or a Mapping, and is optional in all contexts where it is used.
+class DataFrameProtocol(Protocol):
+
+    def to_pandas(self) -> DataFrame:
+        ...
+
+
+DataSource = Union[DataFrame, DataFrameProtocol, Mapping, None]
 
 OrderSpec = Union[Iterable, None]  # TODO technically str is iterable
 NormSpec = Union[Tuple[Optional[float], Optional[float]], Normalize, None]
