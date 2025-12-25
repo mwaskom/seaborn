@@ -1,5 +1,8 @@
 import numpy as np
 import matplotlib as mpl
+import pandas as pd
+from contextlib import contextmanager, ExitStack
+from pandas._config.config import OptionError
 from seaborn.external.version import Version
 
 
@@ -162,3 +165,14 @@ def share_axis(ax0, ax1, which):
         group.join(ax1, ax0)
     else:
         getattr(ax1, f"share{which}")(ax0)
+
+
+@contextmanager
+def inf_as_na_context():
+
+    with ExitStack() as stack:
+        try:
+            stack.enter_context(pd.option_context("mode.use_inf_as_null", True))
+        except OptionError:
+            stack.enter_context(pd.option_context("mode.use_inf_as_na", True))
+        yield

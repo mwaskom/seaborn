@@ -8,6 +8,7 @@ import sys
 import inspect
 import itertools
 import textwrap
+import math
 from contextlib import contextmanager
 from collections import abc
 from collections.abc import Callable, Generator
@@ -25,7 +26,7 @@ from seaborn._marks.base import Mark
 from seaborn._stats.base import Stat
 from seaborn._core.data import PlotData
 from seaborn._core.moves import Move
-from seaborn._core.scales import Scale
+from seaborn._core.scales import Scale, Nominal
 from seaborn._core.subplots import Subplots
 from seaborn._core.groupby import GroupBy
 from seaborn._core.properties import PROPERTIES, Property
@@ -37,7 +38,7 @@ from seaborn._core.typing import (
     Default,
 )
 from seaborn._core.rules import categorical_order
-from seaborn._compat import set_scale_obj, set_layout_engine
+from seaborn._compat import inf_as_na_context, set_scale_obj, set_layout_engine
 from seaborn.rcmod import axes_style, plotting_context
 from seaborn.palettes import color_palette
 from seaborn.external.version import Version
@@ -1238,7 +1239,6 @@ class Plotter:
             # This only affects us when sharing *paired* axes. This is a novel/niche
             # behavior, so we will raise rather than hack together a workaround.
             if axis is not None and Version(mpl.__version__) < Version("3.4.0"):
-                from seaborn._core.scales import Nominal
                 paired_axis = axis in p._pair_spec.get("structure", {})
                 cat_scale = isinstance(scale, Nominal)
                 ok_dim = {"x": "col", "y": "row"}[axis]
@@ -1274,6 +1274,104 @@ class Plotter:
                 seed_values = self._get_subplot_data(var_df, var, view, share_state)
                 view_scale = scale._setup(seed_values, prop, axis=axis_obj)
                 set_scale_obj(view["ax"], axis, view_scale._matplotlib_scale)
+
+                anchor_attr = f"_seaborn_nominal_anchor_{axis}"
+                anchor_gid = f"_sb_nominal_anchor_{axis}"
+
+                margin_attr = f"_seaborn_nominal_margin_{axis}"
+
+                if isinstance(view_scale, Nominal):
+                    margin_kwargs = {"x": 0} if axis == "x" else {"y": 0}
+                    if not hasattr(view["ax"], margin_attr):
+                        current_x, current_y = view["ax"].margins()
+                        original = current_x if axis == "x" else current_y
+                        setattr(view["ax"], margin_attr, original)
+                    view["ax"].margins(**margin_kwargs)
+                    setattr(view["ax"], f"_seaborn_nominal_{axis}", True)
+
+                    units = getattr(axis_obj, "units", None)
+                    mapping = getattr(units, "_mapping", None) if units is not None else None
+                    lower = upper = None
+                    if mapping:
+                        keys = list(mapping.keys())
+                        if keys:
+                            converted = axis_obj.convert_units([keys[0], keys[-1]])
+                            lower = float(converted[0] - 0.5)
+                            upper = float(converted[1] + 0.5)
+                    else:
+                        ticklocs = axis_obj.get_ticklocs()
+                        if len(ticklocs):
+                            lower = float(min(ticklocs)) - 0.5
+                            upper = float(max(ticklocs)) + 0.5
+
+                    if lower is not None and upper is not None:
+                        anchor_attr = f"_seaborn_nominal_anchor_{axis}"
+                        anchor = getattr(view["ax"], anchor_attr, None)
+                        if anchor is None:
+                            transform = (
+                                view["ax"].get_xaxis_transform()
+                                if axis == "x"
+                                else view["ax"].get_yaxis_transform()
+                            )
+                            anchor = mpl.lines.Line2D([0, 0], [0, 0], linewidth=0)
+                            anchor.set_transform(transform)
+                            anchor.set_alpha(0)
+                            anchor.set_zorder(float("-inf"))
+                            anchor.set_gid(anchor_gid)
+                            view["ax"].add_line(anchor)
+                            setattr(view["ax"], anchor_attr, anchor)
+
+                        if axis == "x":
+                            anchor.set_data([lower, upper], [0, 0])
+                            anchor.sticky_edges.x[:] = [lower, upper]
+                        else:
+                            anchor.set_data([0, 0], [lower, upper])
+                            anchor.sticky_edges.y[:] = [lower, upper]
+
+                        data_interval = axis_obj.get_data_interval()
+                        if isinstance(data_interval, (tuple, list)):
+                            data_lo, data_hi = data_interval
+                        else:
+                            data_lo, data_hi = data_interval[0], data_interval[-1]
+                        try:
+                            data_lo = float(data_lo)
+                        except (TypeError, ValueError):
+                            data_lo = lower
+                        try:
+                            data_hi = float(data_hi)
+                        except (TypeError, ValueError):
+                            data_hi = upper
+                        if not math.isfinite(data_lo):
+                            data_lo = lower
+                        else:
+                            data_lo = min(data_lo, lower)
+                        if not math.isfinite(data_hi):
+                            data_hi = upper
+                        else:
+                            data_hi = max(data_hi, upper)
+                        axis_obj.set_data_interval(data_lo, data_hi)
+                        axis_obj.set_view_interval(data_lo, data_hi)
+                else:
+                    existing_anchor = getattr(view["ax"], anchor_attr, None)
+                    if existing_anchor is not None:
+                        if getattr(existing_anchor, "axes", None) is view["ax"]:
+                            try:
+                                existing_anchor.remove()
+                            except (ValueError, NotImplementedError):
+                                pass
+                        delattr(view["ax"], anchor_attr)
+                    for line in list(view["ax"].lines):
+                        if line.get_gid() == anchor_gid:
+                            line.remove()
+                    nominal_flag = f"_seaborn_nominal_{axis}"
+                    if hasattr(view["ax"], nominal_flag):
+                        delattr(view["ax"], nominal_flag)
+                    original_margin = getattr(view["ax"], margin_attr, None)
+                    if original_margin is not None:
+                        view["ax"].margins(**{axis: original_margin})
+                        delattr(view["ax"], margin_attr)
+                    autoscale_attr = f"_seaborn_nominal_autoscale_{axis}"
+                    setattr(view["ax"], autoscale_attr, True)
 
                 for layer, new_series in zip(layers, transformed_data):
                     layer_df = layer["data"].frame
@@ -1475,7 +1573,7 @@ class Plotter:
 
                 axes_df = self._filter_subplot_data(df, view)
 
-                with pd.option_context("mode.use_inf_as_null", True):
+                with inf_as_na_context():
                     if keep_na:
                         # The simpler thing to do would be x.dropna().reindex(x.index).
                         # But that doesn't work with the way that the subset iteration
@@ -1627,6 +1725,8 @@ class Plotter:
 
     def _finalize_figure(self, p: Plot) -> None:
 
+        explicit_grid = "axes.grid" in p._theme
+
         for sub in self._subplots:
             ax = sub["ax"]
             for axis in "xy":
@@ -1643,6 +1743,35 @@ class Plotter:
                     if isinstance(b, str):
                         hi = cast(float, hi) + 0.5
                     ax.set(**{f"{axis}lim": (lo, hi)})
+
+                is_nominal = getattr(ax, f"_seaborn_nominal_{axis}", False)
+                autoscale_attr = f"_seaborn_nominal_autoscale_{axis}"
+                if not is_nominal and getattr(ax, autoscale_attr, False):
+                    ax.relim()
+                    ax.autoscale_view()
+                    delattr(ax, autoscale_attr)
+
+                if explicit_grid:
+                    ax.grid(p._theme["axes.grid"], axis=axis, which="major")
+
+                if is_nominal and not explicit_grid:
+                    ax.grid(False, axis=axis, which="major")
+
+                if axis == "y":
+                    inverted_attr = "_seaborn_nominal_y_inverted"
+                    if is_nominal:
+                        if not ax.yaxis_inverted():
+                            ax.invert_yaxis()
+                            setattr(ax, inverted_attr, True)
+                        elif getattr(ax, inverted_attr, False):
+                            pass
+                        elif hasattr(ax, inverted_attr):
+                            delattr(ax, inverted_attr)
+                    else:
+                        if getattr(ax, inverted_attr, False):
+                            if ax.yaxis_inverted():
+                                ax.invert_yaxis()
+                            delattr(ax, inverted_attr)
 
         engine_default = None if p._target is not None else "tight"
         layout_engine = p._layout_spec.get("engine", engine_default)

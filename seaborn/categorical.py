@@ -17,6 +17,7 @@ import matplotlib as mpl
 from matplotlib.collections import PatchCollection
 import matplotlib.patches as Patches
 import matplotlib.pyplot as plt
+from seaborn._compat import inf_as_na_context
 
 from seaborn._oldcore import (
     variable_type,
@@ -1790,7 +1791,7 @@ class _LVPlotter(_CategoricalPlotter):
         vals = np.asarray(vals)
         # Remove infinite values while handling a 'object' dtype
         # that can come from pd.Float64Dtype() input
-        with pd.option_context('mode.use_inf_as_null', True):
+        with inf_as_na_context():
             vals = vals[~pd.isnull(vals)]
         n = len(vals)
         p = self.outlier_prop

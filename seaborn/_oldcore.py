@@ -10,6 +10,7 @@ from datetime import datetime
 import numpy as np
 import pandas as pd
 import matplotlib as mpl
+from ._compat import inf_as_na_context
 
 from ._decorators import (
     share_init_params_with_map,
@@ -1116,7 +1117,7 @@ class VectorPlotter:
                 parts = []
                 grouped = self.plot_data[var].groupby(self.converters[var], sort=False)
                 for converter, orig in grouped:
-                    with pd.option_context('mode.use_inf_as_null', True):
+                    with inf_as_na_context():
                         orig = orig.dropna()
                         if var in self.var_levels:
                             # TODO this should happen in some centralized location
