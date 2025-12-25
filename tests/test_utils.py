@@ -307,32 +307,37 @@ def test_locator_to_legend_entries():
 
     locator = mpl.ticker.MaxNLocator(nbins=3)
     limits = (0.09, 0.4)
-    levels, str_levels = utils.locator_to_legend_entries(
+    levels, str_levels, offset = utils.locator_to_legend_entries(
         locator, limits, float
     )
     assert str_levels == ["0.15", "0.30"]
+    assert offset == ""
 
     limits = (0.8, 0.9)
-    levels, str_levels = utils.locator_to_legend_entries(
+    levels, str_levels, offset = utils.locator_to_legend_entries(
         locator, limits, float
     )
     assert str_levels == ["0.80", "0.84", "0.88"]
+    assert offset == ""
 
     limits = (1, 6)
-    levels, str_levels = utils.locator_to_legend_entries(locator, limits, int)
+    levels, str_levels, offset = utils.locator_to_legend_entries(locator, limits, int)
     assert str_levels == ["2", "4", "6"]
+    assert offset == ""
 
     locator = mpl.ticker.LogLocator(numticks=5)
     limits = (5, 1425)
-    levels, str_levels = utils.locator_to_legend_entries(locator, limits, int)
+    levels, str_levels, offset = utils.locator_to_legend_entries(locator, limits, int)
     if Version(mpl.__version__) >= Version("3.1"):
         assert str_levels == ['10', '100', '1000']
+    assert offset == ""
 
     limits = (0.00003, 0.02)
-    _, str_levels = utils.locator_to_legend_entries(locator, limits, float)
+    _, str_levels, offset = utils.locator_to_legend_entries(locator, limits, float)
     for i, exp in enumerate([4, 3, 2]):
         # Use regex as mpl switched to minus sign, not hyphen, in 3.6
         assert re.match(f"1e.0{exp}", str_levels[i])
+    assert offset == ""
 
 
 def test_move_legend_matplotlib_objects():

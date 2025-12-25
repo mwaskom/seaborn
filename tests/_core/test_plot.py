@@ -2051,6 +2051,95 @@ class TestLegend:
         p = Plot(**xy, color=["a", "b", "c", "d"]).add(NoLegendMark()).plot()
         assert not p._figure.legends
 
+    @pytest.mark.parametrize("useoffset", [True, False])
+    def test_numeric_legend_offset_title(self, useoffset):
+
+        data = pd.DataFrame({
+            "x": np.arange(5),
+            "y": np.arange(5),
+            "mass": np.linspace(1_000_000, 1_000_400, 5),
+        })
+
+        p = (
+            Plot(data, x="x", y="y")
+            .theme({
+                "axes.formatter.useoffset": useoffset,
+                "axes.formatter.offset_threshold": 4,
+            })
+            .add(MockMark(), color="mass")
+            .plot()
+        )
+
+        legend, = p._figure.legends
+        offset = p._scales["color"]._legend_offset
+        title = legend.get_title().get_text()
+
+        if useoffset:
+            assert offset
+            assert title.endswith(offset)
+        else:
+            assert offset == ""
+            assert title == "mass"
+
+        labels = [t.get_text() for t in legend.get_texts()]
+        if offset:
+            assert all(offset not in label for label in labels)
+
+    @pytest.mark.parametrize("useoffset", [True, False])
+    def test_numeric_legend_offset_subtitle(self, useoffset):
+
+        data = pd.DataFrame({
+            "x": np.arange(5),
+            "y": np.arange(5),
+            "mass": np.linspace(1_000_000, 1_000_400, 5),
+            "cat": list("aabcc"),
+        })
+
+        p = (
+            Plot(data, x="x", y="y")
+            .theme({
+                "axes.formatter.useoffset": useoffset,
+                "axes.formatter.offset_threshold": 4,
+            })
+            .add(MockMark(), color="mass", marker=data["cat"])
+            .plot()
+        )
+
+        offset = p._scales["color"]._legend_offset
+        color_title = next(
+            key for key, *_ in p._legend_contents if key[0].startswith("mass")
+        )[0]
+
+        if useoffset:
+            assert offset
+            assert color_title.endswith(offset)
+        else:
+            assert offset == ""
+            assert color_title == "mass"
+
+    def test_numeric_legend_offset_log_scale(self):
+
+        data = pd.DataFrame({
+            "x": np.arange(5),
+            "y": np.arange(5),
+            "mass": np.linspace(1_000_000, 1_000_400, 5),
+        })
+
+        p = (
+            Plot(data, x="x", y="y")
+            .theme({
+                "axes.formatter.useoffset": True,
+                "axes.formatter.offset_threshold": 4,
+            })
+            .scale(color=Continuous(trans="log"))
+            .add(MockMark(), color="mass")
+            .plot()
+        )
+
+        assert p._scales["color"]._legend_offset == ""
+        legend, = p._figure.legends
+        assert legend.get_title().get_text() == "mass"
+
 
 class TestDefaultObject:
 

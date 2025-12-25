@@ -2,6 +2,7 @@ from itertools import product
 import warnings
 
 import numpy as np
+import pandas as pd
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 from matplotlib.colors import same_color, to_rgba
@@ -1753,6 +1754,125 @@ class TestScatterPlotter(SharedAxesLevelTests, Helpers):
                 # just anticipate and ignore it here.
                 continue
             assert legend_data[0][key] == legend_data[1][key]
+
+    @pytest.mark.parametrize("useoffset", [True, False])
+    def test_numeric_size_legend_offset_title(self, useoffset):
+
+        data = pd.DataFrame({
+            "x": np.arange(5),
+            "y": np.arange(5),
+            "mass": np.linspace(1_000_000, 1_000_400, 5),
+        })
+
+        params = {
+            "axes.formatter.useoffset": useoffset,
+            "axes.formatter.offset_threshold": 4,
+        }
+
+        with mpl.rc_context(params):
+            fig, ax = plt.subplots()
+            scatterplot(data=data, x="x", y="y", size="mass", legend="brief", ax=ax)
+            legend = ax.legend_
+            title = legend.get_title().get_text()
+            labels = [t.get_text() for t in legend.get_texts()]
+            plt.close(fig)
+
+        if useoffset:
+            assert title.endswith("+1e6")
+            assert all("+1e6" not in label for label in labels)
+        else:
+            assert title == "mass"
+            assert all("+1e6" not in label for label in labels)
+
+    @pytest.mark.parametrize("useoffset", [True, False])
+    def test_numeric_size_legend_offset_subtitle(self, useoffset):
+
+        data = pd.DataFrame({
+            "x": np.arange(5),
+            "y": np.arange(5),
+            "mass": np.linspace(1_000_000, 1_000_400, 5),
+            "cat": list("aabcc"),
+        })
+
+        params = {
+            "axes.formatter.useoffset": useoffset,
+            "axes.formatter.offset_threshold": 4,
+        }
+
+        with mpl.rc_context(params):
+            fig, ax = plt.subplots()
+            scatterplot(
+                data=data,
+                x="x",
+                y="y",
+                size="mass",
+                hue="cat",
+                legend="brief",
+                ax=ax,
+            )
+            legend_texts = [t.get_text() for t in ax.legend_.get_texts()]
+            plt.close(fig)
+
+        expected = "mass +1e6" if useoffset else "mass"
+        assert expected in legend_texts
+        if useoffset:
+            assert legend_texts.count("mass +1e6") == 1
+
+    @pytest.mark.parametrize("useoffset", [True, False])
+    def test_numeric_size_legend_offset_full(self, useoffset):
+
+        data = pd.DataFrame({
+            "x": np.arange(5),
+            "y": np.arange(5),
+            "mass": np.linspace(1_000_000, 1_000_400, 5),
+        })
+
+        params = {
+            "axes.formatter.useoffset": useoffset,
+            "axes.formatter.offset_threshold": 4,
+        }
+
+        with mpl.rc_context(params):
+            fig, ax = plt.subplots()
+            scatterplot(data=data, x="x", y="y", size="mass", legend="full", ax=ax)
+            title = ax.legend_.get_title().get_text()
+            plt.close(fig)
+
+        if useoffset:
+            assert title.endswith("+1e6")
+        else:
+            assert title == "mass"
+
+    def test_numeric_size_legend_offset_log_scale(self):
+
+        data = pd.DataFrame({
+            "x": np.arange(5),
+            "y": np.arange(5),
+            "mass": np.linspace(1_000_000, 1_000_400, 5),
+        })
+
+        params = {
+            "axes.formatter.useoffset": True,
+            "axes.formatter.offset_threshold": 4,
+        }
+
+        with mpl.rc_context(params):
+            fig, ax = plt.subplots()
+            scatterplot(
+                data=data,
+                x="x",
+                y="y",
+                size="mass",
+                legend="brief",
+                ax=ax,
+                size_norm=mpl.colors.LogNorm(),
+            )
+            title = ax.legend_.get_title().get_text()
+            texts = [t.get_text() for t in ax.legend_.get_texts()]
+            plt.close(fig)
+
+        assert title == "mass"
+        assert all("+1e" not in text for text in texts)
 
     def test_datetime_scale(self, long_df):
 

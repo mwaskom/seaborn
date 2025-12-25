@@ -233,6 +233,7 @@ class _RelationalPlotter(VectorPlotter):
         brief_ticks = 6
 
         # -- Add a legend for hue semantics
+        hue_offset = ""
         brief_hue = self._hue_map.map_type == "numeric" and (
             verbosity == "brief"
             or (verbosity == "auto" and len(self._hue_map.levels) > brief_ticks)
@@ -243,18 +244,33 @@ class _RelationalPlotter(VectorPlotter):
             else:
                 locator = mpl.ticker.MaxNLocator(nbins=brief_ticks)
             limits = min(self._hue_map.levels), max(self._hue_map.levels)
-            hue_levels, hue_formatted_levels = locator_to_legend_entries(
+            hue_levels, hue_formatted_levels, hue_offset = locator_to_legend_entries(
                 locator, limits, self.plot_data["hue"].infer_objects().dtype
             )
         elif self._hue_map.levels is None:
             hue_levels = hue_formatted_levels = []
         else:
-            hue_levels = hue_formatted_levels = self._hue_map.levels
+            hue_levels = self._hue_map.levels
+            if self._hue_map.map_type == "numeric" and len(hue_levels):
+                limits = min(hue_levels), max(hue_levels)
+                locator = mpl.ticker.FixedLocator(hue_levels)
+                hue_levels, hue_formatted_levels, hue_offset = locator_to_legend_entries(
+                    locator, limits, self.plot_data["hue"].infer_objects().dtype
+                )
+            else:
+                hue_formatted_levels = hue_levels
+
+        hue_title = self.variables.get("hue", None)
+        if legend_title and hue_title is not None and legend_title == hue_title and hue_offset:
+            legend_title = f"{legend_title} {hue_offset}"
 
         # Add the hue semantic subtitle
-        if not legend_title and self.variables.get("hue", None) is not None:
-            update((self.variables["hue"], "title"),
-                   self.variables["hue"], **title_kws)
+        if not legend_title and hue_title is not None:
+            subtitle = hue_title
+            if hue_offset:
+                subtitle = f"{subtitle} {hue_offset}"
+            update((hue_title, "title"),
+                   subtitle, **title_kws)
 
         # Add the hue semantic labels
         for level, formatted_level in zip(hue_levels, hue_formatted_levels):
@@ -263,6 +279,7 @@ class _RelationalPlotter(VectorPlotter):
                 update(self.variables["hue"], formatted_level, color=color)
 
         # -- Add a legend for size semantics
+        size_offset = ""
         brief_size = self._size_map.map_type == "numeric" and (
             verbosity == "brief"
             or (verbosity == "auto" and len(self._size_map.levels) > brief_ticks)
@@ -275,18 +292,33 @@ class _RelationalPlotter(VectorPlotter):
                 locator = mpl.ticker.MaxNLocator(nbins=brief_ticks)
             # Define the min/max data values
             limits = min(self._size_map.levels), max(self._size_map.levels)
-            size_levels, size_formatted_levels = locator_to_legend_entries(
+            size_levels, size_formatted_levels, size_offset = locator_to_legend_entries(
                 locator, limits, self.plot_data["size"].infer_objects().dtype
             )
         elif self._size_map.levels is None:
             size_levels = size_formatted_levels = []
         else:
-            size_levels = size_formatted_levels = self._size_map.levels
+            size_levels = self._size_map.levels
+            if self._size_map.map_type == "numeric" and len(size_levels):
+                limits = min(size_levels), max(size_levels)
+                locator = mpl.ticker.FixedLocator(size_levels)
+                size_levels, size_formatted_levels, size_offset = locator_to_legend_entries(
+                    locator, limits, self.plot_data["size"].infer_objects().dtype
+                )
+            else:
+                size_formatted_levels = size_levels
+
+        size_title = self.variables.get("size", None)
+        if legend_title and size_title is not None and legend_title == size_title and size_offset:
+            legend_title = f"{legend_title} {size_offset}"
 
         # Add the size semantic subtitle
-        if not legend_title and self.variables.get("size", None) is not None:
-            update((self.variables["size"], "title"),
-                   self.variables["size"], **title_kws)
+        if not legend_title and size_title is not None:
+            subtitle = size_title
+            if size_offset:
+                subtitle = f"{subtitle} {size_offset}"
+            update((size_title, "title"),
+                   subtitle, **title_kws)
 
         # Add the size semantic labels
         for level, formatted_level in zip(size_levels, size_formatted_levels):

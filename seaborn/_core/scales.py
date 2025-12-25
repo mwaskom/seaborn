@@ -67,6 +67,7 @@ class Scale:
         self._tick_params = None
         self._label_params = None
         self._legend = None
+        self._legend_offset = ""
 
     def tick(self):
         raise NotImplementedError()
@@ -379,6 +380,17 @@ class ContinuousBase(Scale):
             locs = axis.major.locator()
             locs = locs[(vmin <= locs) & (locs <= vmax)]
             labels = axis.major.formatter.format_ticks(locs)
+            formatter = axis.major.formatter
+            get_offset = getattr(formatter, "get_offset", None)
+            if callable(get_offset):
+                offset_val = getattr(formatter, "offset", 0)
+                if offset_val:
+                    offset_text = get_offset()
+                    new._legend_offset = (
+                        offset_text.strip() if offset_text else ""
+                    )
+                else:
+                    new._legend_offset = ""
             new._legend = list(locs), list(labels)
 
         return new

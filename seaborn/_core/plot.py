@@ -25,7 +25,7 @@ from seaborn._marks.base import Mark
 from seaborn._stats.base import Stat
 from seaborn._core.data import PlotData
 from seaborn._core.moves import Move
-from seaborn._core.scales import Scale, Nominal
+from seaborn._core.scales import Scale, Nominal, ContinuousBase
 from seaborn._core.subplots import Subplots
 from seaborn._core.groupby import GroupBy
 from seaborn._core.properties import PROPERTIES, Property
@@ -1569,6 +1569,13 @@ class Plotter:
                         break
                 else:
                     title = self._resolve_label(p, var, data.names[var])
+                    offset = ""
+                    scale = scales[var]
+                    if isinstance(scale, ContinuousBase):
+                        offset = getattr(scale, "_legend_offset", "")
+                    offset = offset.strip()
+                    if offset:
+                        title = f"{title} {offset}"
                     entry = (title, data.ids[var]), [var], (values, labels)
                     schema.append(entry)
 

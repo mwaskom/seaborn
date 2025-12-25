@@ -685,7 +685,7 @@ def axes_ticklabels_overlap(ax):
 
 
 def locator_to_legend_entries(locator, limits, dtype):
-    """Return levels and formatted levels for brief numeric legends."""
+    """Return levels, formatted levels, and offset text for numeric legends."""
     raw_levels = locator.tick_values(*limits).astype(dtype)
 
     # The locator can return ticks outside the limits, clip them here
@@ -699,6 +699,8 @@ def locator_to_legend_entries(locator, limits, dtype):
         formatter = mpl.ticker.LogFormatter()
     else:
         formatter = mpl.ticker.ScalarFormatter()
+        formatter.set_useOffset(mpl.rcParams["axes.formatter.useoffset"])
+        formatter.offset_threshold = mpl.rcParams["axes.formatter.offset_threshold"]
     formatter.axis = dummy_axis()
 
     # TODO: The following two lines should be replaced
@@ -707,7 +709,14 @@ def locator_to_legend_entries(locator, limits, dtype):
     formatter.set_locs(raw_levels)
     formatted_levels = [formatter(x) for x in raw_levels]
 
-    return raw_levels, formatted_levels
+    offset_text = ""
+    get_offset = getattr(formatter, "get_offset", None)
+    offset_val = getattr(formatter, "offset", 0)
+    if callable(get_offset) and offset_val:
+        offset = get_offset()
+        offset_text = offset.strip() if offset else ""
+
+    return raw_levels, formatted_levels, offset_text
 
 
 def relative_luminance(color):
