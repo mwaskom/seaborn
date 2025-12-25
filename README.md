@@ -56,7 +56,7 @@ A paper describing seaborn has been published in the [Journal of Open Source Sof
 Testing
 -------
 
-Testing seaborn requires installing additional dependencies; they can be installed with the `dev` extra (e.g., `pip install .[dev]`).
+Testing seaborn requires installing additional dependencies; they can be installed with the `dev` extra (e.g., `pip install ."[dev]"`).
 
 To test the code, run `make test` in the source directory. This will exercise the unit tests (using [pytest](https://docs.pytest.org/)) and generate a coverage report.
 
