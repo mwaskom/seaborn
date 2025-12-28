@@ -13,6 +13,8 @@ import matplotlib.transforms as tx
 from matplotlib.cbook import normalize_kwargs
 from matplotlib.colors import to_rgba
 from matplotlib.collections import LineCollection
+import matplotlib.patches as mpatches
+
 
 from ._base import VectorPlotter
 
@@ -140,32 +142,65 @@ class _DistributionPlotter(VectorPlotter):
         # TODO note that this doesn't handle numeric mappings like the relational plots
         handles = []
         labels = []
-        for level in self._hue_map.levels:
-            color = self._hue_map(level)
 
-            kws = self._artist_kws(
-                artist_kws, fill, element, multiple, color, alpha
-            )
+        hasBothStyleAndHue = (self._hue_map.levels is not None) and (self._style_map.levels is not None)        
+        legendTitle = None
+        if (not hasBothStyleAndHue):
+            legendTitle = self.variables.get("hue", None) or self.variables.get("style", None)
+        if (self._hue_map.levels is not None):
+            # when both style and hue exist we have this hack to add titles as 'invisible' handles
+            # otherwise we use titles
+            if (hasBothStyleAndHue):
+                fakeInvisibleTitleHandle= mpatches.Patch(color='none')
+                handles.append(fakeInvisibleTitleHandle)
+                labels.append(self.variables["hue"])
 
-            # color gets added to the kws to workaround an issue with barplot's color
-            # cycle integration but it causes problems in this context where we are
-            # setting artist properties directly, so pop it off here
-            if "facecolor" in kws:
-                kws.pop("color", None)
+            for level in self._hue_map.levels or []:
+                color = self._hue_map(level)
+                kws = self._artist_kws(
+                    artist_kws, fill, element, multiple, color, alpha
+                )
 
-            handles.append(artist(**kws))
-            labels.append(level)
+                # color gets added to the kws to workaround an issue with barplot's color
+                # cycle integration but it causes problems in this context where we are
+                # setting artist properties directly, so pop it off here
+                if "facecolor" in kws:
+                    kws.pop("color", None)
 
+                handles.append(artist(**kws))
+                labels.append(level)
+        if (self._style_map.levels is not None):
+            if (hasBothStyleAndHue):
+                fakeInvisibleTitleHandle= mpatches.Patch(color='none')
+                handles.append(fakeInvisibleTitleHandle)
+                labels.append(self.variables["style"])
+            # deal with the case where style is None
+            for level in self._style_map.levels:
+                style = self._style_map(level)
+                # use black as te color for style legend
+                color = "black"
+                kws = self._artist_kws(
+                    artist_kws, fill, element, multiple, color, alpha
+                )
+                kws.update(style)
+                # color gets added to the kws to workaround an issue with barplot's color
+                # cycle integration but it causes problems in this context where we are
+                # setting artist properties directly, so pop it off here
+                if "facecolor" in kws:
+                    kws.pop("color", None)
+
+                handles.append(artist(**kws))
+                labels.append(level)
         if isinstance(ax_obj, mpl.axes.Axes):
-            ax_obj.legend(handles, labels, title=self.variables["hue"], **legend_kws)
+            ax_obj.legend(handles, labels, title=legendTitle, **legend_kws)
         else:  # i.e. a FacetGrid. TODO make this better
             legend_data = dict(zip(labels, handles))
             ax_obj.add_legend(
                 legend_data,
-                title=self.variables["hue"],
+                title=legendTitle,
                 label_order=self.var_levels["hue"],
                 **legend_kws
-            )
+            )  
 
     def _artist_kws(self, kws, fill, element, multiple, color, alpha):
         """Handle differences between artists in filled/unfilled plots."""
@@ -1216,8 +1251,10 @@ class _DistributionPlotter(VectorPlotter):
         plot_kws["drawstyle"] = drawstyles[self.data_variable]
 
         # Loop through the subsets, transform and plot the data
+        grouping_vars = "hue", "size", "style"
+
         for sub_vars, sub_data in self.iter_data(
-            "hue", reverse=True, from_comp_data=True,
+            grouping_vars, reverse=True, from_comp_data=True,
         ):
 
             # Compute the ECDF
@@ -1230,8 +1267,16 @@ class _DistributionPlotter(VectorPlotter):
 
             # Assign attributes based on semantic mapping
             artist_kws = plot_kws.copy()
+            
+
             if "hue" in self.variables:
                 artist_kws["color"] = self._hue_map(sub_vars["hue"])
+            # Apply style mapping (dashes, marker) if requested
+            if "style" in self.variables:                
+                attributes = self._style_map(sub_vars["style"])
+                for var in ('marker', 'dashes'):
+                    if (var in attributes):
+                        artist_kws[var] = attributes[var]                                        
 
             # Return the data variable to the linear domain
             ax = self._get_axes(sub_vars)
@@ -1257,6 +1302,9 @@ class _DistributionPlotter(VectorPlotter):
 
             # Draw the line for this subset
             artist, = ax.plot(*plot_args, **artist_kws)
+
+         
+
             sticky_edges = getattr(artist.sticky_edges, stat_variable)
             sticky_edges[:] = 0, top_edge
 
@@ -1270,13 +1318,19 @@ class _DistributionPlotter(VectorPlotter):
             default_x = stat
         self._add_axis_labels(ax, default_x, default_y)
 
-        if "hue" in self.variables and legend:
+        if self._need_legend() and legend:
             artist = partial(mpl.lines.Line2D, [], [])
             alpha = plot_kws.get("alpha", 1)
             ax_obj = self.ax if self.ax is not None else self.facets
             self._add_legend(
                 ax_obj, artist, False, False, None, alpha, plot_kws, {},
             )
+
+    def _need_legend(self):
+        """
+        true if this plot has been configured with a seetting that could generate a legend        
+        """
+        return "hue" in self.variables or "style" in self.variables
 
     def plot_rug(self, height, expand_margins, legend, **kws):
 
@@ -1358,11 +1412,13 @@ class _DistributionPlotter(VectorPlotter):
 def histplot(
     data=None, *,
     # Vector variables
-    x=None, y=None, hue=None, weights=None,
+    x=None, y=None, hue=None, weights=None, style=None,
     # Histogram computation parameters
     stat="count", bins="auto", binwidth=None, binrange=None,
     discrete=None, cumulative=False, common_bins=True, common_norm=True,
     # Histogram appearance parameters
+    # Style mapping parameters
+    markers=None, dashes=None, style_order=None,
     multiple="layer", element="bars", fill=True, shrink=1,
     # Histogram smoothing with a kernel density estimate
     kde=False, kde_kws=None, line_kws=None,
@@ -1378,10 +1434,11 @@ def histplot(
 
     p = _DistributionPlotter(
         data=data,
-        variables=dict(x=x, y=y, hue=hue, weights=weights),
+        variables=dict(x=x, y=y, hue=hue, style=style, weights=weights),
     )
 
     p.map_hue(palette=palette, order=hue_order, norm=hue_norm)
+    p.map_style(markers=markers, dashes=dashes, order=style_order)
 
     if ax is None:
         ax = plt.gca()
@@ -1861,11 +1918,13 @@ Examples
 def ecdfplot(
     data=None, *,
     # Vector variables
-    x=None, y=None, hue=None, weights=None,
+    x=None, y=None, hue=None, style=None, weights=None,
     # Computation parameters
     stat="proportion", complementary=False,
     # Hue mapping parameters
     palette=None, hue_order=None, hue_norm=None,
+    # Style mapping parameters
+    markers=False, dashes=True, style_order=None,
     # Axes information
     log_scale=None, legend=True, ax=None,
     # Other appearance keywords
@@ -1874,10 +1933,11 @@ def ecdfplot(
 
     p = _DistributionPlotter(
         data=data,
-        variables=dict(x=x, y=y, hue=hue, weights=weights),
+        variables=dict(x=x, y=y, hue=hue, style=style, weights=weights),
     )
 
     p.map_hue(palette=palette, order=hue_order, norm=hue_norm)
+    p.map_style(markers=markers, dashes=dashes, order=style_order)
 
     # We could support other semantics (size, style) here fairly easily
     # But it would make distplot a bit more complicated.
@@ -2235,6 +2295,13 @@ def displot(
 
         ecdf_kws["estimate_kws"] = estimate_kws
         ecdf_kws["color"] = color
+
+        # Allow displot(..., kind="ecdf") to accept style parameters
+        p.map_style(
+            markers=ecdf_kws.pop("markers", None),
+            dashes=ecdf_kws.pop("dashes", None),
+            order=ecdf_kws.pop("style_order", None),
+        )
 
         if p.univariate:
 
