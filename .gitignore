@@ -14,3 +14,5 @@ htmlcov/
 .DS_Store
 notes/
 notebooks/
+mytest.py
+*.png
