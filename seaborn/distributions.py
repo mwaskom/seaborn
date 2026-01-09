@@ -400,10 +400,12 @@ class _DistributionPlotter(VectorPlotter):
         _check_argument("element", ["bars", "step", "poly"], element)
 
         auto_bins_with_weights = (
-            "weights" in self.variables
-            and estimate_kws["bins"] == "auto"
-            and estimate_kws["binwidth"] is None
-            and not estimate_kws["discrete"]
+            isinstance(estimate_kws["bins"], str) and (
+                "weights" in self.variables
+                and estimate_kws["bins"] == "auto"
+                and estimate_kws["binwidth"] is None
+                and not estimate_kws["discrete"]
+            )
         )
         if auto_bins_with_weights:
             msg = (
