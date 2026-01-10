@@ -310,7 +310,7 @@ class _LinePlotter(_RelationalPlotter):
 
             if "units" in self.variables:   # XXX why not add to grouping variables?
                 lines = []
-                for _, unit_data in sub_data.groupby("units"):
+                for _, unit_data in sub_data.groupby("units", observed=False):
                     lines.extend(ax.plot(unit_data["x"], unit_data["y"], **kws))
             else:
                 lines = ax.plot(sub_data["x"], sub_data["y"], **kws)
