@@ -4,7 +4,7 @@ import pytest
 from numpy.testing import assert_array_equal
 
 from seaborn.palettes import color_palette
-from seaborn._core.plot import Plot
+from seaborn._core.plot import Plot, Plotter
 from seaborn._marks.dot import Dot, Dots
 
 
@@ -53,15 +53,16 @@ class TestDot(DotBase):
 
         mark = Dot(edgecolor="w", stroke=2, edgewidth=1)
         p = Plot(x=x, y=y).add(mark, marker=marker).scale(marker=shapes).plot()
-        ax = p._figure.axes[0]
-        points, = ax.collections
-        C0, *_ = p._theme["axes.prop_cycle"].by_key()["color"]
-        self.check_offsets(points, x, y)
-        self.check_colors("face", points, [C0, to_rgba(C0, 0)], None)
-        self.check_colors("edge", points, ["w", C0], 1)
+        self._test_filled_unfilled_mix(x, y, p, mark)
 
-        expected = [mark.edgewidth, mark.stroke]
-        assert_array_equal(points.get_linewidths(), expected)
+    def test_identity_marker(self):
+        x = [1, 2]
+        y = [4, 5]
+        shapes = ["o", "x"]
+
+        mark = Dot(edgecolor="w", stroke=2, edgewidth=1)
+        p = Plot(x=x, y=y).add(mark, marker=shapes).scale(marker=None).plot()
+        self._test_filled_unfilled_mix(x, y, p, mark)
 
     def test_missing_coordinate_data(self):
 
@@ -84,6 +85,17 @@ class TestDot(DotBase):
         ax = p._figure.axes[0]
         points, = ax.collections
         self.check_offsets(points, [1, 3], [5, 4])
+
+    def _test_filled_unfilled_mix(self, x, y, p: Plotter, mark: Dot):
+        ax = p._figure.axes[0]
+        points, = ax.collections
+        C0, *_ = p._theme["axes.prop_cycle"].by_key()["color"]
+        self.check_offsets(points, x, y)
+        self.check_colors("face", points, [C0, to_rgba(C0, 0)], None)
+        self.check_colors("edge", points, ["w", C0], 1)
+
+        expected = [mark.edgewidth, mark.stroke]
+        assert_array_equal(points.get_linewidths(), expected)
 
 
 class TestDots(DotBase):
