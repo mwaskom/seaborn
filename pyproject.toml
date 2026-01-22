@@ -36,6 +36,7 @@ dev = [
     "flake8",
     "mypy",
     "pandas-stubs",
+    "scipy-stubs; python_version>='3.10'",
     "pre-commit",
     "flit",
 ]
