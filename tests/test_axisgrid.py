@@ -785,6 +785,32 @@ class TestPairGrid:
         assert hue in g.x_vars
         assert hue in g.y_vars
 
+    def test_duplicates_in_df_columns_without_vars(self):
+        # should fail with clear msg
+        df_with_dupe = self.df.loc[:, ["x", "y", "z"]].copy()
+        df_with_dupe.columns = ["x", "y", "y"]
+        with pytest.raises(ValueError, match=r"Columns: .* are duplicated\."):
+            ag.PairGrid(df_with_dupe)
+
+    def test_duplicates_in_df_columns_with_related_vars(self):
+        # should fail with clear msg
+        df_with_dupe = self.df.loc[:, ["x", "y", "z"]].copy()
+        df_with_dupe.columns = ["x", "y", "y"]
+        with pytest.raises(ValueError, match=r"Columns: .* are duplicated\."):
+            ag.PairGrid(df_with_dupe, vars=['x', 'y'])
+
+    def test_duplicated_vars(self):
+        # should only warn
+        with pytest.warns(UserWarning, match=r"Duplicated items in vars: .*"):
+            ag.PairGrid(self.df, vars=['x', 'y', 'y'])
+
+    def test_duplicates_in_df_columns_with_not_related_vars(self):
+        # should pass
+        df_with_dupe = pd.concat(
+            [self.df["x"], self.df["y"], self.df["z"], self.df["x"]], axis=1)
+        df_with_dupe.columns = ["x", "y", "z", "z"]
+        ag.PairGrid(df_with_dupe, vars=['x', 'y'])
+
     @pytest.mark.parametrize(
         "x_vars, y_vars",
         [
