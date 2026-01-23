@@ -2677,7 +2677,7 @@ def countplot(
         p.plot_data[count_axis] = 1
 
     _check_argument("stat", ["count", "percent", "probability", "proportion"], stat)
-    p.variables[count_axis] = stat
+    p.variables[count_axis] = stat.capitalize()
     if stat != "count":
         denom = 100 if stat == "percent" else 1
         p.plot_data[count_axis] /= len(p.plot_data) / denom
