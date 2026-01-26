@@ -485,6 +485,10 @@ class FacetGrid(Grid):
             if sharey:
                 subplot_kws["sharey"] = axes[0]
             for i in range(1, n_axes):
+                if sharey == "row":
+                    subplot_kws["sharey"] = axes[int(i // ncol * ncol)]
+                if sharex == "col":
+                    subplot_kws["sharey"] = axes[int(i % ncol)]
                 axes[i] = fig.add_subplot(nrow, ncol, i + 1, **subplot_kws)
 
             axes_dict = dict(zip(col_names, axes))
