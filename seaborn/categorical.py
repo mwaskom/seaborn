@@ -1888,7 +1888,7 @@ violinplot.__doc__ = dedent("""\
         .. versionadded:: v0.13.0
     {ax_in}
     kwargs : key, value mappings
-        Keyword arguments for the violin patches, passsed through to
+        Keyword arguments for the violin patches, passed through to
         :meth:`matplotlib.axes.Axes.fill_between`.
 
     Returns
