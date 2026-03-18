@@ -2191,7 +2191,7 @@ def jointplot(
     data=None, *, x=None, y=None, hue=None, kind="scatter",
     height=6, ratio=5, space=.2, dropna=False, xlim=None, ylim=None,
     color=None, palette=None, hue_order=None, hue_norm=None, marginal_ticks=False,
-    joint_kws=None, marginal_kws=None,
+    joint_kws=None, marginal_kws=None, f=None,
     **kwargs
 ):
     # Avoid circular imports
@@ -2251,6 +2251,7 @@ def jointplot(
         palette=palette, hue_order=hue_order, hue_norm=hue_norm,
         dropna=dropna, height=height, ratio=ratio, space=space,
         xlim=xlim, ylim=ylim, marginal_ticks=marginal_ticks,
+        f=f,
     )
 
     if grid.hue is not None:
