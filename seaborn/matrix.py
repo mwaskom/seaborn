@@ -25,6 +25,385 @@ from .utils import (
 )
 
 
+# -----------------------------------------------------------------------------
+# Internal helper classes and functions (heatmap implementation details)
+# -----------------------------------------------------------------------------
+
+class _DataPreprocessor:
+    """Internal helper to handle data validation, conversion, and masking."""
+
+    @staticmethod
+    def to_dataframe(data):
+        """Convert input data to DataFrame, preserving semantic information."""
+        if isinstance(data, pd.DataFrame):
+            return data, data.values
+        array = np.asarray(data)
+        return pd.DataFrame(array), array
+
+    @staticmethod
+    def prepare_mask(data, mask):
+        """Validate mask and combine with missing data mask.
+
+        Values will be plotted for cells where ``mask`` is ``False``.
+
+        Parameters
+        ----------
+        data : DataFrame
+            Input data as DataFrame.
+        mask : DataFrame, array-like, or None
+            Boolean mask where True indicates cells to hide.
+
+        Returns
+        -------
+        mask : DataFrame
+            Boolean mask aligned with data.
+
+        """
+        if mask is None:
+            mask = np.zeros(data.shape, bool)
+
+        if isinstance(mask, pd.DataFrame):
+            if not mask.index.equals(data.index) and mask.columns.equals(data.columns):
+                err = "Mask must have the same index and columns as data."
+                raise ValueError(err)
+        elif hasattr(mask, "__array__"):
+            mask = np.asarray(mask)
+            if mask.shape != data.shape:
+                raise ValueError("Mask must have the same shape as data.")
+            mask = pd.DataFrame(mask, index=data.index, columns=data.columns, dtype=bool)
+
+        # Add cells with missing data to mask (works around plt.pcolormesh issue)
+        mask = mask | pd.isnull(data)
+        return mask
+
+    @staticmethod
+    def apply_mask(plot_data, mask):
+        """Apply boolean mask to plot data."""
+        return np.ma.masked_where(np.asarray(mask), plot_data)
+
+
+class _TickManager:
+    """Internal helper to manage tick positions and labels for heatmap axes."""
+
+    def __init__(self, labels, tickevery=1):
+        """
+        Parameters
+        ----------
+        labels : "auto", bool, list-like, or int
+            User specification for tick labels.
+        tickevery : int, default=1
+            Interval at which to place ticks when labels is an integer.
+
+        """
+        self._labels_input = labels
+        self._tickevery_input = tickevery
+        self._ticks = None
+        self._labels = None
+        self._tickevery = None
+
+    def process(self, index):
+        """Process tick configuration based on input data index.
+
+        Parameters
+        ----------
+        index : pd.Index or pd.MultiIndex
+            DataFrame index (row or column) to derive labels from.
+
+        Returns
+        -------
+        self : _TickManager
+            For method chaining.
+
+        """
+        # Handle the various tick label input formats
+        tickevery = 1
+        if isinstance(self._labels_input, int):
+            tickevery = self._labels_input
+            labels = self._index_to_ticklabels(index)
+        elif self._labels_input is True:
+            labels = self._index_to_ticklabels(index)
+        elif self._labels_input is False:
+            labels = []
+        else:
+            labels = self._labels_input
+            tickevery = self._tickevery_input
+
+        self._tickevery = tickevery
+
+        # Determine final ticks and labels
+        if not len(labels):
+            self._ticks, self._labels = [], []
+        elif isinstance(labels, str) and labels == "auto":
+            # Defer auto-tick calculation until axes are known
+            self._ticks = "auto"
+            self._labels = self._index_to_ticklabels(index)
+        else:
+            self._ticks, self._labels = self._skip_ticks(labels, tickevery)
+
+        return self
+
+    @staticmethod
+    def _index_to_ticklabels(index):
+        """Convert pandas index or multiindex into ticklabels."""
+        if isinstance(index, pd.MultiIndex):
+            return ["-".join(map(to_utf8, i)) for i in index.values]
+        return index.values
+
+    @staticmethod
+    def _index_to_label(index):
+        """Convert pandas index or multiindex to an axis label."""
+        if isinstance(index, pd.MultiIndex):
+            return "-".join(map(to_utf8, index.names))
+        return index.name
+
+    def get_axis_label(self, index):
+        """Get the appropriate axis label from an index."""
+        label = self._index_to_label(index)
+        return label if label is not None else ""
+
+    def _skip_ticks(self, labels, tickevery):
+        """Return ticks and labels at evenly spaced intervals."""
+        n = len(labels)
+        if tickevery == 0:
+            return [], []
+        if tickevery == 1:
+            return np.arange(n) + .5, labels
+        start, end, step = 0, n, tickevery
+        ticks = np.arange(start, end, step) + .5
+        labels = labels[start:end:step]
+        return ticks, labels
+
+    def resolve_auto_ticks(self, ax, axis):
+        """Determine ticks and ticklabels that minimize overlap.
+
+        Parameters
+        ----------
+        ax : matplotlib Axes
+            Axes containing the heatmap.
+        axis : int
+            0 for x-axis, 1 for y-axis.
+
+        Returns
+        -------
+        ticks : array
+            Tick positions.
+        labels : array
+            Tick labels.
+
+        """
+        if not isinstance(self._ticks, str) or self._ticks != "auto":
+            return self._ticks, self._labels
+
+        transform = ax.figure.dpi_scale_trans.inverted()
+        bbox = ax.get_window_extent().transformed(transform)
+        size = [bbox.width, bbox.height][axis]
+        mpl_axis = [ax.xaxis, ax.yaxis][axis]
+        tick, = mpl_axis.set_ticks([0])
+        fontsize = tick.label1.get_size()
+        max_ticks = int(size // (fontsize / 72))
+
+        if max_ticks < 1:
+            return [], []
+
+        tick_every = len(self._labels) // max_ticks + 1
+        tick_every = 1 if tick_every == 0 else tick_every
+        return self._skip_ticks(self._labels, tick_every)
+
+    @property
+    def ticks(self):
+        return self._ticks
+
+    @property
+    def labels(self):
+        return self._labels
+
+
+class _ColorMapper:
+    """Internal helper to manage colormap configuration and normalization."""
+
+    def __init__(self, cmap=None, center=None, vmin=None, vmax=None, robust=False):
+        """
+        Parameters
+        ----------
+        cmap : matplotlib colormap name, object, list, or None
+            Colormap specification.
+        center : float or None
+            Value at which to center a divergent colormap.
+        vmin, vmax : float or None
+            Values to anchor the colormap.
+        robust : bool, default=False
+            If True and vmin/vmax are absent, use robust quantiles for range.
+
+        """
+        self.cmap_input = cmap
+        self.center = center
+        self.vmin = vmin
+        self.vmax = vmax
+        self.robust = robust
+        self._cmap = None
+
+    def fit(self, plot_data):
+        """Compute colormap parameters based on input data.
+
+        Parameters
+        ----------
+        plot_data : array-like
+            Data to be plotted in the heatmap.
+
+        Returns
+        -------
+        self : _ColorMapper
+            For method chaining.
+
+        """
+        # Handle masked data
+        calc_data = plot_data.astype(float).filled(np.nan)
+
+        # Determine value range
+        if self.vmin is None:
+            if self.robust:
+                self.vmin = np.nanpercentile(calc_data, 2)
+            else:
+                self.vmin = np.nanmin(calc_data)
+        if self.vmax is None:
+            if self.robust:
+                self.vmax = np.nanpercentile(calc_data, 98)
+            else:
+                self.vmax = np.nanmax(calc_data)
+
+        # Choose colormap
+        self._cmap = self._get_cmap()
+
+        # Recenter divergent colormap if needed
+        if self.center is not None:
+            self._center_cmap()
+
+        return self
+
+    def _get_cmap(self):
+        """Get colormap based on input specification."""
+        if self.cmap_input is None:
+            return cm.rocket if self.center is None else cm.icefire
+        if isinstance(self.cmap_input, str):
+            return get_colormap(self.cmap_input)
+        if isinstance(self.cmap_input, list):
+            return mpl.colors.ListedColormap(self.cmap_input)
+        return self.cmap_input
+
+    def _center_cmap(self):
+        """Recenter colormap around a specified center value."""
+        # Copy bad values (handles mpl<3.2 compatibility)
+        bad = self._cmap(np.ma.masked_invalid([np.nan]))[0]
+
+        # Check for under/over values
+        under = self._cmap(-np.inf)
+        over = self._cmap(np.inf)
+        under_set = under != self._cmap(0)
+        over_set = over != self._cmap(self._cmap.N - 1)
+
+        # Create centered colormap
+        vrange = max(self.vmax - self.center, self.center - self.vmin)
+        normalize = mpl.colors.Normalize(self.center - vrange, self.center + vrange)
+        cmin, cmax = normalize([self.vmin, self.vmax])
+        cc = np.linspace(cmin, cmax, 256)
+
+        self._cmap = mpl.colors.ListedColormap(self._cmap(cc))
+        self._cmap.set_bad(bad)
+        if under_set:
+            self._cmap.set_under(under)
+        if over_set:
+            self._cmap.set_over(over)
+
+    @property
+    def cmap(self):
+        return self._cmap
+
+
+class _AnnotationManager:
+    """Internal helper to manage heatmap cell annotations."""
+
+    def __init__(self, annot, fmt, annot_kws, plot_data_shape):
+        """
+        Parameters
+        ----------
+        annot : bool, array-like, or None
+            If True, use data values for annotations. If array-like, use those values.
+        fmt : str
+            Format string for annotation text.
+        annot_kws : dict or None
+            Keyword arguments for text rendering.
+        plot_data_shape : tuple
+            Shape of the main heatmap data array.
+
+        """
+        self.fmt = fmt
+        self.annot_kws = {} if annot_kws is None else annot_kws.copy()
+        self._annot_data = None
+        self._enabled = False
+        self._needs_data = False  # Initialize with default value
+
+        if annot is None or annot is False:
+            return
+
+        self._enabled = True
+        if isinstance(annot, bool):
+            self._needs_data = True
+        else:
+            self._needs_data = False
+            annot_data = np.asarray(annot)
+            if annot_data.shape != plot_data_shape:
+                raise ValueError("`data` and `annot` must have same shape.")
+            self._annot_data = annot_data
+
+    def set_plot_data(self, plot_data):
+        """Provide plot data to use for annotations."""
+        if self._needs_data:
+            self._annot_data = plot_data
+
+    def draw(self, ax, mesh):
+        """Add text annotations to each cell.
+
+        Parameters
+        ----------
+        ax : matplotlib Axes
+            Axes containing the heatmap.
+        mesh : matplotlib QuadMesh
+            Artist returned by pcolormesh.
+
+        """
+        if not self._enabled or self._annot_data is None:
+            return
+
+        mesh.update_scalarmappable()
+        height, width = self._annot_data.shape
+        xpos, ypos = np.meshgrid(np.arange(width) + .5, np.arange(height) + .5)
+
+        for x, y, m, color, val in zip(
+            xpos.flat, ypos.flat, mesh.get_array().flat,
+            mesh.get_facecolors(), self._annot_data.flat
+        ):
+            if m is not np.ma.masked:
+                lum = relative_luminance(color)
+                text_color = ".15" if lum > .408 else "w"
+                annotation = ("{:" + self.fmt + "}").format(val)
+                text_kwargs = dict(color=text_color, ha="center", va="center")
+                text_kwargs.update(self.annot_kws)
+                ax.text(x, y, annotation, **text_kwargs)
+
+    @property
+    def enabled(self):
+        return self._enabled
+
+    @property
+    def data(self):
+        return self._annot_data
+
+
+# -----------------------------------------------------------------------------
+# Existing utilities (retained for backwards compatibility with clustermap)
+# -----------------------------------------------------------------------------
+
+
 __all__ = ["heatmap", "clustermap"]
 
 
@@ -101,203 +480,75 @@ class _HeatMapper:
                  annot_kws, cbar, cbar_kws,
                  xticklabels=True, yticklabels=True, mask=None):
         """Initialize the plotting object."""
-        # We always want to have a DataFrame with semantic information
-        # and an ndarray to pass to matplotlib
-        if isinstance(data, pd.DataFrame):
-            plot_data = data.values
-        else:
-            plot_data = np.asarray(data)
-            data = pd.DataFrame(plot_data)
+        # 1. Data preparation - convert and validate input data
+        self.data, plot_data = _DataPreprocessor.to_dataframe(data)
+        
+        # 2. Mask preparation - validate and apply data masking
+        self.mask = _DataPreprocessor.prepare_mask(self.data, mask)
+        self.plot_data = _DataPreprocessor.apply_mask(plot_data, self.mask)
 
-        # Validate the mask and convert to DataFrame
-        mask = _matrix_mask(data, mask)
+        # 3. Tick management - handle axis labels and tick positions
+        self.xtick_manager = _TickManager(xticklabels).process(self.data.columns)
+        self.ytick_manager = _TickManager(yticklabels).process(self.data.index)
 
-        plot_data = np.ma.masked_where(np.asarray(mask), plot_data)
+        # 4. Axis labels from index metadata
+        self.xlabel = self.xtick_manager.get_axis_label(self.data.columns)
+        self.ylabel = self.ytick_manager.get_axis_label(self.data.index)
 
-        # Get good names for the rows and columns
-        xtickevery = 1
-        if isinstance(xticklabels, int):
-            xtickevery = xticklabels
-            xticklabels = _index_to_ticklabels(data.columns)
-        elif xticklabels is True:
-            xticklabels = _index_to_ticklabels(data.columns)
-        elif xticklabels is False:
-            xticklabels = []
+        # 5. Color mapping configuration
+        color_mapper = _ColorMapper(cmap, center, vmin, vmax, robust)
+        color_mapper.fit(self.plot_data)
+        self.cmap = color_mapper.cmap
+        self.vmin = color_mapper.vmin
+        self.vmax = color_mapper.vmax
 
-        ytickevery = 1
-        if isinstance(yticklabels, int):
-            ytickevery = yticklabels
-            yticklabels = _index_to_ticklabels(data.index)
-        elif yticklabels is True:
-            yticklabels = _index_to_ticklabels(data.index)
-        elif yticklabels is False:
-            yticklabels = []
+        # 6. Annotation management
+        self.annotation_manager = _AnnotationManager(
+            annot, fmt, annot_kws, self.plot_data.shape
+        )
+        self.annotation_manager.set_plot_data(self.plot_data)
 
-        if not len(xticklabels):
-            self.xticks = []
-            self.xticklabels = []
-        elif isinstance(xticklabels, str) and xticklabels == "auto":
-            self.xticks = "auto"
-            self.xticklabels = _index_to_ticklabels(data.columns)
-        else:
-            self.xticks, self.xticklabels = self._skip_ticks(xticklabels,
-                                                             xtickevery)
-
-        if not len(yticklabels):
-            self.yticks = []
-            self.yticklabels = []
-        elif isinstance(yticklabels, str) and yticklabels == "auto":
-            self.yticks = "auto"
-            self.yticklabels = _index_to_ticklabels(data.index)
-        else:
-            self.yticks, self.yticklabels = self._skip_ticks(yticklabels,
-                                                             ytickevery)
-
-        # Get good names for the axis labels
-        xlabel = _index_to_label(data.columns)
-        ylabel = _index_to_label(data.index)
-        self.xlabel = xlabel if xlabel is not None else ""
-        self.ylabel = ylabel if ylabel is not None else ""
-
-        # Determine good default values for the colormapping
-        self._determine_cmap_params(plot_data, vmin, vmax,
-                                    cmap, center, robust)
-
-        # Sort out the annotations
-        if annot is None or annot is False:
-            annot = False
-            annot_data = None
-        else:
-            if isinstance(annot, bool):
-                annot_data = plot_data
-            else:
-                annot_data = np.asarray(annot)
-                if annot_data.shape != plot_data.shape:
-                    err = "`data` and `annot` must have same shape."
-                    raise ValueError(err)
-            annot = True
-
-        # Save other attributes to the object
-        self.data = data
-        self.plot_data = plot_data
-
-        self.annot = annot
-        self.annot_data = annot_data
-
-        self.fmt = fmt
-        self.annot_kws = {} if annot_kws is None else annot_kws.copy()
+        # Save other configuration
         self.cbar = cbar
         self.cbar_kws = {} if cbar_kws is None else cbar_kws.copy()
 
-    def _determine_cmap_params(self, plot_data, vmin, vmax,
-                               cmap, center, robust):
-        """Use some heuristics to set good defaults for colorbar and range."""
+    # Backward compatibility properties for test access
+    @property
+    def xticks(self):
+        """Backward compatible access to x-ticks positions."""
+        return self.xtick_manager.ticks
 
-        # plot_data is a np.ma.array instance
-        calc_data = plot_data.astype(float).filled(np.nan)
-        if vmin is None:
-            if robust:
-                vmin = np.nanpercentile(calc_data, 2)
-            else:
-                vmin = np.nanmin(calc_data)
-        if vmax is None:
-            if robust:
-                vmax = np.nanpercentile(calc_data, 98)
-            else:
-                vmax = np.nanmax(calc_data)
-        self.vmin, self.vmax = vmin, vmax
+    @property
+    def xticklabels(self):
+        """Backward compatible access to x-tick labels."""
+        return self.xtick_manager.labels
 
-        # Choose default colormaps if not provided
-        if cmap is None:
-            if center is None:
-                self.cmap = cm.rocket
-            else:
-                self.cmap = cm.icefire
-        elif isinstance(cmap, str):
-            self.cmap = get_colormap(cmap)
-        elif isinstance(cmap, list):
-            self.cmap = mpl.colors.ListedColormap(cmap)
-        else:
-            self.cmap = cmap
+    @property
+    def yticks(self):
+        """Backward compatible access to y-ticks positions."""
+        return self.ytick_manager.ticks
 
-        # Recenter a divergent colormap
-        if center is not None:
+    @property
+    def yticklabels(self):
+        """Backward compatible access to y-tick labels."""
+        return self.ytick_manager.labels
 
-            # Copy bad values
-            # in mpl<3.2 only masked values are honored with "bad" color spec
-            # (see https://github.com/matplotlib/matplotlib/pull/14257)
-            bad = self.cmap(np.ma.masked_invalid([np.nan]))[0]
+    @property
+    def annot(self):
+        """Backward compatible access to annotation enabled status."""
+        return self.annotation_manager.enabled
 
-            # under/over values are set for sure when cmap extremes
-            # do not map to the same color as +-inf
-            under = self.cmap(-np.inf)
-            over = self.cmap(np.inf)
-            under_set = under != self.cmap(0)
-            over_set = over != self.cmap(self.cmap.N - 1)
-
-            vrange = max(vmax - center, center - vmin)
-            normlize = mpl.colors.Normalize(center - vrange, center + vrange)
-            cmin, cmax = normlize([vmin, vmax])
-            cc = np.linspace(cmin, cmax, 256)
-            self.cmap = mpl.colors.ListedColormap(self.cmap(cc))
-            self.cmap.set_bad(bad)
-            if under_set:
-                self.cmap.set_under(under)
-            if over_set:
-                self.cmap.set_over(over)
-
-    def _annotate_heatmap(self, ax, mesh):
-        """Add textual labels with the value in each cell."""
-        mesh.update_scalarmappable()
-        height, width = self.annot_data.shape
-        xpos, ypos = np.meshgrid(np.arange(width) + .5, np.arange(height) + .5)
-        for x, y, m, color, val in zip(xpos.flat, ypos.flat,
-                                       mesh.get_array().flat, mesh.get_facecolors(),
-                                       self.annot_data.flat):
-            if m is not np.ma.masked:
-                lum = relative_luminance(color)
-                text_color = ".15" if lum > .408 else "w"
-                annotation = ("{:" + self.fmt + "}").format(val)
-                text_kwargs = dict(color=text_color, ha="center", va="center")
-                text_kwargs.update(self.annot_kws)
-                ax.text(x, y, annotation, **text_kwargs)
-
-    def _skip_ticks(self, labels, tickevery):
-        """Return ticks and labels at evenly spaced intervals."""
-        n = len(labels)
-        if tickevery == 0:
-            ticks, labels = [], []
-        elif tickevery == 1:
-            ticks, labels = np.arange(n) + .5, labels
-        else:
-            start, end, step = 0, n, tickevery
-            ticks = np.arange(start, end, step) + .5
-            labels = labels[start:end:step]
-        return ticks, labels
-
-    def _auto_ticks(self, ax, labels, axis):
-        """Determine ticks and ticklabels that minimize overlap."""
-        transform = ax.figure.dpi_scale_trans.inverted()
-        bbox = ax.get_window_extent().transformed(transform)
-        size = [bbox.width, bbox.height][axis]
-        axis = [ax.xaxis, ax.yaxis][axis]
-        tick, = axis.set_ticks([0])
-        fontsize = tick.label1.get_size()
-        max_ticks = int(size // (fontsize / 72))
-        if max_ticks < 1:
-            return [], []
-        tick_every = len(labels) // max_ticks + 1
-        tick_every = 1 if tick_every == 0 else tick_every
-        ticks, labels = self._skip_ticks(labels, tick_every)
-        return ticks, labels
+    @property
+    def annot_data(self):
+        """Backward compatible access to annotation data."""
+        return self.annotation_manager.data
 
     def plot(self, ax, cax, kws):
         """Draw the heatmap on the provided Axes."""
         # Remove all the Axes spines
         despine(ax=ax, left=True, bottom=True)
 
-        # setting vmin/vmax in addition to norm is deprecated
-        # so avoid setting if norm is set
+        # Set colormap range values unless normalization is specified
         if kws.get("norm") is None:
             kws.setdefault("vmin", self.vmin)
             kws.setdefault("vmax", self.vmax)
@@ -305,51 +556,39 @@ class _HeatMapper:
         # Draw the heatmap
         mesh = ax.pcolormesh(self.plot_data, cmap=self.cmap, **kws)
 
-        # Set the axis limits
+        # Set the axis limits and orientation (matrix convention)
         ax.set(xlim=(0, self.data.shape[1]), ylim=(0, self.data.shape[0]))
-
-        # Invert the y axis to show the plot in matrix form
         ax.invert_yaxis()
 
-        # Possibly add a colorbar
+        # Add colorbar if enabled
         if self.cbar:
             cb = ax.figure.colorbar(mesh, cax, ax, **self.cbar_kws)
             cb.outline.set_linewidth(0)
-            # If rasterized is passed to pcolormesh, also rasterize the
-            # colorbar to avoid white lines on the PDF rendering
+            # Match rasterization setting for consistent PDF rendering
             if kws.get('rasterized', False):
                 cb.solids.set_rasterized(True)
 
-        # Add row and column labels
-        if isinstance(self.xticks, str) and self.xticks == "auto":
-            xticks, xticklabels = self._auto_ticks(ax, self.xticklabels, 0)
-        else:
-            xticks, xticklabels = self.xticks, self.xticklabels
-
-        if isinstance(self.yticks, str) and self.yticks == "auto":
-            yticks, yticklabels = self._auto_ticks(ax, self.yticklabels, 1)
-        else:
-            yticks, yticklabels = self.yticks, self.yticklabels
+        # Configure and render ticks and tick labels
+        xticks, xticklabels = self.xtick_manager.resolve_auto_ticks(ax, 0)
+        yticks, yticklabels = self.ytick_manager.resolve_auto_ticks(ax, 1)
 
         ax.set(xticks=xticks, yticks=yticks)
         xtl = ax.set_xticklabels(xticklabels)
         ytl = ax.set_yticklabels(yticklabels, rotation="vertical")
         plt.setp(ytl, va="center")  # GH2484
 
-        # Possibly rotate them if they overlap
+        # Auto-rotate labels if they overlap
         _draw_figure(ax.figure)
-
         if axis_ticklabels_overlap(xtl):
             plt.setp(xtl, rotation="vertical")
         if axis_ticklabels_overlap(ytl):
             plt.setp(ytl, rotation="horizontal")
 
-        # Add the axis labels
+        # Set axis labels
         ax.set(xlabel=self.xlabel, ylabel=self.ylabel)
 
-        # Annotate the cells with the formatted values
-        if self.annot:
-            self._annotate_heatmap(ax, mesh)
+        # Add cell annotations
+        self.annotation_manager.draw(ax, mesh)
 
 
 def heatmap(
