@@ -522,21 +522,77 @@ class TestFacetGrid:
 
         g = ag.FacetGrid(self.df, col="d", col_wrap=5)
         g.map(plt.plot, "x", "y")
+        step=2
+        expected = [
+            [label.get_text() for label in ax.get_xticklabels()[::step]]
+            for ax in g.axes.flat
+        ]
+        g.set_xticklabels(step=step)
+        got = [
+            [label.get_text() for label in ax.get_xticklabels()]
+            for ax in g.axes.flat
+        ]
+        assert expected == got
+
+        g = ag.FacetGrid(self.df, col="d", col_wrap=5)
+        g.map(plt.plot, "x", "y")
         x_texts = [
             [l.get_text() for l in ax.get_xticklabels()]
-            for ax in g._bottom_axes
+            for ax in g.axes.flat
         ]
         y_texts = [
             [l.get_text() for l in ax.get_yticklabels()]
-            for ax in g._left_axes
+            for ax in g.axes.flat
         ]
         g.set_xticklabels(rotation=45)
         g.set_yticklabels(rotation=75)
-        for ax, texts in zip(g._bottom_axes, x_texts):
+        for ax, texts in zip(g.axes.flat, x_texts):
             for l, text in zip(ax.get_xticklabels(), texts):
                 assert l.get_rotation() == 45
                 assert l.get_text() == text
-        for ax, texts in zip(g._left_axes, y_texts):
+        for ax, texts in zip(g.axes.flat, y_texts):
+            for l, text in zip(ax.get_yticklabels(), texts):
+                assert l.get_rotation() == 75
+                assert l.get_text() == text
+        
+        g = ag.FacetGrid(self.df, row="c", col="d", sharex="row", sharey="col")
+        g.map(plt.plot, "x", "y")
+        x_texts = [
+            [l.get_text() for l in ax.get_xticklabels()]
+            for ax in g.axes.flat
+        ]
+        y_texts = [
+            [l.get_text() for l in ax.get_yticklabels()]
+            for ax in g.axes.flat
+        ]
+        g.set_xticklabels(rotation=45)
+        g.set_yticklabels(rotation=75)
+        for ax, texts in zip(g.axes.flat, x_texts):
+            for l, text in zip(ax.get_xticklabels(), texts):
+                assert l.get_rotation() == 45
+                assert l.get_text() == text
+        for ax, texts in zip(g.axes.flat, y_texts):
+            for l, text in zip(ax.get_yticklabels(), texts):
+                assert l.get_rotation() == 75
+                assert l.get_text() == text
+
+        g = ag.FacetGrid(self.df, row="c", col="d", sharex="col", sharey="row")
+        g.map(plt.plot, "x", "y")
+        x_texts = [
+            [l.get_text() for l in ax.get_xticklabels()]
+            for ax in g.axes.flat
+        ]
+        y_texts = [
+            [l.get_text() for l in ax.get_yticklabels()]
+            for ax in g.axes.flat
+        ]
+        g.set_xticklabels(rotation=45)
+        g.set_yticklabels(rotation=75)
+        for ax, texts in zip(g.axes.flat, x_texts):
+            for l, text in zip(ax.get_xticklabels(), texts):
+                assert l.get_rotation() == 45
+                assert l.get_text() == text
+        for ax, texts in zip(g.axes.flat, y_texts):
             for l, text in zip(ax.get_yticklabels(), texts):
                 assert l.get_rotation() == 75
                 assert l.get_text() == text

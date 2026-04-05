@@ -915,17 +915,22 @@ class FacetGrid(Grid):
 
     def set_xticklabels(self, labels=None, step=None, **kwargs):
         """Set x axis tick labels of the grid."""
-        if self._sharex:
-            curr_labels = [
-                label.get_text()
-                for label in next(self._bottom_axes).get_xticklabels()
-            ]
-        for ax in self.axes.flat:
-            curr_ticks = ax.get_xticks()
+        def get_axes():
+            if self._sharex in (True, "col"):
+                return self._bottom_axes
+            return self.axes.flat
+
+        curr_axes_ticks = [
+            ax.get_xticks()
+            for ax in get_axes()
+        ]
+        for ax, curr_ticks in zip(
+            get_axes(),
+            curr_axes_ticks
+        ):
             ax.set_xticks(curr_ticks)
             if labels is None:
-                if not self._sharex:
-                    curr_labels = [label.get_text() for label in ax.get_xticklabels()]
+                curr_labels = [label.get_text() for label in ax.get_xticklabels()]
                 if step is not None:
                     xticks = ax.get_xticks()[::step]
                     curr_labels = curr_labels[::step]
@@ -937,17 +942,15 @@ class FacetGrid(Grid):
 
     def set_yticklabels(self, labels=None, **kwargs):
         """Set y axis tick labels on the left column of the grid."""
-        if self._sharey:
-            curr_labels = [
-                label.get_text()
-                for label in next(self._left_axes).get_yticklabels()
-            ]
-        for ax in self.axes.flat:
+        if self._sharey in (True, "row"):
+            axes = self._left_axes
+        else:
+            axes = self.axes.flat
+        for ax in axes:
             curr_ticks = ax.get_yticks()
             ax.set_yticks(curr_ticks)
             if labels is None:
-                if not self._sharey:
-                    curr_labels = [label.get_text() for label in ax.get_yticklabels()]
+                curr_labels = [label.get_text() for label in ax.get_yticklabels()]
                 ax.set_yticklabels(curr_labels, **kwargs)
             else:
                 ax.set_yticklabels(labels, **kwargs)
