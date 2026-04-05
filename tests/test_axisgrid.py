@@ -522,14 +522,24 @@ class TestFacetGrid:
 
         g = ag.FacetGrid(self.df, col="d", col_wrap=5)
         g.map(plt.plot, "x", "y")
+        x_texts = [
+            [l.get_text() for l in ax.get_xticklabels()]
+            for ax in g._bottom_axes
+        ]
+        y_texts = [
+            [l.get_text() for l in ax.get_yticklabels()]
+            for ax in g._left_axes
+        ]
         g.set_xticklabels(rotation=45)
         g.set_yticklabels(rotation=75)
-        for ax in g._bottom_axes:
-            for l in ax.get_xticklabels():
+        for ax, texts in zip(g._bottom_axes, x_texts):
+            for l, text in zip(ax.get_xticklabels(), texts):
                 assert l.get_rotation() == 45
-        for ax in g._left_axes:
-            for l in ax.get_yticklabels():
+                assert l.get_text() == text
+        for ax, texts in zip(g._left_axes, y_texts):
+            for l, text in zip(ax.get_yticklabels(), texts):
                 assert l.get_rotation() == 75
+                assert l.get_text() == text
 
     def test_set_axis_labels(self):
 

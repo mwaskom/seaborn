@@ -915,11 +915,14 @@ class FacetGrid(Grid):
 
     def set_xticklabels(self, labels=None, step=None, **kwargs):
         """Set x axis tick labels of the grid."""
+        if self._sharex:
+            curr_labels = next(self._bottom_axes).get_xticklabels()
         for ax in self.axes.flat:
             curr_ticks = ax.get_xticks()
             ax.set_xticks(curr_ticks)
             if labels is None:
-                curr_labels = [label.get_text() for label in ax.get_xticklabels()]
+                if not self._sharex:
+                    curr_labels = [label.get_text() for label in ax.get_xticklabels()]
                 if step is not None:
                     xticks = ax.get_xticks()[::step]
                     curr_labels = curr_labels[::step]
@@ -931,11 +934,14 @@ class FacetGrid(Grid):
 
     def set_yticklabels(self, labels=None, **kwargs):
         """Set y axis tick labels on the left column of the grid."""
+        if self._sharey:
+            curr_labels = next(self._left_axes).get_yticklabels()
         for ax in self.axes.flat:
             curr_ticks = ax.get_yticks()
             ax.set_yticks(curr_ticks)
             if labels is None:
-                curr_labels = [label.get_text() for label in ax.get_yticklabels()]
+                if not self._sharey:
+                    curr_labels = [label.get_text() for label in ax.get_yticklabels()]
                 ax.set_yticklabels(curr_labels, **kwargs)
             else:
                 ax.set_yticklabels(labels, **kwargs)
