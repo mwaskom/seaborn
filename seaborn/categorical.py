@@ -2339,6 +2339,7 @@ def barplot(
     weights=None, orient=None, color=None, palette=None, saturation=.75,
     fill=True, hue_norm=None, width=.8, dodge="auto", gap=0, log_scale=None,
     native_scale=False, formatter=None, legend="auto", capsize=0, err_kws=None,
+    show_data_points=False,
     ci=deprecated, errcolor=deprecated, errwidth=deprecated, ax=None, **kwargs,
 ):
 
@@ -2403,6 +2404,26 @@ def barplot(
     p._add_axis_labels(ax)
     p._adjust_cat_axis(ax, axis=p.orient)
 
+    if show_data_points:
+
+        if "edgecolor" in kwargs:
+            edgecolor = kwargs['edgecolor']
+        else:
+            edgecolor = p._complement_color("gray", color, p._hue_map)
+
+        if "linewidth" in kwargs:
+            linewidth = kwargs['linewidth']
+        else:
+            linewidth = 1
+
+        swarmplot(
+            data=data, x=x, y=y, hue=hue, order=order, hue_order=hue_order,
+            dodge=dodge, orient=orient, color=color, palette=palette,
+            size=5, edgecolor=edgecolor, linewidth=linewidth,
+            hue_norm=hue_norm, log_scale=log_scale, native_scale=native_scale, formatter=formatter, 
+            legend=False, ax=ax
+        )
+
     return ax
 
 
@@ -2442,6 +2463,9 @@ barplot.__doc__ = dedent("""\
     {errcolor}
     {errwidth}
     {ax_in}
+    show_data_points : bool
+        If `True`, use a :func:`swarmplot` to show the distribution of individual data points on top of the bars.
+
     kwargs : key, value mappings
         Other parameters are passed through to :class:`matplotlib.patches.Rectangle`.
 
