@@ -9,6 +9,7 @@ from .distributions import *  # noqa: F401,F403
 from .matrix import *  # noqa: F401,F403
 from .miscplot import *  # noqa: F401,F403
 from .axisgrid import *  # noqa: F401,F403
+from .gridlayout import *  # noqa: F401,F403
 from .widgets import *  # noqa: F401,F403
 from .colors import xkcd_rgb, crayons  # noqa: F401
 from . import cm  # noqa: F401
