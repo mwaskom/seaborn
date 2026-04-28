@@ -239,7 +239,15 @@ def color_palette(palette=None, n_colors=None, desat=None, as_cmap=False):
     if desat is not None:
         palette = [desaturate(c, desat) for c in palette]
 
-    if not as_cmap:
+    if as_cmap:
+
+        if not isinstance(palette, mpl.colors.Colormap):
+            try:
+                palette = mpl.colors.ListedColormap(palette)
+            except ValueError:
+                raise ValueError(f"Could not generate a palette for {palette}")
+
+    else:
 
         # Always return as many colors as we asked for
         pal_cycle = cycle(palette)
