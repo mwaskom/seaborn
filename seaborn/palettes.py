@@ -239,28 +239,28 @@ def color_palette(palette=None, n_colors=None, desat=None, as_cmap=False):
     if desat is not None:
         palette = [desaturate(c, desat) for c in palette]
 
-    if not as_cmap:
+    if as_cmap:
 
-    # Always return as many colors as we asked for
-    pal_cycle = cycle(palette)
-    palette = [next(pal_cycle) for _ in range(n_colors)]
+        if not isinstance(palette, mpl.colors.Colormap):
+            try:
+                palette = mpl.colors.ListedColormap(palette)
+            except ValueError:
+                raise ValueError(f"Could not generate a palette for {palette}")
 
-    # Always return in r, g, b tuple format
-    try:
-        palette = map(mpl.colors.colorConverter.to_rgb, palette)
-        palette = _ColorPalette(palette)
-    except ValueError:
-        raise ValueError(f"Could not generate a palette for {palette}")
+    else:
 
-           else:
+        # Always return as many colors as we asked for
+        pal_cycle = cycle(palette)
+        palette = [next(pal_cycle) for _ in range(n_colors)]
 
-    if not isinstance(palette, mpl.colors.Colormap):
+        # Always return in r, g, b tuple format
         try:
-            palette = mpl.colors.ListedColormap(palette)
+            palette = map(mpl.colors.colorConverter.to_rgb, palette)
+            palette = _ColorPalette(palette)
         except ValueError:
             raise ValueError(f"Could not generate a palette for {palette}")
 
-           return palette
+    return palette
 
 
 def hls_palette(n_colors=6, h=.01, l=.6, s=.65, as_cmap=False):  # noqa
