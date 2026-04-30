@@ -36,6 +36,7 @@ from pandas import Series
 
 from seaborn._core.rules import categorical_order
 from seaborn._core.typing import Default, default
+from seaborn.utils import _version_predates
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
@@ -81,7 +82,7 @@ class Scale:
     def _get_formatter(self, locator: Locator | None = None):
         raise NotImplementedError()
 
-    def _get_scale(self, name: str, forward: Callable, inverse: Callable):
+    def _get_scale(self, axis: Axis | None, forward: Callable, inverse: Callable):
 
         major_locator, minor_locator = self._get_locators(**self._tick_params)
         major_formatter = self._get_formatter(major_locator, **self._label_params)
@@ -93,7 +94,9 @@ class Scale:
                     axis.set_minor_locator(minor_locator)
                 axis.set_major_formatter(major_formatter)
 
-        return InternalScale(name, (forward, inverse))
+        return (InternalScale(axis, (forward, inverse))
+                if _version_predates(mpl, '3.11.0rc1')
+                else InternalScale((forward, inverse)))
 
     def _spacing(self, x: Series) -> float:
         space = self._spacer(x)
@@ -191,7 +194,7 @@ class Boolean(Scale):
             new._legend = [True, False], ["True", "False"]
 
         forward, inverse = _make_identity_transforms()
-        mpl_scale = new._get_scale(str(data.name), forward, inverse)
+        mpl_scale = new._get_scale(axis, forward, inverse)
 
         axis = PseudoAxis(mpl_scale) if axis is None else axis
         mpl_scale.set_default_locators_and_formatters(axis)
@@ -285,7 +288,8 @@ class Nominal(Scale):
                 #     axis.set_minor_locator(minor_locator)
                 # axis.set_major_formatter(major_formatter)
 
-        mpl_scale = CatScale(data.name)
+        mpl_scale = (CatScale(axis) if _version_predates(mpl, '3.11.0rc1')
+                     else CatScale())
         if axis is None:
             axis = PseudoAxis(mpl_scale)
 
@@ -428,7 +432,7 @@ class ContinuousBase(Scale):
 
         forward, inverse = new._get_transform()
 
-        mpl_scale = new._get_scale(str(data.name), forward, inverse)
+        mpl_scale = new._get_scale(axis, forward, inverse)
 
         if axis is None:
             axis = PseudoAxis(mpl_scale)
