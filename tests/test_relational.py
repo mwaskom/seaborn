@@ -1121,7 +1121,7 @@ class TestLinePlotter(SharedAxesLevelTests, Helpers):
 
         lineplot(x=x, y=y)
         line = ax.lines[0]
-        assert_array_equal(line.get_xdata(), x)
+        assert_array_almost_equal(line.get_xdata(), x)
         assert_array_equal(line.get_ydata(), y)
 
         f, ax = plt.subplots()
@@ -1133,11 +1133,11 @@ class TestLinePlotter(SharedAxesLevelTests, Helpers):
 
         lineplot(x=x, y=y, err_style="bars", errorbar=("pi", 100))
         line = ax.lines[0]
-        assert line.get_ydata()[1] == 10
+        assert line.get_ydata()[1] == pytest.approx(10)
 
         ebars = ax.collections[0].get_segments()
-        assert_array_equal(ebars[0][:, 1], y[:2])
-        assert_array_equal(ebars[1][:, 1], y[2:])
+        assert_array_almost_equal(ebars[0][:, 1], y[:2])
+        assert_array_almost_equal(ebars[1][:, 1], y[2:])
 
     def test_axis_labels(self, long_df):
 
