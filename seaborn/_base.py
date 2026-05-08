@@ -623,7 +623,9 @@ class VectorPlotter:
 
     _default_size_range = 1, 2  # Unused but needed in tests, ugh
 
-    def __init__(self, data=None, variables={}):
+    def __init__(self, data=None, variables=None):
+        if variables is None:
+            variables = {}
 
         self._var_levels = {}
         # var_ordered is relevant only for categorical axis variables, and may
@@ -663,8 +665,10 @@ class VectorPlotter:
                 self._var_levels[var] = map_obj.levels
         return self._var_levels
 
-    def assign_variables(self, data=None, variables={}):
+    def assign_variables(self, data=None, variables=None):
         """Define plot variables, optionally using lookup from `data`."""
+        if variables is None:
+            variables = {}
         x = variables.get("x", None)
         y = variables.get("y", None)
 
