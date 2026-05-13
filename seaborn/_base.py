@@ -2,7 +2,7 @@ from __future__ import annotations
 import warnings
 import itertools
 from copy import copy
-from collections import UserString
+from collections import UserString, defaultdict
 from collections.abc import Iterable, Sequence, Mapping
 from numbers import Number
 from datetime import datetime
@@ -229,7 +229,10 @@ class HueMapping(SemanticMapping):
         if isinstance(palette, dict):
 
             missing = set(levels) - set(palette)
-            if any(missing):
+            if missing and (
+                not isinstance(palette, defaultdict)
+                or palette.default_factory is None
+            ):
                 err = "The palette dictionary is missing keys: {}"
                 raise ValueError(err.format(missing))
 
