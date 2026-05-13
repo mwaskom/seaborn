@@ -1,4 +1,5 @@
 import itertools
+from collections import defaultdict
 import numpy as np
 import pandas as pd
 import matplotlib as mpl
@@ -127,6 +128,21 @@ class TestHueMapping:
 
         # Test dict with missing keys
         palette = dict(zip(wide_df.columns[:-1], colors))
+        with pytest.raises(ValueError):
+            HueMapping(p, palette=palette)
+
+        # Test defaultdict with missing keys
+        default_color = "black"
+        palette = defaultdict(
+            lambda: default_color,
+            dict(zip(wide_df.columns[:-1], colors)),
+        )
+        m = HueMapping(p, palette=palette)
+        assert m.lookup_table == palette
+        assert mpl.colors.same_color(m(wide_df.columns[-1]), default_color)
+
+        # Test defaultdict without default factory still errors on missing keys
+        palette = defaultdict(None, dict(zip(wide_df.columns[:-1], colors)))
         with pytest.raises(ValueError):
             HueMapping(p, palette=palette)
 
