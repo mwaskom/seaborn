@@ -25,7 +25,7 @@ from PIL import Image
 
 from seaborn._marks.base import Mark
 from seaborn._stats.base import Stat
-from seaborn._core.data import PlotData
+from seaborn._core.data import PlotData, handle_data_source
 from seaborn._core.moves import Move
 from seaborn._core.scales import Scale
 from seaborn._core.subplots import Subplots
@@ -136,6 +136,39 @@ def build_plot_signature(cls):
         cls.__doc__ = cls.__doc__.format(known_properties=known_properties)
 
     return cls
+
+
+def _source_variables(
+    data: DataSource | None,
+    variables: dict[str, VariableSpec],
+) -> dict[str, VariableSpec]:
+    """Return variables that can be resolved against a specific data source."""
+    if data is None or not variables:
+        return {}
+
+    source_data = handle_data_source(data)
+    if source_data is None:
+        return {}
+
+    if isinstance(source_data, pd.DataFrame):
+        index = source_data.index.to_frame().to_dict("series")
+    else:
+        index = {}
+
+    found = {}
+    for key, val in variables.items():
+        try:
+            val_is_hashable = hash(val) is not None
+        except TypeError:
+            val_is_hashable = False
+
+        if (
+            val_is_hashable and val in source_data
+            or isinstance(val, str) and val in index
+        ):
+            found[key] = val
+
+    return found
 
 
 # ---- Plot configuration ---------------------------------------------------------- #
@@ -1070,16 +1103,28 @@ class Plotter:
 
     def _extract_data(self, p: Plot) -> tuple[PlotData, list[Layer]]:
 
+        facet_variables = p._facet_spec.get("variables", {})
+        pair_variables = p._pair_spec.get("variables", {})
         common_data = (
             p._data
-            .join(None, p._facet_spec.get("variables"))
-            .join(None, p._pair_spec.get("variables"))
+            .join(None, facet_variables)
+            .join(None, pair_variables)
         )
+        shared_variables = {**facet_variables, **pair_variables}
 
         layers: list[Layer] = []
         for layer in p._layers:
             spec = layer.copy()
-            spec["data"] = common_data.join(layer.get("source"), layer.get("vars"))
+            layer_source = layer.get("source")
+            layer_variables = layer.get("vars")
+            shared_from_layer = _source_variables(layer_source, shared_variables)
+            if shared_from_layer:
+                layer_variables = {
+                    **({} if layer_variables else common_data.source_vars),
+                    **shared_from_layer,
+                    **(layer_variables or {}),
+                }
+            spec["data"] = common_data.join(layer_source, layer_variables)
             layers.append(spec)
 
         return common_data, layers

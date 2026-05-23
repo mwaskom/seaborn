@@ -1381,6 +1381,33 @@ class TestFacetInterface:
         p = Plot(long_df).facet(**{dim: key})
         self.check_facet_results_1d(p, long_df, dim, key)
 
+    def test_1d_layer_data_uses_own_facet_variable(self, dim):
+
+        data = pd.DataFrame({
+            "x": [1, 2, 3, 4],
+            "y": [1, 2, 3, 4],
+            "group": ["a", "a", "b", "b"],
+        })
+        layer_data = pd.DataFrame({
+            "x": [10, 20, 30, 40],
+            "y": [1, 2, 3, 4],
+            "group": ["b", "b", "a", "a"],
+        })
+        m0, m1 = MockMark(), MockMark()
+
+        (
+            Plot(data, x="x", y="y")
+            .facet(**{dim: "group"})
+            .add(m0)
+            .add(m1, data=layer_data)
+            .plot()
+        )
+
+        assert_array_equal(m0.passed_data[0]["x"], [1, 2])
+        assert_array_equal(m0.passed_data[1]["x"], [3, 4])
+        assert_array_equal(m1.passed_data[0]["x"], [30, 40])
+        assert_array_equal(m1.passed_data[1]["x"], [10, 20])
+
     def test_1d_as_vector(self, long_df, dim):
 
         key = "a"
