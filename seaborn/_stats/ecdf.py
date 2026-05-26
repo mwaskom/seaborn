@@ -21,6 +21,9 @@ class ECDF(Stat):
     complementary : bool
         If True, show the complementary CDF (1 - CDF)
 
+    A weight can be assigned to the points by specifying it as an additional input column
+    in `Plot.add(..., so.ECDF(), weight=<column>)`
+
     Examples
     --------
     .. include:: ../docstrings/objects.ECDF.rst
