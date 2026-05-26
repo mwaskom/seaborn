@@ -40,6 +40,7 @@ class ECDF(Stat):
         def ecdf_transform(data):
             estimator = _ECDF(stat=self.stat, complementary=self.complementary)
             y, x = estimator(data[orient],weights=data["weight"])
+            x[0] = data[orient].min()
             return pd.DataFrame({orient: x, "y": y})
         
         return groupby.apply(data, ecdf_transform)
