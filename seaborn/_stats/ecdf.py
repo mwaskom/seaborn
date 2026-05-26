@@ -21,6 +21,9 @@ class ECDF(Stat):
     complementary : bool
         If True, show the complementary CDF (1 - CDF)
 
+    Examples
+    --------
+    .. include:: ../docstrings/objects.ECDF.rst
     """
     stat: str = "proportion"
     complementary: bool = False
@@ -30,7 +33,7 @@ class ECDF(Stat):
 
         if "weight" not in data:
             data = data.assign(weight=1)
-
+        data = data.dropna(subset=[orient, "weight"])
         def ecdf_transform(data):
             estimator = _ECDF(stat=self.stat, complementary=self.complementary)
             y, x = estimator(data[orient],weights=data["weight"])
