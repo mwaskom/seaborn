@@ -645,6 +645,16 @@ class TestScaling:
         expected = mpl.colors.to_rgba_array(c)[:, :3]
         assert_array_equal(m.passed_scales["color"](c), expected)
 
+    def test_nominal_integer_color_scale_multiple_layers(self):
+
+        p = (
+            Plot(x=[1, 2, 3], y=[1, 2, 3], color=[1, 2, 3])
+            .add(Dot())
+            .add(Dot(), x=[1], y=[1], color=[1])
+            .scale(color=Nominal())
+        )
+        p.plot()
+
     @pytest.mark.xfail(
         reason="Need decision on what to do with scale defined for unused variable"
     )

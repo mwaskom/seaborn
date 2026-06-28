@@ -308,9 +308,13 @@ class Nominal(Scale):
             # TODO isin fails when units_seed mixes numbers and strings (numpy error?)
             # but np.isin also does not seem any faster? (Maybe not broadcasting in C)
             # keep = x.isin(units_seed)
-            keep = np.array([x_ in units_seed for x_ in x], bool)
-            out = np.full(len(x), np.nan)
-            out[keep] = axis.convert_units(stringify(x[keep]))
+            values = np.asarray(x, dtype=object)
+            keep = np.array([x_ in units_seed for x_ in values], bool)
+            out = np.full(len(values), np.nan)
+            if prop.variable in ["x", "y"]:
+                out[keep] = axis.convert_units(stringify(values[keep]))
+            else:
+                out[keep] = [units_seed.index(x_) for x_ in values[keep]]
             return out
 
         new._pipeline = [convert_units, prop.get_mapping(new, data)]
