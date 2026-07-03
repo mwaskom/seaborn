@@ -941,10 +941,10 @@ class TestPlotting:
 
         p = Plot()
         # You'd think matplotlib would raise a TypeError here, but it doesn't
-        with pytest.raises(ValueError, match="Key axes.linewidth:"):
+        with pytest.raises(ValueError, match=r"Key axes\.linewidth:"):
             p.theme({"axes.linewidth": "thick"})
 
-        with pytest.raises(KeyError, match="not.a.key is not a valid rc"):
+        with pytest.raises(KeyError, match=r".?not\.a\.key.? is not a valid.+rcParam"):
             p.theme({"not.a.key": True})
 
     def test_stat(self, long_df):
