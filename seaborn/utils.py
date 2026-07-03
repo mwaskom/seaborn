@@ -862,12 +862,23 @@ def _scatter_legend_artist(**kws):
 
     edgecolor = kws.pop("edgecolor", None)
     rc = mpl.rcParams
+    marker = kws.pop("marker", "o")
+
+    markeredgewidth = kws.pop("linewidth", None)
+    if markeredgewidth is None:
+        # Unfilled markers (e.g. "x", "+") are drawn using only their edge,
+        # so a zero edge width would make them invisible in the legend.
+        if mpl.markers.MarkerStyle(marker).is_filled():
+            markeredgewidth = 0
+        else:
+            markeredgewidth = rc["lines.markeredgewidth"]
+
     line_kws = {
         "linestyle": "",
-        "marker": kws.pop("marker", "o"),
+        "marker": marker,
         "markersize": np.sqrt(kws.pop("s", rc["lines.markersize"] ** 2)),
         "markerfacecolor": kws.pop("facecolor", kws.get("color")),
-        "markeredgewidth": kws.pop("linewidth", 0),
+        "markeredgewidth": markeredgewidth,
         **kws,
     }
 
