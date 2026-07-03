@@ -12,9 +12,10 @@ repos:
     -   id: ruff
         exclude: seaborn/(cm\.py|external/)
         types: [file, python]
--   repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v0.971
+-   repo: https://github.com/astral-sh/ty-pre-commit
+    rev: v0.0.56
     hooks:
-     -  id: mypy
-        args: [--follow-imports=skip]
-        files: seaborn/_(core|marks|stats)/
+    -   id: ty
+        # ty resolves imports from the environment; install the scientific stack
+        # plus stubs. Scope comes from [tool.ty.src] in pyproject.toml.
+        args: [--no-default-groups, --extra=stats, --group=typecheck]

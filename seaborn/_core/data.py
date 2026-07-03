@@ -252,7 +252,7 @@ class PlotData:
 
                 # Try to infer the original name using pandas-like metadata
                 if hasattr(val, "name"):
-                    names[key] = ids[key] = str(val.name)  # type: ignore  # mypy/1424
+                    names[key] = ids[key] = str(val.name)
                 else:
                     names[key] = None
                     ids[key] = id(val)
