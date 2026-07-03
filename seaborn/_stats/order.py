@@ -5,7 +5,7 @@ from typing import ClassVar, cast
 try:
     from typing import Literal
 except ImportError:
-    from typing_extensions import Literal  # type: ignore
+    from typing_extensions import Literal
 
 import numpy as np
 from pandas import DataFrame

@@ -88,7 +88,7 @@ def variable_type(
     with warnings.catch_warnings():
         warnings.simplefilter(
             action='ignore',
-            category=(FutureWarning, DeprecationWarning)  # type: ignore  # mypy bug?
+            category=(FutureWarning, DeprecationWarning)
         )
         if strict_boolean:
             if isinstance(vector.dtype, pd.core.dtypes.base.ExtensionDtype):

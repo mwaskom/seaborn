@@ -567,7 +567,7 @@ class Plot:
             "source": data,
             "legend": legend,
             "label": label,
-            "orient": {"v": "x", "h": "y"}.get(orient, orient),  # type: ignore
+            "orient": {"v": "x", "h": "y"}.get(orient, orient),
         })
 
         return new
@@ -1752,7 +1752,7 @@ class Plotter:
 
             legend = mpl.legend.Legend(
                 self._figure,
-                handles,  # type: ignore  # matplotlib/issues/26639
+                handles,
                 labels,
                 title=name,
                 loc=loc,

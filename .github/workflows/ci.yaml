@@ -107,12 +107,29 @@ jobs:
           enable-cache: true
 
       - name: Install tools
-        # --only-group keeps numpy/pandas out of the environment so mypy runs in
-        # isolation (it ignores the scientific stack; see [tool.mypy] in pyproject).
+        # ruff needs no project dependencies, so install it in isolation.
         run: uv sync --only-group lint
 
       - name: Lint
         run: uv run --no-sync make lint
+
+  typecheck:
+    runs-on: ubuntu-latest
+    steps:
+
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39 # v8.2.0
+        with:
+          enable-cache: true
+
+      - name: Install tools
+        # ty resolves imports from the installed environment, so install the
+        # scientific stack alongside the stub packages. The stubs require a
+        # modern Python; the run-tests matrix covers the full supported range.
+        run: uv sync --python 3.13 --no-default-groups --extra stats --group typecheck
 
       - name: Type checking
         run: uv run --no-sync make typecheck

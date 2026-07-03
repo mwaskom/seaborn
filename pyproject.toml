@@ -36,10 +36,18 @@ test = [
     "pytest-cov==7.1.0",
     "pytest-xdist==3.8.0",
 ]
-# TODO: update lint job to include scientific dependencies after upgrading to a compatible type checker
 lint = [
     "ruff==0.15.20",
-    "mypy==1.10.1",
+]
+# Type checking runs on a single modern Python (see the typecheck CI job): the
+# current pandas/scipy stubs require >=3.12, and running with the scientific
+# stack installed lets ty resolve pandas/numpy/matplotlib/scipy for real.
+typecheck = [
+    "ty==0.0.56",
+    # Markers keep the universal lock resolvable across requires-python (>=3.10);
+    # these stubs are only installed (and type checking is only run) on >=3.12.
+    "pandas-stubs==3.0.3.260530 ; python_version >= '3.12'",
+    "scipy-stubs==1.18.0.0 ; python_version >= '3.12'",
 ]
 docs = [
     "numpydoc==1.6.0",
@@ -55,7 +63,6 @@ docs = [
 dev = [
     {include-group = "test"},
     {include-group = "lint"},
-    "pandas-stubs==2.3.3.260113",
     "pre-commit==4.6.0",
     "flit==3.12.0",
 ]
@@ -85,12 +92,29 @@ extend-exclude = ["seaborn/cm.py", "seaborn/external"]
 select = ["E", "W", "F"]
 ignore = ["E741", "F522"]
 
-[tool.mypy]
-# Currently this ignores pandas and matplotlib
-# We may want to make custom stub files for the parts we use
-# I have found the available third party stubs to be less
-# complete than they would need to be useful
-ignore_missing_imports = true
+[tool.ty.environment]
+python = "./.venv"
+python-version = "3.13"
+
+[tool.ty.src]
+include = ["seaborn/_core", "seaborn/_marks", "seaborn/_stats"]
+
+[tool.ty.rules]
+# A number of ty checks are ignored because the code was originally written using mypy
+# with much weaker upstream typing (i.e. in numpy / pandas / matplotlib)
+# Gradually address these and remove the rule ignores over time.
+possibly-missing-submodule = "ignore"  # `import matplotlib as mpl` -> `mpl.text.Text` idiom
+invalid-method-override = "ignore"      # intentional Mark._plot / Scale._get_* signatures
+invalid-argument-type = "ignore"        # matplotlib/pandas/numpy arg types stricter than usage
+unresolved-attribute = "ignore"         # attributes on `Axis | None` and numpy unions
+not-subscriptable = "ignore"            # subscripting numpy `ArrayLike` unions
+not-iterable = "ignore"                 # iterating numpy `ArrayLike` unions
+unsupported-operator = "ignore"         # arithmetic on pandas/numpy/scipy unions
+invalid-assignment = "ignore"           # assigning to matplotlib-typed slots
+no-matching-overload = "ignore"         # matplotlib overloaded APIs
+call-non-callable = "ignore"            # object-typed matplotlib slots
+call-top-callable = "ignore"            # numpy callables with unknown signatures
+invalid-return-type = "ignore"          # return values widened by stub unions
 
 [tool.coverage.run]
 omit = [
