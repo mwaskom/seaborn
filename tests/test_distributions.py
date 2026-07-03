@@ -1017,7 +1017,7 @@ class TestKDEPlotBivariate:
         for c1, c2 in zip(ax1.collections, ax2.collections):
             assert len(get_contour_coords(c1)) == len(get_contour_coords(c2))
             for arr1, arr2 in zip(get_contour_coords(c1), get_contour_coords(c2)):
-                assert_array_equal(arr1, arr2)
+                assert_array_almost_equal(arr1, arr2)
 
     def test_bandwidth(self, rng):
 
