@@ -40,8 +40,6 @@ from seaborn._core.typing import (
 )
 from seaborn._core.exceptions import PlotSpecError
 from seaborn._core.rules import categorical_order
-from seaborn._compat import get_layout_engine, set_layout_engine
-from seaborn.utils import _version_predates
 from seaborn.rcmod import axes_style, plotting_context
 from seaborn.palettes import color_palette
 
@@ -1638,12 +1636,8 @@ class Plotter:
 
                 for key in itertools.product(*grouping_keys):
 
-                    pd_key = (
-                        key[0] if len(key) == 1 and _version_predates(pd, "2.2.0")
-                        else key
-                    )
                     try:
-                        df_subset = grouped_df.get_group(pd_key)
+                        df_subset = grouped_df.get_group(key)
                     except KeyError:
                         # TODO (from initial work on categorical plots refactor)
                         # We are adding this to allow backwards compatability
@@ -1801,16 +1795,16 @@ class Plotter:
 
         if (engine_name := p._layout_spec.get("engine", default)) is not default:
             # None is a valid arg for Figure.set_layout_engine, hence `default`
-            set_layout_engine(self._figure, engine_name)
+            self._figure.set_layout_engine(engine_name)
         elif p._target is None:
             # Don't modify the layout engine if the user supplied their own
             # matplotlib figure and didn't specify an engine through Plot
             # TODO switch default to "constrained"?
             # TODO either way, make configurable
-            set_layout_engine(self._figure, "tight")
+            self._figure.set_layout_engine("tight")
 
         if (extent := p._layout_spec.get("extent")) is not None:
-            engine = get_layout_engine(self._figure)
+            engine = self._figure.get_layout_engine()
             if engine is None:
                 self._figure.subplots_adjust(*extent)
             else:
