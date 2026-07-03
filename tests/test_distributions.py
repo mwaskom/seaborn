@@ -31,7 +31,6 @@ from seaborn.distributions import (
     kdeplot,
     rugplot,
 )
-from seaborn.utils import _version_predates
 from seaborn.axisgrid import FacetGrid
 from seaborn._testing import (
     assert_plots_equal,
@@ -41,27 +40,19 @@ from seaborn._testing import (
 
 
 def get_contour_coords(c, filter_empty=False):
-    """Provide compatability for change in contour artist types."""
-    if isinstance(c, mpl.collections.LineCollection):
-        # See https://github.com/matplotlib/matplotlib/issues/20906
-        return c.get_segments()
-    elif isinstance(c, (mpl.collections.PathCollection, mpl.contour.QuadContourSet)):
-        return [
-            p.vertices[:np.argmax(p.codes) + 1] for p in c.get_paths()
-            if len(p) or not filter_empty
-        ]
+    """Provide access to contour path coordinates."""
+    return [
+        p.vertices[:np.argmax(p.codes) + 1] for p in c.get_paths()
+        if len(p) or not filter_empty
+    ]
 
 
 def get_contour_color(c):
-    """Provide compatability for change in contour artist types."""
-    if isinstance(c, mpl.collections.LineCollection):
-        # See https://github.com/matplotlib/matplotlib/issues/20906
-        return c.get_color()
-    elif isinstance(c, (mpl.collections.PathCollection, mpl.contour.QuadContourSet)):
-        if c.get_facecolor().size:
-            return c.get_facecolor()
-        else:
-            return c.get_edgecolor()
+    """Provide access to contour artist color."""
+    if c.get_facecolor().size:
+        return c.get_facecolor()
+    else:
+        return c.get_edgecolor()
 
 
 class TestDistPlot:
@@ -907,9 +898,6 @@ class TestKDEPlotUnivariate(SharedAxesLevelTests):
             assert label.get_text() == level
 
         legend_artists = ax.legend_.findobj(mpl.lines.Line2D)
-        if _version_predates(mpl, "3.5.0b0"):
-            # https://github.com/matplotlib/matplotlib/pull/20699
-            legend_artists = legend_artists[::2]
         palette = color_palette()
         for artist, color in zip(legend_artists, palette):
             assert_colors_equal(artist.get_color(), color)
@@ -969,12 +957,7 @@ class TestKDEPlotBivariate:
             f, ax = plt.subplots()
             kdeplot(data=long_df, x="x", y="y", hue="c", fill=fill)
             for c in ax.collections:
-                if not _version_predates(mpl, "3.8.0rc1"):
-                    assert isinstance(c, mpl.contour.QuadContourSet)
-                elif fill or not _version_predates(mpl, "3.5.0b0"):
-                    assert isinstance(c, mpl.collections.PathCollection)
-                else:
-                    assert isinstance(c, mpl.collections.LineCollection)
+                assert isinstance(c, mpl.contour.QuadContourSet)
 
     def test_common_norm(self, rng):
 
@@ -2446,10 +2429,7 @@ class TestDisPlot:
         z = [0] * 80 + [1] * 20
 
         def count_contours(ax):
-            if _version_predates(mpl, "3.8.0rc1"):
-                return sum(bool(get_contour_coords(c)) for c in ax.collections)
-            else:
-                return sum(bool(p.vertices.size) for p in ax.collections[0].get_paths())
+            return sum(bool(p.vertices.size) for p in ax.collections[0].get_paths())
 
         g = displot(x=x, y=y, col=z, kind="kde", levels=10)
         l1 = count_contours(g.axes.flat[0])

@@ -21,7 +21,7 @@ from seaborn.relational import (
     scatterplot
 )
 
-from seaborn.utils import _draw_figure, _version_predates
+from seaborn.utils import _draw_figure
 from seaborn._compat import get_colormap, get_legend_handles
 from seaborn._testing import assert_plots_equal
 
@@ -715,8 +715,7 @@ class TestRelationalPlotter(Helpers):
             assert same_color(pt.get_color(), palette[i])
             assert pt.get_markersize() == np.sqrt(kws["s"])
             assert pt.get_markeredgewidth() == kws["linewidth"]
-            if not _version_predates(mpl, "3.7.0"):
-                assert pt.get_marker() == kws["marker"]
+            assert pt.get_marker() == kws["marker"]
 
     def test_legend_attributes_style(self, long_df):
 
@@ -1199,8 +1198,7 @@ class TestLinePlotter(SharedAxesLevelTests, Helpers):
         for i, line in enumerate(get_legend_handles(ax.get_legend())):
             assert same_color(line.get_color(), palette[i])
             assert line.get_linewidth() == kws["linewidth"]
-            if not _version_predates(mpl, "3.7.0"):
-                assert line.get_marker() == kws["marker"]
+            assert line.get_marker() == kws["marker"]
 
     def test_legend_attributes_with_style(self, long_df):
 
@@ -1208,8 +1206,7 @@ class TestLinePlotter(SharedAxesLevelTests, Helpers):
         ax = lineplot(long_df, x="x", y="y", style="a", **kws)
         for line in get_legend_handles(ax.get_legend()):
             assert same_color(line.get_color(), kws["color"])
-            if not _version_predates(mpl, "3.7.0"):
-                assert line.get_marker() == kws["marker"]
+            assert line.get_marker() == kws["marker"]
             assert line.get_linewidth() == kws["linewidth"]
 
     def test_legend_attributes_with_hue_and_style(self, long_df):
@@ -1218,8 +1215,7 @@ class TestLinePlotter(SharedAxesLevelTests, Helpers):
         ax = lineplot(long_df, x="x", y="y", hue="a", style="b", **kws)
         for line in get_legend_handles(ax.get_legend()):
             if line.get_label() not in ["a", "b"]:
-                if not _version_predates(mpl, "3.7.0"):
-                    assert line.get_marker() == kws["marker"]
+                assert line.get_marker() == kws["marker"]
                 assert line.get_linewidth() == kws["linewidth"]
 
     def test_lineplot_vs_relplot(self, long_df, long_semantics):
@@ -1498,10 +1494,7 @@ class TestScatterPlotter(SharedAxesLevelTests, Helpers):
             assert same_color(pt.get_color(), palette[i])
             assert pt.get_markersize() == np.sqrt(kws["s"])
             assert pt.get_markeredgewidth() == kws["linewidth"]
-            if not _version_predates(mpl, "3.7.0"):
-                # This attribute is empty on older matplotlibs
-                # but the legend looks correct so I assume it is a bug
-                assert pt.get_marker() == kws["marker"]
+            assert pt.get_marker() == kws["marker"]
 
     def test_legend_attributes_style(self, long_df):
 

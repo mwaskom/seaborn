@@ -697,12 +697,7 @@ class _CategoricalPlotter(VectorPlotter):
                     if _version_predates(mpl, "3.10.0")
                     else {"orientation": orientation}
                 ),
-                # added in matplotlib 3.6.0; see below
-                # capwidths=capwidth,
-                **(
-                    {} if _version_predates(mpl, "3.6.0")
-                    else {"capwidths": capwidth}
-                )
+                capwidths=capwidth,
             )
             boxplot_kws = {**default_kws, **plot_kws}
             artists = ax.bxp(**boxplot_kws)

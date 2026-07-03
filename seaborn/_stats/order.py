@@ -13,7 +13,6 @@ from pandas import DataFrame
 from seaborn._core.scales import Scale
 from seaborn._core.groupby import GroupBy
 from seaborn._stats.base import Stat
-from seaborn.utils import _version_predates
 
 
 # From https://github.com/numpy/numpy/blob/main/numpy/lib/function_base.pyi
@@ -64,10 +63,7 @@ class Perc(Stat):
         k = list(np.linspace(0, 100, self.k)) if isinstance(self.k, int) else self.k
         method = cast(_MethodKind, self.method)
         values = data[var].dropna()
-        if _version_predates(np, "1.22"):
-            res = np.percentile(values, k, interpolation=method)  # type: ignore
-        else:
-            res = np.percentile(data[var].dropna(), k, method=method)
+        res = np.percentile(values, k, method=method)
         return DataFrame({var: res, "percentile": k})
 
     def __call__(
