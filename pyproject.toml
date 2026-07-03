@@ -33,7 +33,7 @@ dev = [
     "pytest",
     "pytest-cov",
     "pytest-xdist",
-    "flake8",
+    "ruff",
     "mypy",
     "pandas-stubs",
     "pre-commit",
@@ -64,3 +64,34 @@ filterwarnings = [
    "ignore:\\s*Pyarrow will become a required dependency of pandas:DeprecationWarning",
    "ignore:datetime.datetime.utcfromtimestamp\\(\\) is deprecated:DeprecationWarning",
  ]
+
+[tool.ruff]
+line-length = 88
+extend-exclude = ["seaborn/cm.py", "seaborn/external"]
+
+[tool.ruff.lint]
+select = ["E", "W", "F"]
+ignore = ["E741", "F522"]
+
+[tool.mypy]
+# Currently this ignores pandas and matplotlib
+# We may want to make custom stub files for the parts we use
+# I have found the available third party stubs to be less
+# complete than they would need to be useful
+ignore_missing_imports = true
+
+[tool.coverage.run]
+omit = [
+    "seaborn/widgets.py",
+    "seaborn/external/*",
+    "seaborn/colors/*",
+    "seaborn/cm.py",
+    "seaborn/conftest.py",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "if TYPE_CHECKING:",
+    "raise NotImplementedError",
+]
