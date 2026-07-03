@@ -1,5 +1,7 @@
 *.pyc
 *.sw*
+uv.lock
+.venv/
 build/
 .ipynb_checkpoints/
 dist/
