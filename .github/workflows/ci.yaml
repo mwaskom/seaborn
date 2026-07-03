@@ -24,15 +24,13 @@ jobs:
     steps:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
 
-      - name: Setup Python 3.11
-        uses: actions/setup-python@0a5c61591373683505ea898e09a3ea4f39ef2b9c # v5.0.0
+      - name: Install uv
+        uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39 # v8.2.0
         with:
-          python-version: "3.11"
+          enable-cache: true
 
       - name: Install seaborn
-        run: |
-          pip install --upgrade pip
-          pip install .[stats,docs]
+        run: uv sync --python 3.11 --no-default-groups --extra stats --group docs
 
       - name: Install pandoc
         run: |
@@ -49,8 +47,8 @@ jobs:
           SPHINXOPTS: -j `nproc`
         run: |
           cd doc
-          make -j `nproc` notebooks
-          make html
+          uv run --no-sync make -j `nproc` notebooks
+          uv run --no-sync make html
 
 
   run-tests:
@@ -73,21 +71,22 @@ jobs:
     steps:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
 
-      - name: Setup Python ${{ matrix.python }}
-        uses: actions/setup-python@0a5c61591373683505ea898e09a3ea4f39ef2b9c # v5.0.0
+      - name: Install uv
+        uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39 # v8.2.0
         with:
-          python-version: ${{ matrix.python }}
-          allow-prereleases: true
+          enable-cache: true
 
       - name: Install seaborn
         run: |
-          pip install --upgrade pip wheel
-          if [[ ${{matrix.install}} == 'full' ]]; then EXTRAS=',stats'; fi
-          if [[ ${{matrix.deps }} == 'pinned' ]]; then DEPS='-r ci/deps_pinned.txt'; fi
-          pip install .[dev$EXTRAS] $DEPS
+          # full installs the optional stats dependencies; light omits them.
+          # latest resolves the newest compatible releases (default), while
+          # pinned resolves the minimum versions declared in pyproject.toml.
+          EXTRA=""; if [[ ${{ matrix.install }} == 'full' ]]; then EXTRA='--extra stats'; fi
+          RES="";   if [[ ${{ matrix.deps }} == 'pinned' ]]; then RES='--resolution lowest-direct'; fi
+          uv sync --python ${{ matrix.python }} --no-default-groups --group test $EXTRA $RES
 
       - name: Run tests
-        run: make test
+        run: uv run --no-sync make test
 
       - name: Upload coverage
         uses: codecov/codecov-action@eaaf4bedf32dbdc6b720b63067d99c4d77d6047d # v3.1.4
@@ -102,14 +101,18 @@ jobs:
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
 
-      - name: Setup Python
-        uses: actions/setup-python@0a5c61591373683505ea898e09a3ea4f39ef2b9c # v5.0.0
+      - name: Install uv
+        uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39 # v8.2.0
+        with:
+          enable-cache: true
 
       - name: Install tools
-        run: pip install mypy~=1.10.0 ruff
+        # --only-group keeps numpy/pandas out of the environment so mypy runs in
+        # isolation (it ignores the scientific stack; see [tool.mypy] in pyproject).
+        run: uv sync --only-group lint
 
       - name: Lint
-        run: make lint
+        run: uv run --no-sync make lint
 
       - name: Type checking
-        run: make typecheck
+        run: uv run --no-sync make typecheck
