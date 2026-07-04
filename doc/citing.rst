@@ -55,6 +55,3 @@ Logo mark
 
 .. image:: _static/logo-mark-lightbg.svg
    :width: 150px
-
-Credit to `Matthias Bussonnier <https://github.com/Carreau>`_ for the initial design
-and implementation of the logo.

@@ -55,9 +55,7 @@ seaborn: statistical data visualization
     to find out how.
 
     To see the code or report a bug, please visit the `GitHub repository
-    <https://github.com/mwaskom/seaborn>`_. General support questions are most at home
-    on `stackoverflow <https://stackoverflow.com/questions/tagged/seaborn/>`_, which
-    has a dedicated channel for seaborn.
+    <https://github.com/mwaskom/seaborn>`_.
 
   .. grid-item-card:: Contents
     :columns: 12 12 2 2
@@ -80,7 +78,7 @@ seaborn: statistical data visualization
     :class-title: sd-fs-5
     :class-body: sd-pl-3
 
-    * :bdg-secondary:`New` Objects: :ref:`API <objects_api>` | :doc:`Tutorial <tutorial/objects_interface>`
+    * Objects: :ref:`API <objects_api>` | :doc:`Tutorial <tutorial/objects_interface>`
     * Relational plots: :ref:`API <relational_api>` | :doc:`Tutorial <tutorial/relational>`
     * Distribution plots: :ref:`API <distribution_api>` | :doc:`Tutorial <tutorial/distributions>`
     * Categorical plots: :ref:`API <categorical_api>` | :doc:`Tutorial <tutorial/categorical>`
