@@ -1,16 +1,10 @@
 export SHELL := /bin/bash
 
-install:
-	uv sync --extra stats
-
-lock:
-	uv lock
-
 test:
-	pytest -n auto --cov=seaborn --cov=tests --cov-config=pyproject.toml tests
+	uv run --no-sync pytest -n auto --cov=seaborn --cov=tests --cov-config=pyproject.toml tests
 
 lint:
-	ruff check seaborn/ tests/
+	uv run --no-sync ruff check seaborn/ tests/
 
 typecheck:
-	ty check
+	uv run --no-sync ty check
