@@ -86,7 +86,7 @@ jobs:
           uv sync --python ${{ matrix.python }} --no-default-groups --group test $EXTRA $RES
 
       - name: Run tests
-        run: uv run --no-sync make test
+        run: make test
 
       - name: Upload coverage
         uses: codecov/codecov-action@eaaf4bedf32dbdc6b720b63067d99c4d77d6047d # v3.1.4
@@ -111,7 +111,7 @@ jobs:
         run: uv sync --only-group lint
 
       - name: Lint
-        run: uv run --no-sync make lint
+        run: make lint
 
   typecheck:
     runs-on: ubuntu-latest
@@ -126,10 +126,7 @@ jobs:
           enable-cache: true
 
       - name: Install tools
-        # ty resolves imports from the installed environment, so install the
-        # scientific stack alongside the stub packages. The stubs require a
-        # modern Python; the run-tests matrix covers the full supported range.
         run: uv sync --python 3.13 --no-default-groups --extra stats --group typecheck
 
       - name: Type checking
-        run: uv run --no-sync make typecheck
+        run: make typecheck

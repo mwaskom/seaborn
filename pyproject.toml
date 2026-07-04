@@ -39,13 +39,9 @@ test = [
 lint = [
     "ruff==0.15.20",
 ]
-# Type checking runs on a single modern Python (see the typecheck CI job): the
-# current pandas/scipy stubs require >=3.12, and running with the scientific
-# stack installed lets ty resolve pandas/numpy/matplotlib/scipy for real.
+# Type checking requires Python >=3.12 to pull in scientific Python stubs
 typecheck = [
     "ty==0.0.56",
-    # Markers keep the universal lock resolvable across requires-python (>=3.10);
-    # these stubs are only installed (and type checking is only run) on >=3.12.
     "pandas-stubs==3.0.3.260530 ; python_version >= '3.12'",
     "scipy-stubs==1.18.0.0 ; python_version >= '3.12'",
 ]
@@ -63,12 +59,15 @@ docs = [
 dev = [
     {include-group = "test"},
     {include-group = "lint"},
+    {include-group = "typecheck"},
+    "seaborn[stats]",
     "pre-commit==4.6.0",
     "flit==3.12.0",
+    "jupyterlab==4.6.1",
 ]
 
 [tool.uv]
-default-groups = ["dev", "docs"]
+default-groups = ["dev"]
 
 [project.urls]
 Source = "https://github.com/mwaskom/seaborn"
