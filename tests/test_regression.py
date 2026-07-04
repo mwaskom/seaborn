@@ -688,3 +688,66 @@ class TestRegressionPlots:
         lm.regplot(x=x, y=y2, truncate=False)
         line1, line2 = ax.lines
         assert np.array_equal(line1.get_xdata(), line2.get_xdata())
+
+    def test_regplot_weights_basic(self):
+        """Weights parameter should produce a regression line."""
+        f, ax = plt.subplots()
+        weights = np.ones(len(self.df))
+        weights[:45] = 10.0
+        lm.regplot(x="x", y="y", data=self.df, weights=weights, ci=None)
+        assert len(ax.lines) == 1
+
+    def test_regplot_weights_none(self):
+        """weights=None should give same result as no weights."""
+        f, ax1 = plt.subplots()
+        lm.regplot(x="x", y="y", data=self.df, ci=None)
+        line1 = ax1.lines[0].get_ydata()
+
+        f, ax2 = plt.subplots()
+        lm.regplot(x="x", y="y", data=self.df, weights=None, ci=None)
+        line2 = ax2.lines[0].get_ydata()
+
+        npt.assert_array_almost_equal(line1, line2)
+
+    def test_regplot_weights_uniform(self):
+        """Uniform weights should give same result as no weights."""
+        f, ax1 = plt.subplots()
+        lm.regplot(x="x", y="y", data=self.df, ci=None)
+        line1 = ax1.lines[0].get_ydata()
+
+        f, ax2 = plt.subplots()
+        weights = np.ones(len(self.df))
+        lm.regplot(x="x", y="y", data=self.df, weights=weights, ci=None)
+        line2 = ax2.lines[0].get_ydata()
+
+        npt.assert_array_almost_equal(line1, line2)
+
+    def test_regplot_weights_shifts_line(self):
+        """Non-uniform weights should shift the regression line."""
+        rs = np.random.RandomState(77)
+        n = 100
+        x = rs.randn(n)
+        y = x + rs.randn(n)
+        # Add an outlier with zero weight
+        x_out = np.append(x, 5.0)
+        y_out = np.append(y, -10.0)
+        weights_ignore = np.ones(n + 1)
+        weights_ignore[-1] = 0.0
+
+        f, ax1 = plt.subplots()
+        lm.regplot(x=x_out, y=y_out, ci=None)
+        line_with_outlier = ax1.lines[0].get_ydata()
+
+        f, ax2 = plt.subplots()
+        lm.regplot(x=x_out, y=y_out, weights=weights_ignore, ci=None)
+        line_without_outlier = ax2.lines[0].get_ydata()
+
+        # Lines should differ because the outlier is excluded by weight
+        assert not np.allclose(line_with_outlier, line_without_outlier)
+
+    def test_regplot_weights_negative_raises(self):
+        """Negative weights should raise ValueError."""
+        weights = np.ones(len(self.df))
+        weights[0] = -1.0
+        with pytest.raises(ValueError, match="non-negative"):
+            lm.regplot(x="x", y="y", data=self.df, weights=weights)
