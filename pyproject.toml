@@ -68,7 +68,7 @@ dev = [
 ]
 
 [tool.uv]
-default-groups = ["dev"]
+default-groups = ["dev", "docs"]
 
 [project.urls]
 Source = "https://github.com/mwaskom/seaborn"
