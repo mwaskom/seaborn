@@ -391,3 +391,6 @@ def main(app):
 
 def setup(app):
     app.connect('builder-inited', main)
+    # All work happens once in the builder-inited callback, with no per-document
+    # state, so reading and writing are both safe to parallelize.
+    return {"parallel_read_safe": True, "parallel_write_safe": True}

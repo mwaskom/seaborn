@@ -43,12 +43,7 @@ jobs:
           ls $SEABORN_DATA
 
       - name: Build docs
-        env:
-          SPHINXOPTS: -j `nproc`
-        run: |
-          cd doc
-          uv run --no-sync make -j `nproc` notebooks
-          uv run --no-sync make html
+        run: make docs
 
 
   run-tests:
