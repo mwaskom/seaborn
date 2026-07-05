@@ -1,7 +1,7 @@
 .. _whatsnew:
 
-What's new in each version
-==========================
+Seaborn changelog
+=================
 
 v0.13
 -----

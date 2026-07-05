@@ -40,6 +40,11 @@ a:hover {
 a > code {
   color: inherit;
 }
+/* Table links (e.g. API summary tables) use the normal link color rather than
+   the theme's dark-teal higher-contrast variant */
+.table a {
+  color: var(--pst-color-link);
+}
 .bd-header ul.navbar-nav li a.nav-link.dropdown-item:hover,
 nav.bd-links li > a:hover,
 .toc-entry a.nav-link:hover {
