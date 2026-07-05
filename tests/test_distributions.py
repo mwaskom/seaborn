@@ -1444,6 +1444,19 @@ class TestHistPlotUnivariate(SharedAxesLevelTests):
         total_weight = null_df[["x", "s"]].dropna()["s"].sum()
         assert sum(bar_heights) == pytest.approx(total_weight)
 
+    def test_weights_with_array_bins(self):
+
+        x = np.linspace(.05, .95, 10)
+        weights = np.ones_like(x)
+        bins = np.linspace(0, 1, 11)
+
+        ax = histplot(x=x, weights=weights, bins=bins)
+
+        assert len(ax.patches) == len(bins) - 1
+        assert sum(bar.get_height() for bar in ax.patches) == pytest.approx(
+            weights.sum()
+        )
+
     def test_weight_norm(self, rng):
 
         vals = rng.normal(0, 1, 50)

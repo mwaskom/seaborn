@@ -401,6 +401,7 @@ class _DistributionPlotter(VectorPlotter):
 
         auto_bins_with_weights = (
             "weights" in self.variables
+            and isinstance(estimate_kws["bins"], str)
             and estimate_kws["bins"] == "auto"
             and estimate_kws["binwidth"] is None
             and not estimate_kws["discrete"]
