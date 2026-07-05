@@ -13,10 +13,19 @@
 import os
 import sys
 import time
+import logging
 import seaborn
 from seaborn._core.properties import PROPERTIES
 
 sys.path.insert(0, os.path.abspath('sphinxext'))
+
+# The secondary_sidebar_items config below intentionally overlaps two wildcard
+# patterns (** and generated/*) so that the API entity pages get an empty right
+# sidebar. The theme resolves this correctly (last match wins) but logs a warning
+# for every matched page; filter out that benign noise.
+logging.getLogger("sphinx.pydata_sphinx_theme.utils").addFilter(
+    lambda record: "matches two wildcard patterns" not in record.getMessage()
+)
 
 
 # -- Project information -----------------------------------------------------
