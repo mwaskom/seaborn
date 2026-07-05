@@ -7,22 +7,20 @@ Installing and getting started
 
 Official releases of seaborn can be installed from `PyPI <https://pypi.org/project/seaborn/>`_::
 
-    pip install seaborn
+    uv pip install seaborn
 
-The basic invocation of `pip` will install seaborn and, if necessary, its mandatory dependencies.
+The basic invocation of `uv pip install` will install seaborn and, if necessary, its mandatory dependencies.
 It is possible to include optional dependencies that give access to a few advanced features::
 
-    pip install seaborn[stats]
+    uv pip install seaborn[stats]
 
 The library is also included as part of the `Anaconda <https://repo.anaconda.com/>`_ distribution,
-and it can be installed with `conda`::
-
-    conda install seaborn
-
-As the main Anaconda repository can be slow to add new releases, you may prefer using the
+and it can be installed with `conda` and related package managers like `mamba` or `pixi`.
+Because the main Anaconda repository is slow to add new releases, we recommend using the
 `conda-forge <https://conda-forge.org/>`_ channel::
 
     conda install seaborn -c conda-forge
+
 
 Dependencies
 ~~~~~~~~~~~~
@@ -128,11 +126,3 @@ may be due to a problem in matplotlib rather than one in seaborn. It can save ti
 if you try to reproduce the issue in an example that uses only matplotlib,
 so that you can report it in the right place. But it is alright to skip this
 step if it's not obvious how to do it.
-
-General support questions are more at home on `stackoverflow
-<https://stackoverflow.com/questions/tagged/seaborn/>`_, where there is a
-larger audience of people who will see your post and may be able to offer
-assistance. Your chance of getting a quick answer will be higher if you include
-`runnable code <https://stackoverflow.com/help/minimal-reproducible-example>`_,
-a precise statement of what you are hoping to achieve, and a clear explanation
-of the problems that you have encountered.

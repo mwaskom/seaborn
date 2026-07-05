@@ -78,7 +78,7 @@ seaborn: statistical data visualization
     :class-title: sd-fs-5
     :class-body: sd-pl-3
 
-    * Objects: :ref:`API <objects_api>` | :doc:`Tutorial <tutorial/objects_interface>`
+    * Objects interface: :ref:`API <objects_api>` | :doc:`Tutorial <tutorial/objects_interface>`
     * Relational plots: :ref:`API <relational_api>` | :doc:`Tutorial <tutorial/relational>`
     * Distribution plots: :ref:`API <distribution_api>` | :doc:`Tutorial <tutorial/distributions>`
     * Categorical plots: :ref:`API <categorical_api>` | :doc:`Tutorial <tutorial/categorical>`
