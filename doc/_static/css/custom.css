@@ -8,6 +8,10 @@ html[data-theme=light]{
   --pst-heading-color: rgb(52, 54, 99);
   --pst-color-text-muted: rgb(100, 100, 100);
   --pst-color-accent: rgb(52, 54, 99);
+  /* Theme hardcodes these secondary derivatives (purple) rather than deriving
+     them from the base; override so all secondary-tinted UI stays on-brand */
+  --pst-color-secondary-highlight: rgb(107, 161, 174);
+  --pst-color-secondary-bg: rgb(226, 237, 240);
 }
 
 :root {
@@ -31,16 +35,16 @@ a:hover {
   text-decoration: underline;
   text-decoration-thickness: 1px;
 }
+/* Cross-reference code (code inside a link) follows the link color instead of
+   the theme's dark-teal "higher contrast" code color */
+a > code {
+  color: inherit;
+}
 .bd-header ul.navbar-nav li a.nav-link.dropdown-item:hover,
 nav.bd-links li > a:hover,
 .toc-entry a.nav-link:hover {
   text-decoration-thickness: 1px;
 }
-/* Navbar hover underline matches the 2px active-section underline */
-ul.navbar-nav li a:hover {
-  text-decoration-thickness: 2px;
-}
-
 /* Thinner active-section underline in the navbar, with slightly heavier text */
 .bd-header ul.navbar-nav > li.nav-item.current > .nav-link:before {
   border-bottom-width: 2px;
@@ -49,13 +53,15 @@ ul.navbar-nav li a:hover {
   font-weight: 600;
 }
 
-/* Back-to-top button: gray, teal on hover (matching nav link colors) */
+/* Navbar hover underline matches the active underline weight (2px), keeping the
+   teal hover color. The underline is a :before border, not text-decoration. */
+.bd-header ul.navbar-nav > li.nav-item > .nav-link:hover:before {
+  border-bottom-width: 2px;
+}
+
+/* Back-to-top button: gray default (teal hover comes from the secondary family) */
 #pst-back-to-top {
   background-color: rgb(140, 140, 140);
-  color: #fff;
-}
-#pst-back-to-top:hover {
-  background-color: var(--pst-color-secondary);
   color: #fff;
 }
 
