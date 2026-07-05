@@ -30,7 +30,7 @@ jobs:
           enable-cache: true
 
       - name: Install seaborn
-        run: uv sync --python 3.11 --no-default-groups --extra stats --group docs
+        run: uv sync --python 3.13 --no-default-groups --extra stats --group docs
 
       - name: Install pandoc
         run: |
