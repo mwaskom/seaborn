@@ -126,7 +126,7 @@ for path in html_static_path:
     if not os.path.exists(path):
         os.makedirs(path)
 
-html_css_files = [f'css/custom.css?v={seaborn.__version__}']
+html_css_files = ['css/custom.css']
 
 html_logo = "_static/logo-wide-lightbg.svg"
 html_favicon = "_static/favicon.ico"
@@ -140,12 +140,6 @@ html_theme_options = {
             "type": "fontawesome",
         },
         {
-            "name": "StackOverflow",
-            "url": "https://stackoverflow.com/tags/seaborn",
-            "icon": "fab fa-stack-overflow",
-            "type": "fontawesome",
-        },
-        {
             "name": "Twitter",
             "url": "https://twitter.com/michaelwaskom",
             "icon": "fab fa-twitter",
@@ -154,8 +148,14 @@ html_theme_options = {
     ],
     "show_prev_next": False,
     "navbar_start": ["navbar-logo"],
+    "navbar_persistent": ["search-button"],
     "navbar_end": ["navbar-icon-links"],
+    "article_header_start": [],
     "header_links_before_dropdown": 8,
+    "secondary_sidebar_items": {
+        "**": ["page-toc"],
+        "generated/*": [],
+    },
 }
 
 html_context = {
@@ -165,6 +165,9 @@ html_context = {
 html_sidebars = {
     "index": [],
     "examples/index": [],
+    "installing": [],
+    "citing": [],
+    "faq": [],
     "**": ["sidebar-nav-bs.html"],
 }
 

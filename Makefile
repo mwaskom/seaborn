@@ -8,3 +8,6 @@ lint:
 
 typecheck:
 	uv run --no-sync ty check
+
+docs:
+	uv run --no-sync make -C doc notebooks html

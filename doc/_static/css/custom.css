@@ -5,9 +5,15 @@ html[data-theme=light]{
   --pst-color-secondary: rgb(107, 161, 174);
   --pst-color-link: rgb(74, 105, 145);
   --pst-color-inline-code: rgb(96, 141, 130);
+  --pst-heading-color: rgb(52, 54, 99);
+  --pst-color-text-muted: rgb(100, 100, 100);
+  --pst-color-accent: rgb(52, 54, 99);
 }
 
 :root {
+  --pst-header-height: 3rem;
+  --pst-font-size-base: 15px;
+  --pst-font-weight-heading: 400;
   --pst-font-size-h1: 38px;
   --pst-font-size-h2: 32px;
   --pst-font-size-h3: 27px;
@@ -15,6 +21,42 @@ html[data-theme=light]{
   --pst-font-size-h5: 18px;
   --pst-font-size-h6: 15px;
 
+}
+
+/* Underline links only on hover */
+a {
+  text-decoration: none;
+}
+a:hover {
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+}
+.bd-header ul.navbar-nav li a.nav-link.dropdown-item:hover,
+nav.bd-links li > a:hover,
+.toc-entry a.nav-link:hover {
+  text-decoration-thickness: 1px;
+}
+/* Navbar hover underline matches the 2px active-section underline */
+ul.navbar-nav li a:hover {
+  text-decoration-thickness: 2px;
+}
+
+/* Thinner active-section underline in the navbar, with slightly heavier text */
+.bd-header ul.navbar-nav > li.nav-item.current > .nav-link:before {
+  border-bottom-width: 2px;
+}
+.bd-header ul.navbar-nav > li.nav-item.current > .nav-link {
+  font-weight: 600;
+}
+
+/* Back-to-top button: gray, teal on hover (matching nav link colors) */
+#pst-back-to-top {
+  background-color: rgb(140, 140, 140);
+  color: #fff;
+}
+#pst-back-to-top:hover {
+  background-color: var(--pst-color-secondary);
+  color: #fff;
 }
 
 /* Syntax highlighting */
@@ -44,10 +86,60 @@ html[data-theme=light] .highlight .kc {
   font-weight: bold;
 }
 
+/* Hide the "Section Navigation" sidebar heading */
+.bd-links__title {
+  display: none;
+}
+
+/* Hide the "On this page" secondary sidebar heading */
+.onthispage {
+  display: none;
+}
+
 /* Use full page width without sidebars */
 .bd-content {
   max-width: 100%;
   flex-grow: 1;
+}
+.bd-main .bd-content .bd-article-container {
+  max-width: 100%;
+  padding: 3rem 2rem 2rem;
+}
+.bd-main .bd-content .bd-article-container .bd-article {
+  padding-top: 0;
+  padding-left: 0;
+}
+@media (max-width: 959.98px) {
+  .bd-main .bd-content .bd-article-container {
+    padding: 1rem;
+  }
+}
+
+/* Let the logo fill the full navbar height (theme adds vertical padding) */
+.navbar-brand {
+  padding: 0;
+}
+
+/* Widen the page cap from the theme default (88rem) */
+.bd-page-width {
+  max-width: 100rem;
+}
+
+/* Simplify tables: thin line between rows, no zebra shading or outlines */
+.table tbody tr:nth-child(odd),
+.table tbody tr:nth-child(2n) {
+  background-color: transparent;
+}
+.table,
+.table > :not(caption) > * > *,
+.table td ~ td,
+.table td ~ th,
+.table th ~ td,
+.table th ~ th {
+  border: 0;
+}
+.table tbody tr:not(:last-child) > * {
+  border-bottom: 1px solid var(--pst-color-table-inner-border);
 }
 
 /* Function signature customization */
