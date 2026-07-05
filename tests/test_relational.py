@@ -735,6 +735,13 @@ class TestRelationalPlotter(Helpers):
                 assert pt.get_markersize() == np.sqrt(kws["s"])
                 assert pt.get_markeredgewidth() == kws["linewidth"]
 
+    def test_legend_unfilled_marker_visible(self, long_df):
+        g = relplot(long_df, x="x", y="y", hue="a", marker="x", s=100)
+        palette = color_palette()
+        for i, pt in enumerate(get_legend_handles(g.legend)):
+            assert pt.get_markeredgewidth() > 0
+            assert same_color(pt.get_markeredgecolor(), palette[i])
+
 
 class TestLinePlotter(SharedAxesLevelTests, Helpers):
 
