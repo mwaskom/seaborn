@@ -78,7 +78,7 @@ class _RegressionPlotter(_LinearPlotter):
                  units=None, seed=None, order=1, logistic=False, lowess=False,
                  robust=False, logx=False, x_partial=None, y_partial=None,
                  truncate=False, dropna=True, x_jitter=None, y_jitter=None,
-                 color=None, label=None):
+                 color=None, label=None, weights=None):
 
         # Set member attributes
         self.x_estimator = x_estimator
@@ -98,6 +98,7 @@ class _RegressionPlotter(_LinearPlotter):
         self.y_jitter = y_jitter
         self.color = color
         self.label = label
+        self.weights = None  # set below after establish_variables
 
         # Validate the regression options:
         if sum((order > 1, logistic, robust, lowess, logx)) > 1:
@@ -107,9 +108,20 @@ class _RegressionPlotter(_LinearPlotter):
         self.establish_variables(data, x=x, y=y, units=units,
                                  x_partial=x_partial, y_partial=y_partial)
 
+        # Handle observation weights
+        if weights is not None:
+            if isinstance(weights, str):
+                if data is None:
+                    raise ValueError("Must pass `data` if `weights` is a string.")
+                self.weights = np.asarray(data[weights], dtype=float)
+            else:
+                self.weights = np.asarray(weights, dtype=float)
+            if np.any(self.weights < 0):
+                raise ValueError("Weights must be non-negative.")
+
         # Drop null observations
         if dropna:
-            self.dropna("x", "y", "units", "x_partial", "y_partial")
+            self.dropna("x", "y", "units", "x_partial", "y_partial", "weights")
 
         # Regress nuisance variables out of the data
         if self.x_partial is not None:
@@ -238,11 +250,20 @@ class _RegressionPlotter(_LinearPlotter):
 
     def fit_fast(self, grid):
         """Low-level regression and prediction using linear algebra."""
-        def reg_func(_x, _y):
-            return np.linalg.pinv(_x).dot(_y)
-
         X, y = np.c_[np.ones(len(self.x)), self.x], self.y
         grid = np.c_[np.ones(len(grid)), grid]
+        w = self.weights
+
+        if w is not None:
+            # Weighted least squares: transform X and y by sqrt(w)
+            sqrt_w = np.sqrt(w)[:, None]
+
+            def reg_func(_x, _y):
+                return np.linalg.pinv(_x * sqrt_w).dot(_y * sqrt_w.ravel())
+        else:
+            def reg_func(_x, _y):
+                return np.linalg.pinv(_x).dot(_y)
+
         yhat = grid.dot(reg_func(X, y))
         if self.ci is None:
             return yhat, None
@@ -257,8 +278,14 @@ class _RegressionPlotter(_LinearPlotter):
 
     def fit_poly(self, grid, order):
         """Regression using numpy polyfit for higher-order trends."""
-        def reg_func(_x, _y):
-            return np.polyval(np.polyfit(_x, _y, order), grid)
+        w = self.weights
+
+        if w is not None:
+            def reg_func(_x, _y):
+                return np.polyval(np.polyfit(_x, _y, order, w=w), grid)
+        else:
+            def reg_func(_x, _y):
+                return np.polyval(np.polyfit(_x, _y, order), grid)
 
         x, y = self.x, self.y
         yhat = reg_func(x, y)
@@ -277,6 +304,11 @@ class _RegressionPlotter(_LinearPlotter):
         import statsmodels.tools.sm_exceptions as sme
         X, y = np.c_[np.ones(len(self.x)), self.x], self.y
         grid = np.c_[np.ones(len(grid)), grid]
+        w = self.weights
+
+        # Pass weights to statsmodels if provided
+        if w is not None:
+            kwargs.setdefault("freq_weights", w)
 
         def reg_func(_x, _y):
             err_classes = (sme.PerfectSeparationError,)
@@ -313,10 +345,18 @@ class _RegressionPlotter(_LinearPlotter):
         """Fit the model in log-space."""
         X, y = np.c_[np.ones(len(self.x)), self.x], self.y
         grid = np.c_[np.ones(len(grid)), np.log(grid)]
+        w = self.weights
 
-        def reg_func(_x, _y):
-            _x = np.c_[_x[:, 0], np.log(_x[:, 1])]
-            return np.linalg.pinv(_x).dot(_y)
+        if w is not None:
+            sqrt_w = np.sqrt(w)[:, None]
+
+            def reg_func(_x, _y):
+                _x = np.c_[_x[:, 0], np.log(_x[:, 1])]
+                return np.linalg.pinv(_x * sqrt_w).dot(_y * sqrt_w.ravel())
+        else:
+            def reg_func(_x, _y):
+                _x = np.c_[_x[:, 0], np.log(_x[:, 1])]
+                return np.linalg.pinv(_x).dot(_y)
 
         yhat = grid.dot(reg_func(X, y))
         if self.ci is None:
@@ -766,14 +806,16 @@ def regplot(
     logx=False, x_partial=None, y_partial=None,
     truncate=True, dropna=True, x_jitter=None, y_jitter=None,
     label=None, color=None, marker="o",
-    scatter_kws=None, line_kws=None, ax=None
+    scatter_kws=None, line_kws=None, ax=None,
+    weights=None,
 ):
 
     plotter = _RegressionPlotter(x, y, data, x_estimator, x_bins, x_ci,
                                  scatter, fit_reg, ci, n_boot, units, seed,
                                  order, logistic, lowess, robust, logx,
                                  x_partial, y_partial, truncate, dropna,
-                                 x_jitter, y_jitter, color, label)
+                                 x_jitter, y_jitter, color, label,
+                                 weights=weights)
 
     if ax is None:
         ax = plt.gca()
