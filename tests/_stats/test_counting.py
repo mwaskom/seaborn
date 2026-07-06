@@ -203,6 +203,26 @@ class TestHist:
         for _, out_part in out.groupby("a"):
             assert out_part["y"].sum() == pytest.approx(100)
 
+    def test_common_norm_density_default(self, long_df, triple_args):
+
+        h = Hist(stat="density", common_norm=True)
+        out = h(long_df, *triple_args)
+        assert (out["y"] * out["space"]).sum() == pytest.approx(1)
+
+    def test_common_norm_density_false(self, long_df, triple_args):
+
+        h = Hist(stat="density", common_norm=False)
+        out = h(long_df, *triple_args)
+        for _, out_part in out.groupby(["a", "s"]):
+            assert (out_part["y"] * out_part["space"]).sum() == pytest.approx(1)
+
+    def test_common_norm_density_subset(self, long_df, triple_args):
+
+        h = Hist(stat="density", common_norm=["a"])
+        out = h(long_df, *triple_args)
+        for _, out_part in out.groupby("a"):
+            assert (out_part["y"] * out_part["space"]).sum() == pytest.approx(1)
+
     def test_common_norm_warning(self, long_df, triple_args):
 
         h = Hist(common_norm=["b"])
