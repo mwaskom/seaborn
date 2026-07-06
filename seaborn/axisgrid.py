@@ -1690,10 +1690,15 @@ class JointGrid(_BaseGrid):
         height=6, ratio=5, space=.2,
         palette=None, hue_order=None, hue_norm=None,
         dropna=False, xlim=None, ylim=None, marginal_ticks=False,
+        f=None,
     ):
 
         # Set up the subplot grid
-        f = plt.figure(figsize=(height, height))
+        if f is None:
+            f = plt.figure(figsize=(height, height))
+            custom_fig = False
+        else:
+            custom_fig = True
         gs = plt.GridSpec(ratio + 1, ratio + 1)
 
         ax_joint = f.add_subplot(gs[1:, :-1])
@@ -1763,7 +1768,8 @@ class JointGrid(_BaseGrid):
         for axes in [ax_marg_x, ax_marg_y]:
             for axis in [axes.xaxis, axes.yaxis]:
                 axis.label.set_visible(False)
-        f.tight_layout()
+        if not custom_fig:
+            f.tight_layout()
         f.subplots_adjust(hspace=space, wspace=space)
 
     def _inject_kwargs(self, func, kws, params):
@@ -2185,7 +2191,7 @@ def jointplot(
     data=None, *, x=None, y=None, hue=None, kind="scatter",
     height=6, ratio=5, space=.2, dropna=False, xlim=None, ylim=None,
     color=None, palette=None, hue_order=None, hue_norm=None, marginal_ticks=False,
-    joint_kws=None, marginal_kws=None,
+    joint_kws=None, marginal_kws=None, f=None,
     **kwargs
 ):
     # Avoid circular imports
@@ -2245,6 +2251,7 @@ def jointplot(
         palette=palette, hue_order=hue_order, hue_norm=hue_norm,
         dropna=dropna, height=height, ratio=ratio, space=space,
         xlim=xlim, ylim=ylim, marginal_ticks=marginal_ticks,
+        f=f,
     )
 
     if grid.hue is not None:
