@@ -168,6 +168,26 @@ dt:target, span.highlighted {
   background-color: #fdebba;
 }
 
+/* Homepage grid-item-cards: soften the sphinx-design defaults so they read as
+   part of the minimal seaborn docs rather than heavy standalone cards. */
+/* Card title defaults to bold near-black; use the brand heading color at a
+   lighter weight (var keeps it readable in dark mode). */
+.sd-card-title.sd-font-weight-bold {
+  color: var(--pst-heading-color);
+  /* sphinx-design sets .sd-font-weight-bold to 700 !important, so override in kind */
+  font-weight: 500 !important;
+}
+/* Drop the drop-shadow and lighten the border to a subtle brand tint. */
+.sd-card.sd-shadow-sm {
+  box-shadow: none !important;
+  border-color: var(--pst-color-secondary-bg);
+}
+/* Tighten row padding on the Features card's link table so it stays compact. */
+.feature-list td {
+  padding-top: 0.1rem;
+  padding-bottom: 0.1rem;
+}
+
 /* *********************************************************************** */
 
 /* --- Badges for categorizing release notes --- */
