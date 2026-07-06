@@ -78,11 +78,31 @@ seaborn: statistical data visualization
     :class-title: sd-fs-5
     :class-body: sd-pl-3
 
-    * Objects interface: :ref:`API <objects_api>` | :doc:`Tutorial <tutorial/objects_interface>`
-    * Relational plots: :ref:`API <relational_api>` | :doc:`Tutorial <tutorial/relational>`
-    * Distribution plots: :ref:`API <distribution_api>` | :doc:`Tutorial <tutorial/distributions>`
-    * Categorical plots: :ref:`API <categorical_api>` | :doc:`Tutorial <tutorial/categorical>`
-    * Regression plots: :ref:`API <regression_api>` | :doc:`Tutorial <tutorial/regression>`
-    * Multi-plot grids: :ref:`API <grid_api>` | :doc:`Tutorial <tutorial/axis_grids>`
-    * Figure theming: :ref:`API <style_api>` | :doc:`Tutorial <tutorial/aesthetics>`
-    * Color palettes: :ref:`API <palette_api>` | :doc:`Tutorial <tutorial/color_palettes>`
+    .. list-table::
+      :widths: auto
+      :class: feature-list
+
+      * - Objects interface
+        - :ref:`API <objects_api>`
+        - :doc:`Tutorial <tutorial/objects_interface>`
+      * - Relational plots
+        - :ref:`API <relational_api>`
+        - :doc:`Tutorial <tutorial/relational>`
+      * - Distribution plots
+        - :ref:`API <distribution_api>`
+        - :doc:`Tutorial <tutorial/distributions>`
+      * - Categorical plots
+        - :ref:`API <categorical_api>`
+        - :doc:`Tutorial <tutorial/categorical>`
+      * - Regression plots
+        - :ref:`API <regression_api>`
+        - :doc:`Tutorial <tutorial/regression>`
+      * - Multi-plot grids
+        - :ref:`API <grid_api>`
+        - :doc:`Tutorial <tutorial/axis_grids>`
+      * - Figure theming
+        - :ref:`API <style_api>`
+        - :doc:`Tutorial <tutorial/aesthetics>`
+      * - Color palettes
+        - :ref:`API <palette_api>`
+        - :doc:`Tutorial <tutorial/color_palettes>`
