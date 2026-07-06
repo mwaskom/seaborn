@@ -39,6 +39,7 @@ from seaborn._stats.base import Stat  # noqa: F401
 from seaborn._stats.aggregation import Agg, Est  # noqa: F401
 from seaborn._stats.counting import Count, Hist  # noqa: F401
 from seaborn._stats.density import KDE  # noqa: F401
+from seaborn._stats.ecdf import ECDF  # noqa: F401
 from seaborn._stats.order import Perc  # noqa: F401
 from seaborn._stats.regression import PolyFit  # noqa: F401
 
