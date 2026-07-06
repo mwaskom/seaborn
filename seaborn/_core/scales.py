@@ -1,6 +1,6 @@
 from __future__ import annotations
 import re
-from copy import copy
+from copy import copy, deepcopy
 from collections.abc import Sequence
 from dataclasses import dataclass
 from functools import partial
@@ -86,6 +86,17 @@ class Scale:
 
         major_locator, minor_locator = self._get_locators(**self._tick_params)
         major_formatter = self._get_formatter(major_locator, **self._label_params)
+
+        # Deepcopy locators and formatter so that each scale setup gets
+        # independent instances. Without this, scales for derived coordinate
+        # variables (e.g. ymin/ymax from Est) share locator/formatter objects
+        # with the main variable's scale, and the locator's internal axis
+        # reference gets overwritten to point at a PseudoAxis that lacks
+        # required attributes like _view_interval. See GH#3585.
+        major_locator = deepcopy(major_locator)
+        if minor_locator is not None:
+            minor_locator = deepcopy(minor_locator)
+        major_formatter = deepcopy(major_formatter)
 
         class InternalScale(mpl.scale.FuncScale):
             def set_default_locators_and_formatters(self, axis):
@@ -913,6 +924,7 @@ class PseudoAxis:
         # It appears that this needs to be initialized this way on matplotlib 3.1,
         # but not later versions. It is unclear whether there are any issues with it.
         self._data_interval = None, None
+        self._view_interval = None, None
 
         scale.set_default_locators_and_formatters(self)
         # self.set_default_intervals()  Is this ever needed?
