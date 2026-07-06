@@ -835,6 +835,15 @@ class VectorPlotter:
     def map_hue(self, palette=None, order=None, norm=None, saturation=1):
         mapping = HueMapping(self, palette, order, norm, saturation)
         self._hue_map = mapping
+        if (
+            "hue" in self.plot_data
+            and self._hue_map.map_type == "categorical"
+            and self._hue_map.levels is not None
+        ):
+            self.plot_data["hue"] = pd.Categorical(
+                self.plot_data["hue"],
+                categories=self._hue_map.levels,
+            )
 
     def map_size(self, sizes=None, order=None, norm=None):
         mapping = SizeMapping(self, sizes, order, norm)
