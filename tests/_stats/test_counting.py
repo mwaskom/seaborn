@@ -100,6 +100,31 @@ class TestHist:
         left, right = bin_kws["range"]
         assert (right - left) / n_bins == pytest.approx(binwidth)
 
+    def test_binwidth_exceeds_data_range(self):
+
+        h = Hist(binwidth=10)
+        bin_kws = h._define_bin_params(
+            pd.DataFrame({"x": [0, 1]}), "x", "continuous",
+        )
+        assert bin_kws == {"bins": 1, "range": (0, 1)}
+
+    def test_binwidth_single_observation(self):
+
+        binwidth = .03
+        h = Hist(binwidth=binwidth)
+        bin_kws = h._define_bin_params(
+            pd.DataFrame({"x": [.49928]}), "x", "continuous",
+        )
+        assert bin_kws["bins"] == 1
+        left, right = bin_kws["range"]
+        assert right - left == pytest.approx(binwidth)
+
+    def test_negative_binwidth_exceeds_data_range(self):
+
+        h = Hist(binwidth=-10)
+        with pytest.raises(ValueError, match="bins.*positive"):
+            h._define_bin_params(pd.DataFrame({"x": [0, 1]}), "x", "continuous")
+
     def test_binrange(self, long_df):
 
         binrange = (-4, 4)
