@@ -1683,8 +1683,41 @@ class TestScatterPlotter(SharedAxesLevelTests, Helpers):
 
         ax = scatterplot(data=long_df, x="x", y="y", hue="a", hue_order=order)
         points = ax.collections[0]
-        assert (points.get_facecolors()[long_df["a"] == unused] == 0).all()
+        # Rows with a hue value not in hue_order are dropped rather than drawn
+        # as transparent points (GH3601)
+        assert len(points.get_offsets()) == (long_df["a"] != unused).sum()
+        assert (points.get_facecolors()[:, 3] > 0).all()
         assert [t.get_text() for t in ax.legend_.texts] == order
+
+    def test_style_order(self, long_df):
+
+        order = categorical_order(long_df["a"])
+        unused = order.pop()
+
+        # A style_order that is a subset of the data previously raised a
+        # KeyError; the unmapped rows should be dropped instead (GH3601)
+        ax = scatterplot(data=long_df, x="x", y="y", style="a", style_order=order)
+        points = ax.collections[0]
+        assert len(points.get_offsets()) == (long_df["a"] != unused).sum()
+        assert [t.get_text() for t in ax.legend_.texts] == order
+
+    def test_hue_order_datetime(self, long_df):
+
+        # A datetime hue is mapped through the same lookup table as a
+        # categorical one, so a subset hue_order must drop the unmapped rows
+        # rather than draw them as transparent points (GH3601)
+        levels = categorical_order(long_df["a"])
+        dates = np.array(
+            [f"2020-01-{i + 1:02d}" for i in range(len(levels))], dtype="datetime64[ns]"
+        )
+        df = long_df.assign(t=long_df["a"].map(dict(zip(levels, dates))).astype(dates.dtype))
+        order = list(dates[:-1])
+        unused = dates[-1]
+
+        ax = scatterplot(data=df, x="x", y="y", hue="t", hue_order=order)
+        points = ax.collections[0]
+        assert len(points.get_offsets()) == (df["t"] != unused).sum()
+        assert (points.get_facecolors()[:, 3] > 0).all()
 
     def test_linewidths(self, long_df):
 
