@@ -402,6 +402,20 @@ class _ScatterPlotter(_RelationalPlotter):
         # --- Determine the visual attributes of the plot
 
         data = self.comp_data.dropna()
+
+        # Reduce to rows whose table-mapped hue/size/style value is mapped to a
+        # visual attribute. Otherwise an order that is a subset of the data
+        # would error (style) or draw transparent points (hue); dropping the
+        # unmapped rows matches lineplot and the objects interface (GH3601).
+        # Only numeric mappings interpolate out-of-table values via the norm,
+        # so the guard is "not numeric" (covers categorical and datetime).
+        if "hue" in self.variables and self._hue_map.map_type != "numeric":
+            data = data[data["hue"].isin(self._hue_map.levels)]
+        if "size" in self.variables and self._size_map.map_type != "numeric":
+            data = data[data["size"].isin(self._size_map.levels)]
+        if "style" in self.variables and self._style_map.map_type != "numeric":
+            data = data[data["style"].isin(self._style_map.levels)]
+
         if data.empty:
             return
 
