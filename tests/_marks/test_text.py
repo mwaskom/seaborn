@@ -127,3 +127,9 @@ class TestText:
         for text in self.get_texts(ax):
             shift_matrix = text.get_transform().get_matrix() - ax_trans
             assert_array_almost_equal(shift_matrix, expected_shift_matrix)
+
+    def test_fmt(self):
+        m = Text(fmt="{:.2f}")
+        p = Plot(x=[0], y=[0], text=[1.234]).add(m).plot()
+        ax = p._figure.axes[0]
+        assert self.get_texts(ax)[0].get_text() == "1.23"
