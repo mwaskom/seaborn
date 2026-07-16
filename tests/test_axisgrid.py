@@ -1,3 +1,4 @@
+import io
 import numpy as np
 import pandas as pd
 import matplotlib as mpl
@@ -719,6 +720,28 @@ class TestFacetGrid:
         assert g.axes.shape == (long_df["b"].nunique(), long_df["a"].nunique())
         for ax in g.axes.flat:
             assert len(ax.collections) == 1
+
+
+    def test_tight_layout_large_values(self):
+        # Regression test for GH#3963
+        df = pd.DataFrame({
+            'x': 377000 + rs.randn(18) * 1000,
+            'y': 5700000 + rs.randn(18) * 1000,
+            'id': np.repeat(range(1, 7), 3),
+            'variable': np.tile(['a', 'b', 'c'], 6),
+        })
+
+        g = ag.FacetGrid(df, col='id', row='variable')
+        g.map_dataframe(plt.scatter, x='x', y='y')
+
+        # Should not raise on render
+        g.figure.savefig(io.BytesIO(), format='png')
+
+        # Axes positions should not be NaN
+        for ax in g.axes.flat:
+            pos = ax.get_position()
+            assert not np.isnan(pos.x0)
+            assert not np.isnan(pos.y0)
 
 
 class TestPairGrid:
