@@ -121,9 +121,16 @@ class Scale:
 
         # TODO sometimes we need to handle scalars (e.g. for Line)
         # but what is the best way to do that?
-        scalar_data = np.isscalar(data)
+        # pandas.Interval (from pd.cut) is not np.isscalar but also not iterable,
+        # so treat non-iterable non-string objects as scalars (#3948).
+        scalar_data = np.isscalar(data) or isinstance(data, (str, bytes))
+        if not scalar_data:
+            try:
+                iter(data)
+            except TypeError:
+                scalar_data = True
         if scalar_data:
-            trans_data = np.array([data])
+            trans_data = np.array([data], dtype=object)
         else:
             trans_data = data
 
@@ -312,9 +319,19 @@ class Nominal(Scale):
             # TODO isin fails when units_seed mixes numbers and strings (numpy error?)
             # but np.isin also does not seem any faster? (Maybe not broadcasting in C)
             # keep = x.isin(units_seed)
-            keep = np.array([x_ in units_seed for x_ in x], bool)
-            out = np.full(len(x), np.nan)
-            out[keep] = axis.convert_units(stringify(x[keep]))
+            # Normalize to a flat sequence: pandas.Interval is not iterable (#3948).
+            if np.isscalar(x) or isinstance(x, (str, bytes)):
+                values = [x]
+            else:
+                try:
+                    values = list(x)
+                except TypeError:
+                    values = [x]
+            keep = np.array([v in units_seed for v in values], bool)
+            out = np.full(len(values), np.nan)
+            if keep.any():
+                kept = np.asarray(values, dtype=object)[keep]
+                out[keep] = axis.convert_units(stringify(kept))
             return out
 
         new._pipeline = [convert_units, prop.get_mapping(new, data)]
