@@ -579,6 +579,19 @@ class TestNominal:
             assert ax.yaxis.major.formatter(i) == expected
 
 
+
+    def test_pandas_interval_levels(self):
+        """pd.Interval categories must map without TypeError (#3948)."""
+        x = pd.Series(
+            pd.cut(pd.Series([1.0, 2.0, 3.0, 4.0, 5.0, 6.0]), bins=3)
+        )
+        s = Nominal()._setup(x, Color())
+        mapped = s(x)
+        assert len(mapped) == len(x)
+        # Single Interval value (used by marks that resolve one level at a time)
+        scalar = s(x.iloc[0])
+        assert scalar is not None
+
 class TestTemporal:
 
     @pytest.fixture
