@@ -1760,6 +1760,20 @@ class TestHistPlotUnivariate(SharedAxesLevelTests):
         steps = np.divide(bar_widths[1:], bar_widths[:-1])
         assert np.allclose(steps, 10)
 
+    def test_log_scale_stat_axis(self):
+        x = np.repeat(["a", "b", "c"], [200, 100, 10])
+        ax = histplot(x=x, log_scale=(False, True))
+        assert ax.get_xscale() == "linear"
+        assert ax.get_yscale() == "log"
+        assert ax.get_ylim()[1] > max(bar.get_height() for bar in ax.patches)
+
+    def test_log_scale_stat_axis_with_y_data(self):
+        y = np.repeat(["a", "b", "c"], [200, 100, 10])
+        ax = histplot(y=y, log_scale=(True, False))
+        assert ax.get_xscale() == "log"
+        assert ax.get_yscale() == "linear"
+        assert ax.get_xlim()[1] > max(bar.get_width() for bar in ax.patches)
+
     def test_log_scale_dodge(self, rng):
 
         x = rng.lognormal(0, 2, 100)
@@ -2288,6 +2302,13 @@ class TestDisPlot:
             long_df["_"] = "_"
             g2 = displot(long_df, col="_", **kwargs)
             assert_plots_equal(ax, g2.ax)
+
+    def test_histplot_log_scale_stat_axis(self):
+        x = np.repeat(["a", "b", "c"], [200, 100, 10])
+        g = displot(x=x, height=3, log_scale=(False, True))
+        assert g.ax.get_xscale() == "linear"
+        assert g.ax.get_yscale() == "log"
+        assert g.ax.get_ylim()[1] > max(bar.get_height() for bar in g.ax.patches)
 
     @pytest.mark.parametrize(
         "kwargs", [
