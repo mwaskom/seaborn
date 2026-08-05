@@ -77,7 +77,8 @@ cbar_ax : :class:`matplotlib.axes.Axes`
     """,
     cbar_kws="""
 cbar_kws : dict
-    Additional parameters passed to :meth:`matplotlib.figure.Figure.colorbar`.
+    Additional parameters passed to
+    `matplotlib.figure.Figure.colorbar <https://matplotlib.org/stable/api/_as_gen/matplotlib.figure.Figure.colorbar.html>`_.
     """,
 )
 
