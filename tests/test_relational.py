@@ -1630,6 +1630,39 @@ class TestScatterPlotter(SharedAxesLevelTests, Helpers):
         assert ax2.get_ylabel() == "y"
         assert not ax2.yaxis.label.get_visible()
 
+    def test_axis_labels_without_tick_labels(self, long_df):
+
+        rc = {
+            "xtick.bottom": False,
+            "xtick.labelbottom": False,
+            "ytick.left": False,
+            "ytick.labelleft": False,
+        }
+        with mpl.rc_context(rc):
+            ax = scatterplot(data=long_df, x="x", y="y")
+
+        assert ax.get_xlabel() == "x"
+        assert ax.xaxis.label.get_visible()
+        assert ax.get_ylabel() == "y"
+        assert ax.yaxis.label.get_visible()
+
+    def test_shared_axis_labels_without_tick_labels(self, long_df):
+
+        rc = {
+            "xtick.labelbottom": False,
+            "ytick.labelleft": False,
+        }
+        with mpl.rc_context(rc):
+            _, (ax1, ax2) = plt.subplots(1, 2, sharey=True)
+            scatterplot(data=long_df, x="x", y="y", ax=ax1)
+            scatterplot(data=long_df, x="x", y="y", ax=ax2)
+            g = relplot(data=long_df, x="x", y="y", col="b")
+
+        assert ax1.yaxis.label.get_visible()
+        assert not ax2.yaxis.label.get_visible()
+        assert g.axes[0, 0].yaxis.label.get_visible()
+        assert not g.axes[0, 1].yaxis.label.get_visible()
+
     def test_scatterplot_axes(self, wide_df):
 
         f1, ax1 = plt.subplots()
