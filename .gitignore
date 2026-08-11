@@ -16,3 +16,4 @@ htmlcov/
 .DS_Store
 notes/
 notebooks/
+.python-version

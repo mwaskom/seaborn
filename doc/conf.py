@@ -13,10 +13,19 @@
 import os
 import sys
 import time
+import logging
 import seaborn
 from seaborn._core.properties import PROPERTIES
 
 sys.path.insert(0, os.path.abspath('sphinxext'))
+
+# The secondary_sidebar_items config below intentionally overlaps two wildcard
+# patterns (** and generated/*) so that the API entity pages get an empty right
+# sidebar. The theme resolves this correctly (last match wins) but logs a warning
+# for every matched page; filter out that benign noise.
+logging.getLogger("sphinx.pydata_sphinx_theme.utils").addFilter(
+    lambda record: "matches two wildcard patterns" not in record.getMessage()
+)
 
 
 # -- Project information -----------------------------------------------------
@@ -126,7 +135,7 @@ for path in html_static_path:
     if not os.path.exists(path):
         os.makedirs(path)
 
-html_css_files = [f'css/custom.css?v={seaborn.__version__}']
+html_css_files = ['css/custom.css']
 
 html_logo = "_static/logo-wide-lightbg.svg"
 html_favicon = "_static/favicon.ico"
@@ -140,12 +149,6 @@ html_theme_options = {
             "type": "fontawesome",
         },
         {
-            "name": "StackOverflow",
-            "url": "https://stackoverflow.com/tags/seaborn",
-            "icon": "fab fa-stack-overflow",
-            "type": "fontawesome",
-        },
-        {
             "name": "Twitter",
             "url": "https://twitter.com/michaelwaskom",
             "icon": "fab fa-twitter",
@@ -154,8 +157,14 @@ html_theme_options = {
     ],
     "show_prev_next": False,
     "navbar_start": ["navbar-logo"],
+    "navbar_persistent": ["search-button"],
     "navbar_end": ["navbar-icon-links"],
+    "article_header_start": [],
     "header_links_before_dropdown": 8,
+    "secondary_sidebar_items": {
+        "**": ["page-toc"],
+        "generated/*": [],
+    },
 }
 
 html_context = {
@@ -165,6 +174,9 @@ html_context = {
 html_sidebars = {
     "index": [],
     "examples/index": [],
+    "installing": [],
+    "citing": [],
+    "faq": [],
     "**": ["sidebar-nav-bs.html"],
 }
 

@@ -26,7 +26,7 @@ To build the documentation locally, please refer to [`doc/README.md`](doc/README
 Dependencies
 ------------
 
-Seaborn supports Python 3.8+.
+Seaborn supports Python 3.10+.
 
 Installation requires [numpy](https://numpy.org/), [pandas](https://pandas.pydata.org/), and [matplotlib](https://matplotlib.org/). Some advanced statistical functionality requires [scipy](https://www.scipy.org/) and/or [statsmodels](https://www.statsmodels.org/).
 
@@ -36,11 +36,11 @@ Installation
 
 The latest stable release (and required dependencies) can be installed from PyPI:
 
-    pip install seaborn
+    uv pip install seaborn
 
 It is also possible to include optional statistical dependencies:
 
-    pip install seaborn[stats]
+    uv pip install seaborn[stats]
 
 Seaborn can also be installed with conda:
 
@@ -56,7 +56,7 @@ A paper describing seaborn has been published in the [Journal of Open Source Sof
 Testing
 -------
 
-Testing seaborn requires installing additional dependencies; they can be installed with the `dev` extra (e.g., `pip install .[dev]`).
+Testing seaborn requires installing additional dependencies; they will be installed when running `uv sync` with a source checkout.
 
 To test the code, run `make test` in the source directory. This will exercise the unit tests (using [pytest](https://docs.pytest.org/)) and generate a coverage report.
 
