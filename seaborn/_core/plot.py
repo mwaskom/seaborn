@@ -572,6 +572,55 @@ class Plot:
 
         return new
 
+    def assign(
+        self,
+        *,
+        data: DataSource = None,
+        **variables: VariableSpec,
+    ) -> Plot:
+        """
+        Add, replace, or drop variables in the global specification.
+
+        The data source and variable assignments that are passed to the
+        constructor apply to all layers in the plot. This method updates those
+        assignments, which is useful when the same set of layer definitions
+        should be used with different data sources or variable mappings.
+
+        Parameters
+        ----------
+        data : DataFrame or dict
+            Data source to use for the plot, replacing the source defined in
+            the constructor. Existing variable assignments will be resolved
+            against this source.
+        variables : data vectors or identifiers
+            Variable assignments to add to or replace in the global
+            specification. This includes variables that are not part of the
+            constructor signature, such as those that are passed to a stat
+            transform (e.g., ``weight``). Pass ``None`` to remove a variable.
+
+        Returns
+        -------
+        Plot
+            A copy of the plot with the updated global data and/or variable
+            assignments.
+
+        Examples
+        --------
+        .. include:: ../docstrings/objects.Plot.assign.rst
+
+        """
+        new = self._clone()
+
+        if data is None:
+            data = self._data.source_data
+
+        source_vars = dict(self._data.source_vars)
+        source_vars.update(variables)
+
+        new._data = PlotData(data, source_vars)
+
+        return new
+
     def pair(
         self,
         x: VariableSpecList = None,
