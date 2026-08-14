@@ -1541,6 +1541,11 @@ class TestJointGrid:
         assert xlabel == "x variable"
         assert ylabel == "y variable"
 
+    def test_no_set_method(self):
+
+        g = ag.JointGrid(x="x", y="y", data=self.data)
+        assert not hasattr(g, "set")
+
     def test_dropna(self):
 
         g = ag.JointGrid(x="x_na", y="y", data=self.data, dropna=False)

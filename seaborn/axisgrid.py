@@ -37,13 +37,6 @@ _param_docs = DocstringComponents.from_nested_components(
 class _BaseGrid:
     """Base class for grids of subplots."""
 
-    def set(self, **kwargs):
-        """Set attributes on each subplot Axes."""
-        for ax in self.axes.flat:
-            if ax is not None:  # Handle removed axes
-                ax.set(**kwargs)
-        return self
-
     @property
     def fig(self):
         """DEPRECATED: prefer the `figure` property."""
@@ -104,6 +97,13 @@ class Grid(_BaseGrid):
     """A grid that can have multiple subplots and an external legend."""
     _margin_titles = False
     _legend_out = True
+
+    def set(self, **kwargs):
+        """Set attributes on each subplot Axes."""
+        for ax in self.axes.flat:
+            if ax is not None:  # Handle removed axes
+                ax.set(**kwargs)
+        return self
 
     def __init__(self):
 
