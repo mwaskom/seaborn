@@ -1055,14 +1055,20 @@ class FacetGrid(Grid):
             Returns ``self`` for easy method chaining.
 
         """
-        line_kws['color'] = color
         line_kws['linestyle'] = linestyle
 
-        if x is not None:
-            self.map(plt.axvline, x=x, **line_kws)
+        # Draw the lines directly on each facet axis rather than going through
+        # ``map``, which would inject ``hue_kws`` aesthetics (e.g. the ``marker``
+        # that lmplot sets) into a function that never requested them.
+        for (row_i, col_j, hue_k), _ in self.facet_data():
+            ax = self.facet_axis(row_i, col_j)
+            line_kws['color'] = self._facet_color(hue_k, color)
 
-        if y is not None:
-            self.map(plt.axhline, y=y, **line_kws)
+            if x is not None:
+                ax.axvline(x, **line_kws)
+
+            if y is not None:
+                ax.axhline(y, **line_kws)
 
         return self
 
