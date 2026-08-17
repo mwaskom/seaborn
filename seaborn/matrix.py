@@ -835,7 +835,7 @@ class ClusterGrid(Grid):
 
     @staticmethod
     def z_score(data2d, axis=1):
-        """Standarize the mean and variance of the data axis
+        """Standardize the mean and variance of the data axis
 
         Parameters
         ----------
@@ -848,7 +848,7 @@ class ClusterGrid(Grid):
         Returns
         -------
         normalized : pandas.DataFrame
-            Noramlized data with a mean of 0 and variance of 1 across the
+            Normalized data with a mean of 0 and variance of 1 across the
             specified axis.
         """
         if axis == 1:
@@ -878,7 +878,7 @@ class ClusterGrid(Grid):
         Returns
         -------
         standardized : pandas.DataFrame
-            Noramlized data with a mean of 0 and variance of 1 across the
+            Normalized data with a mean of 0 and variance of 1 across the
             specified axis.
 
         """
