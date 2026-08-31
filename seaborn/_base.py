@@ -1181,17 +1181,47 @@ class VectorPlotter:
 
         return transform_obj.transform, transform_obj.inverted().transform
 
+    @staticmethod
+    def _axis_label_visible(ax, axis):
+        """Return whether an axis label belongs on this shared subplot."""
+        shared_axes = getattr(ax, f"get_shared_{axis}_axes")()
+        siblings = shared_axes.get_siblings(ax)
+        if len(siblings) == 1:
+            return True
+
+        subplot_specs = []
+        for sibling in siblings:
+            get_subplotspec = getattr(sibling, "get_subplotspec", None)
+            if get_subplotspec is None:
+                return True
+            subplot_specs.append(get_subplotspec())
+        if any(spec is None for spec in subplot_specs):
+            return True
+
+        positions = [spec.get_position(ax.figure) for spec in subplot_specs]
+        position = next(
+            pos for sibling, pos in zip(siblings, positions) if sibling is ax
+        )
+        label_position = getattr(ax, f"{axis}axis").get_label_position()
+        if axis == "x":
+            if label_position == "top":
+                return position.y1 == max(pos.y1 for pos in positions)
+            return position.y0 == min(pos.y0 for pos in positions)
+        if label_position == "right":
+            return position.x1 == max(pos.x1 for pos in positions)
+        return position.x0 == min(pos.x0 for pos in positions)
+
     def _add_axis_labels(self, ax, default_x="", default_y=""):
-        """Add axis labels if not present, set visibility to match ticklabels."""
+        """Add axis labels if not present."""
         # TODO ax could default to None and use attached axes if present
         # but what to do about the case of facets? Currently using FacetGrid's
         # set_axis_labels method, which doesn't add labels to the interior even
         # when the axes are not shared. Maybe that makes sense?
         if not ax.get_xlabel():
-            x_visible = any(t.get_visible() for t in ax.get_xticklabels())
+            x_visible = self._axis_label_visible(ax, "x")
             ax.set_xlabel(self.variables.get("x", default_x), visible=x_visible)
         if not ax.get_ylabel():
-            y_visible = any(t.get_visible() for t in ax.get_yticklabels())
+            y_visible = self._axis_label_visible(ax, "y")
             ax.set_ylabel(self.variables.get("y", default_y), visible=y_visible)
 
     def add_legend_data(
