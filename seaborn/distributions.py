@@ -780,8 +780,15 @@ class _DistributionPlotter(VectorPlotter):
         if pthresh is not None and common_color_norm:
             thresh = self._quantile_to_level(full_heights, pthresh)
 
-        plot_kws.setdefault("vmin", 0)
-        if common_color_norm:
+        # A norm supplied by the user controls the color limits, and matplotlib
+        # raises when it is passed simultaneously with vmin/vmax, so defer to
+        # the norm instead of defining the limits ourselves
+        user_norm = plot_kws.get("norm") is not None
+
+        if not user_norm:
+            plot_kws.setdefault("vmin", 0)
+
+        if common_color_norm and not user_norm:
             if pmax is not None:
                 vmax = self._quantile_to_level(full_heights, pmax)
             else:
@@ -835,7 +842,7 @@ class _DistributionPlotter(VectorPlotter):
                 artist_kws["cmap"] = cmap
 
             # Set the upper norm on the colormap
-            if not common_color_norm and pmax is not None:
+            if not common_color_norm and pmax is not None and not user_norm:
                 vmax = self._quantile_to_level(heights, pmax)
             if vmax is not None:
                 artist_kws["vmax"] = vmax
