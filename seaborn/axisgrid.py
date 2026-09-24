@@ -37,13 +37,6 @@ _param_docs = DocstringComponents.from_nested_components(
 class _BaseGrid:
     """Base class for grids of subplots."""
 
-    def set(self, **kwargs):
-        """Set attributes on each subplot Axes."""
-        for ax in self.axes.flat:
-            if ax is not None:  # Handle removed axes
-                ax.set(**kwargs)
-        return self
-
     @property
     def fig(self):
         """DEPRECATED: prefer the `figure` property."""
@@ -113,6 +106,13 @@ class Grid(_BaseGrid):
         # This attribute is set externally and is a hack to handle newer functions that
         # don't add proxy artists onto the Axes. We need an overall cleaner approach.
         self._extract_legend_handles = False
+
+    def set(self, **kwargs):
+        """Set attributes on each subplot Axes."""
+        for ax in self.axes.flat:
+            if ax is not None:  # Handle removed axes
+                ax.set(**kwargs)
+        return self
 
     def tight_layout(self, *args, **kwargs):
         """Call fig.tight_layout within rect that exclude the legend."""
