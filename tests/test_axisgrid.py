@@ -437,7 +437,7 @@ class TestFacetGrid:
         ylim = (3, 6)
         xticks = [-2, 0, 3, 5]
         yticks = [3, 4.5, 6]
-        g.set(xlim=xlim, ylim=ylim, xticks=xticks, yticks=yticks)
+        assert g.set(xlim=xlim, ylim=ylim, xticks=xticks, yticks=yticks) is g
         for ax in g.axes.flat:
             npt.assert_array_equal(ax.get_xlim(), xlim)
             npt.assert_array_equal(ax.get_ylim(), ylim)
@@ -734,6 +734,18 @@ class TestPairGrid:
 
         g = ag.PairGrid(self.df)
         assert g.data is self.df
+
+    @pytest.mark.parametrize("corner", [False, True])
+    def test_set(self, corner):
+
+        g = ag.PairGrid(self.df, corner=corner)
+        xlim = (-2, 5)
+        ylim = (3, 6)
+        assert g.set(xlim=xlim, ylim=ylim) is g
+        for ax in g.axes.flat:
+            if ax is not None:
+                npt.assert_array_equal(ax.get_xlim(), xlim)
+                npt.assert_array_equal(ax.get_ylim(), ylim)
 
     def test_ignore_datelike_data(self):
 
@@ -1498,6 +1510,11 @@ class TestJointGrid:
     x_na[10] = np.nan
     x_na[20] = np.nan
     data = pd.DataFrame(dict(x=x, y=y, x_na=x_na))
+
+    def test_no_set_method(self):
+
+        g = ag.JointGrid(x=self.x, y=self.y)
+        assert not hasattr(g, "set")
 
     def test_margin_grid_from_lists(self):
 
