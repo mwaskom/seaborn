@@ -629,10 +629,14 @@ class _CategoricalPlotter(VectorPlotter):
         orientation = {"x": "vertical", "y": "horizontal"}[self.orient]
 
         ax = self.ax
+        boxprops = None
 
         for sub_vars, sub_data in self.iter_data(iter_vars,
                                                  from_comp_data=True,
                                                  allow_empty=False):
+
+            if sub_data.empty:
+                continue
 
             ax = self._get_axes(sub_vars)
 
@@ -744,8 +748,9 @@ class _CategoricalPlotter(VectorPlotter):
 
             ax.add_container(BoxPlotContainer(artists))
 
-        legend_artist = _get_patch_legend_artist(fill)
-        self._configure_legend(ax, legend_artist, boxprops)
+        if boxprops is not None:
+            legend_artist = _get_patch_legend_artist(fill)
+            self._configure_legend(ax, legend_artist, boxprops)
 
     def plot_boxens(
         self,

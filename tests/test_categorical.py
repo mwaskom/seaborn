@@ -836,6 +836,58 @@ class TestBoxPlot(SharedAxesLevelTests, SharedPatchArtistTests):
 
     func = staticmethod(boxplot)
 
+    @pytest.mark.parametrize("hue", [None, ["c", "d"]])
+    @pytest.mark.parametrize("orient", ["x", "y"])
+    @pytest.mark.parametrize("fill", [True, False])
+    def test_all_missing(self, hue, orient, fill):
+
+        value = {"x": "y", "y": "x"}[orient]
+        ax = boxplot(**{orient: ["a", "b"], value: [np.nan, np.nan]},
+                     hue=hue, orient=orient, fill=fill)
+        _draw_figure(ax.figure)
+        assert not ax.patches
+        assert not ax.lines
+        assert not ax.containers
+        assert ax.get_legend() is None
+        assert [t.get_text() for t in getattr(ax, f"get_{orient}ticklabels")()] == [
+            "a", "b",
+        ]
+
+    @pytest.mark.parametrize("data", [
+        [None, None],
+        pd.DataFrame({"a": [np.nan, np.nan], "b": [np.nan, np.nan]}),
+    ])
+    def test_all_missing_wide(self, data):
+
+        ax = boxplot(data=data)
+        assert not ax.patches
+        assert not ax.lines
+        assert not ax.containers
+
+    @pytest.mark.parametrize("values", [[np.nan, np.nan], [1, 2]])
+    def test_missing_facet(self, values):
+
+        data = pd.DataFrame({
+            "x": ["a"] * 4,
+            "y": [np.nan, np.nan, *values],
+            "hue": ["c", "d"] * 2,
+            "facet": ["empty", "empty", "other", "other"],
+        })
+        g = catplot(data, x="x", y="y", hue="hue", col="facet", kind="box")
+        _draw_figure(g.figure)
+        empty_ax, other_ax = g.axes.flat
+        assert not empty_ax.patches
+        assert not empty_ax.lines
+        assert not empty_ax.containers
+        if np.isnan(values).all():
+            assert not other_ax.patches
+            assert not other_ax.lines
+            assert not other_ax.containers
+        else:
+            assert len(other_ax.containers) == 2
+            for container, value in zip(other_ax.containers, values):
+                assert_array_equal(container.medians[0].get_ydata(), [value, value])
+
     @pytest.fixture
     def common_kws(self):
         return {"saturation": 1}
