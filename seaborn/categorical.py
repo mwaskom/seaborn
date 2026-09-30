@@ -1142,6 +1142,7 @@ class _CategoricalPlotter(VectorPlotter):
                 line_kws = {
                     "color": linecolor,
                     "transform": trans,
+                    "solid_capstyle": "butt",
                     **inner_kws,
                     "linewidth": whis_width,
                 }
