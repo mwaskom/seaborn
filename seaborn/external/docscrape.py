@@ -161,7 +161,9 @@ class NumpyDocString(Mapping):
         'index': {}
     }
 
-    def __init__(self, docstring, config={}):
+    def __init__(self, docstring, config=None):
+        if config is None:
+            config = {}
         orig_docstring = docstring
         docstring = textwrap.dedent(docstring).split('\n')
 
@@ -579,7 +581,9 @@ def header(text, style='-'):
 
 
 class FunctionDoc(NumpyDocString):
-    def __init__(self, func, role='func', doc=None, config={}):
+    def __init__(self, func, role='func', doc=None, config=None):
+        if config is None:
+            config = {}
         self._f = func
         self._role = role  # e.g. "func" or "meth"
 

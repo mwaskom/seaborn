@@ -384,7 +384,9 @@ class _ScatterPlotter(_RelationalPlotter):
 
     _legend_attributes = ["color", "s", "marker"]
 
-    def __init__(self, *, data=None, variables={}, legend=None):
+    def __init__(self, *, data=None, variables=None, legend=None):
+        if variables is None:
+            variables = {}
 
         # TODO this is messy, we want the mapping to be agnostic about
         # the kind of plot to draw, but for the time being we need to set
