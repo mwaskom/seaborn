@@ -89,6 +89,7 @@ Stat objects
     Count
     Hist
     KDE
+    ECDF
     Perc
     PolyFit
 

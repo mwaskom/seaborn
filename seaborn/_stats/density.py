@@ -78,6 +78,9 @@ class KDE(Stat):
 
     If scipy is installed, its cython-accelerated implementation will be used.
 
+    A weight can be assigned to the points by specifying it as an additional input column
+    in `Plot.add(..., so.KDE(), weight=<column>)`
+
     Examples
     --------
     .. include:: ../docstrings/objects.KDE.rst
