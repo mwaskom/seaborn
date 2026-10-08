@@ -120,7 +120,11 @@ class Grid(_BaseGrid):
         kwargs.setdefault("rect", self._tight_layout_rect)
         if self._tight_layout_pad is not None:
             kwargs.setdefault("pad", self._tight_layout_pad)
+        saved = [ax.get_position().frozen() for ax in self._figure.axes]
         self._figure.tight_layout(*args, **kwargs)
+        if any(np.isnan(ax.get_position().x0) for ax in self._figure.axes):
+            for ax, pos in zip(self._figure.axes, saved):
+                ax.set_position(pos)
         return self
 
     def add_legend(self, legend_data=None, title=None, label_order=None,
