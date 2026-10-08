@@ -336,6 +336,93 @@ class TestLayerAddition:
             p.add(MockMark(), MockMark(), MockStat())
 
 
+class TestAssign:
+
+    def test_update_variable_by_name(self, long_df):
+
+        p = Plot(long_df, x="x", y="y").assign(color="a")
+        assert p._data.frame.columns.to_list() == ["x", "y", "color"]
+        assert_vector_equal(p._data.frame["color"], long_df["a"])
+
+    def test_update_variable_by_vector(self, long_df):
+
+        p = Plot(long_df, x="x", y="y").assign(color=long_df["a"])
+        assert p._data.frame.columns.to_list() == ["x", "y", "color"]
+        assert_vector_equal(p._data.frame["color"], long_df["a"])
+
+    def test_update_data_source(self, long_df):
+
+        long_df_sub = long_df.sample(frac=.5)
+        p = Plot(long_df, x="x", y="y").assign(data=long_df_sub)
+        assert p._data.frame.columns.to_list() == ["x", "y"]
+        assert len(p._data.frame) == len(long_df_sub)
+        for var in "xy":
+            assert_vector_equal(p._data.frame[var], long_df_sub[var])
+
+    def test_update_data_and_variables(self, long_df):
+
+        new_data = long_df.rename(columns={"x": "x2", "y": "y2"})
+        p = Plot(long_df, x="x", y="y").assign(data=new_data, x="x2", y="y2")
+        assert p._data.frame.columns.to_list() == ["x", "y"]
+        for var, col in [("x", "x2"), ("y", "y2")]:
+            assert_vector_equal(p._data.frame[var], new_data[col])
+
+    def test_drop_variable(self, long_df):
+
+        p = Plot(long_df, x="x", y="y").assign(y=None)
+        assert p._data.frame.columns.to_list() == ["x"]
+        assert_vector_equal(p._data.frame["x"], long_df["x"], check_dtype=False)
+
+    def test_extra_variables(self, long_df):
+
+        p = Plot(long_df, x="x", y="y").assign(weight="f")
+        assert p._data.frame.columns.to_list() == ["x", "y", "weight"]
+        assert_vector_equal(p._data.frame["weight"], long_df["f"])
+
+    def test_returns_clone(self, long_df):
+
+        p1 = Plot(long_df, x="x", y="y")
+        p2 = p1.assign(color="a")
+        assert p1 is not p2
+        assert p1._data.frame.columns.to_list() == ["x", "y"]
+
+    def test_invalid_data_source(self, long_df):
+
+        with pytest.raises(TypeError, match="Data source must be"):
+            Plot(long_df, x="x").assign(data="not a data source")
+
+    def test_undefined_variable(self, long_df):
+
+        with pytest.raises(ValueError, match="Could not interpret"):
+            Plot(long_df, x="x").assign(color="not_a_column")
+
+    def test_layer_inherits_global_assignment(self, long_df):
+
+        p = Plot(long_df, x="x", y="y").add(MockMark()).assign(color="a").plot()
+        layer, = p._layers
+        assert layer["data"].frame.columns.to_list() == ["x", "y", "color"]
+        assert_vector_equal(layer["data"].frame["color"], long_df["a"])
+
+    def test_layer_specific_assignment_overrides(self, long_df):
+
+        p = (
+            Plot(long_df, x="x", y="y")
+            .add(MockMark(), color="a")
+            .assign(color="b")
+            .plot()
+        )
+        layer, = p._layers
+        assert layer["data"].frame.columns.to_list() == ["x", "y", "color"]
+        assert_vector_equal(layer["data"].frame["color"], long_df["a"])
+
+    def test_assign_after_layer_definition(self, long_df):
+
+        p = Plot(long_df, x="x", y="y").add(MockMark()).assign(color="a").plot()
+        layer, = p._layers
+        assert layer["data"].frame.columns.to_list() == ["x", "y", "color"]
+        assert_vector_equal(layer["data"].frame["color"], long_df["a"])
+
+
 class TestScaling:
 
     def test_inference(self, long_df):
