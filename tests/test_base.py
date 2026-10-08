@@ -1029,6 +1029,82 @@ class TestVectorPlotter:
         assert ax2.get_ylabel() == "y"
         assert not ax2.yaxis.label.get_visible()
 
+        f, (ax1, ax2) = plt.subplots(2, 1, sharex=True)
+
+        p._add_axis_labels(ax1)
+        p._add_axis_labels(ax2)
+
+        assert not ax1.xaxis.label.get_visible()
+        assert ax2.xaxis.label.get_visible()
+
+    def test_axis_labels_shared_within_row_or_column(self, long_df):
+
+        p = VectorPlotter(data=long_df, variables=dict(x="x", y="y"))
+        _, axs = plt.subplots(2, 2, sharex="row", sharey="col")
+
+        for ax in axs.flat:
+            p._add_axis_labels(ax)
+
+        assert all(ax.xaxis.label.get_visible() for ax in axs.flat)
+        assert all(ax.yaxis.label.get_visible() for ax in axs.flat)
+
+    def test_axis_labels_with_top_and_right_positions(self, long_df):
+
+        p = VectorPlotter(data=long_df, variables=dict(x="x", y="y"))
+        _, axs = plt.subplots(2, 2, sharex=True, sharey=True)
+
+        for ax in axs.flat:
+            ax.xaxis.set_label_position("top")
+            ax.yaxis.set_label_position("right")
+            p._add_axis_labels(ax)
+
+        assert all(ax.xaxis.label.get_visible() for ax in axs[0])
+        assert not any(ax.xaxis.label.get_visible() for ax in axs[1])
+        assert all(ax.yaxis.label.get_visible() for ax in axs[:, 1])
+        assert not any(ax.yaxis.label.get_visible() for ax in axs[:, 0])
+
+    def test_axis_labels_with_nested_shared_axes(self, long_df):
+
+        p = VectorPlotter(data=long_df, variables=dict(x="x", y="y"))
+        f = plt.figure()
+        gridspec = f.add_gridspec(1, 1)[0].subgridspec(2, 1)
+        ax1 = f.add_subplot(gridspec[0])
+        ax2 = f.add_subplot(gridspec[1], sharex=ax1)
+
+        p._add_axis_labels(ax1)
+        p._add_axis_labels(ax2)
+
+        assert not ax1.xaxis.label.get_visible()
+        assert ax2.xaxis.label.get_visible()
+
+    def test_axis_labels_on_non_subplot_shared_axes(self, long_df):
+
+        p = VectorPlotter(data=long_df, variables=dict(x="x", y="y"))
+        f = plt.figure()
+        ax1 = f.add_axes([.1, .1, .35, .8])
+        ax2 = f.add_axes([.55, .1, .35, .8], sharey=ax1)
+
+        p._add_axis_labels(ax1)
+        p._add_axis_labels(ax2)
+
+        assert ax1.yaxis.label.get_visible()
+        assert ax2.yaxis.label.get_visible()
+
+    def test_axis_labels_with_hidden_ticklabels(self, long_df):
+
+        with mpl.rc_context({
+            "xtick.labelbottom": False,
+            "xtick.labeltop": False,
+            "ytick.labelleft": False,
+            "ytick.labelright": False,
+        }):
+            _, ax = plt.subplots()
+            p = VectorPlotter(data=long_df, variables=dict(x="x", y="y"))
+            p._add_axis_labels(ax)
+
+        assert ax.xaxis.label.get_visible()
+        assert ax.yaxis.label.get_visible()
+
     @pytest.mark.parametrize(
         "variables",
         [
