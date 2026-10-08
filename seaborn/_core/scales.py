@@ -452,6 +452,10 @@ class ContinuousBase(Scale):
             b = forward(vmax) - forward(vmin)
 
             def normalize(x):
+                if b == 0:
+                    # Degenerate domain (e.g., a single unique value): map
+                    # everything to the start of the range, as matplotlib does
+                    return (x - a) * 0.
                 return (x - a) / b
 
         else:

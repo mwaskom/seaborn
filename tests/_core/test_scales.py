@@ -134,6 +134,19 @@ class TestContinuous:
         s = Continuous(trans="log")._setup(x, Color())
         assert_array_equal(s(x), cmap([0, .5, 1])[:, :3])  # FIXME RGBA
 
+    def test_color_single_value(self):
+
+        x = pd.Series([2, 2, 2], name="x", dtype=float)
+        cmap = color_palette("ch:", as_cmap=True)
+        s = Continuous()._setup(x, Color())
+        assert_array_equal(s(x), cmap([0, 0, 0])[:, :3])  # FIXME RGBA
+
+    def test_interval_single_value(self):
+
+        x = pd.Series([2, 2, 2], name="x", dtype=float)
+        s = Continuous((1, 3))._setup(x, IntervalProperty())
+        assert_array_equal(s(x), [1, 1, 1])
+
     def test_tick_locator(self, x):
 
         locs = [.2, .5, .8]
