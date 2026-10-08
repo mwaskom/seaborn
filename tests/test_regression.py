@@ -646,6 +646,60 @@ class TestRegressionPlots:
         for ax in g.axes.flat:
             assert ax.get_xlim() == xlim
 
+    @pytest.mark.parametrize("missing", [None, "x", "y", "z", "w", "u"])
+    def test_lmplot_x_partial_limits(self, missing):
+
+        df = pd.DataFrame(dict(
+            x=[1., 2., 3., 4., 5.],
+            y=[1.5, 4.2, 5.8, 8.6, 11.],
+            z=[0., 2., 3., 3.5, 4.],
+            w=[1., 0., 0., 1., 1.],
+            u=[0., 0., 1., 1., 2.],
+        ))
+        if missing is not None:
+            df.loc[0, missing] = np.nan
+        kws = dict(x="x", y="y", x_partial="z", y_partial="w", units="u", ci=None)
+        g = lm.lmplot(df, **kws)
+        _, ax = plt.subplots()
+        lm.regplot(df, ax=ax, **kws)
+
+        npt.assert_allclose(g.ax.get_xlim(), ax.get_xlim())
+        npt.assert_allclose(
+            g.ax.collections[0].get_offsets(), ax.collections[0].get_offsets()
+        )
+
+    @pytest.mark.parametrize("sharex", [True, False])
+    @pytest.mark.parametrize("truncate", [True, False])
+    def test_lmplot_x_partial_facet_limits(self, sharex, truncate):
+
+        df = self.df.assign(x=lambda d: 10 * d.y + d.x)
+        g = lm.lmplot(
+            df, x="x", y="y", x_partial="y", hue="g", col="h",
+            ci=None, truncate=truncate, facet_kws=dict(sharex=sharex),
+        )
+        for ax in g.axes.flat:
+            axes = g.axes.flat if sharex else [ax]
+            offsets = np.concatenate([
+                c.get_offsets() for a in axes for c in a.collections
+            ])
+            _, reference = plt.subplots()
+            reference.scatter(*offsets.T)
+            npt.assert_allclose(ax.get_xlim(), reference.get_xlim())
+            if not truncate:
+                for line in ax.lines:
+                    npt.assert_allclose(line.get_xdata()[[0, -1]], ax.get_xlim())
+
+    def test_lmplot_x_partial_explicit_limits(self):
+
+        xlim = -4, 20
+        g = lm.lmplot(
+            self.df, x="x", y="y", x_partial="y", col="h",
+            ci=None, truncate=False, facet_kws=dict(xlim=xlim),
+        )
+        for ax in g.axes.flat:
+            assert ax.get_xlim() == xlim
+            npt.assert_allclose(ax.lines[0].get_xdata()[[0, -1]], xlim)
+
     def test_residplot(self):
 
         x, y = self.df.x, self.df.y

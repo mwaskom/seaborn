@@ -637,7 +637,15 @@ def lmplot(
     facets.hue_kws = {"marker": markers}
 
     def update_datalim(data, x, y, ax, **kws):
-        xys = data[[x, y]].to_numpy().astype(float)
+        if x_partial is not None:
+            # Scale to the same residualized observations that regplot will draw.
+            plotter = _RegressionPlotter(
+                x=x, y=y, data=data, units=units,
+                x_partial=x_partial, y_partial=y_partial,
+            )
+            xys = np.column_stack([plotter.x, plotter.y]).astype(float)
+        else:
+            xys = data[[x, y]].to_numpy().astype(float)
         ax.update_datalim(xys, updatey=False)
         ax.autoscale_view(scaley=False)
 
