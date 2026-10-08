@@ -1290,9 +1290,9 @@ class _DistributionPlotter(VectorPlotter):
             if expand_margins:
                 xmarg, ymarg = ax.margins()
                 if "x" in self.variables:
-                    ymarg += height * 2
+                    ymarg += abs(height) * 2
                 if "y" in self.variables:
-                    xmarg += height * 2
+                    xmarg += abs(height) * 2
                 ax.margins(x=xmarg, y=ymarg)
 
             if "hue" in self.variables:
