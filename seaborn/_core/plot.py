@@ -87,7 +87,7 @@ class PairSpec(TypedDict, total=False):
 
 @contextmanager
 def theme_context(params: dict[str, Any]) -> Generator:
-    """Temporarily modify specifc matplotlib rcParams."""
+    """Temporarily modify specific matplotlib rcParams."""
     orig_params = {k: mpl.rcParams[k] for k in params}
     color_codes = "bgrmyck"
     nice_colors = [*color_palette("deep6"), (.15, .15, .15)]
