@@ -1641,6 +1641,14 @@ class TestScatterPlotter(SharedAxesLevelTests, Helpers):
         ax = scatterplot(data=wide_df, ax=ax1)
         assert ax is ax1
 
+    def test_wide_form_without_markers(self):
+
+        ax = scatterplot(data=[[7, 9], [8, 10]], markers=False)
+
+        points, = ax.collections
+        assert_array_equal(points.get_offsets(), [[0, 7], [1, 9], [0, 8], [1, 10]])
+        assert len(points.get_paths()) == 1
+
     def test_literal_attribute_vectors(self):
 
         f, ax = plt.subplots()

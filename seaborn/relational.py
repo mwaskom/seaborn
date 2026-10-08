@@ -417,13 +417,16 @@ class _ScatterPlotter(_RelationalPlotter):
         _, inv_y = _get_transform_functions(ax, "y")
         x, y = inv_x(x), inv_y(y)
 
+        has_mapped_markers = False
         if "style" in self.variables:
             # Use a representative marker so scatter sets the edgecolor
             # properly for line art markers. We currently enforce either
             # all or none line art so this works.
             example_level = self._style_map.levels[0]
-            example_marker = self._style_map(example_level, "marker")
-            kws.setdefault("marker", example_marker)
+            example_style = self._style_map(example_level)
+            if "marker" in example_style:
+                kws.setdefault("marker", example_style["marker"])
+                has_mapped_markers = True
 
         # Conditionally set the marker edgecolor based on whether the marker is "filled"
         # See https://github.com/matplotlib/matplotlib/issues/17849 for context
@@ -445,7 +448,7 @@ class _ScatterPlotter(_RelationalPlotter):
         if "size" in self.variables:
             points.set_sizes(self._size_map(data["size"]))
 
-        if "style" in self.variables:
+        if has_mapped_markers:
             p = [self._style_map(val, "path") for val in data["style"]]
             points.set_paths(p)
 
