@@ -59,3 +59,21 @@ class TestPolyFit:
         res1 = PolyFit()(df[["x", "y"]], groupby, "x", {})
         res2 = PolyFit()(df[["x", "y"]].dropna(), groupby, "x", {})
         assert_frame_equal(res1, res2)
+
+    @pytest.mark.parametrize("order", [1, 2, 3])
+    def test_unique_x_order_boundary(self, order):
+
+        groupby = GroupBy(["group"])
+        gridsize = 10
+        x = np.arange(order + 1, dtype=float)
+        df = pd.DataFrame(dict(x=x, y=x ** order))
+
+        # order + 1 unique x values are enough to fit
+        res = PolyFit(order=order, gridsize=gridsize)(df, groupby, "x", {})
+        grid = np.linspace(x.min(), x.max(), gridsize)
+        assert_array_almost_equal(res["x"], grid)
+        assert_array_almost_equal(res["y"], grid ** order)
+
+        # one fewer is too few, so there is no fit
+        res = PolyFit(order=order, gridsize=gridsize)(df.iloc[:order], groupby, "x", {})
+        assert res.empty
