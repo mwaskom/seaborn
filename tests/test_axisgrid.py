@@ -14,6 +14,7 @@ from seaborn.palettes import color_palette
 from seaborn.relational import scatterplot
 from seaborn.distributions import histplot, kdeplot, distplot
 from seaborn.categorical import pointplot
+from seaborn.regression import lmplot
 from seaborn import axisgrid as ag
 from seaborn._testing import (
     assert_plots_equal,
@@ -670,6 +671,34 @@ class TestFacetGrid:
         npt.assert_array_equal(g.axes[0, 0].lines[-1].get_xydata(), vline)
         assert g.axes[0, 0].lines[-1].get_color() == color
         assert g.axes[0, 0].lines[-1].get_linestyle() == linestyle
+
+    def test_refline_no_hue_kws(self):
+
+        # Reference lines must not pick up the marker aesthetic that lmplot
+        # registers in ``hue_kws`` (GH#3973).
+        df = pd.DataFrame({"x": [1.0, 2.0, 3.0], "y": [0.0, 1.0, 2.0]})
+        g = lmplot(df, x="x", y="y")
+        g.refline(x=0, y=0)
+        for ax in g.axes.flat:
+            for line in ax.get_lines():
+                if line.get_linestyle() == '--':
+                    assert line.get_marker() == 'None'
+
+        # Hue mapping should still drive the reference line color.
+        df = pd.DataFrame({
+            "x": [1, 2, 3, 4, 1, 2, 3, 4],
+            "y": [0, 1, 2, 3, 0, 1, 2, 3],
+            "h": ["a"] * 4 + ["b"] * 4,
+        })
+        g = lmplot(df, x="x", y="y", hue="h")
+        g.refline(x=0, y=0, color=None)
+        ref_colors = {
+            line.get_color()
+            for ax in g.axes.flat
+            for line in ax.get_lines()
+            if line.get_linestyle() == '--'
+        }
+        assert ref_colors == set(color_palette(n_colors=2))
 
     def test_apply(self, long_df):
 
