@@ -404,7 +404,8 @@ def heatmap(
     cbar : bool, optional
         Whether to draw a colorbar.
     cbar_kws : dict of key, value mappings, optional
-        Keyword arguments for :meth:`matplotlib.figure.Figure.colorbar`.
+        Keyword arguments for
+        `matplotlib.figure.Figure.colorbar <https://matplotlib.org/stable/api/_as_gen/matplotlib.figure.Figure.colorbar.html>`_.
     cbar_ax : matplotlib Axes, optional
         Axes in which to draw the colorbar, otherwise take space from the
         main Axes.
