@@ -1728,6 +1728,34 @@ class TestViolinPlot(SharedAxesLevelTests, SharedPatchArtistTests):
                 verts = poly.get_paths()[0].vertices
                 assert np.isclose(verts[:, 0], i).sum() >= 100
 
+    def test_split_categorical_hue_order(self):
+        # Regression test for GH#3893
+        # With CategoricalDtype hue column, data was swapped between hue groups
+        # because groupby(..., observed=False).get_group() matched by category
+        # code rather than by label value.
+        df = pd.DataFrame({
+            "x": ["A"] * 100,
+            "hue": pd.Categorical(
+                ["rest"] * 70 + ["0"] * 30, categories=["0", "rest"]
+            ),
+            "y": np.concatenate([
+                np.random.default_rng(0).normal(5, 1, 70),
+                np.random.default_rng(0).normal(1, 0.3, 30),
+            ]),
+        })
+        ax = violinplot(df, x="x", y="y", hue="hue",
+                        hue_order=["0", "rest"], split=True, cut=0)
+        polys = list(ax.collections)
+        # First poly is hue="0" (30 rows, mean ~1)
+        verts_0 = polys[0].get_paths()[0].vertices
+        # Second poly is hue="rest" (70 rows, mean ~5)
+        verts_rest = polys[1].get_paths()[0].vertices
+        # The "0" violin should span the low-value range (~1)
+        # The "rest" violin should span the high-value range (~5)
+        assert verts_0[:, 1].max() < 3
+        assert verts_rest[:, 1].min() > -1
+        assert verts_rest[:, 1].max() > 3
+
     def test_density_norm_area(self, long_df):
 
         y = long_df["y"].to_numpy()
