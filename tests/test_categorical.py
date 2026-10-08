@@ -1667,6 +1667,10 @@ class TestViolinPlot(SharedAxesLevelTests, SharedPatchArtistTests):
         assert box[1, val_idx] == stats["q3"]
         assert box[:, pos_idx].tolist() == [0, 0]
 
+        # Line caps should not extend past the whisker / quartile values
+        for line in ax.lines[:2]:
+            assert line.get_solid_capstyle() == "butt"
+
         median = ax.lines[2].get_xydata()
         assert median[0, val_idx] == stats["med"]
         assert median[0, pos_idx] == 0
