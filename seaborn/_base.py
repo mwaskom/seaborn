@@ -772,7 +772,10 @@ class VectorPlotter:
             if isinstance(data, Sequence):
                 data_dict = {}
                 for i, var in enumerate(data):
-                    key = getattr(var, "name", i)
+                    key = getattr(var, "name", None)
+                    if key is None:
+                        # Unnamed Series would otherwise all collide on a None key
+                        key = i
                     # TODO is there a safer/more generic way to ensure Series?
                     # sort of like np.asarray, but for pandas?
                     data_dict[key] = pd.Series(var)

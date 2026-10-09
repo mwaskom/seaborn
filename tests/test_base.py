@@ -770,6 +770,20 @@ class TestVectorPlotter:
         p = VectorPlotter(data=wide_df)
         assert_array_equal(p.plot_data["hue"].unique(), ["a", "b", "c"])
 
+    def test_wide_list_of_unnamed_series(self, rng):
+
+        series = [pd.Series(rng.normal(size=n)) for n in (20, 10, 5)]
+
+        p = VectorPlotter(data=series)
+
+        assert p.input_format == "wide"
+        assert list(p.plot_data["hue"].unique()) == [0, 1, 2]
+        for key, s in enumerate(series):
+            assert_array_equal(
+                p.plot_data.loc[p.plot_data["hue"] == key, "y"].dropna().to_numpy(),
+                s.to_numpy(),
+            )
+
     def test_iter_data_quantitites(self, long_df):
 
         p = VectorPlotter(
