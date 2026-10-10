@@ -2,11 +2,12 @@ import numpy as np
 import pandas as pd
 
 import pytest
-from numpy.testing import assert_array_equal, assert_array_almost_equal
+from numpy.testing import assert_allclose, assert_array_equal, assert_array_almost_equal
 
 from seaborn._core.groupby import GroupBy
 from seaborn._stats.density import KDE, _no_scipy
 from seaborn._compat import groupby_apply_include_groups
+from seaborn.external.kde import gaussian_kde
 
 
 class TestKDE:
@@ -211,3 +212,40 @@ class TestKDE:
         gb = self.get_groupby(df, ori)
         res = KDE()(df, gb, ori, {})
         assert self.integrate(res[val], res[ori]) == pytest.approx(1, abs=1e-3)
+
+
+class TestVendoredKDE:
+    """Regression tests for the vendored gaussian_kde (gh-3883)."""
+
+    def test_2d_matches_scipy_reference(self):
+        # The vendored copy substitutes numpy.linalg for scipy.linalg, but
+        # numpy.linalg.cholesky returns the lower-triangular factor while
+        # scipy.linalg.cholesky returns the upper-triangular factor by
+        # default. Reference values below were computed with
+        # scipy.stats.gaussian_kde on the same fixed-seed data.
+        rng = np.random.default_rng(0)
+        x = rng.multivariate_normal([0, 0], [[1, .5], [.5, 1]], 200).T
+        grid = np.linspace(-3, 3, 7)
+        gx, gy = np.meshgrid(grid, grid)
+        points = np.vstack([gx.ravel(), gy.ravel()])
+        expected = np.array([
+            4.392005640740602e-05, 2.301882196848023e-04, 8.181101797375473e-04,
+            5.253047324776023e-05, 1.518593585537811e-03, 7.034420397670235e-05,
+            1.956470306545655e-09, 5.407036076935740e-03, 8.152753979941451e-03,
+            2.021448546036320e-02, 9.515995179086230e-03, 1.965627053184416e-03,
+            1.886517054301043e-03, 2.181027246260232e-06, 2.113859844126985e-03,
+            3.894833487485186e-02, 8.829352770993749e-02, 7.732720268059057e-02,
+            2.401198849506442e-02, 7.923109731600118e-04, 4.017848850769105e-06,
+            2.258676072484105e-04, 1.484372043947954e-02, 8.796656669729505e-02,
+            1.454017714262485e-01, 1.159222619476802e-01, 1.611121838343852e-02,
+            8.672563320022962e-04, 1.552291566204162e-07, 1.265434963482988e-03,
+            2.632606856601287e-02, 8.779978237521208e-02, 9.522174163867828e-02,
+            3.311565104433512e-02, 1.530996563714401e-03, 5.120445602466335e-10,
+            6.946221481163648e-05, 8.636271846297207e-03, 2.183586651506960e-02,
+            2.473931538347198e-02, 1.764548365835012e-02, 5.547317387096062e-03,
+            2.147639541945436e-14, 1.063374635213697e-07, 3.182238394277357e-04,
+            1.168857510575398e-03, 2.432017867259575e-03, 3.250501715620722e-03,
+            2.496168912414599e-03,
+        ])
+        result = gaussian_kde(x)(points)
+        assert_allclose(result, expected, rtol=1e-8, atol=1e-12)

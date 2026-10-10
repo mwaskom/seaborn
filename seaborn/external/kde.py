@@ -244,7 +244,7 @@ class gaussian_kde:
         output_dtype = np.common_type(self.covariance, points)
         result = zeros((m,), dtype=output_dtype)
 
-        whitening = linalg.cholesky(self.inv_cov)
+        whitening = linalg.cholesky(self.inv_cov).T
         scaled_dataset = dot(whitening, self.dataset)
         scaled_points = dot(whitening, points)
 
