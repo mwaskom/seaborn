@@ -401,7 +401,7 @@ class _ScatterPlotter(_RelationalPlotter):
 
         # --- Determine the visual attributes of the plot
 
-        data = self.comp_data.dropna()
+        data = self._filter_semantic_levels(self.comp_data.dropna())
         if data.empty:
             return
 

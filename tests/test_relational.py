@@ -1074,6 +1074,19 @@ class TestLinePlotter(SharedAxesLevelTests, Helpers):
         ax.clear()
         p.plot(ax, {})
 
+    def test_hue_order(self, long_df):
+
+        order = categorical_order(long_df["a"])
+        order.pop()
+
+        ax = lineplot(
+            data=long_df, x="x", y="y", hue="a", hue_order=order, legend=False,
+        )
+        assert len(ax.lines) == len(order)
+        assert len(ax.collections) == len(order)
+        for line, color in zip(ax.lines, color_palette()):
+            assert same_color(line.get_color(), color)
+
     def test_weights(self, long_df):
 
         ax = lineplot(long_df, x="a", y="y", weights="x")
@@ -1683,8 +1696,50 @@ class TestScatterPlotter(SharedAxesLevelTests, Helpers):
 
         ax = scatterplot(data=long_df, x="x", y="y", hue="a", hue_order=order)
         points = ax.collections[0]
-        assert (points.get_facecolors()[long_df["a"] == unused] == 0).all()
+
+        # Observations with hue levels that are not in the order are not drawn
+        used = long_df["a"] != unused
+        assert_array_equal(points.get_offsets(), long_df.loc[used, ["x", "y"]])
+
+        palette = dict(zip(order, color_palette()))
+        expected_colors = [to_rgba(palette[v]) for v in long_df.loc[used, "a"]]
+        assert_array_equal(points.get_facecolors(), expected_colors)
+        assert (points.get_facecolors()[:, 3] == 1).all()
+
         assert [t.get_text() for t in ax.legend_.texts] == order
+
+    def test_size_order(self, long_df):
+
+        order = categorical_order(long_df["a"])
+        unused = order.pop()
+
+        ax = scatterplot(data=long_df, x="x", y="y", size="a", size_order=order)
+        points = ax.collections[0]
+
+        used = long_df["a"] != unused
+        assert_array_equal(points.get_offsets(), long_df.loc[used, ["x", "y"]])
+        assert len(points.get_sizes()) == used.sum()
+        assert [t.get_text() for t in ax.legend_.texts] == order
+
+    def test_style_order(self, long_df):
+
+        order = categorical_order(long_df["a"])
+        unused = order.pop()
+
+        ax = scatterplot(data=long_df, x="x", y="y", style="a", style_order=order)
+        points = ax.collections[0]
+
+        used = long_df["a"] != unused
+        assert_array_equal(points.get_offsets(), long_df.loc[used, ["x", "y"]])
+        assert len(points.get_paths()) == used.sum()
+        assert [t.get_text() for t in ax.legend_.texts] == order
+
+    def test_hue_order_numeric(self, long_df):
+
+        # An order has no effect on a numeric mapping; all points are drawn
+        ax = scatterplot(data=long_df, x="x", y="y", hue="s", hue_order=[2, 4])
+        points = ax.collections[0]
+        assert len(points.get_offsets()) == len(long_df)
 
     def test_linewidths(self, long_df):
 

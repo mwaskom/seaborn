@@ -177,9 +177,9 @@ class HueMapping(SemanticMapping):
         except KeyError:
 
             if self.norm is None:
-                # Currently we only get here in scatterplot with hue_order,
-                # because scatterplot does not consider hue a grouping variable
-                # So unused hue levels are in the data, but not the lookup table
+                # Rows with a hue level that is not in the lookup table are
+                # dropped before plotting (see `_filter_semantic_levels`), but
+                # fall back to a transparent color rather than raising here.
                 return (0, 0, 0, 0)
 
             # Use the colormap to interpolate between existing datapoints
@@ -923,6 +923,8 @@ class VectorPlotter:
                     transform = converter.get_transform().transform
                     levels[axis] = transform(converter.convert_units(levels[axis]))
 
+        data = self._filter_semantic_levels(data)
+
         if grouping_vars:
 
             grouped_data = data.groupby(
@@ -959,6 +961,27 @@ class VectorPlotter:
         else:
 
             yield {}, data.copy()
+
+    def _filter_semantic_levels(self, data):
+        """Drop rows with a hue/size/style value that the mapping does not cover.
+
+        When an explicit ``order`` is a strict subset of the values in the data,
+        the other values have no corresponding attribute (and are absent from
+        the legend), so they should not be drawn. Numeric mappings always cover
+        the full range of the data and are left alone, as are missing values,
+        which are handled by the caller.
+
+        """
+        for var in ["hue", "size", "style"]:
+            map_obj = getattr(self, f"_{var}_map", None)
+            if var not in data or map_obj is None or map_obj.levels is None:
+                continue
+            if map_obj.map_type == "numeric":
+                continue
+            keep = data[var].isin(map_obj.levels) | data[var].isna()
+            if not keep.all():
+                data = data[keep]
+        return data
 
     @property
     def comp_data(self):
