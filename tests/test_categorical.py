@@ -2576,6 +2576,39 @@ class TestPointPlot(SharedAggTests):
         for i, xy in enumerate(ax.lines[1].get_xydata()):
             assert tuple(xy) == (i + .025, y[2 + i])
 
+    @pytest.mark.parametrize("orient", ["x", "y"])
+    @pytest.mark.parametrize("dodge", [True, .2])
+    @pytest.mark.parametrize("native_scale", [False, True])
+    def test_dodge_single_hue(self, orient, dodge, native_scale):
+
+        cat_values, values = [1, 2, 1, 2], [1, 2, 3, 4]
+        variables = {orient: cat_values, {"x": "y", "y": "x"}[orient]: values}
+        ax = pointplot(
+            **variables, hue=["only"] * 4, orient=orient, dodge=dodge,
+            native_scale=native_scale, errorbar=("pi", 100),
+        )
+
+        positions = [1, 2] if native_scale else [0, 1]
+        expected = np.column_stack([positions, [2, 3]])
+        if orient == "y":
+            expected = expected[:, ::-1]
+        assert_array_equal(ax.lines[0].get_xydata(), expected)
+        # Both error bars should also remain centered on their categories.
+        orient_idx = 0 if orient == "x" else 1
+        for position, line in zip(positions, ax.lines[1:3]):
+            assert_array_equal(line.get_xydata()[:, orient_idx], [position] * 2)
+
+    @pytest.mark.parametrize("orient", ["x", "y"])
+    @pytest.mark.parametrize("dodge", [True, .2])
+    def test_dodge_without_hue(self, orient, dodge):
+
+        variables = {orient: ["a", "b"], {"x": "y", "y": "x"}[orient]: [1, 2]}
+        ax = pointplot(**variables, orient=orient, dodge=dodge, errorbar=None)
+        expected = np.array([[0, 1], [1, 2]])
+        if orient == "y":
+            expected = expected[:, ::-1]
+        assert_array_equal(ax.lines[0].get_xydata(), expected)
+
     def test_dodge_float(self):
 
         x, y = ["a", "b", "a", "b"], [1, 2, 3, 4]
