@@ -672,6 +672,7 @@ def axes_ticklabels_overlap(ax):
 
 def locator_to_legend_entries(locator, limits, dtype):
     """Return levels and formatted levels for brief numeric legends."""
+    dtype = getattr(dtype, "numpy_dtype", dtype)
     raw_levels = locator.tick_values(*limits).astype(dtype)
 
     # The locator can return ticks outside the limits, clip them here

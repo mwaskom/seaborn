@@ -340,6 +340,31 @@ def test_locator_to_legend_entries():
         assert re.match(f"1e.0{exp}", str_levels[i])
 
 
+@pytest.mark.parametrize("dtype", ["Float32", "Float64", "Int32", "Int64", "UInt64"])
+@pytest.mark.parametrize("log", [False, True])
+def test_locator_to_legend_entries_nullable(dtype, log):
+
+    dtype = pd.Series([], dtype=dtype).dtype
+    locator = mpl.ticker.LogLocator() if log else mpl.ticker.MaxNLocator(nbins=3)
+    limits = (1, 100) if log else (1, 6)
+    expected = utils.locator_to_legend_entries(locator, limits, dtype.numpy_dtype)
+    levels, labels = utils.locator_to_legend_entries(locator, limits, dtype)
+    assert levels == expected[0]
+    assert labels == expected[1]
+
+
+@pytest.mark.parametrize("semantic", ["size", "hue"])
+@pytest.mark.parametrize("dtype", ["Float64", "Int64"])
+def test_nullable_numeric_brief_legend(semantic, dtype):
+
+    from seaborn import scatterplot
+
+    values = pd.Series(range(1, 9), dtype=dtype)
+    ax = scatterplot(x=range(8), y=range(8), **{semantic: values}, legend="brief")
+    assert ax.get_legend() is not None
+    assert len(ax.get_legend().get_texts()) > 0
+
+
 def test_move_legend_matplotlib_objects():
 
     fig, ax = plt.subplots()
