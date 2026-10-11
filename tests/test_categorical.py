@@ -518,6 +518,30 @@ class SharedScatterTests(SharedAxesLevelTests):
             for hue, color in zip(point_hues, point_colors):
                 assert tuple(color) == to_rgba(palette[hue])
 
+    @pytest.mark.parametrize("dodge", [False, True])
+    def test_hue_order_subset(self, long_df, dodge):
+
+        cat_var, hue_var = "a", "b"
+        hue_order = categorical_order(long_df[hue_var])[:-1]
+        palette = dict(zip(hue_order, color_palette()))
+        expected_colors = {to_rgba(palette[level]) for level in hue_order}
+
+        ax = self.func(
+            data=long_df, x=cat_var, y="y", hue=hue_var,
+            hue_order=hue_order, dodge=dodge,
+        )
+
+        # Observations with hue levels that are not in the order are not drawn
+        n_points = sum(len(points.get_offsets()) for points in ax.collections)
+        assert n_points == long_df[hue_var].isin(hue_order).sum()
+
+        for points in ax.collections:
+            if len(points.get_offsets()):
+                for color in points.get_facecolors():
+                    assert tuple(color) in expected_colors
+
+        assert [t.get_text() for t in ax.get_legend().texts] == hue_order
+
     @pytest.mark.parametrize("hue_var", ["a", "b"])
     def test_hue_dodged(self, long_df, hue_var):
 

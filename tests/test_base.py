@@ -953,6 +953,36 @@ class TestVectorPlotter:
             rows &= p.plot_data["size"] == sub_vars["size"]
             assert_frame_equal(sub_data, p.plot_data[rows])
 
+    def test_iter_data_unmapped_levels(self, long_df):
+
+        hue_order = categorical_order(long_df["a"])[:-1]
+        p = VectorPlotter(
+            data=long_df,
+            variables=dict(x="x", y="y", hue="a", size="s"),
+        )
+        p.map_hue(order=hue_order)
+
+        # Semantic variables that are not grouped still only contribute
+        # observations that have a corresponding level in the mapping
+        for sub_vars, sub_data in p.iter_data("size"):
+            rows = p.plot_data["size"] == sub_vars["size"]
+            rows &= p.plot_data["hue"].isin(hue_order)
+            assert_frame_equal(sub_data, p.plot_data[rows])
+
+        _, sub_data = next(p.iter_data())
+        rows = p.plot_data["hue"].isin(hue_order)
+        assert_frame_equal(sub_data, p.plot_data[rows])
+
+        # But a numeric mapping is not affected by `order`
+        p = VectorPlotter(
+            data=long_df,
+            variables=dict(x="x", y="y", hue="s", size="s"),
+        )
+        p.map_hue(order=[2, 4])
+        p.map_size(order=[2, 4])
+        _, sub_data = next(p.iter_data())
+        assert_frame_equal(sub_data, p.plot_data)
+
     def test_iter_data_reverse(self, long_df):
 
         reversed_order = categorical_order(long_df["a"])[::-1]

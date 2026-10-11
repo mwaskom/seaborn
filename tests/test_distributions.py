@@ -206,6 +206,21 @@ class TestRugPlot(SharedAxesLevelTests):
 
         assert_array_equal(wide_segments, long_segments)
 
+    def test_hue_order(self, long_df):
+
+        order = categorical_order(long_df["a"])[:-1]
+        palette = dict(zip(order, color_palette()))
+
+        ax = rugplot(data=long_df, x="x", hue="a", hue_order=order)
+        rug = ax.collections[0]
+
+        # Observations with hue levels that are not in the order are not drawn
+        used = long_df["a"].isin(order)
+        assert len(rug.get_segments()) == used.sum()
+        expected_colors = [to_rgba(palette[v]) for v in long_df.loc[used, "a"]]
+        assert_array_equal(rug.get_colors(), expected_colors)
+        assert [t.get_text() for t in ax.legend_.texts] == order
+
     def test_flat_vector(self, long_df):
 
         f, ax = plt.subplots()
