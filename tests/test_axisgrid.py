@@ -730,6 +730,16 @@ class TestPairGrid:
                            a=np.repeat(list("abc"), 20),
                            b=np.repeat(list("abcdefghijkl"), 5)))
 
+    @pytest.mark.parametrize("corner", [True, False])
+    def test_set(self, corner):
+        g = ag.PairGrid(self.df, vars=["x", "y"], corner=corner)
+        result = g.set(xlim=(-2, 5), ylim=(3, 6))
+        assert result is g
+        for ax in g.axes.flat:
+            if ax is not None:
+                npt.assert_array_equal(ax.get_xlim(), (-2, 5))
+                npt.assert_array_equal(ax.get_ylim(), (3, 6))
+
     def test_self_data(self):
 
         g = ag.PairGrid(self.df)
@@ -1498,6 +1508,9 @@ class TestJointGrid:
     x_na[10] = np.nan
     x_na[20] = np.nan
     data = pd.DataFrame(dict(x=x, y=y, x_na=x_na))
+
+    def test_no_grid_set_method(self):
+        assert not hasattr(ag.JointGrid, "set")
 
     def test_margin_grid_from_lists(self):
 
