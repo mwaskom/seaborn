@@ -475,6 +475,30 @@ class TestHeatmap:
             bad_df_mask = pd.DataFrame(self.rs.randn(4, 8) > 0)
             mat._matrix_mask(self.df_norm, bad_df_mask)
 
+    @pytest.mark.parametrize("index,columns", [
+        (["c", "d"], ["x", "y"]),
+        (["a", "b"], ["z", "w"]),
+        (["c", "d"], ["z", "w"]),
+        (["b", "a"], ["x", "y"]),
+        (["a", "b"], ["y", "x"]),
+        (["b", "a"], ["y", "x"]),
+    ])
+    def test_dataframe_mask_labels(self, index, columns):
+
+        data = pd.DataFrame([[1, 2], [3, 4]],
+                            index=["a", "b"], columns=["x", "y"])
+        mask = pd.DataFrame(False, index=index, columns=columns)
+
+        msg = "^Mask must have the same index and columns as data\\.$"
+        with pytest.raises(ValueError, match=msg):
+            mat._matrix_mask(data, mask)
+
+    def test_dataframe_mask(self):
+
+        mask = self.df_norm > 0
+        result = mat._matrix_mask(self.df_norm, mask)
+        pdt.assert_frame_equal(result, mask)
+
     def test_missing_data_mask(self):
 
         data = pd.DataFrame(np.arange(4, dtype=float).reshape(2, 2))
