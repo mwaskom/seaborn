@@ -21,6 +21,7 @@ from seaborn import categorical as cat
 from seaborn._base import categorical_order
 from seaborn._compat import get_colormap, get_legend_handles
 from seaborn._testing import assert_plots_equal
+from seaborn.axisgrid import FacetGrid
 from seaborn.categorical import (
     _CategoricalPlotter,
     Beeswarm,
@@ -3147,6 +3148,18 @@ class TestCatPlot(CategoricalFixture):
         with pytest.warns(UserWarning, match="The `weights` parameter"):
             g = catplot(long_df, x="a", y="y", weights="z")
         assert g.ax is not None
+
+    @pytest.mark.parametrize(
+        "kind", ["strip", "swarm", "box", "violin", "boxen", "point", "bar"]
+    )
+    def test_empty_data(self, kind, long_df):
+
+        g = catplot(long_df.iloc[:0], x="x", y="y", kind=kind)
+
+        assert isinstance(g, FacetGrid)
+        assert g.axes.shape == (1, 1)
+        assert g.ax.get_xlabel() == "x"
+        assert g.ax.get_ylabel() == "y"
 
 
 class TestBeeswarm:

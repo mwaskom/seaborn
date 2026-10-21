@@ -2826,8 +2826,10 @@ def catplot(
 
     # Capture this here because scale_categorical is going to insert a (null)
     # x variable even if it is empty. It's not clear whether that needs to
-    # happen or if disabling that is the cleaner solution.
-    has_xy_data = p.has_xy_data
+    # happen or if disabling that is the cleaner solution. Also check that
+    # the plot data is non-empty: with mapped x/y variables but no
+    # observations, the plot-specific code would fail in the converters.
+    has_xy_data = p.has_xy_data and not p.plot_data.empty
 
     if not native_scale or p.var_types[p.orient] == "categorical":
         p.scale_categorical(p.orient, order=order, formatter=formatter)
@@ -2835,6 +2837,7 @@ def catplot(
     p._attach(g, log_scale=log_scale)
 
     if not has_xy_data:
+        g.set_axis_labels(p.variables.get("x"), p.variables.get("y"))
         return g
 
     # Deprecations to remove in v0.14.0.
