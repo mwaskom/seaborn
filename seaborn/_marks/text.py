@@ -36,6 +36,7 @@ class Text(Mark):
     halign: MappableString = Mappable("center")
     valign: MappableString = Mappable("center_baseline")
     offset: MappableFloat = Mappable(4)
+    fmt: str = "{}"
 
     def _plot(self, split_gen, scales, orient):
 
@@ -61,7 +62,7 @@ class Text(Mark):
                 artist = mpl.text.Text(
                     x=row["x"],
                     y=row["y"],
-                    text=str(row.get("text", vals["text"])),
+                    text=self.fmt.format(row.get("text", vals["text"])),
                     color=color,
                     fontsize=fontsize,
                     horizontalalignment=halign,
