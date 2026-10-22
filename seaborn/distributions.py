@@ -59,6 +59,8 @@ multiple : {{"layer", "stack", "fill"}}
 log_scale : bool or number, or pair of bools or numbers
     Set axis scale(s) to log. A single value sets the data axis for any numeric
     axes in the plot. A pair of values sets each axis independently.
+    For univariate histograms, the data axis and the count/density axis are
+    set independently.
     Numeric values are interpreted as the desired base (default 10).
     When `None` or `False`, seaborn defers to the existing Axes scale.
     """,
@@ -131,6 +133,37 @@ class _DistributionPlotter(VectorPlotter):
         """Return True at least one of x or y is defined."""
         # TODO see above points about where this should go
         return bool({"x", "y"} & set(self.variables))
+
+    def _log_scaled_stat_axis(self, log_scale):
+        """Defer log-scaling of computed statistics for univariate plots."""
+        if log_scale is None or not self.univariate:
+            return log_scale, None
+        try:
+            scalex, scaley = log_scale
+        except TypeError:
+            return log_scale, None
+
+        if self.data_variable == "x":
+            return (scalex, False), scaley
+        else:
+            return (False, scaley), scalex
+
+    def _set_stat_axis_scale(self, scale):
+        """Apply a deferred scale to the count/density axis."""
+        if not scale:
+            return
+        if self.ax is None:
+            ax_list = self.facets.axes.flat
+        else:
+            ax_list = [self.ax]
+        axis = "y" if self.data_variable == "x" else "x"
+        for ax in ax_list:
+            set_scale = getattr(ax, f"set_{axis}scale")
+            if scale is True:
+                set_scale("log", nonpositive="mask")
+            else:
+                set_scale("log", base=scale, nonpositive="mask")
+            ax.autoscale_view()
 
     def _add_legend(
         self,
@@ -1387,6 +1420,7 @@ def histplot(
     if ax is None:
         ax = plt.gca()
 
+    log_scale, stat_scale = p._log_scaled_stat_axis(log_scale)
     p._attach(ax, log_scale=log_scale)
 
     if p.univariate:  # Note, bivariate plots won't cycle
@@ -1429,6 +1463,7 @@ def histplot(
             line_kws=line_kws,
             **kwargs,
         )
+        p._set_stat_axis_scale(stat_scale)
 
     else:
 
@@ -2154,6 +2189,10 @@ def displot(
         allowed_types = ["numeric", "datetime"]
     else:
         allowed_types = None
+    if kind == "hist":
+        log_scale, stat_scale = p._log_scaled_stat_axis(log_scale)
+    else:
+        stat_scale = None
     p._attach(g, allowed_types=allowed_types, log_scale=log_scale)
 
     # Check for a specification that lacks x/y data and return early
@@ -2192,6 +2231,7 @@ def displot(
 
             _assign_default_kwargs(hist_kws, p.plot_univariate_histogram, histplot)
             p.plot_univariate_histogram(**hist_kws)
+            p._set_stat_axis_scale(stat_scale)
 
         else:
 
