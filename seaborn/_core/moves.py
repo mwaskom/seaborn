@@ -3,9 +3,11 @@ from dataclasses import dataclass
 from typing import ClassVar, Callable, Optional, Union, cast
 
 import numpy as np
+import pandas as pd
 from pandas import DataFrame
 
 from seaborn._core.groupby import GroupBy
+from seaborn._core.rules import categorical_order
 from seaborn._core.scales import Scale
 from seaborn._core.typing import Default
 
@@ -184,9 +186,23 @@ class Stack(Move):
         self, data: DataFrame, groupby: GroupBy, orient: str, scales: dict[str, Scale],
     ) -> DataFrame:
 
-        # TODO where to ensure that other semantic variables are sorted properly?
         # TODO why are we not using the passed in groupby here?
         groupers = ["col", "row", orient]
+
+        # Stack the levels of the other grouping variables in the order of the
+        # groupby (e.g. a Nominal scale order) rather than the row order
+        if groupby is not None:
+            stack_vars = [v for v in groupby.order if v in data and v not in groupers]
+            keys = []
+            for var in reversed(stack_vars):
+                order = groupby.order[var]
+                if order is None:
+                    order = categorical_order(data[var])
+                codes = pd.Categorical(data[var], categories=order).codes
+                keys.append(np.where(codes < 0, len(order), codes))
+            if keys:
+                data = data.iloc[np.lexsort(keys)]
+
         return GroupBy(groupers).apply(data, self._stack, orient)
 
 

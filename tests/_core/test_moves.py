@@ -301,6 +301,19 @@ class TestStack(MoveFixtures):
         assert_array_equal(res["y"], [2, np.nan, 3])
         assert_array_equal(res["baseline"], [0, np.nan, 2])
 
+    def test_stack_order(self):
+
+        df = pd.DataFrame({
+            "x": [0, 0, 0],
+            "y": [1, 2, 4],
+            "grp": ["a", "b", "c"],
+            "baseline": 0,
+        })
+        groupby = GroupBy({"grp": ["c", "a", "b"]})
+        res = Stack()(df, groupby, "x", {}).set_index("grp").loc[["a", "b", "c"]]
+        assert_array_equal(res["y"], [5, 7, 4])
+        assert_array_equal(res["baseline"], [4, 5, 0])
+
     def test_baseline_homogeneity_check(self, toy_df):
 
         toy_df["baseline"] = [0, 1, 2]
