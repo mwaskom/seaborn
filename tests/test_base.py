@@ -953,6 +953,21 @@ class TestVectorPlotter:
             rows &= p.plot_data["size"] == sub_vars["size"]
             assert_frame_equal(sub_data, p.plot_data[rows])
 
+    def test_iter_data_categorical_ordered_keys(self):
+
+        df = pd.DataFrame({
+            "x": ["a"] * 4,
+            "y": [0, 1, 10, 11],
+            "hue": ["x", "x", "y", "y"],
+        })
+        df["hue"] = pd.Categorical(df["hue"], categories=["y", "x"])
+
+        p = VectorPlotter(data=df, variables={"x": "x", "y": "y", "hue": "hue"})
+        p.map_hue(order=["x", "y"])
+
+        for sub_vars, sub_data in p.iter_data("hue"):
+            assert (sub_data["hue"] == sub_vars["hue"]).all()
+
     def test_iter_data_reverse(self, long_df):
 
         reversed_order = categorical_order(long_df["a"])[::-1]

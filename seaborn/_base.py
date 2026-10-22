@@ -925,10 +925,6 @@ class VectorPlotter:
 
         if grouping_vars:
 
-            grouped_data = data.groupby(
-                grouping_vars, sort=False, as_index=False, observed=False,
-            )
-
             grouping_keys = []
             for var in grouping_vars:
                 key = levels.get(var)
@@ -940,14 +936,12 @@ class VectorPlotter:
 
             for key in iter_keys:
 
-                try:
-                    data_subset = grouped_data.get_group(key)
-                except KeyError:
-                    # XXX we are adding this to allow backwards compatibility
-                    # with the empty artists that old categorical plots would
-                    # add (before 0.12), which we may decide to break, in which
-                    # case this option could be removed
-                    data_subset = data.loc[[]]
+                # Select rows directly so categorical groupers are matched by
+                # value, even when the dtype order differs from semantic order.
+                mask = np.ones(len(data), bool)
+                for var, val in zip(grouping_vars, key):
+                    mask &= data[var].eq(val).to_numpy(dtype=bool, na_value=False)
+                data_subset = data.loc[mask]
 
                 if data_subset.empty and not allow_empty:
                     continue

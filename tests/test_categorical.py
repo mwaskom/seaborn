@@ -1555,6 +1555,26 @@ class TestViolinPlot(SharedAxesLevelTests, SharedPatchArtistTests):
                 width = 0.4
                 self.check_violin(next(polys), data, orient, pos, width)
 
+    def test_hue_order_with_categorical_dtype(self):
+
+        df = pd.DataFrame({
+            "x": ["a"] * 12,
+            "y": [0, 1, 2, 3, 4, 5, 20, 21, 22, 23, 24, 25],
+            "hue": ["x"] * 6 + ["y"] * 6,
+        })
+        df["hue"] = pd.Categorical(df["hue"], categories=["y", "x"])
+
+        ax = violinplot(
+            df, x="x", y="y", hue="hue", hue_order=["x", "y"], cut=0,
+        )
+
+        self.check_violin(
+            ax.collections[0], df.loc[df["hue"] == "x", "y"], "x", -.2, .400001,
+        )
+        self.check_violin(
+            ax.collections[1], df.loc[df["hue"] == "y", "y"], "x", +.2, .400001,
+        )
+
     def test_hue_not_dodged(self, long_df):
 
         levels = categorical_order(long_df["b"])
