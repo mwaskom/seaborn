@@ -1,6 +1,7 @@
 from __future__ import annotations
 from dataclasses import dataclass
 from typing import ClassVar, Callable, Optional, Union, cast
+from functools import partial
 
 import numpy as np
 from pandas import DataFrame
@@ -162,11 +163,11 @@ class Stack(Move):
     """
     # TODO center? (or should this be a different move, eg. Stream())
 
-    def _stack(self, df, orient):
+    def _stack(self, df, orient, order=None):
 
         # TODO should stack do something with ymin/ymax style marks?
         # Should there be an upstream conversion to baseline/height parameterization?
-
+        df = GroupBy(order).apply(df, lambda x: x)
         if df["baseline"].nunique() > 1:
             err = "Stack move cannot be used when baselines are already heterogeneous"
             raise RuntimeError(err)
@@ -187,7 +188,9 @@ class Stack(Move):
         # TODO where to ensure that other semantic variables are sorted properly?
         # TODO why are we not using the passed in groupby here?
         groupers = ["col", "row", orient]
-        return GroupBy(groupers).apply(data, self._stack, orient)
+        return GroupBy(groupers).apply(data,
+                                       partial(self._stack, order=groupby.order),
+                                       orient)
 
 
 @dataclass
