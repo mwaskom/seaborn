@@ -100,3 +100,45 @@ def test_faceted_stack_categorical_bins_are_finite(
             assert math.isfinite(p.get_height())
     finally:
         plt.close(grid.figure)
+
+@pytest.mark.parametrize(
+    "stat", ["count", "frequency", "density", "probability", "percent"]
+)
+@pytest.mark.parametrize("common_norm", [False, True])
+@pytest.mark.parametrize("orient", ["x", "y"])
+def test_categorical_stack_statistics_remain_finite(stat, common_norm, orient):
+    """Normalized histogram statistics must not acquire missing geometry."""
+    data = pd.DataFrame({
+        "category": ["B", "A", "A", "B", "C", "B", "A", "C"],
+        "group": pd.Categorical(
+            ["high", "low", "high", "low", "high", "high", "low", "low"],
+            categories=["low", "high", "unused"],
+            ordered=True,
+        ),
+    })
+    fig, ax = plt.subplots()
+    try:
+        sns.histplot(
+            data=data,
+            hue="group",
+            hue_order=["high", "low", "unused"],
+            multiple="stack",
+            common_bins=False,
+            common_norm=common_norm,
+            stat=stat,
+            discrete=True,
+            ax=ax,
+            **{orient: "category"},
+        )
+        assert ax.patches
+        for patch in ax.patches:
+            assert all(math.isfinite(value) for value in (
+                patch.get_x(),
+                patch.get_y(),
+                patch.get_width(),
+                patch.get_height(),
+            ))
+            assert patch.get_width() >= 0
+            assert patch.get_height() >= 0
+    finally:
+        plt.close(fig)
