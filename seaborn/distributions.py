@@ -241,6 +241,14 @@ class _DistributionPlotter(VectorPlotter):
             # support grid / set of bin edges, so we can make a dataframe
             # Reverse the column order to plot from top to bottom
             curves = pd.DataFrame(curves).iloc[:, ::-1]
+            if (
+                multiple == "stack"
+                and self.var_types[self.data_variable] == "categorical"
+            ):
+                # Missing categorical bin/hue combinations have zero count.
+                # Keep numeric bins untouched: different edge grids cannot
+                # necessarily be stacked by simply aligning bin labels.
+                curves = curves.fillna(0)
 
             # Find column groups that are nested within col/row variables
             column_groups = {}
