@@ -798,18 +798,22 @@ class TestBoolean:
         assert ax.xaxis.major.formatter(1) == "True"
 
 
-@pytest.mark.parametrize("ticker_kind", ["formatter", "locator"])
+@pytest.mark.parametrize("ticker_kind", ["formatter", "locator", "log_locator"])
 def test_estimation_preserves_real_axis_ticker_ownership(ticker_kind):
     """Derived estimator scales must not rebind the real Y axis tickers."""
     import seaborn.objects as so
 
     data = pd.DataFrame({
         "x": [0, 0, 1, 1, 2, 2, 3, 3],
-        "y": [.1, .3, .2, .4, .15, .45, .25, .55],
+        "y": [1.1, 1.5, 1.8, 2.0, 2.3, 2.9, 3.2, 3.8],
     })
     scale = so.Continuous()
     if ticker_kind == "formatter":
         scale = scale.label(mpl.ticker.PercentFormatter())
+    elif ticker_kind == "log_locator":
+        scale = so.Continuous(trans="symlog").tick(
+            locator=mpl.ticker.LogLocator(base=10)
+        )
     else:
         scale = scale.tick(locator=mpl.ticker.MaxNLocator(4))
 
