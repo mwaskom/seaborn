@@ -109,10 +109,10 @@ def test_faceted_stack_categorical_bins_are_finite(
 def test_categorical_stack_statistics_remain_finite(stat, common_norm, orient):
     """Normalized histogram statistics must not acquire missing geometry."""
     data = pd.DataFrame({
-        "category": ["B", "A", "A", "B", "C", "B", "A", "C"],
+        "category": ["A", "A", "A", "B", "B"],
         "group": pd.Categorical(
-            ["high", "low", "high", "low", "high", "high", "low", "low"],
-            categories=["low", "high", "unused"],
+            ["a", "b", "c", "d", "a"],
+            categories=["a", "b", "c", "d", "unused"],
             ordered=True,
         ),
     })
@@ -121,7 +121,7 @@ def test_categorical_stack_statistics_remain_finite(stat, common_norm, orient):
         sns.histplot(
             data=data,
             hue="group",
-            hue_order=["high", "low", "unused"],
+            hue_order=["d", "c", "b", "a", "unused"],
             multiple="stack",
             common_bins=False,
             common_norm=common_norm,
