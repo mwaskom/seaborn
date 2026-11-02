@@ -204,6 +204,13 @@ class Hist(Stat):
             # Dividing by the zero total would otherwise produce NaNs.
             hist = hist.astype(float)
             total = hist.sum()
+            if total == 0 and hist.ne(0).any():
+                # Signed weights can cancel even when the histogram has
+                # nonzero bins. Such a distribution has no normalizable
+                # probability mass; do not return negative probabilities.
+                raise ValueError(
+                    "Cannot normalize histogram with zero total weight."
+                )
             if total != 0:
                 hist = hist / total
             if self.stat == "percent":
