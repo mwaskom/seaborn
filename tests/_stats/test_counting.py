@@ -1,4 +1,6 @@
 
+import warnings
+
 import numpy as np
 import pandas as pd
 
@@ -159,6 +161,55 @@ class TestHist:
         h = Hist(stat="frequency")
         out = h(long_df, *single_args)
         assert (out["y"] * out["space"]).sum() == len(long_df)
+
+    @pytest.mark.parametrize(
+        "stat", ["density", "probability", "proportion", "percent"]
+    )
+    @pytest.mark.parametrize("common_norm", [True, False])
+    def test_large_weights_normalize_without_losing_group_mass(
+        self, stat, common_norm,
+    ):
+        # Histogram bin accumulation can overflow at raw finite weights.
+        # A common factor must be applied before grouping so hue shares
+        # remain unchanged when common_norm=True.
+        groupby = GroupBy(["group"])
+
+        class Scale:
+            scale_type = "continuous"
+
+        weights = [1., 1., 1., 3., 3., 3.]
+        data = pd.DataFrame({
+            "x": [0., 1., 2., 0., 1., 2.],
+            "group": ["A"] * 3 + ["B"] * 3,
+            "weight": weights,
+        })
+        hist = Hist(
+            stat=stat, bins=[-.5, .5, 1.5, 2.5],
+            common_norm=common_norm,
+        )
+        args = groupby, "x", {"x": Scale()}
+        expected = hist(data, *args).sort_values(["group", "x"])
+        # The global sum would overflow, and the two groups have different
+        # absolute weights. Scaling per group would produce incorrect shares.
+        data["weight"] = data["weight"] * 1e307
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", RuntimeWarning)
+            actual = hist(data, *args).sort_values(["group", "x"])
+
+        np.testing.assert_allclose(
+            actual[stat].to_numpy(), expected[stat].to_numpy(), rtol=1e-12
+        )
+        assert np.isfinite(actual[stat]).all()
+
+    @pytest.mark.parametrize("stat", ["count", "frequency"])
+    def test_large_unnormalized_histogram_weights_are_not_rescaled(self, stat):
+        data = pd.DataFrame({
+            "x": [0., 1.], "weight": [1e200, 1e200],
+        })
+        result = Hist(stat=stat)._eval(
+            data, "x", {"bins": [-.5, .5, 1.5]}
+        )
+        assert (result["count"] == 1e200).all()
 
     def test_invalid_stat(self):
 
