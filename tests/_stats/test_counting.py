@@ -201,6 +201,37 @@ class TestHist:
         )
         assert np.isfinite(actual[stat]).all()
 
+    @pytest.mark.parametrize("dtype", ["float64", "object", "Float64", "int64"])
+    @pytest.mark.parametrize("stat", ["density", "probability", "percent"])
+    def test_normalized_weight_dtypes_preserve_group_shares(self, dtype, stat):
+        # Object/nullable weights need the same global normalization as
+        # NumPy numeric dtypes without silently changing hue proportions.
+        groupby = GroupBy(["group"])
+
+        class Scale:
+            scale_type = "continuous"
+
+        data = pd.DataFrame({
+            "x": [0., 1., 0., 1.],
+            "group": ["A", "A", "B", "B"],
+            "weight": pd.Series(
+                [10**18, 10**18, 3 * 10**18, 3 * 10**18], dtype=dtype
+            ),
+        })
+        ref = data.copy()
+        ref["weight"] = data["weight"].astype(float) / 1e18
+        hist = Hist(stat=stat, bins=[-.5, .5, 1.5], common_norm=True)
+        args = groupby, "x", {"x": Scale()}
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", RuntimeWarning)
+            result = hist(data, *args)
+        expected = hist(ref, *args)
+        np.testing.assert_allclose(
+            result[stat].to_numpy(dtype=float),
+            expected[stat].to_numpy(dtype=float),
+            rtol=1e-12,
+        )
+
     @pytest.mark.parametrize("stat", ["count", "frequency"])
     def test_large_unnormalized_histogram_weights_are_not_rescaled(self, stat):
         data = pd.DataFrame({
