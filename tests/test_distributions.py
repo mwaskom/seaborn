@@ -1779,6 +1779,20 @@ class TestHistPlotUnivariate(SharedAxesLevelTests):
             np.array([2 / 3, 1 / 3]) * factor,
         )
 
+    @pytest.mark.parametrize("weights", [[1.0, -1.0], [-1.0, 1.0]])
+    def test_density_cancelling_signed_weights_raise(self, weights):
+        # A non-empty, signed histogram can still have exactly zero net
+        # mass. np.histogram(density=True) silently generates inf/NaN bars.
+        # Unlike all-zero observations, this distribution has no defined
+        # normalized density and should fail explicitly.
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", RuntimeWarning)
+            with pytest.raises(ValueError, match="zero total weight"):
+                histplot(
+                    x=[0, 1], weights=weights, bins=[-.5, .5, 1.5],
+                    stat="density", color="C0",
+                )
+
     def test_kde_singular_weights(self):
 
         # The histogram is still meaningful when scipy cannot fit a KDE
