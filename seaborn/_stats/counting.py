@@ -177,12 +177,18 @@ class Hist(Stat):
             if not weights.any():
                 # Preserve the zero-valued histogram for all-zero weights.
                 density = False
-            elif weights.sum() == 0:
-                # Positive and negative weights can cancel even when they
-                # are not all zero. An area-normalized density is undefined.
-                raise ValueError(
-                    "Cannot compute histogram density with zero total weight."
-                )
+            else:
+                # A sum of large finite weights can overflow even though
+                # their histogram is valid. The only decision needed here
+                # is whether signed weights cancel to exactly zero.
+                with np.errstate(over="ignore", invalid="ignore"):
+                    total = weights.sum()
+                if total == 0:
+                    # Unlike all-zero weights, cancelling signed weights do
+                    # not define an area-normalized density.
+                    raise ValueError(
+                        "Cannot compute histogram density with zero total weight."
+                    )
         hist, edges = np.histogram(vals, **bin_kws, weights=weights, density=density)
 
         width = np.diff(edges)
