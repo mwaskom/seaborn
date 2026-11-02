@@ -232,6 +232,42 @@ class TestHist:
             rtol=1e-12,
         )
 
+    @pytest.mark.parametrize("stat", ["probability", "proportion", "percent"])
+    @pytest.mark.parametrize("signed", [[1., -1.], [-1., 1.]])
+    def test_zero_total_signed_weights_cannot_be_normalized(self, stat, signed):
+        # A nonempty histogram with cancelling signed mass cannot represent
+        # probability or percent; do not emit negative/unnormalized values.
+        data = pd.DataFrame({
+            "x": [0., 1.], "weight": signed, "group": ["A", "A"],
+        })
+        hist = Hist(stat=stat, bins=[-.5, .5, 1.5])
+        groupby = GroupBy(["group"])
+
+        class Scale:
+            scale_type = "continuous"
+
+        with pytest.raises(ValueError, match="zero total weight"):
+            hist(data, groupby, "x", {"x": Scale()})
+
+    @pytest.mark.parametrize("stat", ["probability", "proportion", "percent"])
+    def test_zero_weight_bins_remain_zero_for_normalized_stats(self, stat):
+        hist = Hist(stat=stat)
+        result = hist._normalize(pd.DataFrame({
+            "x": [0., 1.], "count": [0., 0.], "space": [1., 1.]
+        }))
+        np.testing.assert_array_equal(result[stat], [0., 0.])
+
+    @pytest.mark.parametrize("stat", ["probability", "proportion", "percent"])
+    def test_negative_nonzero_total_histogram_preserves_existing_normalization(
+        self, stat,
+    ):
+        hist = Hist(stat=stat)
+        result = hist._normalize(pd.DataFrame({
+            "x": [0., 1.], "count": [-2., -1.], "space": [1., 1.]
+        }))
+        factor = 100 if stat == "percent" else 1
+        np.testing.assert_allclose(result[stat], [2 / 3 * factor, 1 / 3 * factor])
+
     @pytest.mark.parametrize("stat", ["count", "frequency"])
     def test_large_unnormalized_histogram_weights_are_not_rescaled(self, stat):
         data = pd.DataFrame({
