@@ -1,6 +1,6 @@
 from __future__ import annotations
 import re
-from copy import copy
+from copy import copy, deepcopy
 from collections.abc import Sequence
 from dataclasses import dataclass
 from functools import partial
@@ -86,6 +86,13 @@ class Scale:
 
         major_locator, minor_locator = self._get_locators(**self._tick_params)
         major_formatter = self._get_formatter(major_locator, **self._label_params)
+
+        # Derived coordinates (e.g. ymin/ymax from Est) set up their own axes.
+        # Shared ticker instances would be rebound to those PseudoAxes, leaving
+        # the real axis with a formatter or locator attached to the wrong axis.
+        major_locator = deepcopy(major_locator)
+        minor_locator = deepcopy(minor_locator)
+        major_formatter = deepcopy(major_formatter)
 
         class InternalScale(mpl.scale.FuncScale):
             def set_default_locators_and_formatters(self, axis):
