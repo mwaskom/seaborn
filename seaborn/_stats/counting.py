@@ -173,9 +173,16 @@ class Hist(Stat):
         weights = data.get("weight", None)
 
         density = self.stat == "density"
-        if density and weights is not None and not weights.any():
-            # np.histogram with density=True divides by zero total weight.
-            density = False
+        if density and weights is not None:
+            if not weights.any():
+                # Preserve the zero-valued histogram for all-zero weights.
+                density = False
+            elif weights.sum() == 0:
+                # Positive and negative weights can cancel even when they
+                # are not all zero. An area-normalized density is undefined.
+                raise ValueError(
+                    "Cannot compute histogram density with zero total weight."
+                )
         hist, edges = np.histogram(vals, **bin_kws, weights=weights, density=density)
 
         width = np.diff(edges)
