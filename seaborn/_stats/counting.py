@@ -223,6 +223,26 @@ class Hist(Stat):
         self, data: DataFrame, groupby: GroupBy, orient: str, scales: dict[str, Scale],
     ) -> DataFrame:
 
+        if "weight" in data and self.stat in (
+            "density", "probability", "proportion", "percent"
+        ):
+            weights = data["weight"]
+            try:
+                numeric_weights = weights.to_numpy(dtype=float, na_value=np.nan)
+            except (TypeError, ValueError):
+                numeric_weights = None
+            if (
+                numeric_weights is not None
+                and np.isfinite(numeric_weights).all()
+                and (numeric_weights >= 0).all()
+            ):
+                scale = numeric_weights.max(initial=0)
+                if scale > 0:
+                    # Normalized histograms are invariant to a common positive
+                    # weight factor. Scale across *all* groups before binning;
+                    # scaling each hue separately loses relative group mass.
+                    data = data.assign(weight=weights / scale)
+
         scale_type = scales[orient].__class__.__name__.lower()
         grouping_vars = [str(v) for v in data if v in groupby.order]
         if not grouping_vars or self.common_bins is True:
