@@ -304,6 +304,7 @@ class Nominal(Scale):
         # to solve in a more systematic way probably
         # (i.e. if we have [1, 2.5], do we want [1.0, 2.5]? Unclear)
         axis.update_units(stringify(np.array(units_seed)))
+        seed_dtype = np.asarray(units_seed).dtype
 
         # TODO define this more centrally
         def convert_units(x):
@@ -314,7 +315,17 @@ class Nominal(Scale):
             # keep = x.isin(units_seed)
             keep = np.array([x_ in units_seed for x_ in x], bool)
             out = np.full(len(x), np.nan)
-            out[keep] = axis.convert_units(stringify(x[keep]))
+            values = x[keep]
+            if (
+                np.issubdtype(seed_dtype, np.number)
+                and np.issubdtype(np.asarray(values).dtype, np.number)
+            ):
+                # Layer data can be int while the combined scale seed is
+                # float (e.g. after concat with missing values). Stringify
+                # equivalent categories consistently: 1 and 1.0 must not
+                # become distinct Matplotlib units.
+                values = values.astype(seed_dtype)
+            out[keep] = axis.convert_units(stringify(values))
             return out
 
         new._pipeline = [convert_units, prop.get_mapping(new, data)]
