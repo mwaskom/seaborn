@@ -53,6 +53,28 @@ def test_scatterplot_restricted_hue_and_style_intersection(ordered_scatter_data)
         plt.close(fig)
 
 
+def test_scatterplot_restricted_orders_on_distinct_variables():
+    data = pd.DataFrame({
+        "x": [0, 1, 2, 3, 4, 5],
+        "y": [1, 2, 3, 4, 5, 6],
+        "hue_category": ["red", "blue", "red", "red", "red", "blue"],
+        "style_category": ["circle", "circle", "square", "circle", "circle", "square"],
+        "size_category": ["small", "small", "small", "medium", "small", "medium"],
+    })
+    fig, ax = plt.subplots()
+    try:
+        sns.scatterplot(
+            data=data, x="x", y="y", ax=ax,
+            hue="hue_category", hue_order=["red"],
+            style="style_category", style_order=["circle"],
+            size="size_category", size_order=["small"],
+        )
+        assert ax.collections[0].get_offsets()[:, 0].tolist() == [0.0, 4.0]
+        fig.canvas.draw()
+    finally:
+        plt.close(fig)
+
+
 def test_scatterplot_complete_order_retains_all_observations(ordered_scatter_data):
     fig, ax = plt.subplots()
     try:
