@@ -32,6 +32,9 @@ def test_nominal_color_multiple_layers_with_integer_categories(categories, palet
         colors = np.asarray(fig.axes[0].collections[0].get_facecolors())
         assert len(colors) == 3
         assert len(np.unique(colors, axis=0)) == 3
+        # The same category must map to the same color in both layers.
+        second_layer_color = np.asarray(fig.axes[0].collections[1].get_facecolors())[0]
+        np.testing.assert_allclose(colors[0], second_layer_color)
     finally:
         if fig is not None:
             plt.close(fig)
