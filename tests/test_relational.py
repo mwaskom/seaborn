@@ -1679,11 +1679,14 @@ class TestScatterPlotter(SharedAxesLevelTests, Helpers):
     def test_hue_order(self, long_df):
 
         order = categorical_order(long_df["a"])
-        unused = order.pop()
+        order.pop()
 
         ax = scatterplot(data=long_df, x="x", y="y", hue="a", hue_order=order)
         points = ax.collections[0]
-        assert (points.get_facecolors()[long_df["a"] == unused] == 0).all()
+        included = long_df["a"].isin(order)
+        assert_array_equal(
+            points.get_offsets(), long_df.loc[included, ["x", "y"]].to_numpy()
+        )
         assert [t.get_text() for t in ax.legend_.texts] == order
 
     def test_linewidths(self, long_df):

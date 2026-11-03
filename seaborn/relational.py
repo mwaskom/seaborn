@@ -405,6 +405,17 @@ class _ScatterPlotter(_RelationalPlotter):
         if data.empty:
             return
 
+        for var in ("hue", "size", "style"):
+            if var in self.variables:
+                mapping = getattr(self, f"_{var}_map")
+                if mapping.map_type == "categorical":
+                    # Unlike lineplot, scatter draws all observations in one
+                    # collection. Exclude levels omitted from an explicit
+                    # semantic order before resolving per-point attributes.
+                    data = data[data[var].isin(mapping.levels)]
+        if data.empty:
+            return
+
         kws = normalize_kwargs(kws, mpl.collections.PathCollection)
 
         # Define the vectors of x and y positions
