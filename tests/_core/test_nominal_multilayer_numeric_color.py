@@ -5,6 +5,7 @@ layer adds missing values; both must resolve to the same category unit.
 """
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 import pytest
 import seaborn.objects as so
 
@@ -67,6 +68,37 @@ def test_nominal_multilayer_text_and_float_categories_unchanged(category_values)
         )
         fig = plotter._figure
         fig.canvas.draw()
+    finally:
+        if fig is not None:
+            plt.close(fig)
+
+
+def test_nominal_color_aggregation_layers_with_integer_subjects():
+    """Reproduce the original so.Lines + so.Agg bug with fourteen subjects."""
+    subjects = np.repeat(np.arange(1, 15, dtype=int), 12)
+    timepoint = np.tile(np.arange(4), 42)
+    signals = (
+        .2 + subjects * .01 + timepoint * .025
+        + (np.arange(len(subjects)) % 3) * .005
+    )
+    data = pd.DataFrame({
+        "timepoint": timepoint,
+        "signal": signals,
+        "subject": subjects,
+    })
+
+    fig = None
+    try:
+        plotter = (
+            so.Plot(data, x="timepoint", y="signal")
+            .add(so.Lines(alpha=.7), so.Agg(), color="subject")
+            .scale(color="deep")
+            .add(so.Line(linewidth=3), so.Agg())
+            .plot()
+        )
+        fig = plotter._figure
+        fig.canvas.draw()
+        assert len(fig.axes[0].collections) > 0
     finally:
         if fig is not None:
             plt.close(fig)
