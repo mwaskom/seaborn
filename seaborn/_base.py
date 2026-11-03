@@ -1194,11 +1194,13 @@ class VectorPlotter:
             position = ax.get_position()
             if axis == "x":
                 return not any(
-                    other.get_position().y0 < position.y0 - 1e-6
+                    other.get_visible()
+                    and other.get_position().y0 < position.y0 - 1e-6
                     for other in siblings
                 )
             return not any(
-                other.get_position().x0 < position.x0 - 1e-6
+                other.get_visible()
+                and other.get_position().x0 < position.x0 - 1e-6
                 for other in siblings
             )
 

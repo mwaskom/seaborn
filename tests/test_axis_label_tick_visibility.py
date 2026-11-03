@@ -112,3 +112,50 @@ def test_independent_facet_axes_preserve_both_labels_with_hidden_ticks():
             assert grid.axes.flat[1].get_ylabel() == ""
         finally:
             plt.close(grid.figure)
+
+
+@pytest.mark.parametrize("sharex", [False, True, "row", "col"])
+@pytest.mark.parametrize("sharey", [False, True, "row", "col"])
+def test_hidden_ticks_with_partial_axis_sharing(sharex, sharey):
+    """Only outer axes of each shared group should show axis titles."""
+    with mpl.rc_context(TICK_LABELS_HIDDEN):
+        fig, axes = plt.subplots(2, 2, sharex=sharex, sharey=sharey)
+        try:
+            for ax in axes.flat:
+                sns.scatterplot(DATA, x="x", y="y", ax=ax)
+            fig.canvas.draw()
+
+            for row in range(2):
+                for col in range(2):
+                    ax = axes[row, col]
+                    show_x = sharex in (False, "row") or row == 1
+                    show_y = sharey in (False, "col") or col == 0
+                    assert ax.xaxis.label.get_visible() == show_x
+                    assert ax.yaxis.label.get_visible() == show_y
+        finally:
+            plt.close(fig)
+
+
+@pytest.mark.parametrize("hidden_side", ["bottom", "left"])
+@pytest.mark.parametrize("hide_rc_ticklabels", [False, True])
+def test_hidden_shared_sibling_does_not_hide_visible_axis_title(
+    hidden_side, hide_rc_ticklabels,
+):
+    rc = TICK_LABELS_HIDDEN if hide_rc_ticklabels else {}
+    with mpl.rc_context(rc):
+        if hidden_side == "bottom":
+            fig, axes = plt.subplots(2, 1, sharex=True)
+            active, hidden = axes[0], axes[1]
+        else:
+            fig, axes = plt.subplots(1, 2, sharey=True)
+            hidden, active = axes[0], axes[1]
+        try:
+            hidden.set_visible(False)
+            sns.scatterplot(DATA, x="x", y="y", ax=active)
+            fig.canvas.draw()
+            if hidden_side == "bottom":
+                assert active.xaxis.label.get_visible()
+            else:
+                assert active.yaxis.label.get_visible()
+        finally:
+            plt.close(fig)
