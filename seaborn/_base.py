@@ -1182,17 +1182,36 @@ class VectorPlotter:
         return transform_obj.transform, transform_obj.inverted().transform
 
     def _add_axis_labels(self, ax, default_x="", default_y=""):
-        """Add axis labels if not present, set visibility to match ticklabels."""
-        # TODO ax could default to None and use attached axes if present
-        # but what to do about the case of facets? Currently using FacetGrid's
-        # set_axis_labels method, which doesn't add labels to the interior even
-        # when the axes are not shared. Maybe that makes sense?
+        """Label outer shared axes even when tick labels are disabled."""
+        # Facets suppress tick labels on interior shared axes, but rcParams
+        # may also suppress all tick labels without disabling axis labels.
+        def label_visible(axis):
+            axis_obj = getattr(ax, f"{axis}axis")
+            if any(t.get_visible() for t in axis_obj.get_ticklabels()):
+                return True
+
+            siblings = getattr(ax, f"get_shared_{axis}_axes")().get_siblings(ax)
+            position = ax.get_position()
+            if axis == "x":
+                return not any(
+                    other.get_position().y0 < position.y0 - 1e-6
+                    for other in siblings
+                )
+            return not any(
+                other.get_position().x0 < position.x0 - 1e-6
+                for other in siblings
+            )
+
         if not ax.get_xlabel():
-            x_visible = any(t.get_visible() for t in ax.get_xticklabels())
-            ax.set_xlabel(self.variables.get("x", default_x), visible=x_visible)
+            ax.set_xlabel(
+                self.variables.get("x", default_x),
+                visible=label_visible("x"),
+            )
         if not ax.get_ylabel():
-            y_visible = any(t.get_visible() for t in ax.get_yticklabels())
-            ax.set_ylabel(self.variables.get("y", default_y), visible=y_visible)
+            ax.set_ylabel(
+                self.variables.get("y", default_y),
+                visible=label_visible("y"),
+            )
 
     def add_legend_data(
         self, ax, func, common_kws=None, attrs=None, semantic_kws=None,
