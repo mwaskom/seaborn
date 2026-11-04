@@ -1192,15 +1192,20 @@ class VectorPlotter:
 
             siblings = getattr(ax, f"get_shared_{axis}_axes")().get_siblings(ax)
             position = ax.get_position()
+            label_position = axis_obj.get_label_position()
             if axis == "x":
-                return not any(
-                    other.get_visible()
-                    and other.get_position().y0 < position.y0 - 1e-6
-                    for other in siblings
-                )
+                coord, outer = "y0", "bottom"
+            else:
+                coord, outer = "x0", "left"
+            sign = 1 if label_position == outer else -1
+            # The label belongs to the sibling on the edge it is anchored to
+            # (bottom/left by default, top/right when moved by the caller).
             return not any(
                 other.get_visible()
-                and other.get_position().x0 < position.x0 - 1e-6
+                and sign * (
+                    getattr(other.get_position(), coord)
+                    - getattr(position, coord)
+                ) < -1e-6
                 for other in siblings
             )
 

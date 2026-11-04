@@ -159,3 +159,48 @@ def test_hidden_shared_sibling_does_not_hide_visible_axis_title(
                 assert active.yaxis.label.get_visible()
         finally:
             plt.close(fig)
+
+
+def test_shared_x_top_label_position_uses_top_edge():
+    with mpl.rc_context(TICK_LABELS_HIDDEN):
+        fig, (top, bottom) = plt.subplots(2, 1, sharex=True)
+        try:
+            for ax in (top, bottom):
+                ax.xaxis.set_label_position("top")
+                sns.scatterplot(DATA, x="x", y="y", ax=ax)
+            fig.canvas.draw()
+            assert top.xaxis.label.get_visible()
+            assert not bottom.xaxis.label.get_visible()
+        finally:
+            plt.close(fig)
+
+
+def test_shared_y_right_label_position_uses_right_edge():
+    with mpl.rc_context(TICK_LABELS_HIDDEN):
+        fig, (left, right) = plt.subplots(1, 2, sharey=True)
+        try:
+            for ax in (left, right):
+                ax.yaxis.set_label_position("right")
+                sns.scatterplot(DATA, x="x", y="y", ax=ax)
+            fig.canvas.draw()
+            assert right.yaxis.label.get_visible()
+            assert not left.yaxis.label.get_visible()
+        finally:
+            plt.close(fig)
+
+
+def test_shared_default_label_position_still_uses_bottom_left_edge():
+    with mpl.rc_context(TICK_LABELS_HIDDEN):
+        fig, axes = plt.subplots(2, 2, sharex=True, sharey=True)
+        try:
+            for ax in axes.flat:
+                sns.scatterplot(DATA, x="x", y="y", ax=ax)
+            fig.canvas.draw()
+            assert axes[1, 0].xaxis.label.get_visible()
+            assert axes[1, 1].xaxis.label.get_visible()
+            assert not axes[0, 0].xaxis.label.get_visible()
+            assert axes[0, 0].yaxis.label.get_visible()
+            assert axes[1, 0].yaxis.label.get_visible()
+            assert not axes[0, 1].yaxis.label.get_visible()
+        finally:
+            plt.close(fig)
