@@ -112,6 +112,162 @@ class TestColorPalettes:
         mpl_pal2 = palettes.color_palette("Blues_r_d")
         npt.assert_array_equal(mpl_pal1, mpl_pal2)
 
+    def test_cmap_from_seaborn_palette(self):
+
+        for name, colors in palettes.SEABORN_PALETTES.items():
+            cmap = palettes.color_palette(name, as_cmap=True)
+            assert isinstance(cmap, mpl.colors.ListedColormap)
+            expected = mpl.colors.ListedColormap(colors)
+            npt.assert_array_equal(cmap.colors, expected.colors)
+
+    def test_cmap_from_current_palette(self):
+
+        cmap = palettes.color_palette(as_cmap=True)
+        assert isinstance(cmap, mpl.colors.ListedColormap)
+        npt.assert_array_equal(
+            mpl.colors.to_rgba_array(cmap.colors),
+            mpl.colors.to_rgba_array(utils.get_color_cycle()),
+        )
+
+    def test_cmap_from_color_sequence(self):
+
+        colors = ["red", "green", "blue"]
+        cmap = palettes.color_palette(colors, as_cmap=True)
+        assert isinstance(cmap, mpl.colors.ListedColormap)
+        npt.assert_array_equal(
+            mpl.colors.to_rgba_array(cmap.colors),
+            mpl.colors.to_rgba_array(colors),
+        )
+
+    def test_cmap_passthrough(self):
+
+        cmap_in = get_colormap("viridis")
+        cmap_out = palettes.color_palette(cmap_in, as_cmap=True)
+        assert cmap_out is cmap_in
+
+    def test_cmap_with_desat(self):
+
+        cmap = palettes.color_palette("deep", desat=.5, as_cmap=True)
+        assert isinstance(cmap, mpl.colors.ListedColormap)
+        expected = [utils.desaturate(c, .5) for c in palettes.SEABORN_PALETTES["deep"]]
+        npt.assert_allclose(
+            mpl.colors.to_rgba_array(cmap.colors),
+            mpl.colors.to_rgba_array(expected),
+        )
+
+        # Palettes whose generator returns a colormap should not error,
+        # and the result should hold the desaturated generator colors
+        cmap = palettes.color_palette("hls", desat=.5, as_cmap=True)
+        assert isinstance(cmap, mpl.colors.ListedColormap)
+        expected = [
+            utils.desaturate(c, .5)
+            for c in palettes.hls_palette(as_cmap=True).colors
+        ]
+        npt.assert_allclose(
+            mpl.colors.to_rgba_array(cmap.colors),
+            mpl.colors.to_rgba_array(expected),
+        )
+
+    def test_cmap_object_requires_as_cmap(self):
+
+        # A colormap object is only a valid palette with as_cmap=True;
+        # asking for a list of colors from it is a TypeError regardless
+        # of how desat and n_colors are combined
+        cmaps = [
+            get_colormap("viridis"),
+            mpl.colors.ListedColormap(["red", "green"]),
+        ]
+        arg_sets = [
+            {}, {"n_colors": 2}, {"desat": .5}, {"n_colors": 2, "desat": .5},
+        ]
+        for cmap in cmaps:
+            for kwargs in arg_sets:
+                with pytest.raises(TypeError, match="as_cmap=True"):
+                    palettes.color_palette(cmap, **kwargs)
+
+    def test_cmap_desat_preserves_metadata(self):
+
+        colors = [(1, 0, 0, .25), (0, 1, 0, .5), (0, 0, 1, .75)]
+        cmap_in = mpl.colors.ListedColormap(colors, name="custom_rgba")
+        cmap_in.set_bad((1, 0, 1, .9))
+        cmap_in.set_under((.1, .2, .3, .4))
+        cmap_in.set_over((.9, .8, .7, .6))
+
+        colors_before = mpl.colors.to_rgba_array(cmap_in.colors)
+
+        cmap = palettes.color_palette(cmap_in, desat=.5, as_cmap=True)
+        assert isinstance(cmap, mpl.colors.ListedColormap)
+        assert cmap is not cmap_in
+        assert cmap.name == cmap_in.name
+        npt.assert_array_equal(cmap.get_bad(), cmap_in.get_bad())
+        npt.assert_array_equal(cmap.get_under(), cmap_in.get_under())
+        npt.assert_array_equal(cmap.get_over(), cmap_in.get_over())
+
+        # The RGB channels are desaturated, the alpha channel is kept
+        rgba = mpl.colors.to_rgba_array(colors)
+        expected = [
+            (*utils.desaturate(rgb, .5), alpha)
+            for rgb, alpha in zip(rgba[:, :3], rgba[:, 3])
+        ]
+        npt.assert_allclose(mpl.colors.to_rgba_array(cmap.colors), expected)
+
+        # The source colormap object itself is not modified by the call
+        npt.assert_array_equal(
+            mpl.colors.to_rgba_array(cmap_in.colors), colors_before,
+        )
+
+    def test_cmap_desat_from_continuous_cmap(self):
+
+        cmap_in = mpl.colors.LinearSegmentedColormap.from_list(
+            "custom_cont", [(1, 0, 0, .2), (0, 0, 1, .8)],
+        )
+        cmap_in.set_bad((1, 0, 1, .9))
+
+        cmap = palettes.color_palette(cmap_in, desat=.5, as_cmap=True)
+        assert isinstance(cmap, mpl.colors.ListedColormap)
+        assert cmap.name == cmap_in.name
+        npt.assert_array_equal(cmap.get_bad(), cmap_in.get_bad())
+
+        # The result holds desaturated samples of the full RGBA ramp
+        samples = cmap_in(np.linspace(0, 1, cmap_in.N))
+        expected = [
+            (*utils.desaturate(rgb, .5), alpha)
+            for rgb, alpha in zip(samples[:, :3], samples[:, 3])
+        ]
+        npt.assert_allclose(mpl.colors.to_rgba_array(cmap.colors), expected)
+
+        # The source never set under/over colors, so the result must not
+        # freeze the pre-desaturation end colors: under/over stay unset
+        # and resolve from the desaturated ends of the new LUT instead
+        assert cmap._rgba_under is None
+        assert cmap._rgba_over is None
+        npt.assert_allclose(cmap.get_under(), expected[0])
+        npt.assert_allclose(cmap.get_over(), expected[-1])
+
+    def test_cmap_from_empty_palette(self):
+
+        with pytest.raises(ValueError, match="empty"):
+            palettes.color_palette([], as_cmap=True)
+
+        with pytest.raises(ValueError, match="empty"):
+            palettes.color_palette([], desat=.5, as_cmap=True)
+
+    def test_cmap_n_colors_ignored(self):
+
+        # n_colors is documented as ignored when as_cmap is True, for
+        # values both smaller and larger than the palette size
+        for n_colors in [3, 20]:
+            cmap = palettes.color_palette("deep", n_colors, as_cmap=True)
+            assert cmap.N == len(palettes.SEABORN_PALETTES["deep"])
+
+        colors = ["red", "green", "blue"]
+        for n_colors in [2, 5]:
+            cmap = palettes.color_palette(colors, n_colors, as_cmap=True)
+            assert cmap.N == len(colors)
+
+        cmap_in = get_colormap("viridis")
+        assert palettes.color_palette(cmap_in, 3, as_cmap=True) is cmap_in
+
     def test_bad_palette_name(self):
 
         with pytest.raises(ValueError):

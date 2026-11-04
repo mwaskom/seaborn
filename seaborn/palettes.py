@@ -178,7 +178,7 @@ def color_palette(palette=None, n_colors=None, desat=None, as_cmap=False):
 
     elif not isinstance(palette, str):
         palette = palette
-        if n_colors is None:
+        if n_colors is None and not isinstance(palette, mpl.colors.Colormap):
             n_colors = len(palette)
     else:
 
@@ -236,8 +236,37 @@ def color_palette(palette=None, n_colors=None, desat=None, as_cmap=False):
             except (ValueError, KeyError):  # Error class changed in mpl36
                 raise ValueError(f"{palette!r} is not a valid palette name")
 
+    if isinstance(palette, mpl.colors.Colormap) and not as_cmap:
+        # A colormap object can only be returned as a colormap; there is
+        # no defined way to turn it into a list of discrete colors
+        err = (
+            "color_palette() cannot return a list of colors from a "
+            "matplotlib colormap object; pass as_cmap=True to return "
+            "the colormap, or pass a palette name or a sequence of colors"
+        )
+        raise TypeError(err)
+
+    # A colormap that desaturation is applied to, kept so that its name
+    # and bad/under/over colors can be restored on the result below
+    source_cmap = None
+
     if desat is not None:
-        palette = [desaturate(c, desat) for c in palette]
+        if isinstance(palette, mpl.colors.Colormap):
+            # Desaturation is applied to discrete colors, so recover them
+            # from a colormap that a palette generator already produced.
+            # Keep the alpha channel of each recovered color; only the
+            # saturation of the RGB channels is changed
+            source_cmap = palette
+            if isinstance(palette, mpl.colors.ListedColormap):
+                rgba = mpl.colors.to_rgba_array(palette.colors)
+            else:
+                rgba = palette(np.linspace(0, 1, palette.N))
+            palette = [
+                (*desaturate(tuple(rgb), desat), float(alpha))
+                for rgb, alpha in zip(rgba[:, :3], rgba[:, 3])
+            ]
+        else:
+            palette = [desaturate(c, desat) for c in palette]
 
     if not as_cmap:
 
@@ -251,6 +280,26 @@ def color_palette(palette=None, n_colors=None, desat=None, as_cmap=False):
             palette = _ColorPalette(palette)
         except ValueError:
             raise ValueError(f"Could not generate a palette for {palette}")
+
+    elif not isinstance(palette, mpl.colors.Colormap):
+
+        # Some palette specs (named seaborn palettes, the current color
+        # cycle, or a sequence of colors) resolve to a list of colors even
+        # when a colormap was requested, so convert the colors here
+        if not len(palette):
+            err = "Cannot create a colormap from an empty palette"
+            raise ValueError(err)
+        if source_cmap is None:
+            palette = mpl.colors.ListedColormap(palette)
+        else:
+            # Restore the name and bad/under/over colors of the colormap
+            # that the colors were recovered from for desaturation
+            palette = mpl.colors.ListedColormap(palette, source_cmap.name)
+            palette.set_bad(source_cmap.get_bad())
+            if source_cmap._rgba_under is not None:
+                palette.set_under(source_cmap._rgba_under)
+            if source_cmap._rgba_over is not None:
+                palette.set_over(source_cmap._rgba_over)
 
     return palette
 
