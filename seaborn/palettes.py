@@ -178,7 +178,7 @@ def color_palette(palette=None, n_colors=None, desat=None, as_cmap=False):
 
     elif not isinstance(palette, str):
         palette = palette
-        if n_colors is None:
+        if n_colors is None and not isinstance(palette, mpl.colors.Colormap):
             n_colors = len(palette)
     else:
 
@@ -237,6 +237,14 @@ def color_palette(palette=None, n_colors=None, desat=None, as_cmap=False):
                 raise ValueError(f"{palette!r} is not a valid palette name")
 
     if desat is not None:
+        if isinstance(palette, mpl.colors.Colormap):
+            # Desaturation is applied to discrete colors, so recover them
+            # from a colormap that a palette generator already produced
+            if isinstance(palette, mpl.colors.ListedColormap):
+                palette = list(palette.colors)
+            else:
+                colors = palette(np.linspace(0, 1, palette.N))[:, :3]
+                palette = list(map(tuple, colors))
         palette = [desaturate(c, desat) for c in palette]
 
     if not as_cmap:
@@ -251,6 +259,13 @@ def color_palette(palette=None, n_colors=None, desat=None, as_cmap=False):
             palette = _ColorPalette(palette)
         except ValueError:
             raise ValueError(f"Could not generate a palette for {palette}")
+
+    elif not isinstance(palette, mpl.colors.Colormap):
+
+        # Some palette specs (named seaborn palettes, the current color
+        # cycle, or a sequence of colors) resolve to a list of colors even
+        # when a colormap was requested, so convert the colors here
+        palette = mpl.colors.ListedColormap(palette)
 
     return palette
 

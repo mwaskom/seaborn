@@ -112,6 +112,53 @@ class TestColorPalettes:
         mpl_pal2 = palettes.color_palette("Blues_r_d")
         npt.assert_array_equal(mpl_pal1, mpl_pal2)
 
+    def test_cmap_from_seaborn_palette(self):
+
+        for name, colors in palettes.SEABORN_PALETTES.items():
+            cmap = palettes.color_palette(name, as_cmap=True)
+            assert isinstance(cmap, mpl.colors.ListedColormap)
+            expected = mpl.colors.ListedColormap(colors)
+            npt.assert_array_equal(cmap.colors, expected.colors)
+
+    def test_cmap_from_current_palette(self):
+
+        cmap = palettes.color_palette(as_cmap=True)
+        assert isinstance(cmap, mpl.colors.ListedColormap)
+        npt.assert_array_equal(
+            mpl.colors.to_rgba_array(cmap.colors),
+            mpl.colors.to_rgba_array(utils.get_color_cycle()),
+        )
+
+    def test_cmap_from_color_sequence(self):
+
+        colors = ["red", "green", "blue"]
+        cmap = palettes.color_palette(colors, as_cmap=True)
+        assert isinstance(cmap, mpl.colors.ListedColormap)
+        npt.assert_array_equal(
+            mpl.colors.to_rgba_array(cmap.colors),
+            mpl.colors.to_rgba_array(colors),
+        )
+
+    def test_cmap_passthrough(self):
+
+        cmap_in = get_colormap("viridis")
+        cmap_out = palettes.color_palette(cmap_in, as_cmap=True)
+        assert cmap_out is cmap_in
+
+    def test_cmap_with_desat(self):
+
+        cmap = palettes.color_palette("deep", desat=.5, as_cmap=True)
+        assert isinstance(cmap, mpl.colors.ListedColormap)
+        expected = [utils.desaturate(c, .5) for c in palettes.SEABORN_PALETTES["deep"]]
+        npt.assert_allclose(
+            mpl.colors.to_rgba_array(cmap.colors),
+            mpl.colors.to_rgba_array(expected),
+        )
+
+        # Palettes whose generator returns a colormap should not error
+        cmap = palettes.color_palette("hls", desat=.5, as_cmap=True)
+        assert isinstance(cmap, mpl.colors.Colormap)
+
     def test_bad_palette_name(self):
 
         with pytest.raises(ValueError):
