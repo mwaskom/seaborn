@@ -193,6 +193,8 @@ class TestColorPalettes:
         cmap_in.set_under((.1, .2, .3, .4))
         cmap_in.set_over((.9, .8, .7, .6))
 
+        colors_before = mpl.colors.to_rgba_array(cmap_in.colors)
+
         cmap = palettes.color_palette(cmap_in, desat=.5, as_cmap=True)
         assert isinstance(cmap, mpl.colors.ListedColormap)
         assert cmap is not cmap_in
@@ -208,6 +210,11 @@ class TestColorPalettes:
             for rgb, alpha in zip(rgba[:, :3], rgba[:, 3])
         ]
         npt.assert_allclose(mpl.colors.to_rgba_array(cmap.colors), expected)
+
+        # The source colormap object itself is not modified by the call
+        npt.assert_array_equal(
+            mpl.colors.to_rgba_array(cmap_in.colors), colors_before,
+        )
 
     def test_cmap_desat_from_continuous_cmap(self):
 
@@ -228,6 +235,14 @@ class TestColorPalettes:
             for rgb, alpha in zip(samples[:, :3], samples[:, 3])
         ]
         npt.assert_allclose(mpl.colors.to_rgba_array(cmap.colors), expected)
+
+        # The source never set under/over colors, so the result must not
+        # freeze the pre-desaturation end colors: under/over stay unset
+        # and resolve from the desaturated ends of the new LUT instead
+        assert cmap._rgba_under is None
+        assert cmap._rgba_over is None
+        npt.assert_allclose(cmap.get_under(), expected[0])
+        npt.assert_allclose(cmap.get_over(), expected[-1])
 
     def test_cmap_from_empty_palette(self):
 
