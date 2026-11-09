@@ -518,7 +518,15 @@ class Plot:
             Data source to override the global source provided in the constructor.
         variables : data vectors or identifiers
             Additional layer-specific variables, including variables that will be
-            passed directly to the transforms without scaling.
+            passed directly to the transforms without scaling. Some transforms
+            accept a special ``weight`` variable: for example, when a layer uses
+            ``Hist``, passing ``weight="fare"`` weights each observation by the
+            value in the ``fare`` column when binning, so the bar heights show
+            the summed weights in each bin rather than the number of observations.
+            Because ``weight`` is only used by the transform (stat) and is not a
+            mappable property of the mark, it can only be passed at the layer
+            level through :meth:`Plot.add`; it cannot be passed to the
+            :class:`Plot` constructor or to the transform itself.
 
         Examples
         --------
