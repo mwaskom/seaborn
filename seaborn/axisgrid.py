@@ -2099,10 +2099,6 @@ def pairplot(
                "please update your code.")
         warnings.warn(msg, UserWarning)
 
-    if not isinstance(data, pd.DataFrame):
-        raise TypeError(
-            f"'data' must be pandas DataFrame object, not: {type(data)}")
-
     plot_kws = {} if plot_kws is None else plot_kws.copy()
     diag_kws = {} if diag_kws is None else diag_kws.copy()
     grid_kws = {} if grid_kws is None else grid_kws.copy()
