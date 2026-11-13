@@ -768,18 +768,23 @@ def relplot(
         size_norm = p._size_map.norm
 
     if "style" in p.variables:
-        style_order = p._style_map.levels
+        # When the dataset is empty, seaborn may produce None for style levels.
+        # Iterating over None would raise a TypeError. Ensure style_order is
+        # always iterable by defaulting to an empty list.
+        style_order = p._style_map.levels or []
+
         if markers:
             markers = {k: p._style_map(k, "marker") for k in style_order}
         else:
             markers = None
+
         if dashes:
             dashes = {k: p._style_map(k, "dashes") for k in style_order}
         else:
             dashes = None
     else:
         markers = dashes = style_order = None
-
+   
     # Now extract the data that would be used to draw a single plot
     variables = p.variables
     plot_data = p.plot_data
