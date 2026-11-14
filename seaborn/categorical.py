@@ -1153,11 +1153,11 @@ class _CategoricalPlotter(VectorPlotter):
                     "markersize": box_width / 1.2,
                     "markeredgewidth": box_width / 5,
                     "transform": trans,
-                    **inner_kws,
+                    "color": linecolor,  # simplify tests
                     "markeredgecolor": "w",
                     "markerfacecolor": "w",
-                    "color": linecolor,  # simplify tests
-                }
+                    **inner_kws,
+                    }
                 ax.plot(invx(x2), invy(y2), **dot_kws)
 
         legend_artist = _get_patch_legend_artist(fill)
