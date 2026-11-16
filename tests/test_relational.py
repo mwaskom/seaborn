@@ -5,6 +5,7 @@ import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 from matplotlib.colors import same_color, to_rgba
+import pandas as pd
 
 import pytest
 from numpy.testing import assert_array_equal, assert_array_almost_equal
@@ -1859,3 +1860,12 @@ class TestScatterPlotter(SharedAxesLevelTests, Helpers):
 
         scatterplot(x="x", y="y", hue="f", size="s", data=object_df)
         ax.clear()
+
+    def test_scatterplot_duplicate_index_with_na(self):
+        train = pd.DataFrame({"x": [100, 200], "y": [10.0, 20.0]})
+        test = pd.DataFrame({"x": [1000, 2000], "y": [float("nan"), float("nan")]})
+        df = pd.concat([train, test])  # Index is [0, 1, 0, 1]
+
+        ax = scatterplot(data=df, x="x", y="y")
+        offsets = ax.collections[0].get_offsets()
+        assert len(offsets) == 2

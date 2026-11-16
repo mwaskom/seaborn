@@ -978,33 +978,58 @@ class VectorPlotter:
                 .drop(["x", "y"], axis=1, errors="ignore")
             )
 
+            orig_index = comp_data.index
+            comp_data.index = pd.RangeIndex(len(comp_data))
+
             for var in "yx":
                 if var not in self.variables:
                     continue
 
                 parts = []
-                grouped = self.plot_data[var].groupby(self.converters[var], sort=False)
+
+                col = self.plot_data[var].copy(deep=False)
+                col.index = pd.RangeIndex(len(col))
+
+                converters = self.converters[var].copy(deep=False)
+                converters.index = pd.RangeIndex(len(converters))
+
+                grouped = col.groupby(converters, sort=False)
+
                 for converter, orig in grouped:
                     orig = orig.mask(orig.isin([np.inf, -np.inf]), np.nan)
                     orig = orig.dropna()
+
                     if var in self.var_levels:
                         # TODO this should happen in some centralized location
                         # it is similar to GH2419, but more complicated because
                         # supporting `order` in categorical plots is tricky
                         orig = orig[orig.isin(self.var_levels[var])]
-                    comp = pd.to_numeric(converter.convert_units(orig)).astype(float)
+
+                    comp = pd.to_numeric(
+                        converter.convert_units(orig)
+                    ).astype(float)
+
                     transform = converter.get_transform().transform
-                    parts.append(pd.Series(transform(comp), orig.index, name=orig.name))
+
+                    parts.append(
+                        pd.Series(
+                            transform(comp),
+                            orig.index,
+                            name=orig.name
+                        )
+                    )
+
                 if parts:
                     comp_col = pd.concat(parts)
                 else:
                     comp_col = pd.Series(dtype=float, name=var)
+
                 comp_data.insert(0, var, comp_col)
 
+            comp_data.index = orig_index
             self._comp_data = comp_data
 
         return self._comp_data
-
     def _get_axes(self, sub_vars):
         """Return an Axes object based on existence of row/col variables."""
         row = sub_vars.get("row", None)
