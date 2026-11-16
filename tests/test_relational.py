@@ -1526,6 +1526,26 @@ class TestScatterPlotter(SharedAxesLevelTests, Helpers):
         with pytest.raises(ValueError, match=r"`legend` must be"):
             scatterplot(long_df, x="x", y="y", hue="a", legend="bad_value")
 
+    @pytest.mark.parametrize("key", ["s", "linewidth", "alpha"])
+    @pytest.mark.parametrize("func", [scatterplot, relplot])
+    def test_legend_vector_kws(self, long_df, func, key):
+
+        vals = np.linspace(.2, 1, len(long_df))
+        obj = func(long_df, x="x", y="y", hue="a", **{key: vals})
+        legend = obj.get_legend() if func is scatterplot else obj.legend
+        handles = get_legend_handles(legend)
+
+        palette = color_palette()
+        assert len(handles) == long_df["a"].nunique()
+        for i, pt in enumerate(handles):
+            assert same_color(pt.get_color(), palette[i])
+            if key == "s":
+                assert pt.get_markersize() == mpl.rcParams["lines.markersize"]
+            elif key == "linewidth":
+                assert pt.get_markeredgewidth() == 0
+            else:
+                assert pt.get_alpha() is None
+
     def test_plot(self, long_df, repeated_df):
 
         f, ax = plt.subplots()

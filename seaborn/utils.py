@@ -860,6 +860,12 @@ def _scatter_legend_artist(**kws):
 
     kws = normalize_kwargs(kws, mpl.collections.PathCollection)
 
+    # Scatter plots accept one value per point for these properties, which
+    # cannot be shown by a single legend entry, so use the default instead.
+    for key in ["s", "linewidth", "alpha"]:
+        if np.ndim(kws.get(key)) > 0:
+            kws.pop(key)
+
     edgecolor = kws.pop("edgecolor", None)
     rc = mpl.rcParams
     marker = kws.pop("marker", "o")
