@@ -301,6 +301,42 @@ class TestStack(MoveFixtures):
         assert_array_equal(res["y"], [2, np.nan, 3])
         assert_array_equal(res["baseline"], [0, np.nan, 2])
 
+    def test_nonzero_baseline(self, toy_df):
+        # GH4014: stacking must be relative to the baseline, not to 0,
+        # so the first bar keeps a positive height and later bars are
+        # not shifted down by the baseline.
+        df = pd.DataFrame({
+            "x": [0, 0],
+            "y": [15.0, 25.0],
+            "baseline": [10.0, 10.0],
+        })
+        res = Stack()(df, None, "x", {})
+        assert_array_equal(res["y"], [15.0, 30.0])
+        assert_array_equal(res["baseline"], [10.0, 15.0])
+
+    def test_nonzero_baseline_orient_y(self, toy_df):
+        # GH4014: same stacking, horizontal orientation (value on x).
+        df = pd.DataFrame({
+            "x": [15.0, 25.0],
+            "y": [0, 0],
+            "baseline": [10.0, 10.0],
+        })
+        res = Stack()(df, None, "y", {})
+        assert_array_equal(res["x"], [15.0, 30.0])
+        assert_array_equal(res["baseline"], [10.0, 15.0])
+
+    def test_nonzero_baseline_missing_data(self, toy_df):
+        # GH4014: a missing value in the middle keeps the baseline
+        # offset for the surviving rows.
+        df = pd.DataFrame({
+            "x": [0, 0, 0],
+            "y": [12.0, np.nan, 21.0],
+            "baseline": [10.0, 10.0, 10.0],
+        })
+        res = Stack()(df, None, "x", {})
+        assert_array_equal(res["y"], [12.0, np.nan, 23.0])
+        assert_array_equal(res["baseline"], [10.0, np.nan, 12.0])
+
     def test_baseline_homogeneity_check(self, toy_df):
 
         toy_df["baseline"] = [0, 1, 2]

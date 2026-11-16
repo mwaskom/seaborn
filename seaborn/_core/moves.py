@@ -175,7 +175,10 @@ class Stack(Move):
         stacked_lengths = (df[other] - df["baseline"]).dropna().cumsum()
         offsets = stacked_lengths.shift(1).fillna(0)
 
-        df[other] = stacked_lengths
+        # GH4014: stacked_lengths holds cumulative lengths measured from the
+        # baseline, so the absolute coordinate needs the baseline added back.
+        # (When the baseline is 0 this is a no-op.)
+        df[other] = df["baseline"] + stacked_lengths
         df["baseline"] = df["baseline"] + offsets
 
         return df
