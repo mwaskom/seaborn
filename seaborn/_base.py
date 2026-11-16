@@ -982,8 +982,18 @@ class VectorPlotter:
                 if var not in self.variables:
                     continue
 
-                parts = []
-                grouped = self.plot_data[var].groupby(self.converters[var], sort=False)
+                # Build the converted column positionally. Missing values are
+                # dropped per converter group before conversion, so the converted
+                # values cover only a subset of rows. Inserting that subset as a
+                # Series would align it by index label, and with duplicate index
+                # labels the surviving values would be broadcast to the rows
+                # whose coordinates were missing (GH4036). Instead, work with a
+                # positional index and scatter the converted values into a
+                # full-length array, leaving NaN where coordinates were dropped.
+                values = np.full(len(self.plot_data), np.nan)
+                var_data = self.plot_data[var].reset_index(drop=True)
+                converters = self.converters[var].reset_index(drop=True)
+                grouped = var_data.groupby(converters, sort=False)
                 for converter, orig in grouped:
                     orig = orig.mask(orig.isin([np.inf, -np.inf]), np.nan)
                     orig = orig.dropna()
@@ -994,12 +1004,8 @@ class VectorPlotter:
                         orig = orig[orig.isin(self.var_levels[var])]
                     comp = pd.to_numeric(converter.convert_units(orig)).astype(float)
                     transform = converter.get_transform().transform
-                    parts.append(pd.Series(transform(comp), orig.index, name=orig.name))
-                if parts:
-                    comp_col = pd.concat(parts)
-                else:
-                    comp_col = pd.Series(dtype=float, name=var)
-                comp_data.insert(0, var, comp_col)
+                    values[orig.index.to_numpy()] = transform(comp)
+                comp_data.insert(0, var, values)
 
             self._comp_data = comp_data
 

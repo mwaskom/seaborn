@@ -1615,6 +1615,56 @@ class TestScatterPlotter(SharedAxesLevelTests, Helpers):
         ax.clear()
         p.plot(ax, {})
 
+    def test_scatterplot_missing_with_duplicate_index(self):
+
+        # GH4036: with duplicate index labels, missing y values were filled
+        # from other rows sharing the same label, plotting coordinates that
+        # do not exist in the input. Only rows with non-missing coordinates
+        # should be plotted.
+        import pandas as pd
+
+        train = pd.DataFrame(
+            {
+                "frequency_hz": [100, 200],
+                "target": [10.0, 20.0],
+            }
+        )
+        test = pd.DataFrame(
+            {
+                "frequency_hz": [1000, 2000],
+            }
+        )
+        df = pd.concat(
+            [
+                train.assign(is_test=0),
+                test.assign(is_test=1),
+            ]
+        )
+
+        f, ax = plt.subplots()
+        scatterplot(data=df, x="frequency_hz", y="target", hue="is_test", ax=ax)
+        points = ax.collections[0]
+        assert_array_equal(points.get_offsets(), [[100.0, 10.0], [200.0, 20.0]])
+
+        ax.clear()
+        scatterplot(data=df, x="frequency_hz", y="target", ax=ax)
+        points = ax.collections[0]
+        assert_array_equal(points.get_offsets(), [[100.0, 10.0], [200.0, 20.0]])
+
+        # Missing value in the middle: the surviving coordinates must stay
+        # attached to their own rows, not shift positionally.
+        df_mid = pd.DataFrame(
+            {
+                "x": [1.0, 2.0, 3.0],
+                "y": [10.0, np.nan, 30.0],
+            },
+            index=[0, 0, 1],
+        )
+        ax.clear()
+        scatterplot(data=df_mid, x="x", y="y", ax=ax)
+        points = ax.collections[0]
+        assert_array_equal(points.get_offsets(), [[1.0, 10.0], [3.0, 30.0]])
+
     def test_axis_labels(self, long_df):
 
         f, (ax1, ax2) = plt.subplots(1, 2, sharey=True)
