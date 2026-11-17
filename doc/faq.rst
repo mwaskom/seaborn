@@ -272,7 +272,7 @@ With that said, the level of deep control that matplotlib affords really can't b
 How do I use seaborn with matplotlib's object-oriented interface?
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-*You prefer to use matplotlib's explicit or* `"object-oriented" <https://matplotlib.org/stable/users/explain/api_interfaces.html>`_ *interface, because it makes your code easier to reason about and maintain. But the object-orient interface consists of methods on matplotlib objects, whereas seaborn offers you independent functions.*
+*You prefer to use matplotlib's explicit or* `"object-oriented" <https://matplotlib.org/stable/users/explain/figure/api_interfaces.html>`_ *interface, because it makes your code easier to reason about and maintain. But the object-orient interface consists of methods on matplotlib objects, whereas seaborn offers you independent functions.*
 
 This is another case where it will be helpful to keep the :ref:`figure-level/axes-level <faq_function_levels>` distinction in mind.
 
