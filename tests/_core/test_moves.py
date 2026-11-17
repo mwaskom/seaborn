@@ -301,6 +301,17 @@ class TestStack(MoveFixtures):
         assert_array_equal(res["y"], [2, np.nan, 3])
         assert_array_equal(res["baseline"], [0, np.nan, 2])
 
+    def test_nonzero_baseline(self):
+
+        df = pd.DataFrame({
+            "x": [0, 0, 1],
+            "y": [15., 25., 12.],
+            "baseline": [10., 10., 10.],
+        })
+        res = Stack()(df, None, "x", {})
+        assert_array_equal(res["y"], [15., 30., 12.])
+        assert_array_equal(res["baseline"], [10., 15., 10.])
+
     def test_baseline_homogeneity_check(self, toy_df):
 
         toy_df["baseline"] = [0, 1, 2]
