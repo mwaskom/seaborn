@@ -172,11 +172,12 @@ class Stack(Move):
             raise RuntimeError(err)
 
         other = {"x": "y", "y": "x"}[orient]
-        stacked_lengths = (df[other] - df["baseline"]).dropna().cumsum()
+        baseline = df["baseline"]
+        stacked_lengths = (df[other] - baseline).dropna().cumsum()
         offsets = stacked_lengths.shift(1).fillna(0)
 
-        df[other] = stacked_lengths
-        df["baseline"] = df["baseline"] + offsets
+        df[other] = baseline + stacked_lengths
+        df["baseline"] = baseline + offsets
 
         return df
 
