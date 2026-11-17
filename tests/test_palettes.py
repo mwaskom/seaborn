@@ -168,6 +168,44 @@ class TestColorPalettes:
             mpl.colors.to_rgba_array(expected),
         )
 
+        # Same for "husl", and for a registered continuous colormap,
+        # whose colors are recovered by sampling the full ramp
+        cmap = palettes.color_palette("husl", desat=.5, as_cmap=True)
+        assert isinstance(cmap, mpl.colors.ListedColormap)
+        expected = [
+            utils.desaturate(c, .5)
+            for c in palettes.husl_palette(as_cmap=True).colors
+        ]
+        npt.assert_allclose(
+            mpl.colors.to_rgba_array(cmap.colors),
+            mpl.colors.to_rgba_array(expected),
+        )
+
+        cmap = palettes.color_palette("viridis", desat=.5, as_cmap=True)
+        assert isinstance(cmap, mpl.colors.ListedColormap)
+        samples = get_colormap("viridis")(np.linspace(0, 1, 256))
+        expected = [
+            (*utils.desaturate(rgb, .5), alpha)
+            for rgb, alpha in zip(samples[:, :3], samples[:, 3])
+        ]
+        npt.assert_allclose(
+            mpl.colors.to_rgba_array(cmap.colors),
+            mpl.colors.to_rgba_array(expected),
+        )
+
+    def test_cmap_does_not_alias_source_list(self):
+
+        # Mutating the returned colormap must not corrupt the registry
+        cmap = palettes.color_palette("deep", as_cmap=True)
+        cmap.colors[0] = "black"
+        assert palettes.SEABORN_PALETTES["deep"][0] != "black"
+
+        # ... nor a list passed in by the caller
+        colors = ["red", "green", "blue"]
+        cmap = palettes.color_palette(colors, as_cmap=True)
+        cmap.colors[0] = "black"
+        assert colors[0] == "red"
+
     def test_cmap_object_requires_as_cmap(self):
 
         # A colormap object is only a valid palette with as_cmap=True;
@@ -223,6 +261,8 @@ class TestColorPalettes:
         )
         cmap_in.set_bad((1, 0, 1, .9))
 
+        samples_before = cmap_in(np.linspace(0, 1, cmap_in.N))
+
         cmap = palettes.color_palette(cmap_in, desat=.5, as_cmap=True)
         assert isinstance(cmap, mpl.colors.ListedColormap)
         assert cmap.name == cmap_in.name
@@ -235,6 +275,11 @@ class TestColorPalettes:
             for rgb, alpha in zip(samples[:, :3], samples[:, 3])
         ]
         npt.assert_allclose(mpl.colors.to_rgba_array(cmap.colors), expected)
+
+        # The source colormap object itself is not modified by the call
+        npt.assert_array_equal(
+            cmap_in(np.linspace(0, 1, cmap_in.N)), samples_before,
+        )
 
         # The source never set under/over colors, so the result must not
         # freeze the pre-desaturation end colors: under/over stay unset

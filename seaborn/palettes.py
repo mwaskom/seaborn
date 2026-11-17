@@ -154,6 +154,9 @@ def color_palette(palette=None, n_colors=None, desat=None, as_cmap=False):
         Proportion to desaturate each color by.
     as_cmap : bool
         If True, return a :class:`matplotlib.colors.ListedColormap`.
+        A matplotlib colormap passed as ``palette`` is returned unchanged
+        when ``as_cmap`` is True, and raises a ``TypeError`` when False.
+        Requesting a colormap from an empty palette raises a ``ValueError``.
 
     Returns
     -------
@@ -290,7 +293,9 @@ def color_palette(palette=None, n_colors=None, desat=None, as_cmap=False):
             err = "Cannot create a colormap from an empty palette"
             raise ValueError(err)
         if source_cmap is None:
-            palette = mpl.colors.ListedColormap(palette)
+            # Copy so the colormap does not alias the caller's list or
+            # the module-level palette registry
+            palette = mpl.colors.ListedColormap(list(palette))
         else:
             # Restore the name and bad/under/over colors of the colormap
             # that the colors were recovered from for desaturation
