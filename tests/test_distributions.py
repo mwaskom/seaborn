@@ -1,3 +1,4 @@
+
 import itertools
 import warnings
 
@@ -1155,6 +1156,26 @@ class TestHistPlotUnivariate(SharedAxesLevelTests):
 
         super().test_color(long_df, element=element, fill=fill)
 
+    @pytest.mark.parametrize("variable", ["x", "y"])
+    def test_unfilled_step_outline_closes_to_baseline(self, variable):
+        ax = histplot(
+            **{variable: [0, 1, 2]},
+            bins=[-.5, .5, 1.5, 2.5],
+            element="step",
+            fill=False,
+        )
+        line = ax.lines[0]
+        if variable == "x":
+            data, height = line.get_xdata(), line.get_ydata()
+        else:
+            height, data = line.get_xdata(), line.get_ydata()
+
+        assert data[0] == data[1] == -.5
+        assert data[-1] == data[-2] == 2.5
+        assert height[0] == height[-1] == 0
+        assert height[1] > 0
+        assert height[-2] > 0
+
     @pytest.mark.parametrize(
         "variable", ["x", "y"],
     )
@@ -1679,10 +1700,13 @@ class TestHistPlotUnivariate(SharedAxesLevelTests):
 
         x, y = ax2.lines[0].get_xydata().T
 
-        assert_array_equal(x[:-1], bar_edges)
-        assert_array_equal(y[:-1], bar_heights)
-        assert x[-1] == bar_edges[-1] + bar_widths[-1]
-        assert y[-1] == y[-2]
+        assert x[0] == x[1] == bar_edges[0]
+        assert_array_equal(x[1:-2], bar_edges)
+        assert_array_equal(y[1:-2], bar_heights)
+        assert y[0] == 0
+        assert x[-2] == x[-1] == bar_edges[-1] + bar_widths[-1]
+        assert y[-2] == bar_heights[-1]
+        assert y[-1] == 0
 
     def test_step_fill_xy(self, flat_series):
 
@@ -2489,3 +2513,4 @@ def integrate(y, x):
     x = np.asarray(x)
     dx = np.diff(x)
     return (dx * y[:-1] + dx * y[1:]).sum() / 2
+
