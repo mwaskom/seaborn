@@ -170,3 +170,27 @@ def test_nanaware_func_warning(random):
     with pytest.warns(UserWarning, match="Data contain nans but"):
         boots = algo.bootstrap(x, func="ptp")
     assert np.isnan(boots).any()
+
+
+@pytest.mark.parametrize("generator", [np.random.default_rng, np.random.RandomState])
+@pytest.mark.parametrize("dtype", ["i2", "u8", "f2", "f4", "f8", "?"])
+def test_bootstrap_mean_matches_individual_draws(dtype, generator):
+    # A non-contiguous group and enough draws to cross the batch boundary.
+    x = ((np.arange(2 * 1001) % 31) / 7).astype(dtype)[::2]
+    rng = generator(15)
+    expected_rng = generator(15)
+    expected = np.array([expected_rng.choice(x, len(x)).mean() for _ in range(523)])
+    result = algo.bootstrap(x, seed=rng, n_boot=523)
+    assert_array_equal(result, expected, strict=True)
+    assert rng.bytes(32) == expected_rng.bytes(32)
+
+
+def test_bootstrap_mean_raises_after_first_overflowing_draw():
+    # Further draws must still be available to the caller if the statistic raises.
+    x = np.full(7, np.finfo(float).max)
+    rng = np.random.default_rng(15)
+    expected_rng = np.random.default_rng(15)
+    expected_rng.choice(x, size=len(x))
+    with np.errstate(over="raise"), pytest.raises(FloatingPointError):
+        algo.bootstrap(x, seed=rng, n_boot=53, func=np.mean)
+    assert rng.bytes(32) == expected_rng.bytes(32)
