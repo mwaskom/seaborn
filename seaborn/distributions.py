@@ -598,6 +598,13 @@ class _DistributionPlotter(VectorPlotter):
                     y = np.append(hist["heights"], final["heights"])
                     b = np.append(bottom, bottom[-1])
 
+                    if not fill:
+                        # Close the outline at the baseline on both ends.
+                        x = np.insert(x, 0, x[0])
+                        x = np.append(x, x[-1])
+                        y = np.insert(y, 0, b[0])
+                        y = np.append(y, b[-1])
+
                     if self.data_variable == "x":
                         step = "post"
                         drawstyle = "steps-post"
@@ -2530,3 +2537,4 @@ def distplot(a=None, bins=None, hist=True, kde=True, rug=False, fit=None,
             ax.set_xlabel(axlabel)
 
     return ax
+
