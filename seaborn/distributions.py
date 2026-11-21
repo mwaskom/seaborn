@@ -414,6 +414,22 @@ class _DistributionPlotter(VectorPlotter):
             warnings.warn(msg, UserWarning)
             estimate_kws["bins"] = 10
 
+        # Stacking adds up the bar heights of the hue levels bin by bin, which is only
+        # meaningful when every level shares the same bin edges
+        stacked_with_separate_bins = (
+            multiple in ("stack", "fill")
+            and "hue" in self.variables
+            and not common_bins
+        )
+        if stacked_with_separate_bins:
+            msg = (
+                f"`multiple={multiple!r}` requires the same bins for every `hue` "
+                "level, so `common_bins=False` is ignored. Use `multiple='layer'` "
+                "to compute separate bins for each level."
+            )
+            warnings.warn(msg, UserWarning)
+            common_bins = True
+
         # Simplify downstream code if we are not normalizing
         if estimate_kws["stat"] == "count":
             common_norm = False
@@ -1484,7 +1500,9 @@ cumulative : bool
 common_bins : bool
     If True, use the same bins when semantic variables produce multiple
     plots. If using a reference rule to determine the bins, it will be computed
-    with the full dataset.
+    with the full dataset. Stacked histograms (`multiple="stack"` or `"fill"`)
+    always use common bins, because the bars of each level can only be added up
+    when they share the same edges.
 common_norm : bool
     If True and using a normalized statistic, the normalization will apply over
     the full dataset. Otherwise, normalize each histogram independently.

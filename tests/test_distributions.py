@@ -2,6 +2,7 @@ import itertools
 import warnings
 
 import numpy as np
+import pandas as pd
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 from matplotlib.colors import to_rgb, to_rgba
@@ -1415,6 +1416,46 @@ class TestHistPlotUnivariate(SharedAxesLevelTests):
             [b.get_xy() for b in bar_groups[0]],
             [b.get_xy() for b in bar_groups[1]]
         )
+
+    @pytest.mark.parametrize("multiple", ["stack", "fill"])
+    def test_stacked_separate_bins_warns_and_uses_common_bins(self, long_df, multiple):
+
+        kws = dict(x="x", hue="a", multiple=multiple, element="bars", bins=10)
+
+        msg = "requires the same bins"
+        with pytest.warns(UserWarning, match=msg):
+            ax = histplot(long_df, common_bins=False, **kws)
+
+        n = len(long_df["a"].unique())
+        bars = ax.patches
+        assert len(bars) == n * 10
+
+        # Every hue level must share the same bin edges, so bars never overlap
+        edges = [(round(b.get_x(), 8), round(b.get_width(), 8)) for b in bars]
+        assert len(set(edges)) == 10
+
+        ax2 = histplot(long_df.copy(), common_bins=True, **kws)
+        assert_array_equal(
+            [b.get_xy() for b in ax.patches], [b.get_xy() for b in ax2.patches]
+        )
+
+    def test_stacked_common_bins_does_not_warn(self, long_df, recwarn):
+
+        histplot(long_df, x="x", hue="a", multiple="stack", common_bins=True)
+        assert not [w for w in recwarn if "requires the same bins" in str(w.message)]
+
+    def test_layered_separate_bins_does_not_warn(self, long_df, recwarn):
+
+        histplot(long_df, x="x", hue="a", multiple="layer", common_bins=False)
+        assert not [w for w in recwarn if "requires the same bins" in str(w.message)]
+
+    def test_stacked_separate_bins_sparse_categorical(self):
+
+        df = pd.DataFrame({"x": list("aabbcc"), "g": list("uuuvvv")})
+        with pytest.warns(UserWarning, match="requires the same bins"):
+            ax = histplot(df, x="x", hue="g", multiple="stack", common_bins=False)
+        assert not np.isnan([b.get_width() for b in ax.patches]).any()
+        assert not np.isnan([b.get_height() for b in ax.patches]).any()
 
     def test_unique_bins(self, wide_df):
 
