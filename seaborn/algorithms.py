@@ -93,12 +93,40 @@ def bootstrap(*args, **kwargs):
         return _structured_bootstrap(args, n_boot, units, f,
                                      func_kwargs, integers)
 
+    n_boot = int(n_boot)
+    values = args[0]
+    if (
+        len(args) == 1 and values.ndim == 1 and axis is None and f is np.mean
+        and type(rng) in (np.random.Generator, np.random.RandomState)
+        and n and n_boot > 1 and _safe_mean_batch(values)
+    ):
+        # Bound temporary indices and gathered values, even for long groups.
+        row_bytes = n * (np.dtype(np.intp).itemsize + values.itemsize)
+        batch_size = max(1, 4 * 1024**2 // row_bytes)
+        dtype = values.dtype.type if values.dtype.kind == "f" else np.float64
+        means = np.empty(n_boot, dtype=dtype)
+        for start in range(0, n_boot, batch_size):
+            stop = min(start + batch_size, n_boot)
+            shape = (stop - start, n)
+            means[start:stop] = values[integers(n, size=shape, dtype=np.intp)].mean(1)
+        return means
+
     boot_dist = []
-    for i in range(int(n_boot)):
+    for i in range(n_boot):
         resampler = integers(0, n, n, dtype=np.intp)  # intp is indexing dtype
         sample = [a.take(resampler, axis=0) for a in args]
         boot_dist.append(f(*sample, **func_kwargs))
     return np.array(boot_dist)
+
+
+def _safe_mean_batch(values):
+    if values.dtype.kind in "biu":
+        return True
+    if values.dtype.kind != "f" or np.geterr()["under"] != "ignore":
+        return False
+    # If a scalar mean could warn or raise, consume its random indices separately.
+    limit = np.finfo(values.dtype).max.item() / (2 * len(values))
+    return np.max(np.abs(values)) < limit
 
 
 def _structured_bootstrap(args, n_boot, units, func, func_kwargs, integers):
