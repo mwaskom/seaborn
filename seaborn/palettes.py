@@ -381,10 +381,12 @@ def mpl_palette(name, n_colors=6, as_cmap=False):
         Name of the palette. This should be a named matplotlib colormap.
     n_colors : int
         Number of discrete colors in the palette.
+    as_cmap : bool
+        If True, return the matplotlib colormap instead of discrete colors.
 
     Returns
     -------
-    list of RGB tuples or :class:`matplotlib.colors.ListedColormap`
+    list of RGB tuples or :class:`matplotlib.colors.Colormap`
 
     Examples
     --------
