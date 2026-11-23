@@ -950,16 +950,16 @@ class FacetGrid(Grid):
             Template for all titles with the formatting keys {col_var} and
             {col_name} (if using a `col` faceting variable) and/or {row_var}
             and {row_name} (if using a `row` faceting variable).
-        row_template:
+        row_template : string
             Template for the row variable when titles are drawn on the grid
             margins. Must have {row_var} and {row_name} formatting keys.
-        col_template:
+        col_template : string
             Template for the column variable when titles are drawn on the grid
             margins. Must have {col_var} and {col_name} formatting keys.
 
         Returns
         -------
-        self: object
+        self : FacetGrid
             Returns self.
 
         """
