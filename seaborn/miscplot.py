@@ -13,8 +13,8 @@ def palplot(pal, size=1):
     ----------
     pal : sequence of matplotlib colors
         colors, i.e. as returned by seaborn.color_palette()
-    size :
-        scaling factor for size of plot
+    size : float
+        Height of the plot in inches. The width is ``len(pal) * size``.
 
     """
     n = len(pal)
