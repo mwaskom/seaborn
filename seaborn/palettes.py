@@ -588,12 +588,15 @@ def blend_palette(colors, n_colors=6, as_cmap=False, input="rgb"):
     n_colors : int, optional
         Number of colors in the palette.
     as_cmap : bool, optional
-        If True, return a :class:`matplotlib.colors.ListedColormap`.
+        If True, return a :class:`matplotlib.colors.LinearSegmentedColormap`.
+    input : {'rgb', 'hls', 'husl', 'xkcd'}, optional
+        Color space to interpret the input colors. The first three options
+        apply to tuple inputs and the latter applies to string inputs.
 
     Returns
     -------
     palette
-        list of RGB tuples or :class:`matplotlib.colors.ListedColormap`
+        list of RGB tuples or :class:`matplotlib.colors.LinearSegmentedColormap`
 
     Examples
     --------
