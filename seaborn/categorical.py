@@ -660,13 +660,17 @@ class _CategoricalPlotter(VectorPlotter):
 
             maincolor = self._hue_map(sub_vars["hue"]) if "hue" in sub_vars else color
             if fill:
+                if isinstance(linecolor, str) and linecolor == "match":
+                    edgecolor = maincolor
+                else:
+                    edgecolor = linecolor
                 boxprops = {
-                    "facecolor": maincolor, "edgecolor": linecolor, **props["box"]
+                    "facecolor": maincolor, "edgecolor": edgecolor, **props["box"]
                 }
-                medianprops = {"color": linecolor, **props["median"]}
-                whiskerprops = {"color": linecolor, **props["whisker"]}
-                flierprops = {"markeredgecolor": linecolor, **props["flier"]}
-                capprops = {"color": linecolor, **props["cap"]}
+                medianprops = {"color": edgecolor, **props["median"]}
+                whiskerprops = {"color": edgecolor, **props["whisker"]}
+                flierprops = {"markeredgecolor": edgecolor, **props["flier"]}
+                capprops = {"color": edgecolor, **props["cap"]}
             else:
                 boxprops = {"color": maincolor, **props["box"]}
                 medianprops = {"color": maincolor, **props["median"]}
@@ -744,7 +748,16 @@ class _CategoricalPlotter(VectorPlotter):
 
             ax.add_container(BoxPlotContainer(artists))
 
-        legend_artist = _get_patch_legend_artist(fill)
+        patch_artist = _get_patch_legend_artist(fill)
+        if fill and isinstance(linecolor, str) and linecolor == "match":
+
+            def legend_artist(**kws):
+                if kws.get("color") is not None:
+                    kws["edgecolor"] = kws["color"]
+                return patch_artist(**kws)
+
+        else:
+            legend_artist = patch_artist
         self._configure_legend(ax, legend_artist, boxprops)
 
     def plot_boxens(
@@ -1501,7 +1514,8 @@ _categorical_docs = dict(
     """),
     linecolor=dedent("""\
     linecolor : color
-        Color to use for line elements, when `fill` is True.
+        Color to use for line elements, when `fill` is True. In
+        :func:`boxplot`, `"match"` draws the lines in the fill color.
 
         .. versionadded:: v0.13.0\
     """),
