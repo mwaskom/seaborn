@@ -3244,3 +3244,14 @@ class TestBoxPlotContainer:
         children = container.get_children()
         for child in children:
             assert isinstance(child, mpl.artist.Artist)
+
+
+def test_boxplot_linecolor_match(long_df):
+
+    from matplotlib.colors import same_color
+    import seaborn as sns
+
+    ax = sns.boxplot(long_df, x="a", y="y", hue="c", linecolor="match")
+    assert ax.patches
+    for patch in ax.patches:
+        assert same_color(patch.get_edgecolor(), patch.get_facecolor())
