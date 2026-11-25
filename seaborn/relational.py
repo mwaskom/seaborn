@@ -120,7 +120,8 @@ markers : boolean, list, or dictionary
     `style` variable. Setting to `True` will use default markers, or
     you can pass a list of markers or a dictionary mapping levels of the
     `style` variable to markers. Setting to `False` will draw
-    marker-less lines.  Markers are specified as in matplotlib.
+    marker-less lines. Markers are specified as in matplotlib. This
+    parameter only has an effect when `style` is assigned.
     """,
     style_order="""
 style_order : list
