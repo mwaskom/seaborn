@@ -21,8 +21,9 @@ from seaborn._core.rules import categorical_order
 from seaborn._core.exceptions import PlotSpecError
 from seaborn._marks.base import Mark
 from seaborn._stats.base import Stat
+from seaborn._marks.area import Band
 from seaborn._marks.dot import Dot
-from seaborn._stats.aggregation import Agg
+from seaborn._stats.aggregation import Agg, Est
 from seaborn.utils import _version_predates
 
 assert_vector_equal = functools.partial(
@@ -512,6 +513,55 @@ class TestScaling:
         m = MockMark()
         Plot(x, y).add(m, AddOne()).scale(y="log").plot()
         assert_vector_equal(m.passed_data[0]["ymax"], pd.Series([10., 100., 1000.]))
+
+    def test_derived_range_with_custom_formatter_and_locator(self):
+
+        df = pd.DataFrame({
+            "x": [1, 1, 2, 2],
+            "y": [0.1, 0.2, 0.3, 0.4],
+            "c": ["a", "b", "a", "b"],
+        })
+        fmt = mpl.ticker.PercentFormatter()
+        p = (
+            Plot(df, x="x", y="y", color="c")
+            .add(Band(), Est())
+            .scale(y=Continuous().label(fmt))
+            .plot()
+        )
+        p.save(io.BytesIO(), format="png")
+        ax = p._figure.axes[0]
+        assert ax.yaxis.get_major_formatter().axis is ax.yaxis
+        assert fmt.axis is None
+
+        loc = mpl.ticker.LogLocator()
+        p2 = (
+            Plot(df, x="x", y="y", color="c")
+            .add(Band(), Est())
+            .scale(y=Continuous(trans="symlog").tick(loc))
+            .plot()
+        )
+        ax2 = p2._figure.axes[0]
+        assert ax2.yaxis.get_major_locator().axis is ax2.yaxis
+        assert loc.axis is None
+
+    def test_faceted_unshared_formatter(self):
+
+        df = pd.DataFrame({
+            "x": [1, 2, 1, 2],
+            "y": [0.1, 0.2, 10.0, 20.0],
+            "c": ["a", "a", "b", "b"],
+        })
+        p = (
+            Plot(df, x="x", y="y")
+            .facet(col="c")
+            .share(y=False)
+            .add(MockMark())
+            .scale(y=Continuous().label(mpl.ticker.PercentFormatter()))
+            .plot()
+        )
+        p.save(io.BytesIO(), format="png")
+        for ax in p._figure.axes:
+            assert ax.yaxis.get_major_formatter().axis is ax.yaxis
 
     def test_facet_categories(self):
 
