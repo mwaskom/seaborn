@@ -85,7 +85,10 @@ class Scale:
     def _get_scale(self, axis: Axis | None, forward: Callable, inverse: Callable):
 
         major_locator, minor_locator = self._get_locators(**self._tick_params)
-        major_formatter = self._get_formatter(major_locator, **self._label_params)
+        major_locator = copy(major_locator)
+        if minor_locator is not None:
+            minor_locator = copy(minor_locator)
+        major_formatter = copy(self._get_formatter(major_locator, **self._label_params))
 
         class InternalScale(mpl.scale.FuncScale):
             def set_default_locators_and_formatters(self, axis):
