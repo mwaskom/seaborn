@@ -566,6 +566,14 @@ class TestNominal:
         s = Nominal()._setup(x, Coordinate())
         assert_array_equal(s(x), [])
 
+    def test_color_interval_scalar(self):
+
+        x = pd.Series(pd.cut([1, 2, 3, 4], bins=2), name="x")
+        s = Nominal()._setup(x, Color())
+        cs = color_palette()
+        for i, level in enumerate(x.cat.categories):
+            assert_array_equal(s(level), cs[i])
+
     def test_finalize(self, x):
 
         ax = mpl.figure.Figure().subplots()
@@ -623,6 +631,13 @@ class TestTemporal:
         s = Temporal()._setup(t, Color())
         normed = (x - x.min()) / (x.max() - x.min())
         assert_array_equal(s(t), cmap(normed)[:, :3])  # FIXME RGBA
+
+    def test_color_scalar(self, t, x):
+
+        cmap = color_palette("ch:", as_cmap=True)
+        s = Temporal()._setup(t, Color())
+        normed = (x - x.min()) / (x.max() - x.min())
+        assert_array_equal(s(t.iloc[1]), cmap(normed[1])[:3])
 
     def test_color_named_values(self, t, x):
 

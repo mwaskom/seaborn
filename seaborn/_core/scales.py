@@ -33,6 +33,7 @@ from matplotlib.dates import (
 from matplotlib.axis import Axis
 from matplotlib.scale import ScaleBase
 from pandas import Series
+from pandas.api.types import is_scalar
 
 from seaborn._core.rules import categorical_order
 from seaborn._core.typing import Default, default
@@ -121,7 +122,7 @@ class Scale:
 
         # TODO sometimes we need to handle scalars (e.g. for Line)
         # but what is the best way to do that?
-        scalar_data = np.isscalar(data)
+        scalar_data = is_scalar(data)
         if scalar_data:
             trans_data = np.array([data])
         else:

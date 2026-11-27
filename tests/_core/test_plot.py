@@ -22,6 +22,7 @@ from seaborn._core.exceptions import PlotSpecError
 from seaborn._marks.base import Mark
 from seaborn._stats.base import Stat
 from seaborn._marks.dot import Dot
+from seaborn._marks.line import Line
 from seaborn._stats.aggregation import Agg
 from seaborn.utils import _version_predates
 
@@ -371,6 +372,18 @@ class TestScaling:
         p = Plot(y=[2, 1, 3]).scale(y=Nominal()).add(MockMark()).plot()
         ax = p._figure.axes[0]
         assert ax.yaxis.convert_units("3") == 2
+
+    def test_interval_categorical_color(self):
+
+        df = pd.DataFrame({
+            "x": [1.0, 2.0, 3.0, 4.0, 5.0],
+            "y": [2.0, 4.0, 6.0, 8.0, 10.0],
+            "g": pd.cut(pd.Series([1, 2, 3, 4, np.nan]), bins=2),
+        })
+        p = Plot(df, x="x", y="y", color="g").add(Line()).plot()
+        assert len(p._figure.axes[0].lines) == 2
+        texts = [t.get_text() for t in p._figure.legends[0].get_texts()]
+        assert texts == [str(c) for c in df["g"].cat.categories]
 
     @pytest.mark.xfail(reason="Temporal auto-conversion not implemented")
     def test_categorical_as_datetime(self):
